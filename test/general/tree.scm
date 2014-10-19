@@ -1,0 +1,77 @@
+(import
+  (sph)
+  (sph test)
+  (sph tree))
+
+(execute-tests-quasiquote
+  (denoted-tree->prefix-tree
+    (((3 b) (3 c) (0 d)))
+    ((((b c))) d)
+    (((1 a) (3 b) (3 c) (0 d)))
+    (((a (b c))) d)
+    (((1 a) (4 b) (4 c) (0 d)))
+    (((a ((b c)))) d)
+    (((0 a) (1 b) (1 c) (2 d) (1 e) (0 f) (1 g)))
+    ((a b (c d) e) (f g))
+    (((0 a) (1 b) (2 c) (1 d) (2 e) (3 f) (0 g)))
+    ((a (b c) (d (e f))) g)
+    (((0 a) (2 b) (0 c)))
+    ((a (b)) c)
+    (((0 a) (2 b) (1 c)))
+    ((a (b) c))
+
+    )
+  (produce-prefix-context
+    ((unquote list) (a (d e f) (g h i) j))
+    ((e (d a)) (f (d a)) (h (g a)) (i (g a)) (j (a)))
+    ((unquote list) (a b (b (c (d e) f))))
+    ((b (a)) (e (d c b a)) (f (c b a)))
+    ((unquote list) ((a b) (c d)))
+    ((d (c (a b))))
+    ((unquote list) ()) ()
+    ((unquote list) (a (c () b))) ((() (c a)) (b (c a)))
+    ((unquote list) (a c d))
+    ((c (a)) (d (a))))
+  (produce-prefix-context-mm
+    ((unquote list) ((a b) c d))
+    ((c (a)) (c (b)) (d (a)) (d (b)))
+    ((unquote list) ((d e) ((a b) c)))
+    ((c (a d)) (c (b d)) (c (a e)) (c (b e)))
+    ((unquote list) (a (c d)))
+    ((d (c a)))
+    ((unquote list) (a ((c d) e)))
+    ((e (c a)) (e (d a)))
+    ((unquote list) ()) ()
+    ((unquote list) (a (c () b)))
+    ((() (c a)) (b (c a))))
+  (flatten
+    ((1 (2 3 (4) (5 (6 7)) 8)))
+    (1 2 3 4 5 6 7 8))
+  (prefix-tree-product
+    ((1 2 3 4))
+    ((1 2) (1 3) (1 4))
+    ((1 2 (3 (4 5 6) 7) (8 9)))
+    ((1 2) (1 3 4 5) (1 3 4 6) (1 3 7) (1 8 9))
+    (()) ()
+    ((1)) ())
+  (prefix-tree-product-mm
+    (((1 2) 3 4))
+    ((1 3) (2 3) (1 4) (2 4))
+    (((1 2) (3 (4 5))))
+    ((1 3 4 5) (2 3 4 5))
+    ((1 ((2 3) (4 5))))
+    ((1 2 4 5) (1 3 4 5)))
+  (denoted-tree->tree
+    (((0 a) (0 b) (1 c) (2 d) (2 e) (1 f) (0 g)))
+    (a b (c (d e) f) g)
+    ;level skip at the end
+    (((0 a) (1 b) (2 c) (0 d)))
+    (a (b (c)) d)
+    ;ending with a non-zero level
+    (((0 a) (1 b) (2 c)))
+    (a (b (c)))
+    ;starting with a non-zero level
+    (((2 a) (0 b) (1 c)))
+    (((a)) b (c))
+    (((0 a) (1 b) (1 c) (2 d) (1 e) (0 f) (1 g)))
+    (a (b c (d) e) f (g))))

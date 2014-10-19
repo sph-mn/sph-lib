@@ -1,0 +1,10 @@
+dependencies
+  guile >= 2
+  install script dependencies: bash/dash
+installation
+  \##
+    su root
+    ./exec/install
+  or set the installation prefix (the default is /usr)
+  \##
+    ./exec/install /usr/local

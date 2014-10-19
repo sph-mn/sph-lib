@@ -1,0 +1,5 @@
+#!/bin/sh
+
+t=$1/usr/share/guile/site
+mkdir -p $t
+cp -rt $t sph sph.scm
