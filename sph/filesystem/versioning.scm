@@ -48,8 +48,8 @@
 
   (define (versioning-create type path proc config)
     "symbol:text/binary string procedure:{string ->} -> integer:current-version-id
-    call \"proc\" with a path to an empty file which is the next version, moving the old file to
-    the directory for previous versions set in \"config\""
+    calls \"proc\" with a path to an empty file which is the next version, and moves the old file to
+    the directory for previous versions which is set in \"config\""
     (if (> (get-file-size path) (hashtable-ref config (q max-size))) (proc path)
       (let*
         ( (path-versions (path-versions-string (basename path) config))
