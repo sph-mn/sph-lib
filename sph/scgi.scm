@@ -1,20 +1,17 @@
-#;((sph scgi) - processing scgi requests
-written for the guile scheme interpreter
-Copyright (C) 2010-2014 sph (email: sph@posteo.eu, http://sph.io)
+; (sph scgi) - a server that acts as an scgi interface
+; written for the guile scheme interpreter
+; Copyright (C) 2010-2014 sph <sph@posteo.eu>
+; This program is free software; you can redistribute it and/or modify it
+; under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 3 of the License, or
+; (at your option) any later version.
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+; GNU General Public License for more details.
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, see <http://www.gnu.org/licenses/>.
------------------------)
 (library (sph scgi)
   (export
     scgi-default-address
@@ -76,7 +73,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
                       (loop (- count 1) (get-u8 port) (pair (integer->char octet) key) value r)))
                   r))))))))
 
-  (define scgi-default-address (string-append "/var/run/user/" (number->string (getuid)) "/scgi"))
+  (define scgi-default-address (string-append "/tmp/" (number->string (getuid)) "/scgi"))
 
   (define*
     (scgi-handle-requests proc #:optional socket worker-count address port-number .

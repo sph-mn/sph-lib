@@ -116,13 +116,17 @@
                 (next (readdir dir) (pair cur-path directory-paths) (pair cur-path other-paths))
                 (next (readdir dir) directory-paths (pair cur-path other-paths)))))))))
 
-  (define (dotfile? name) (and (not (string-null? name)) (eq? (string-ref name 0) #\.)))
+  (define (dotfile? name) "string -> boolean
+    checks if name is non-empty and begins with a dot"
+    (and (not (string-null? name)) (eqv? (string-ref name 0) #\.)))
 
   (define (ensure-directory-structure path)
-    "create directories if they do not exist to create a directory structure matchin \"path\""
+    "string -> boolean
+    try to create any directories of path that do not exist"
     (or (file-exists? path) (begin (ensure-directory-structure (dirname path)) (mkdir path))))
 
   (define (ensure-trailing-slash str)
+    "string -> string"
     (if (or (string-null? str) (not (eqv? #\/ (string-ref str (- (string-length str) 1)))))
       (string-append str "/") str))
 
