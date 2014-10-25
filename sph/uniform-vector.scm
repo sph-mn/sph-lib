@@ -9,6 +9,7 @@
     f32vector-product!
     f32vector-sum!)
   (import
+    (guile)
     (rnrs base)
     (sph)
     (srfi srfi-4))
@@ -20,12 +21,12 @@
   (define (f32vector-map! proc r)
     "{any:element integer:index integer:vector-a-length -> any} f32vector ->"
     (f32vector-each-index
-      (l (index length) (f32vector-set! r index (proc (f32vector-ref index) index length))) r))
+      (l (index length) (f32vector-set! r index (proc (f32vector-ref r index) index length))) r))
 
   (define (f32vector-map+one! proc variable a)
     "{any:element any:variable -> any} any:variable f32vector
     like f32vector-map! but passes the given variable as a second argument on each call to \"proc\""
-    (f32vector-map (l (e index length) (proc e variable)) a))
+    (f32vector-map! (l (e index length) (proc e variable)) a))
 
   (define (f32vector-map-fold! proc a . b)
     "procedure:{any:b-element any:previous-result-or-a-element} f32vector ... ->
@@ -36,7 +37,7 @@
     (f32vector-each-index
       (l (index length)
         (f32vector-set! a index
-          (fold (l (e r) (proc (f32vector-ref b index) r)) (f32vector-ref a index) b)))
+          (fold (l (e r) (proc (f32vector-ref e index) r)) (f32vector-ref a index) b)))
       a))
 
   (define (f32vector-sum! a . b)

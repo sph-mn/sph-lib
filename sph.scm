@@ -76,6 +76,7 @@
       syntax->datum
       LC_ALL
       set-port-encoding!
+      exit
       setlocale
       string=
       syntax
