@@ -202,4 +202,5 @@
   (define (error-origin-p a) (error-origin a))
   (define (error-name-p a) (error-name a))
   (define (error-data-p a) (error-data a))
-  (define (error?-p a) (error? a)))
+  (define (error?-p a) (error? a))
+  (define (exit-on-error a) (if (error? a) (begin (debug-log a) (exit -1)) a)))
