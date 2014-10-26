@@ -1,4 +1,4 @@
-;translates its syntax to html as sxml using docl
+;translates indent-tree syntax to html as sxml using docl
 
 (library (sph lang docl its)
   (export
@@ -44,9 +44,9 @@
   (define-syntax-rule (list->sxml a level level-init)
     (if (heading-section? a) (join-heading-section a level) a))
 
-  (define-syntax-rule (ascend-expr->sxml prefix content ele env level level-init)
+  (define-syntax-rule (ascend-expr->sxml prefix content e env level level-init)
     (case prefix ((line) (add-spaces content))
-      ;eval is used so that even syntax works.
+      ;eval is used so that syntax forms work.
       ;level is decremented for correction
       ( (inline-expr)
         (call-for-eval level
@@ -58,7 +58,7 @@
         (call-for-eval level
           (l () ((module-ref env (string->symbol (first content))) (tail content)))))
       ((association) (list (q dl) (list (q dt) (let (e (first content)) (if (string? e) (string-append e ":") e))) (pair (q dd) (tail content))))
-      (else (list->sxml ele level level-init))))
+      (else (list->sxml e level level-init))))
 
   (define (ascend-proc env level-init)
     (l (e level)
@@ -106,7 +106,8 @@
         (if result (list result #f level) (list #f #t (+ 1 level))))))
 
   (define* (parsed-its->html-sxml a env #:optional (level-init 0))
-    "a translator for parsed-its. (does not depend on docl)"
+    "list environment [integer] -> sxml
+    a translator for parsed-its. does not depend on docl"
     (add-paragraphs
       (map
         (l (e)
@@ -121,8 +122,7 @@
     (docl-its-parsed->html-sxml input #:optional bindings keep-prev-bindings
       (env docl-its-html-sxml-env)
       (level-init 0))
-    "list [symbol-hashtable/boolean boolean environment integer] -> sxml
-    translate parsed"
+    "list [symbol-hashtable/boolean boolean environment integer] -> sxml"
     (docl-translate-any input
       (l (input) (parsed-its->html-sxml input env (or (docl-env-ref (q indent-depth)) level-init)))
       bindings keep-prev-bindings))
