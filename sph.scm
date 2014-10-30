@@ -28,14 +28,6 @@
     define-syntax-rules
     display-line
     each
-    error-data
-    error-data-p
-    error-name
-    error-name-p
-    error-origin
-    error-origin-p
-    error?
-    error?-p
     every
     first
     fold
@@ -45,8 +37,6 @@
     l*
     lambda*
     let
-    make-error
-    make-error-p
     pair
     pairs
     par-let
@@ -64,7 +54,6 @@
   (import
     (ice-9 pretty-print)
     (ice-9 threads)
-    (srfi srfi-9)
     (except (rnrs base) let)
     (only (guile)
       define-syntax
@@ -194,14 +183,4 @@
     ((name (wrap-name ...) expr ...) (define name (compose-s (wrap-name ...) expr ...)))
     ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
-  (define (display-line arg) (display arg) (newline))
-
-  (define-record-type error (make-error origin name data)
-    error? (origin error-origin) (name error-name) (data error-data))
-
-  (define (make-error-p a b c) "make-error as a procedure for calling it from c" (make-error a b c))
-  (define (error-origin-p a) (error-origin a))
-  (define (error-name-p a) (error-name a))
-  (define (error-data-p a) (error-data a))
-  (define (error?-p a) (error? a))
-  (define (exit-on-error a) (if (error? a) (begin (debug-log a) (exit -1)) a)))
+  (define (display-line arg) (display arg) (newline)))
