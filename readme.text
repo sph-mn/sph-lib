@@ -5,6 +5,6 @@ installation
   \##
     su root
     ./exec/install
-  or set the installation prefix (the default is /usr)
+  or set the installation prefix (the default is /)
   \##
-    ./exec/install /usr/local
+    ./exec/install /tmp
