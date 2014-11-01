@@ -1,4 +1,4 @@
-;a generic socket-based server using a thread-pool for request processing
+;a generic socket-based server that uses a thread-pool for request processing
 
 (library (sph server)
   (export

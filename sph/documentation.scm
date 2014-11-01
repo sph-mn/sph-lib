@@ -1,20 +1,17 @@
-#;((sph documentation) - retrieve or display documentation information from guile scheme libraries
-written for the guile scheme interpreter
-Copyright (C) 2010-2014 sph <tantalum@online.de> (current maintainer)
+; (sph documentation) - retrieve or display documentation from guile scheme libraries
+; written for the guile scheme interpreter
+; Copyright (C) 2010-2014 sph <sph@posteo.eu>
+; This program is free software; you can redistribute it and/or modify it
+; under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 3 of the License, or
+; (at your option) any later version.
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+; GNU General Public License for more details.
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, see <http://www.gnu.org/licenses/>.
------------------------)
 (library (sph documentation)
   (export
     binding-info-layout
@@ -80,15 +77,13 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
     (record binding-info-layout name
       (q procedure) (procedure-documentation proc) (procedure-arguments proc)))
 
-  (define (macro->binding-info macro name)
-    "macro-variable -> vector"
+  (define (macro->binding-info macro name) "macro-variable -> vector"
     (let (transformer (macro-transformer macro))
       (record binding-info-layout name
         (q syntax) (procedure-documentation transformer)
         (macro-arguments name (procedure-property transformer (q macro-type)) transformer))))
 
-  (define (variable->binding-info name value)
-    "string any -> vector"
+  (define (variable->binding-info name value) "string any -> vector"
     (record binding-info-layout name (q variable) #f (and doc-include-variable-values value)))
 
   (define module-binding-info
@@ -181,7 +176,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
                 "")
               (lines->docstring text-lines its-indent))))
         its-indent "type: " (symbol->string (doc-type bi))))
-    format-module-documentation (l (module-name md) "any (string ...) -> string" (string-join md "\n"))
+    format-module-documentation
+    (l (module-name md) "any (string ...) -> string" (string-join md "\n"))
     format-modules-documentation (l (mds) "(string ...) -> string" (apply string-append mds)))
 
   (define-as documentation-display-formats symbol-alist
@@ -190,9 +186,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
   (define* (format-module-documentation module-names #:optional (format-handler-name (q default)))
     "((symbol ...) ...)/(symbol ...) symbol ->
     output documentation for a list of module-names. format-handler-name can currently either be
-    default, plaintext
-    sisml: formatted with sisml markup
-    dokuwiki: formatted with dokuwiki markup"
+    default, plaintext, its, dokuwiki"
     (let
       ( (format-handler
           (or (assoc-ref documentation-display-formats format-handler-name)

@@ -21,14 +21,7 @@
     (only (sph list) insert-second)
     (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
-    (only (sph tree)
-      flatten
-      tree-transform-with-state
-      tree-fold-reverse-with-level))
-
-  (define-syntax-rule (with-level a-level expr)
-    (begin (docl-env-set! (q indent-depth) a-level)
-      (first-as-result expr (docl-env-set! (q indent-depth) #f))))
+    (only (sph tree) flatten tree-transform-with-state))
 
   (define docl-its-html-sxml-env-module-names
     (pair (q (sph lang docl env its-to-html-sxml)) docl-default-env-module-names))
@@ -57,7 +50,10 @@
       ( (indent-expr)
         (call-for-eval level
           (l () ((module-ref env (string->symbol (first content))) (tail content)))))
-      ((association) (list (q dl) (list (q dt) (let (e (first content)) (if (string? e) (string-append e ":") e))) (pair (q dd) (tail content))))
+      ( (association)
+        (list (q dl)
+          (list (q dt) (let (e (first content)) (if (string? e) (string-append e ":") e)))
+          (pair (q dd) (tail content))))
       (else (list->sxml e level level-init))))
 
   (define (ascend-proc env level-init)
@@ -67,8 +63,7 @@
           (ascend-expr->sxml prefix content e env level level-init))
         (- level 1))))
 
-  (define (call-for-eval level c) (docl-env-set! (q indent-depth) (- level 1))
-    (let (r (c)) (docl-env-set! (q indent-depth) #f) r))
+  (define (call-for-eval level c) (docl-env-set! (q indent-depth) level) (c))
 
   (define (descend-expr->sxml a re-descend level env)
     (case (first a)
@@ -102,8 +97,8 @@
 
   (define (descend-proc env level-init)
     (l (a re-descend level)
-      (let (result (descend-expr->sxml a re-descend level env))
-        (if result (list result #f level) (list #f #t (+ 1 level))))))
+      (let (r (descend-expr->sxml a re-descend level env))
+        (if r (list r #f level) (list #f #t (+ 1 level))))))
 
   (define* (parsed-its->html-sxml a env #:optional (level-init 0))
     "list environment [integer] -> sxml

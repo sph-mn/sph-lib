@@ -1,3 +1,5 @@
+;text based user interaction
+
 (library (sph user-cli)
   (export
     user-cli-choice
