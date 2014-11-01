@@ -15,6 +15,7 @@
     (only (rnrs bytevectors) bytevector-copy! bytevector=?))
 
   (define (f32vector-copy a)
+    "http://lists.gnu.org/archive/html/bug-guile/2014-10/msg00024.html"
     (let ((r (make-f32vector (f32vector-length a))))
       (bytevector-copy! a 0 r 0 (* 4 (f32vector-length a))) r))
 

@@ -63,7 +63,7 @@
           (ascend-expr->sxml prefix content e env level level-init))
         (- level 1))))
 
-  (define (call-for-eval level c) (docl-env-set! (q indent-depth) level) (c))
+  (define (call-for-eval level c) (docl-env-set! (q indent-depth) level) (let (r (c)) (docl-env-set! (q indent-depth) #f) r))
 
   (define (descend-expr->sxml a re-descend level env)
     (case (first a)
