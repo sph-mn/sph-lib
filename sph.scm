@@ -65,6 +65,7 @@
       syntax->datum
       LC_ALL
       set-port-encoding!
+      read-disable
       exit
       setlocale
       string=
@@ -91,6 +92,7 @@
   ;this should not be here, because it may overwrite the users preference.
   ;  it sets the depth of backtraces which are printed on error.
   (debug-set! depth 4)
+  (read-disable (quote square-brackets))
 
   (define (debug-log . args)
     "writes all arguments to standard-output and results in the first argument"
