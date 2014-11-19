@@ -3,6 +3,7 @@
 (library (sph error)
   (export
     error-create
+    error-create-p
     error-data
     error-exit
     error-false
@@ -18,6 +19,8 @@
 
   (define-record-type error (error-create origin name data)
     error? (origin error-origin) (name error-name) (data error-data))
+
+  (define (error-create-p . a) (apply error-create a))
 
   (define (error-false a)
     "any -> any

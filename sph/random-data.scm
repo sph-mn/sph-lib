@@ -19,12 +19,13 @@
 
   (define* (random max-value #:optional (min-value 0) (state random-state))
     "integer [integer random-state] -> integer
-    create an integer between min-value and max-value inclusively"
+    create a number between min-value and max-value.
+    if the result number is an integer or real number depends on the type of the given max-value"
     (+ min-value (primitive-random (- max-value min-value) state)))
 
   (define* (random-list list-length #:optional (max-value 255) (min-value 0) (state random-state))
     "integer integer integer random-state -> (integer ...)
-    create a list of integers with random-integer"
+    create a list of numbers using \"random\""
     (n-times-map list-length (l (n) (random max-value min-value state))))
 
   (define*

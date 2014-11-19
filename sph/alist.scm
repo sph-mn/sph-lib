@@ -11,6 +11,7 @@
 ; GNU General Public License for more details.
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
+
 (library (sph alist)
   (export
     alist
@@ -48,16 +49,16 @@
       (assoc-set! alist-set!)))
 
   (define list->alist
-    (let (proc (l (ele alt prev res) (if alt (list #f #f (acons prev ele res)) (list #t ele res))))
+    (let (proc (l (e alt prev r) (if alt (list #f #f (acons prev e r)) (list #t e r))))
       (lambda (lis)
         "-> alist
         create an association list from the given arguments,
         mapping each list element alternating to a key and value."
         (if (null? lis) lis
-          (let (res (fold-multiple proc (tail lis) #t (first lis) (list)))
+          (let (r (fold-multiple proc (tail lis) #t (first lis) (list)))
             (reverse!
-              (if (first res) (cons (list (list-ref res 1)) (first (tail (tail res))))
-                (first (tail (tail res))))))))))
+              (if (first r) (pair (list (list-ref r 1)) (first (tail (tail r))))
+                (first (tail (tail r))))))))))
 
   (define* (list->group-alist lis #:optional (accessor identity))
     "group elements in list by an attribute of its elements.
@@ -67,10 +68,10 @@
         (list->group-alist ((1 3) (2 5) (2 6)) first) -> ((1 . 3) (2 . (5 6)))"
     (reverse!
       (fold
-        (l (ele groups)
-          (let* ((key (accessor ele)) (value (alist-ref groups key)))
-            (if value (alist-set! groups key (cons ele value))
-              (set! groups (alist-cons key (list ele) groups)))
+        (l (e groups)
+          (let* ((key (accessor e)) (value (alist-ref groups key)))
+            (if value (alist-set! groups key (pair e value))
+              (set! groups (alist-cons key (list e) groups)))
             groups))
         (list) lis)))
 
@@ -87,7 +88,7 @@
   (define (alist . key/value)
     "key/value ... -> alist
     create an association list from the given arguments,
-    mapping each argument alternatingly key and value.
+    mapping each argument alternatingly to key and value.
     (alist (quote a) 1 \"b\" 2 (quote c) 3)"
     (list->alist key/value))
 
@@ -98,39 +99,37 @@
 
   (define-syntax-rule (bindings->alist identifier ...)
     ;create an alist with keys named like the identifiers and values from identified variables
-    (list (cons (quote identifier) identifier) ...))
+    (list (pair (quote identifier) identifier) ...))
 
   (define (set-alist-bindings! alist)
     "for each alist part, set a variable named like alist-part-key to alist-part-value"
-    (primitive-eval (cons (q begin) (map (l (ele) (list (q set!) (first ele) (tail ele))) alist))))
+    (primitive-eval (pair (q begin) (map (l (e) (list (q set!) (first e) (tail e))) alist))))
 
-  (define (alist-cond arg alist)
+  (define (alist-cond a alist)
     "any ((procedure:{any -> any/false} alist-tail ...) ...) -> alist-tail/false
     like a cond expression but with an alist for the test conditions where the tail of the alist is returned for which the test suceeds."
     (let next ((cur (first alist)) (rest (tail alist)))
-      (if (null? rest) (if ((first cur) arg) (tail cur) #f)
-        (if ((first cur) arg) (tail cur) (next (first rest) (tail rest))))))
+      (if (null? rest) (if ((first cur) a) (tail cur) #f)
+        (if ((first cur) a) (tail cur) (next (first rest) (tail rest))))))
 
   (define-syntax-rule (alist-keys alist)
     ;get all keys of an alist as a list
     (map first alist))
 
-  (define (alist-map proc arg) "procedure:{key value -> any} list -> list"
-    (map (l (ele) (proc (first ele) (tail ele))) arg))
+  (define (alist-map proc a) "procedure:{key value -> any} list -> list"
+    (map (l (e) (proc (first e) (tail e))) a))
 
   (define (alist-merge alist-1 alist-2)
     "list list -> list
-    add and overwrite entries"
-    ;"build new alist, preferring entries of list-2"
-    ;remove duplicate entries from list-1, append list-2 to list-1
-    (append (filter (l (ele) (not (alist-ref alist-2 (first ele)))) alist-1) alist-2))
+    create a new alist with the associations of both alists, preferring entries of list-2"
+    (append (filter (l (e) (not (alist-ref alist-2 (first e)))) alist-1) alist-2))
 
   (define (alist-update alist-1 alist-2)
     "list list -> list
-    update existing entries of alist-1 with corresponding key-values of alist-2"
+    update existing entries of alist-1 with corresponding entries of alist-2"
     (map
       (l (pair-1)
-        ( (l (value) (if value (cons (first pair-1) value) pair-1))
+        ( (l (value) (if value (pair (first pair-1) value) pair-1))
           (alist-ref alist-2 (first pair-1))))
       alist-1))
 
@@ -139,6 +138,5 @@
   (define (alistq-select alist keys) (map (l (key) (alistq-ref alist key)) keys))
   (define (alistv-select alist keys) (map (l (key) (alistv-ref alist key)) keys))
 
-  (define (list-alist? arg)
-    "return #t if list is an association list, false otherwise. works only on lists."
-    (every pair? arg)))
+  (define (list-alist? a)
+    "return #t if list is an association list, false otherwise. works only on lists" (every pair? a)))

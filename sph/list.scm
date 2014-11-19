@@ -386,7 +386,8 @@
   (define (fold-multiple proc a . r)
     "{any ... -> list} list any ... -> list
     {previous-result-values ... -> list}
-    apply proc to the elements of a with list elements from a previous call or values of init as arguments."
+    like fold but with multiple state values.
+    apply proc to the elements of \"a\" with list elements that were the result of the previous call or given init arguments if it is the first call"
     (if (null? a) r (apply fold-multiple proc (tail a) (apply proc (first a) r))))
 
   (define (fold-multiple-right proc a . r) ""
@@ -394,7 +395,7 @@
 
   (define (fold-segments proc len init a)
     "integer {any:state element ... -> any:state} any:state list -> any
-    fold over each overlapping segment of length len"
+    fold over each overlapping segment of length \"len\""
     (let loop ((rest a) (buf (list)) (r init) (count len))
       (if (null? rest) (if (null? buf) r (apply proc r buf))
         (if (< count 1)
@@ -403,7 +404,7 @@
 
   (define (fold-unless proc stop? default init . a)
     "{any any -> any} {any -> boolean} any any list ... -> any
-    like fold, until stop? evaluates to true, then return default."
+    like fold, but returns \"default\" if stop? evaluates to true"
     (if (any null? a) init
       (apply fold-unless-check-init proc
         stop? default (apply proc (append (map first a) (list init))) (map tail a))))
@@ -421,7 +422,7 @@
 
   (define (group-successive filter-proc a)
     "{any -> boolean} list -> list
-    wrap multiple, sucessive elements matching filter-proc in a list."
+    wrap multiple, sucessive elements matching filter-proc in a list"
     (map-successive filter-proc (l args args) a))
 
   (define (improper-list-split-at-last a)
@@ -662,6 +663,8 @@
     (if (null? a) init (apply pair-fold-multiple proc (tail a) (apply proc a init))))
 
   (define (pair-map proc a)
+    "like map but not the list elements are passed to \"proc\" but the pairs of the list.
+    lists are made of pairs, for example (1 2 3) is just another notation for (1 . (2 . (3 . ())))"
     (let loop ((rest a)) (if (null? rest) (list) (pair (proc rest) (loop (tail rest))))))
 
   (define (pair-reverse a)
