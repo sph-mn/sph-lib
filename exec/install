@@ -1,5 +1,7 @@
 #!/bin/sh
 
 t=$1/usr/share/guile/site
-mkdir -p $t
-cp -rt $t sph sph.scm
+mkdir -p $t &&
+    cp -rt $t sph sph.scm &&
+    find $t/sph* -type f -exec chmod 644 {} \; &&
+    find $t/sph* -type d -exec chmod 755 {} \;
