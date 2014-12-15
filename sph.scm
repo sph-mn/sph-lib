@@ -82,6 +82,7 @@
       second
       every
       first
+      last
       fold
       fold-right)
     (only (srfi srfi-2) and-let*))

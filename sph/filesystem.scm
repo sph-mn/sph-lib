@@ -16,6 +16,7 @@
     fold-directory-tree
     get-unique-target-path
     is-directory?
+    last
     merge-files
     mtime-difference
     path->full-path
@@ -93,28 +94,28 @@
     (let
       ( (filter-proc (if (null? filter-proc) (list (negate dir-ref?)) filter-proc))
         (port (if (string? directory) (opendir directory) directory)))
-      (stream-let next ((e (readdir port)))
+      (stream-let loop ((e (readdir port)))
         (if (eof-object? e) (begin (closedir port) stream-null)
-          (if (every (l (proc) (proc e)) filter-proc) (stream-cons e (next (readdir port)))
-            (next (readdir port)))))))
+          (if (every (l (proc) (proc e)) filter-proc) (stream-cons e (loop (readdir port)))
+            (loop (readdir port)))))))
 
   (define (directory-tree-paths path . filter-list)
     "-> (full-path ...)
     string procedure ... -> (string ...)
-    results in a list of all paths under path"
+    results in a list of all paths under path, excluding path"
     (let* ((dir (opendir path)) (full-path (l (filename) (string-append path "/" filename))))
-      (let next ((filename (readdir dir)) (directory-paths (list)) (other-paths (list)))
+      (let loop ((filename (readdir dir)) (directory-paths (list)) (other-paths (list)))
         (if (eof-object? filename)
           (if (null? directory-paths) other-paths
             (append other-paths (append-map directory-tree-paths directory-paths)))
           (if
             (or (string= "." filename) (string= ".." filename)
               (any (l (filter) (filter filename)) filter-list))
-            (next (readdir dir) directory-paths other-paths)
+            (loop (readdir dir) directory-paths other-paths)
             (let ((cur-path (full-path filename)))
               (if (and (file-exists? cur-path) (equal? (q directory) (stat:type (stat cur-path))))
-                (next (readdir dir) (pair cur-path directory-paths) (pair cur-path other-paths))
-                (next (readdir dir) directory-paths (pair cur-path other-paths)))))))))
+                (loop (readdir dir) (pair cur-path directory-paths) (pair cur-path other-paths))
+                (loop (readdir dir) directory-paths (pair cur-path other-paths)))))))))
 
   (define (dotfile? name) "string -> boolean
     checks if name is non-empty and begins with a dot"
@@ -204,9 +205,9 @@
           (string-append target-path "." (seconds->iso-date-string (stat:mtime (stat target-path)))))
         (if (file-exists? new-target-path)
           (let (fn-add-count (l (a count) (string-append a "." (number->string count 32))))
-            (let next ((t (fn-add-count new-target-path 2)) (next-count 3))
+            (let loop ((t (fn-add-count new-target-path 2)) (loop-count 3))
               (if (file-exists? t)
-                (next (fn-add-count new-target-path next-count) (+ 1 next-count)) t)))
+                (loop (fn-add-count new-target-path loop-count) (+ 1 loop-count)) t)))
           new-target-path))
       target-path))
 
