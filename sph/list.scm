@@ -608,7 +608,7 @@
     "{any ... -> any} integer list
     call proc with each slice-length number of successive elements of a"
     (let loop ((rest a) (slice (list)) (slice-ele-length 0) (r (list)))
-      (if (null? rest) (if (null? slice) r (pair (apply proc (reverse slice)) r))
+      (if (null? rest) (reverse (if (null? slice) r (pair (apply proc (reverse slice)) r)))
         (if (= slice-length slice-ele-length)
           (loop (tail rest) (list (first rest)) 1 (pair (apply proc (reverse slice)) r))
           (loop (tail rest) (pair (first rest) slice) (+ 1 slice-ele-length) r)))))
