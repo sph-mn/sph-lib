@@ -152,10 +152,10 @@
       (l (in out) (apply process-create-chain-with-pipes input out args)
         (close out) (port->string in))))
 
-  (define (shell-eval+check-result name options)
+  (define (shell-eval+check-result name . options)
     "string (string ...) -> boolean
     execute command, check exit-status and return true if it is zero, false otherwise."
-    (let ((status (status:exit-val (apply system* (cons name options)))))
+    (let ((status (status:exit-val (apply system* (pair name options)))))
       (true? (and status (= status 0)))))
 
   (define-syntax-rule (type-path? arg) (eq? (q path) arg))

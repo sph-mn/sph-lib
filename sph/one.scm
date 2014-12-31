@@ -1,23 +1,21 @@
-#;((sph one) - example implementations of various procedures
-written for the guile scheme interpreter
-Copyright (C) 2010-2014 sph <tantalum@online.de> (current maintainer)
+; (sph one) - various procedures
+; written for the guile scheme interpreter
+; Copyright (C) 2010-2014 sph <sph@posteo.eu>
+; This program is free software; you can redistribute it and/or modify it
+; under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 3 of the License, or
+; (at your option) any later version.
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+; GNU General Public License for more details.
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, see <http://www.gnu.org/licenses/>.
------------------------)
 (library (sph one)
   (export
     alist->regexp-match-replacements
+    apply-values
     apply-without-arguments
     bytevector-append
     bytevector-contains?
@@ -26,6 +24,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
     call-at-interval-w-state
     call-with-pipe
     call-with-working-directory
+    cli-option
     define-string
     each-u8
     eq-any?
@@ -38,17 +37,16 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
     exception->key
     exception->string
     first-as-result
+    if-exception
     in-between?
     in-range?
     integer->bytevector
-    apply-values
     limit
     limit-max
     limit-min
     n-times
     n-times-accumulate
     number->integer-string
-    cli-option
     pass
     procedure->cached-procedure
     procedure->temporarily-cached-procedure
@@ -297,10 +295,6 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
     ;passing a to predicate and eventually handler.
     (cond ((predicate a) (handler a)) ... else))
 
-  #;(define-syntax-rules false-if-exception
-((expr) (catch #t (l () expr) (l exc #f)))
-((keys expr) (catch keys (l () expr) (l exc #f))))
-
   (define-syntax-rule (exception->key expr) (catch #t (l () expr) (l (key . args) key)))
 
   (define-syntax-rules quote-odd
@@ -351,4 +345,5 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
     ;result in an exception string created by exception->string if any exception occurs
     (catch #t (l () expr) exception->string))
 
+  (define-syntax-rule (if-exception expr consequent) (catch #t (l () expr) (l exc consequent)))
   (define socket-bind bind))
