@@ -74,7 +74,7 @@
           (if names (pair (symbol->string name/pattern) (if (list? names) names (list names)))
             (list (symbol->string name/pattern))))
         "|")
-      (if value-required " arg" (if value-optional " [arg]" ""))
+      (if value-required " value" (if value-optional " [value]" ""))
       (if description (string-append help-text-line-description-delimiter description) "")))
 
   (define*
@@ -120,7 +120,7 @@
       (display
         (string-append
           (identity-if (alist-ref config (q help-arguments)) (config->usage-text config spec))
-          (if text (string-append "\n\n" text "\n") "") "\navailable options\n"
+          (if text (string-append "\n" text "\n") "") "\navailable options\n"
           (options->help-text (remove unnamed-option? spec)) "\n"))
       (exit 0)))
 
