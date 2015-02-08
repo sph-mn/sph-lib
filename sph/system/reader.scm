@@ -89,7 +89,7 @@
 
   (define (sph-read-sharp-token-readers)
     (pairs hash-bang boolean
-      (map standard-token-reader (ql scsh-block-comment character number+radix keyword vector))))
+      (map standard-token-reader (ql srfi62-sexp-comment character number+radix keyword vector))))
 
   (define (sph-read-token-readers)
     (pair read-paren-expr
