@@ -131,14 +131,13 @@
       ";___i<arguments.length;___i+=1){" rest-formal ".push(" (es-ref (q arguments) (q ___i)) ")" "}"))
 
   (define (es-set-nc! . name/value)
-    (string-join (reverse (map-slice 2 (l (name value) (string-append name "=" value)) name/value))
+    (string-join (map-slice 2 (l (name value) (string-append name "=" value)) name/value)
       ";"))
 
   (define (es-set! . name/value)
     (string-join
-      (reverse
-        (map-slice 2 (l (name value) (string-append (es-identifier name) "=" (es-value value)))
-          name/value))
+      (map-slice 2 (l (name value) (string-append (es-identifier name) "=" (es-value value)))
+          name/value)
       ";"))
 
   (define-as es-escape-single-char alist

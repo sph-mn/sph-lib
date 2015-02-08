@@ -154,8 +154,8 @@
 
   (define (shell-eval+check-result name . options)
     "string (string ...) -> boolean
-    execute command, check exit-status and return true if it is zero, false otherwise."
-    (let ((status (status:exit-val (apply system* (pair name options)))))
+    execute command with system*, check exit-status and return true if it is zero, false otherwise."
+    (let ((status (status:exit-val (apply system* name options))))
       (true? (and status (= status 0)))))
 
   (define-syntax-rule (type-path? arg) (eq? (q path) arg))
