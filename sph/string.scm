@@ -127,7 +127,7 @@
       (string-fold-right
         (l (e prev)
           (let ((info (assoc e spec)))
-            (if (and info (not (null? info))) (append (tail info) prev) (cons e prev))))
+            (if (and info (not (null? info))) (append (tail info) prev) (pair e prev))))
         (list) str)))
 
   (define (string-quote str) "string -> string"
@@ -154,15 +154,15 @@
         (l (get-substring init-parts)
           (if (null? matches) (list str)
             (let next ((rest (tail matches)) (parts (list init-parts)) (prev (first matches)))
-              (if (null? rest) (reverse (cons (substring str (match:end prev)) parts))
-                (next (tail rest) (cons (get-substring (first rest) prev) parts) (first rest)))))))))
+              (if (null? rest) (reverse (pair (substring str (match:end prev)) parts))
+                (next (tail rest) (pair (get-substring (first rest) prev) parts) (first rest)))))))))
 
   (define (string-skip-string a skip)
     (let (skip-length (string-length skip))
-      (let next ((res #f) (prev (string-contains a skip)))
-        (if (and prev (or (not res) (= (- prev skip-length) res)))
+      (let next ((r #f) (prev (string-contains a skip)))
+        (if (and prev (or (not r) (= (- prev skip-length) r)))
           (next prev (string-contains a skip (+ skip-length prev)))
-          (if res (min (- (string-length a) 1) (+ 1 skip-length res)) res)))))
+          (if r (min (- (string-length a) 1) (+ 1 skip-length r)) r)))))
 
   (define (string-trim-string a trim)
     (let (skip-index (string-skip-string a trim))
@@ -178,11 +178,11 @@
     result in a list of indices at which search-string occurs in a"
     (let ((str-length (string-length search-string)) (a-length (string-length a)))
       (reverse
-        (let next ((index (string-contains a search-string)) (res (list)))
+        (let next ((index (string-contains a search-string)) (r (list)))
           (if index
-            (if (= index a-length) (cons index res)
-              (next (string-contains a search-string (+ index (max 1 str-length))) (cons index res)))
-            res)))))
+            (if (= index a-length) (pair index r)
+              (next (string-contains a search-string (+ index (max 1 str-length))) (pair index r)))
+            r)))))
 
   (define (string-replace-string a replace replacement)
     "string string string -> string
@@ -198,21 +198,21 @@
             (replacement-length (string-length replacement)) (a-length (string-length a)))
           ;calculate result string size and create result string
           (let
-            ((res-length (+ a-length (* (length indices) (- replacement-length replace-length)))))
-            (let (res (make-string res-length))
+            ((r-length (+ a-length (* (length indices) (- replacement-length replace-length)))))
+            (let (r (make-string r-length))
               ;each match index, copy characters before match-end to the result string
               (let next
-                ((res-index 0) (prev-index 0) (cur-index (first indices)) (rest (tail indices)))
-                (string-copy! res res-index a prev-index cur-index)
-                (let (res-index (- res-index (- prev-index cur-index)))
-                  (string-copy! res res-index replacement)
-                  (if (null? rest)
+                ((r-index 0) (prev-index 0) (cur-index (first indices)) (rest (tail indices)))
+                (string-copy! r r-index a prev-index cur-index)
+                (let (r-index (- r-index (- prev-index cur-index)))
+                  (string-copy! r r-index replacement)
+                  (if (null? rt)
                     (begin
                       (if (< (+ cur-index replace-length) a-length)
-                        (string-copy! res (+ res-index replacement-length)
+                        (string-copy! r (+ r-index replacement-length)
                           a (+ cur-index replace-length) a-length))
-                      res)
-                    (next (+ res-index replacement-length) (+ cur-index replace-length)
+                      r)
+                    (next (+ r-index replacement-length) (+ cur-index replace-length)
                       (first rest) (tail rest)))))))))))
 
   (define (string-replace-char a char replacement) "string character character -> string"

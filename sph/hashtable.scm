@@ -28,6 +28,8 @@
     hashtable-copy-empty
     hashtable-each
     hashtable-each-key
+    hashtable-map
+    hashtable-map!
     hashtable-fold
     hashtable-invert
     hashtable-invert!
@@ -110,6 +112,14 @@
     "procedure:{key value state -> state} any hashtable -> list"
     (let-values (((keys values) (hashtable-entries arg)))
       (fold proc init (vector->list keys) (vector->list values))))
+
+  (define (hashtable-map! proc a)
+    (hashtable-each (l (k v) (hashtable-set! a k (proc k v))) a))
+
+  (define (hashtable-map proc arg)
+    "procedure:{key value -> value} hashtable -> hashtable
+    set a new value for every key value association in hash"
+    (hashtable-map! proc (hashtable-copy arg)))
 
   (define (hashtable-make-immutable a)
     "hashtable -> hashtable
