@@ -87,11 +87,13 @@
                 read)
               env))))
       ( (indent-scm-expr)
-        ;display converts a string-list to a scheme-expression with symbols. flatten is used to ignore the indent-tree nesting
         (call-for-eval level
           (l ()
             (eval
-              (string->datum (call-with-output-string (l (port) (display (flatten (tail a)) port))))
+              (string->datum
+                (call-with-output-string (l (port)
+                    ;display converts a string-list to a scheme-expression with symbols. flatten is used to ignore the indent-tree nesting
+                    (display (flatten (tail a)) port))))
               env))))
       (else #f)))
 
@@ -117,7 +119,8 @@
     (docl-its-parsed->html-sxml input #:optional bindings keep-prev-bindings
       (env docl-its-html-sxml-env)
       (level-init 0))
-    "list [symbol-hashtable/boolean boolean environment integer] -> sxml"
+    "list [symbol-hashtable/boolean boolean environment integer] -> sxml
+    this can also be used to convert list trees with strings to html"
     (docl-translate-any input
       (l (input) (parsed-its->html-sxml input env (or (docl-env-ref (q indent-depth)) level-init)))
       bindings keep-prev-bindings))

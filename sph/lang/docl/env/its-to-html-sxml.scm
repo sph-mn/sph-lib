@@ -52,8 +52,7 @@
           (list) a))))
 
   (define (add-paragraphs a)
-    "creates an unordered list from lines
-    removes empty list elements, unneccessary nesting, and wraps lists that do not have a symbol as the first element
+    "removes empty list elements, unneccessary nesting, and wraps lists that do not have a symbol as the first element
     with <p>"
     (fold-right
       (l (e r)

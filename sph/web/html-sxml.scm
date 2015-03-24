@@ -24,7 +24,7 @@
   (define (html-sxml-include-style path) "string -> sxml"
     (qq (link (@ (rel "stylesheet") (type "text/css") (href (unquote path))))))
 
-  (define (html-sxml-hyperlink name value) (qq (a (@ (href (unquote value))) (unquote name))))
+  (define* (html-sxml-hyperlink name #:optional (value name)) (qq (a (@ (href (unquote value))) (unquote name))))
 
   (define (html-sxml-alist->options arg) "((content . value/false) ...) -> list"
     (map
