@@ -197,8 +197,7 @@
           ( (replace-length (string-length replace))
             (replacement-length (string-length replacement)) (a-length (string-length a)))
           ;calculate result string size and create result string
-          (let
-            ((r-length (+ a-length (* (length indices) (- replacement-length replace-length)))))
+          (let ((r-length (+ a-length (* (length indices) (- replacement-length replace-length)))))
             (let (r (make-string r-length))
               ;each match index, copy characters before match-end to the result string
               (let next
@@ -206,7 +205,7 @@
                 (string-copy! r r-index a prev-index cur-index)
                 (let (r-index (- r-index (- prev-index cur-index)))
                   (string-copy! r r-index replacement)
-                  (if (null? rt)
+                  (if (null? rest)
                     (begin
                       (if (< (+ cur-index replace-length) a-length)
                         (string-copy! r (+ r-index replacement-length)
