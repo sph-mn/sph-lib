@@ -186,4 +186,4 @@
     ((name (wrap-name ...) expr ...) (define name (compose-s (wrap-name ...) expr ...)))
     ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
-  (define (display-line arg) (display arg) (newline)))
+  (define (display-line a) (display a) (newline)))

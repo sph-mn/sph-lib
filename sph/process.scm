@@ -1,12 +1,12 @@
 (library (sph process)
   (export
     execlp-new-process
-    execute-and
     execute
-    shell-eval
+    execute+check-result
+    execute-and
     execute-with-output-to-file
-    execute-with-pipe
     execute-with-output-to-string
+    execute-with-pipe
     primitive-process-create-chain-with-pipes
     process-chain-finished-successfully?
     process-create
@@ -19,6 +19,7 @@
     process-replace-without-search
     process-replace-without-search-with-environment
     process-set-standard-ports
+    shell-eval
     shell-eval+check-result
     shell-eval->string)
   (import
@@ -152,11 +153,16 @@
       (l (in out) (apply process-create-chain-with-pipes input out args)
         (close out) (port->string in))))
 
-  (define (shell-eval+check-result name . options)
+  (define (execute+check-result name . options)
     "string (string ...) -> boolean
     execute command with system*, check exit-status and return true if it is zero, false otherwise."
     (let ((status (status:exit-val (apply system* name options))))
       (true? (and status (= status 0)))))
+
+  (define (shell-eval+check-result command-str)
+    "string -> boolean
+    execute command with system, check exit-status and return true if it is zero, false otherwise."
+    (let ((status (status:exit-val (system command-str)))) (true? (and status (= status 0)))))
 
   (define-syntax-rule (type-path? arg) (eq? (q path) arg))
 
