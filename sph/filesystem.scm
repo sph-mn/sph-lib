@@ -1,7 +1,7 @@
 (library (sph filesystem)
   (export
     call-with-directory
-    dir-ref?
+    directory-reference?
     directory-delete-content
     directory-list
     directory-stream
@@ -72,7 +72,7 @@
   (define (is-directory? path) "test if path exists and is a directory"
     (eqv? (q directory) (stat:type (stat path))))
 
-  (define (dir-ref? file-path)
+  (define (directory-reference? file-path)
     "string -> boolean
     test if given string designates a directory reference, either \".\" or \"..\"
     can be used as a filter to directory-listing procedures."
@@ -84,15 +84,17 @@
   (define (directory-list path . include?)
     "path procedure:{filename -> boolean} ... -> (string ...)
     return a list of filename-entries in a directory, optionally filtered by one or multiple filter procedures"
-    (call-with-directory path
-      (l (d)
-        (let loop ((e (readdir d)) (r (list)))
-          (if (eof-object? e) r (loop (readdir d) (if (every (l (p) (p e)) include?) (pair e r) r)))))))
+    (let (include? (if (null? include?) (pair (negate directory-reference?) include?) include?))
+      (call-with-directory path
+        (l (d)
+          (let loop ((e (readdir d)) (r (list)))
+            (if (eof-object? e) r
+              (loop (readdir d) (if (every (l (p) (p e)) include?) (pair e r) r))))))))
 
   (define (directory-stream directory . filter-proc)
     "string/directory-port [procedure ...] -> srfi-41-stream"
     (let
-      ( (filter-proc (if (null? filter-proc) (list (negate dir-ref?)) filter-proc))
+      ( (filter-proc (if (null? filter-proc) (list (negate directory-reference?)) filter-proc))
         (port (if (string? directory) (opendir directory) directory)))
       (stream-let loop ((e (readdir port)))
         (if (eof-object? e) (begin (closedir port) stream-null)
@@ -117,7 +119,8 @@
                 (loop (readdir dir) (pair cur-path directory-paths) (pair cur-path other-paths))
                 (loop (readdir dir) directory-paths (pair cur-path other-paths)))))))))
 
-  (define (dotfile? name) "string -> boolean
+  (define (dotfile? name)
+    "string -> boolean
     checks if name is non-empty and begins with a dot"
     (and (not (string-null? name)) (eqv? (string-ref name 0) #\.)))
 
@@ -126,8 +129,7 @@
     try to create any directories of path that do not exist"
     (or (file-exists? path) (begin (ensure-directory-structure (dirname path)) (mkdir path))))
 
-  (define (ensure-trailing-slash str)
-    "string -> string"
+  (define (ensure-trailing-slash str) "string -> string"
     (if (or (string-null? str) (not (eqv? #\/ (string-ref str (- (string-length str) 1)))))
       (string-append str "/") str))
 
@@ -193,7 +195,7 @@
                 (string-append full-path "/") #:max-depth
                 (- max-depth 1) #:before-filter before-filter)
               (proc full-path stat-info r))))
-        init (directory-stream path (l (name) (and (not (dir-ref? name)) (before-filter name)))))))
+        init (directory-stream path (l (name) (and (not (directory-reference? name)) (before-filter name)))))))
 
   (define (filename-extension a)
     (let ((r (string-split a #\.))) (if (length-greater-one? r) (last r) #f)))
@@ -284,15 +286,14 @@
               (remove-filename-extension-one (last fn-extension) name) name))
           (fold remove-filename-extension-one name fn-extensions)))))
 
- (define* (search-load-path path #:optional (load-paths %load-path))
+  (define* (search-load-path path #:optional (load-paths %load-path))
     "searches for the first match of a relative-path in load-paths.
     searches from left to right in the load-paths.
     all paths in load-paths must end with a \"/\".
     searches in guiles %load-path by default"
     (any
       (l (base-path)
-        (let (full-path (string-append base-path path))
-          (if (file-exists? full-path) full-path #f)))
+        (let (full-path (string-append base-path path)) (if (file-exists? full-path) full-path #f)))
       load-paths))
 
   (define (stat-accessor->stat-field-name a)
