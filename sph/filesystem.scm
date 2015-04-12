@@ -1,9 +1,9 @@
 (library (sph filesystem)
   (export
     call-with-directory
-    directory-reference?
     directory-delete-content
     directory-list
+    directory-reference?
     directory-stream
     directory-tree-paths
     dotfile?
@@ -105,7 +105,9 @@
     "-> (full-path ...)
     string procedure ... -> (string ...)
     results in a list of all paths under path, excluding path"
-    (let* ((dir (opendir path)) (full-path (l (filename) (string-append path "/" filename))))
+    (let*
+      ( (dir (opendir path)) (path (ensure-trailing-slash path))
+        (full-path (l (filename) (string-append path filename))))
       (let loop ((filename (readdir dir)) (directory-paths (list)) (other-paths (list)))
         (if (eof-object? filename)
           (if (null? directory-paths) other-paths
@@ -195,7 +197,9 @@
                 (string-append full-path "/") #:max-depth
                 (- max-depth 1) #:before-filter before-filter)
               (proc full-path stat-info r))))
-        init (directory-stream path (l (name) (and (not (directory-reference? name)) (before-filter name)))))))
+        init
+        (directory-stream path
+          (l (name) (and (not (directory-reference? name)) (before-filter name)))))))
 
   (define (filename-extension a)
     (let ((r (string-split a #\.))) (if (length-greater-one? r) (last r) #f)))

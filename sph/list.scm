@@ -84,6 +84,7 @@
     list-sort-by-list-with-accessor
     list-sort-with-accessor
     map-apply
+    map-map
     map-only
     map-segments
     map-slice
@@ -591,6 +592,11 @@
     "procedure:{any ...} list:(list ...)
     like map but the procedure is applied with the elements of elements as arguments"
     (apply map (l e (apply proc (apply append e))) a))
+
+  (define (map-map proc . lists)
+    "((any ...) ...) -> ((any ...) ...)
+    apply map for every list in list"
+    (apply map (l e (apply map proc e)) lists))
 
   (define (map-only filter-proc proc a)
     "procedure:{any -> any/false} procedure:{any ... -> list} list -> list

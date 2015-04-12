@@ -28,7 +28,7 @@
 
   (define-syntax-rule (join-properties arg)
     (string-join
-      (reverse (map-slice 2 (l (a b) (string-append (symbol?->string a) ":" (any->string b))) arg))
+      (map-slice 2 (l (a b) (string-append (symbol?->string a) ":" (any->string b))) arg)
       ";" (q suffix)))
 
   (define (join-rule context properties-string rules)
