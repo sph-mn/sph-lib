@@ -73,7 +73,7 @@
       (string-append (number->string (+ 1900 (tm:year t))) "-"
         (number->string (+ 1 (tm:mon t))) "-" (number->string (tm:mday t)))))
 
-  (define* (seconds->day-seconds-string a #:optional (shift 2) (decimal-places 0))
+  (define* (seconds->day-seconds-string a #:optional (shift 3) (decimal-places 2))
     (simple-format-number->string (seconds->day-seconds a) shift decimal-places))
 
   (define* (current-day-seconds-string #:optional (shift 2) (decimal-places 0))
