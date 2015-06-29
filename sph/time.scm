@@ -6,6 +6,7 @@
     current-local-time
     current-time-microseconds
     current-time-zone-utc-offset
+    daylight-savings-time?
     seconds->datetime-string
     seconds->day
     seconds->day-of-week
@@ -32,6 +33,8 @@
     "offset of the current time zone to UTC without daylight-savings-time"
     (let (local-time (localtime (current-time)))
       (- (* -1 (tm:gmtoff local-time)) (if (> (tm:isdst local-time) 0) 3600 0))))
+
+  (define (daylight-savings-time?) (> (tm:isdst (localtime (current-time))) 0))
 
   (define (current-local-time) "seconds since unix time epoch in the current time zone"
     (+ (current-time-zone-utc-offset) (current-time)))
