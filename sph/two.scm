@@ -101,6 +101,17 @@
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
 
+  (define (file-lines-fold! path proc)
+    (let
+      (r
+        (call-with-input-file path
+          (l (port) (string-join (reverse (port-lines-fold proc (list) port)) "\n"))))
+      (call-with-output-file path (l (port) (display r port)))))
+
+  (define (string-with-ignored-indent a proc)
+    (let (indent-depth (string-skip a #\space))
+      (string-append (string-multiply " " indent-depth) (proc (substring a indent-depth)))))
+
   (define* (git-archive repository-path #:optional (branch "master") #:rest additional-arguments)
     "string [string] ->
     create a compressed tar archive from the contents of a git repository without (most) git metadata.
