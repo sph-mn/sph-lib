@@ -12,7 +12,7 @@
     round-to-decimal-places
     round-to-increment
     signed-integer-binary-length
-    simple-format-number->string
+    simple-format-number
     truncate-to-decimal-places
     unsigned-integer-binary-length)
   (import
@@ -58,7 +58,7 @@
     result in the non-negative difference of two numbers"
     (abs (- n-1 n-2)))
 
-  (define* (simple-format-number->string a #:optional (decimal-point-shift 0) (decimal-places 0))
+  (define* (simple-format-number a #:optional (decimal-point-shift 0) (decimal-places 0))
     "number integer integer-> string
     number as a string, rounded to decimal places, decimal mark shifted by n steps left (the direction where the string representation of an increasing number would grow towards)"
     (if (= 0 decimal-places) (round (/ a (expt 10 decimal-point-shift)))

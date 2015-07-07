@@ -7,6 +7,7 @@
     current-time-microseconds
     current-time-zone-utc-offset
     daylight-savings-time?
+    iso-8601-date+time->seconds
     seconds->datetime-string
     seconds->day
     seconds->day-of-week
@@ -25,9 +26,25 @@
     (guile)
     (rnrs base)
     (sph)
-    (only (sph math) round-to-decimal-places simple-format-number->string))
+    (only (sph math) round-to-decimal-places simple-format-number))
 
   ;epoch is 1970-01-01 00:00:00 UTC, excluding leap seconds.
+
+  (define (parse-military-time a) "-> (hours . minutes)"
+    (pair (string->number (substring a 0 2)) (string->number (substring a 2 4))))
+
+  (define (parse-military-time->seconds a)
+    (let (a (parse-military-time a)) (+ (* 3600 (first a)) (* 60 (tail a)))))
+
+  (define (iso-8601-date+time->seconds a)
+    "string:\"yyyy-mm-ddThh:mm:ss+hhmm\" -> integer:posix-epoch-seconds"
+    ;offset is not parsed uselfully with strptime, see guile documentation.
+    (and-let*
+      ( (time (false-if-exception (first (strptime "%Y-%m-%dT%H:%M:%S%z" a))))
+        (offset (string-take-right a 4)) (offset-sign (string-ref a (- (string-length a) 5))))
+      (set-tm:gmtoff time
+        (* (if (eqv? #\- offset-sign) -1 1) (parse-military-time->seconds offset)))
+      (false-if-exception (string->number (strftime "%s" time)))))
 
   (define (current-time-zone-utc-offset)
     "offset of the current time zone to UTC without daylight-savings-time"
@@ -74,14 +91,14 @@
         (number->string (+ 1 (tm:mon t))) "-" (number->string (tm:mday t)))))
 
   (define* (seconds->day-seconds-string a #:optional (shift 3) (decimal-places 2))
-    (simple-format-number->string (seconds->day-seconds a) shift decimal-places))
+    (simple-format-number (seconds->day-seconds a) shift decimal-places))
 
   (define* (current-day-seconds-string #:optional (shift 2) (decimal-places 0))
     "defaults to local hectoseconds" (seconds->day-seconds-string (current-local-time)))
 
   (define (seconds->datetime-string a) "iso-date with appended day-hectoseconds infixed with :"
     (string-append (seconds->iso-date-string a) ":"
-      (simple-format-number->string (seconds->day-seconds a) 2)))
+      (simple-format-number (seconds->day-seconds a) 2)))
 
   (define (current-local-datetime-string) (seconds->datetime-string (current-local-time)))
   (define (current-local-iso-date-string) (seconds->iso-date-string (current-local-time)))
