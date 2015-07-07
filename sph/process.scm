@@ -4,8 +4,8 @@
     execute
     execute+check-result
     execute-and
-    execute-with-output-to-file
-    execute-with-output-to-string
+    execute->file
+    execute->string
     execute-with-pipe
     primitive-process-create-chain-with-pipes
     process-chain-finished-successfully?
@@ -125,7 +125,7 @@
     mode can be one of the guile variables OPEN_READ OPEN_WRITE OPEN_BOTH"
     (let* ((port (apply open-pipe* mode command arguments)) (r (proc port))) (close-pipe port) r))
 
-  (define (execute-with-output-to-file target-path command . command-arguments)
+  (define (execute->file target-path command . command-arguments)
     "string (string ...) string ->
     apply \"system*\" with command and command-arguments and set standard-output to a file at target-path. the file is either created or overwritten"
     (apply execute-with-pipe
@@ -137,7 +137,7 @@
                 (begin (put-u8 file octet) (loop (get-u8 program))))))))
       OPEN_READ command command-arguments))
 
-  (define (execute-with-output-to-string command . command-arguments)
+  (define (execute->string command . command-arguments)
     "string (string ...) string ->
     apply \"system*\" with command and command-arguments and result in a string for the output the program wrote to standard output"
     (apply execute-with-pipe port->string OPEN_READ command command-arguments))
