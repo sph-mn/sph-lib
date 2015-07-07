@@ -1,6 +1,6 @@
-; (sph two) - example implementations of various procedures. problem specific, circular dependent on sph-one, system dependent, or more experimental.
+; (sph two) - example implementations of various procedures. problem specific, circular dependent on sph-one, system dependent, new or more experimental.
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2014 sph <sph@posteo.eu>
+; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -54,6 +54,7 @@
     not-scm-file?
     path->mime-type
     paths-find-file-size-sum
+    plaintext->html-sxml
     port-each-line-alternate-direction
     primitive-eval-port
     prog-sync-with-root
@@ -65,6 +66,7 @@
     set-multiple-from-list!
     srfi-19-date->seconds
     string-remove-leading-zeros
+    sxml->xml-string
     system-cat-merge-files
     tail-symbols->string
     tree-replace-from-hashtable
@@ -94,9 +96,11 @@
     (sph tree)
     (srfi srfi-41)
     (srfi srfi-69)
+    (sxml simple)
     (except (rnrs hashtables) hashtable-ref)
     (except (srfi srfi-1) map)
     (only (rnrs io ports) get-bytevector-n put-bytevector)
+    (only (sph list) interleave)
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
@@ -111,6 +115,36 @@
   (define (string-with-ignored-indent a proc)
     (let (indent-depth (string-skip a #\space))
       (string-append (string-multiply " " indent-depth) (proc (substring a indent-depth)))))
+
+  (define (sxml->xml-string a) (call-with-output-string (l (b) (sxml->xml a b) b)))
+
+  (define (plaintext->html-sxml a)
+    "string -> list:sxml
+    convert double newlines to paragraphs <p> and single newlines to breaks <br>."
+    (map (l (e) (list (q p) (interleave (string-split e #\newline) (ql br))))
+      (delete "" (string-split-regexp a "\n\n"))))
+
+  (eval-when (expand load eval)
+    ;for "namespace".
+    (define (define? a) (and (list? a) (not (null? a)) (eqv? (q define) (first a))))
+    (define (add-define-name-prefix a prefix)
+      (match a
+        ( (define (name formals ...) body ...)
+          (pairs (q define) (pair (symbol-append prefix (q -) name) formals) body))
+        ((define name body ...) (pairs (q define) (symbol-append prefix (q -) name) body)))))
+
+  (define-syntax-case (namespace spec body ...) s
+    ;(symbol ...) any ...
+    ;the names of every definition with define in the top-level of the body of this expression
+    ;will be prefixed with spec joined with minus character.
+    ;example: (namespace (a b c) (define d #t) (define (e f) #t)) -> (define a-b-c-d #t) (define (a-b-c-e f) #t)
+    (let*
+      ( (name (syntax->datum (syntax spec)))
+        (name (if (symbol? name) name (string->symbol (string-join (map symbol->string name) "-")))))
+      (datum->syntax s
+        (pair (q begin)
+          (map (l (e) (if (define? e) (add-define-name-prefix e name) e))
+            (syntax->datum (syntax (body ...))))))))
 
   (define* (git-archive repository-path #:optional (branch "master") #:rest additional-arguments)
     "string [string] ->

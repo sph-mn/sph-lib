@@ -1,6 +1,6 @@
 ; (sph) - fundamental bindings for sph-lib
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2014 sph <sph@posteo.eu>
+; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -170,7 +170,7 @@
   (define-syntax-rule (par-let ((v e) ...) b0 b1 ...)
     (call-with-values (lambda () (parallel e ...)) (lambda (v ...) b0 b1 ...)))
 
-  (define-syntax-case (compose-s name expr ...) s
+ (define-syntax-case (compose-s name expr ...) s
     ;this does not fail in the case ((quasiquote list) expr ...)
     (let (name-datum (syntax->datum (syntax name)))
       (if (list? name-datum)

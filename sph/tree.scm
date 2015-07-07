@@ -1,6 +1,6 @@
 ; (sph tree) - arborescence/tree-structure processing
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2014 sph <sph@posteo.eu>
+; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -265,7 +265,7 @@
 
   (define (tree-map proc a)
     "procedure:{any -> any} list -> list
-    maps lists bottom-to-top. does not map the tree itself."
+    maps lists bottom-to-top. does not map the topmost tree structure itself."
     (map (l (e) (proc (if (list? e) (tree-map proc e) e))) a))
 
   (define (tree-map-lists proc a)

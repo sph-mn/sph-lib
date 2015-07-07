@@ -38,6 +38,7 @@
     each-slice
     each-with-index
     every-map
+    every-or-index
     filter-append-map
     filter-not
     filter-produce
@@ -85,6 +86,7 @@
     list-sort-with-accessor
     map-apply
     map-map
+    map-one
     map-only
     map-segments
     map-slice
@@ -129,7 +131,8 @@
       map
       memv
       memq
-      member)
+      member
+      negate)
     (only (rnrs sorting) list-sort)
     (only (srfi srfi-1)
       append-map
@@ -162,6 +165,11 @@
         (if (stop? cur) default
           (if (any null? rest) (append init cur)
             (loop (map tail rest) (apply proc (map first rest)) (append init cur)))))))
+
+  (define (every-or-index proc . a)
+    "procedure:{any ... -> boolean} list ... -> true/integer
+    true if predicate is true for all elements or the index of the element on which it failed."
+    (let (r (apply list-index (negate (l e (apply proc e))) a)) (if (boolean? r) (not r) r)))
 
   (define (fold-every proc init . a)
     "{any any -> any} any list ...
@@ -301,8 +309,7 @@
 
   (define (difference+intersection-p equal-proc . lists)
     "{any any -> boolean} list ... -> (list:difference list:intersection)
-    like "
-    difference+intersection " but the predicate for comparing list elements can be specified"
+    like difference+intersection but the predicate for comparing list elements can be specified"
     (let (every* (l (a b) (every (l (e-2) (any (l (e-3) (equal-proc a e-3)) e-2)) b)))
       (iterate-three
         (l (head e rest d i)
@@ -469,7 +476,7 @@
         like iterate-three but takes two additional procedures - one for stopping the iteration with the current result, and one that is called for the last element or when stop? is true"
         (loop stop? end map-proc (list) (first a) (tail a)))))
 
-  (define (iterate-with-continue proc a . states)
+ (define (iterate-with-continue proc a . states)
     "procedure:{any:element list:rest procedure:continue:{list:next-pair any:state-value ...} any:state-value ... -> any} list any:state-value ..."
     (apply
       (rec (loop rest . states)
@@ -598,11 +605,12 @@
     apply map for every list in list"
     (apply map (l e (apply map proc e)) lists))
 
-  (define (map-only filter-proc proc a)
-    "procedure:{any -> any/false} procedure:{any ... -> list} list -> list
-    apply proc only for elements that successively matched filter-proc.
-    proc is supposed to result in a list of results so multiple elements may be replaced at once."
-    (fold-span filter-proc (l (e r) (pair (apply proc e) r)) a))
+  (define (map-one match? proc a)
+    "{any -> any}:predicate {any:element -> any} list -> list
+    map the first element that matches match?"
+    (let loop ((rest a) (r (list)))
+      (if (null? rest) r
+        (let (e (first rest)) (if (match? e) (append (reverse (pair (proc e) r)) (tail rest)) (loop (tail rest) (pair e r)))))))
 
   (define (map-segments proc len a)
     "
@@ -621,19 +629,19 @@
 
   (define (map-successive filter-proc proc a)
     "{any -> boolean} {any any ... -> any} list -> list
-    call proc with with each list greater than one of elements that successively matched filter-proc."
+    call proc with with a list of elements that successively matched filter-proc. at least two elements at a time"
     (fold-span filter-proc
       (l (e r) (if (length-greater-one? e) (pair (apply proc e) r) (append e r))) a))
 
   (define (map-span filter-proc proc a)
     "procedure:{any -> any/false} procedure:{any any ... -> any} list -> list
-    apply proc with with each list of elements that successively matched filter-proc."
+    apply proc with with each list of elements that successively matched filter-proc. may be only one element at a time"
     (fold-span filter-proc (l (e r) (pair (apply proc e) r)) a))
 
   (define (map-unless proc stop? default . a)
     "procedure stop? list -> list/false
     {any -> any} {any -> boolean}
-    map unless stop? is true for a mapping-result. return a new list or default if a stop? was true."
+    map unless stop? is true for a mapping-result. return an empty list or default if stop? was true"
     (if (any null? a) (list)
       (let loop ((rest (map tail a)) (cur (apply proc (map first a))) (init (list)))
         (if (stop? cur) default

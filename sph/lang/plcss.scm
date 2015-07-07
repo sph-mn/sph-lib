@@ -1,8 +1,10 @@
 (library (sph lang plcss)
   (export
     css
+    css-style
     plcss->css
-    plcss->css-string)
+    plcss->css-string
+    plcss-element-style->css-string)
   (import
     (rnrs base)
     (sph)
@@ -28,8 +30,8 @@
 
   (define-syntax-rule (join-properties arg)
     (string-join
-      (map-slice 2 (l (a b) (string-append (symbol?->string a) ":" (any->string b))) arg)
-      ";" (q suffix)))
+      (map-slice 2 (l (a b) (string-append (symbol?->string a) ":" (any->string b))) arg) ";"
+      (q suffix)))
 
   (define (join-rule context properties-string rules)
     (if (null? context) (string-append properties-string (rules->string rules context))
@@ -74,4 +76,9 @@
 
   (define (plcss->css-string exprs) "(rule ...) -> string" (rules->string exprs (list)))
   (define (plcss->css exprs port) "(rule ...) port ->" (display (plcss->css-string exprs) port))
-  (define-syntax-rule (css rules ...) (plcss->css-string (quasiquote (rules ...)))))
+  (define-syntax-rule (css rules ...) (plcss->css-string (quasiquote (rules ...))))
+  (define (plcss-element-style->css-string a) (join-properties a))
+
+  (define-syntax-rule (css-style rules ...)
+    ;without selectors like for inline-styles in xml tag attributes
+    (join-properties (quasiquote (rules ...)))))

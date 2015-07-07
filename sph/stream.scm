@@ -4,6 +4,7 @@
   (export
     port->buffered-octet-stream
     port->line-stream
+    port->delimited-stream
     stream-any
     stream-each
     stream-first
@@ -14,6 +15,7 @@
     (rnrs base)
     (rnrs io ports)
     (sph)
+    (ice-9 rdelim)
     (srfi srfi-41)
     (only (guile) eof-object? close)
     (only (sph conditional) identity-if))
@@ -35,6 +37,9 @@
       (if (eof-object? e) stream-null (stream-cons e (next (reader port))))))
 
   (define (port->line-stream port) (port->stream port get-line))
+
+  (define* (port->delimited-stream delimiters-string port #:optional (handle-delim (q trim)))
+    (port->stream port (l (port) (read-delimited delimiters-string port handle-delim))))
 
   (define (stream-any proc stream)
     (if (stream-null? stream) #f

@@ -1,6 +1,6 @@
 ; (sph test) - automated code testing
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2014 sph <sph@posteo.eu>
+; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -49,7 +49,10 @@
     (only (sph list) fold-unless n-times-map)
     (only (sph list one) randomise)
     (only (sph one) n-times-accumulate in-range?)
-    (only (sph string) any->string any->string-write)
+    (only (sph string)
+      any->string
+      any->string-write
+      string-multiply)
     (only (sph two) list->csv-line)
     (only (srfi srfi-1) last))
 
@@ -72,8 +75,9 @@
   (define (failure-message-compact name out exp inp title index-data index-data-last)
     "symbol any any any integer integer -> unspecified"
     (let
-      ( (indent (if (and (> index-data 0) sph-test-log-success) " " ""))
-        (indent-data (if (or (not sph-test-log-success) (= index-data 0)) " " " ")))
+      ( (indent (if (and (> index-data 0) sph-test-log-success) indent-string ""))
+        (indent-data
+          (if (or (not sph-test-log-success) (= index-data 0)) indent-string indent-string)))
       (string-append (if prev-message-newline "" "\n") indent
         "failure " name
         " " (format-index-number index-data)
@@ -85,6 +89,8 @@
         (if (eq? (q undefined) exp) ""
           (string-append "\n" indent-data "exp " (any->string-write exp)))
         "\n" indent-data "out " (any->string-write out) (begin (set! prev-message-newline #t) "\n"))))
+
+  (define indent-string (string-multiply " " 2))
 
   (define (success-message-compact name title index-data index-data-last)
     (let (indent (if (> index-data 0) " " ""))
@@ -199,7 +205,10 @@
     (every
       (l (test-spec)
         (if (list? test-spec) (evaluate-test-spec-list test-spec format-display)
-          (if (symbol? test-spec) (evaluate-test-spec-symbol test-spec format-display)
+          (if (symbol? test-spec)
+            (if (eqv? (q test-stop))
+              #f
+              (evaluate-test-spec-symbol test-spec format-display))
             (throw (q syntax-error-in-test-spec)))))
       tests))
 

@@ -20,6 +20,7 @@
     string-numeric?
     string-octet-length
     string-quote
+    string-remove-prefix
     string-replace-char
     string-replace-chars
     string-replace-string
@@ -110,6 +111,8 @@
           prev))
       #f prefix-list))
 
+  (define (string-remove-prefix prefix a) (substring a (string-length prefix)))
+
   (define (string-lowercase? str) "test if //str// contains no uppercase characters"
     (not (string-any (l (c) (eq? (char-general-category c) (q Lu))) str)))
 
@@ -141,27 +144,27 @@
     split string into a list of substrings delimited by a regular expression."
     ;1. all regexp matches are collected
     ;2. substrings between matches are extracted
-    (let ((matches (list-matches regexp str)))
-      (call-with-values
-        (l ()
-          (if (eq? (q discard) handle-delim)
-            (values (l (e prev) (substring str (match:end prev) (match:start e)))
-              (substring str 0 (match:start (first matches))))
-            (if (eq? (q concat) handle-delim)
-              (values (l (e prev) (substring str (match:end prev) (match:end e)))
-                (substring str 0 (match:end (first matches))))
-              (throw (q wrong-argument-for-handle-delim) handle-delim))))
-        (l (get-substring init-parts)
-          (if (null? matches) (list str)
-            (let next ((rest (tail matches)) (parts (list init-parts)) (prev (first matches)))
+    (let (matches (list-matches regexp str))
+      (if (null? matches) (list str)
+        (call-with-values
+          (l ()
+            (if (eqv? (q discard) handle-delim)
+              (values (l (e prev) (substring str (match:end prev) (match:start e)))
+                (substring str 0 (match:start (first matches))))
+              (if (eqv? (q concat) handle-delim)
+                (values (l (e prev) (substring str (match:end prev) (match:end e)))
+                  (substring str 0 (match:end (first matches))))
+                (throw (q wrong-argument-for-handle-delim) handle-delim))))
+          (l (get-substring init-parts)
+            (let loop ((rest (tail matches)) (parts (list init-parts)) (prev (first matches)))
               (if (null? rest) (reverse (pair (substring str (match:end prev)) parts))
-                (next (tail rest) (pair (get-substring (first rest) prev) parts) (first rest)))))))))
+                (loop (tail rest) (pair (get-substring (first rest) prev) parts) (first rest)))))))))
 
   (define (string-skip-string a skip)
     (let (skip-length (string-length skip))
-      (let next ((r #f) (prev (string-contains a skip)))
+      (let loop ((r #f) (prev (string-contains a skip)))
         (if (and prev (or (not r) (= (- prev skip-length) r)))
-          (next prev (string-contains a skip (+ skip-length prev)))
+          (loop prev (string-contains a skip (+ skip-length prev)))
           (if r (min (- (string-length a) 1) (+ 1 skip-length r)) r)))))
 
   (define (string-trim-string a trim)
@@ -178,10 +181,10 @@
     result in a list of indices at which search-string occurs in a"
     (let ((str-length (string-length search-string)) (a-length (string-length a)))
       (reverse
-        (let next ((index (string-contains a search-string)) (r (list)))
+        (let loop ((index (string-contains a search-string)) (r (list)))
           (if index
             (if (= index a-length) (pair index r)
-              (next (string-contains a search-string (+ index (max 1 str-length))) (pair index r)))
+              (loop (string-contains a search-string (+ index (max 1 str-length))) (pair index r)))
             r)))))
 
   (define (string-replace-string a replace replacement)
@@ -200,7 +203,7 @@
           (let ((r-length (+ a-length (* (length indices) (- replacement-length replace-length)))))
             (let (r (make-string r-length))
               ;each match index, copy characters before match-end to the result string
-              (let next
+              (let loop
                 ((r-index 0) (prev-index 0) (cur-index (first indices)) (rest (tail indices)))
                 (string-copy! r r-index a prev-index cur-index)
                 (let (r-index (- r-index (- prev-index cur-index)))
@@ -211,7 +214,7 @@
                         (string-copy! r (+ r-index replacement-length)
                           a (+ cur-index replace-length) a-length))
                       r)
-                    (next (+ r-index replacement-length) (+ cur-index replace-length)
+                    (loop (+ r-index replacement-length) (+ cur-index replace-length)
                       (first rest) (tail rest)))))))))))
 
   (define (string-replace-char a char replacement) "string character character -> string"
