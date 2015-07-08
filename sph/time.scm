@@ -14,6 +14,7 @@
     seconds->day-seconds
     seconds->day-seconds-string
     seconds->day-start
+    seconds->formatted-date-string
     seconds->iso-date-string
     seconds->month
     seconds->month-seconds
@@ -38,7 +39,7 @@
 
   (define (iso-8601-date+time->seconds a)
     "string:\"yyyy-mm-ddThh:mm:ss+hhmm\" -> integer:posix-epoch-seconds"
-    ;offset is not parsed uselfully with strptime, see guile documentation.
+    ;according to guile documentation, strptime does not set the time zone offset usefully.
     (and-let*
       ( (time (false-if-exception (first (strptime "%Y-%m-%dT%H:%M:%S%z" a))))
         (offset (string-take-right a 4)) (offset-sign (string-ref a (- (string-length a) 5))))
@@ -100,6 +101,7 @@
     (string-append (seconds->iso-date-string a) ":"
       (simple-format-number (seconds->day-seconds a) 2)))
 
+  (define (seconds->formatted-date-string strftime-format a) (strftime strftime-format (gmtime a)))
   (define (current-local-datetime-string) (seconds->datetime-string (current-local-time)))
   (define (current-local-iso-date-string) (seconds->iso-date-string (current-local-time)))
 
