@@ -59,6 +59,7 @@
       define-syntax
       newline
       datum->syntax
+      current-output-port
       debug-set!
       debug-disable
       cons*
@@ -170,7 +171,7 @@
   (define-syntax-rule (par-let ((v e) ...) b0 b1 ...)
     (call-with-values (lambda () (parallel e ...)) (lambda (v ...) b0 b1 ...)))
 
- (define-syntax-case (compose-s name expr ...) s
+  (define-syntax-case (compose-s name expr ...) s
     ;this does not fail in the case ((quasiquote list) expr ...)
     (let (name-datum (syntax->datum (syntax name)))
       (if (list? name-datum)
@@ -186,4 +187,4 @@
     ((name (wrap-name ...) expr ...) (define name (compose-s (wrap-name ...) expr ...)))
     ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
-  (define (display-line a) (display a) (newline)))
+  (define* (display-line a #:optional (port (current-output-port))) (display a port) (newline port)))

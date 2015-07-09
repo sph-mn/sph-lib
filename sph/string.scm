@@ -5,9 +5,13 @@
     list->string-columns
     list-string-append-each
     parenthesise
+    regexp-match-replace
+    regexp-replace
     string-ascii->utf8
+    string-camelcase->dashes
     string-case
     string-contains-any?
+    string-downcase-first
     string-drop-suffix
     string-each
     string-enclose
@@ -40,6 +44,27 @@
 
   (define (tree-string-join a delimiter)
     (string-join (map (l (e) (if (list? e) (tree-string-join e delimiter) e)) a) delimiter))
+
+  (define (regexp-replace str regexp replacement)
+    "string string/regex string/procedure:{match-structure -> string} -> string
+    replace all occurences of regexp in string with replacement"
+    (regexp-substitute/global #f regexp str (q pre) replacement (q post)))
+
+  (define (string-camelcase->dashes a)
+    "string -> string
+    aA -> a-a
+    AA -> a-a
+    aa AAa -> aa a-aa"
+    (regexp-replace
+      (regexp-replace a "(\\s|^)[A-Z]" (l (match) (string-downcase (match:substring match)))) "[A-Z]"
+      (l (match) (string-append "-" (string-downcase (match:substring match))))))
+
+  (define (string-downcase-first a)
+    "string -> string
+    AA -> aA
+    Aa -> aa"
+    (if (string-null? a) a
+      (let (a (string->list a)) (list->string (pair (char-downcase (first a)) (tail a))))))
 
   (define (any->string a)
     "generalized string conversion function.
@@ -225,4 +250,18 @@
   (define (symbol?->string a)
     "any -> any
     converts a to string only if it is a symbol"
-    (if (symbol? a) (symbol->string a) a)))
+    (if (symbol? a) (symbol->string a) a))
+
+  (define (regexp-match-replace a replacements)
+    "string (regexp . string:replacement)/(regexp string:search-string . string:replacement) ... -> string
+    replace strings inside string portions matched by regular expressions"
+    (fold
+      (l (e r)
+        (fold-matches (first e) r
+          r
+          (l (match r)
+            (if (pair? (tail e))
+              (string-replace-string r (match:substring match)
+                (string-replace-string (match:substring match) (first (tail e)) (tail (tail e))))
+              (string-replace-string r (match:substring match) (tail e))))))
+      a replacements)))

@@ -53,8 +53,6 @@
     procedure-cond
     program-path
     quote-odd
-    regexp-match-replace
-    regexp-replace
     round-even
     search-env-path
     socket-bind
@@ -244,11 +242,6 @@
     (let ((part (first (program-arguments))))
       (if (eq? #\/ (string-ref part 0)) part (string-append (getenv "PWD") "/" part))))
 
-  (define (regexp-replace str regexp replacement)
-    "string string/regex string -> string
-    replace all occurences of regexp in string with replacement"
-    (regexp-substitute/global #f regexp str (q pre) replacement (q post)))
-
   (define-syntax-rule (true?-s expr) (if expr #t #f))
 
   (define (true? a)
@@ -303,22 +296,8 @@
     ((a b c ...) (quasiquote ((unquote-splicing (quote-odd a b) (quote-odd c ...))))))
 
   (define (alist->regexp-match-replacements a)
-    "automatically converts strings at the first position to regular expressions"
+    "automatically converts strings at the prefix position to regular expressions"
     (map (l (e) (pair (if (string? (first e)) (make-regexp (first e)) (first e)) (tail e))) a))
-
-  (define (regexp-match-replace a replacements)
-    "string (regexp . string:replacement)/(regexp string:search-string . string:replacement) ... -> string
-    replace strings inside string portions matched by regular expressions"
-    (fold
-      (l (e r)
-        (fold-matches (first e) r
-          r
-          (l (match r)
-            (if (pair? (tail e))
-              (string-replace-string r (match:substring match)
-                (string-replace-string (match:substring match) (first (tail e)) (tail (tail e))))
-              (string-replace-string r (match:substring match) (tail e))))))
-      a replacements))
 
   (define* (string->datum a #:optional (reader read)) "get the first scheme expression in a string"
     (call-with-input-string a reader))

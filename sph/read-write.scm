@@ -9,6 +9,7 @@
     port-lines-each
     port-lines-fold
     port-lines-map
+    port-lines-map->port
     read-until-string-proc
     rw-any->file
     rw-any->list
@@ -164,9 +165,15 @@
 
   (define* (port-lines-map proc #:optional (port (current-input-port)))
     "procedure:{string:line -> any} [port] -> list
-    map each line of port.
+    map each line of port to a list.
     port is the current input port by default"
     (reverse (port-lines-fold (l (a b) (pair (proc a) b)) (list) port)))
+
+  (define*
+    (port-lines-map->port proc #:optional (port-input (current-input-port))
+      (port-output (current-output-port)))
+    (rw-port->port (l (port) (read-line port (q concat))) (l (e port) (display (proc e) port))
+      port-input port-output))
 
   (define (port->lines a) "port -> (string ...)"
     (unfold-right eof-object? identity (l args (get-line a)) (get-line a))))
