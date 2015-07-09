@@ -158,7 +158,7 @@
   (define* (git-current-short-commit-hash repository-path #:optional (branch "master"))
     "string -> string
     results in the short commit hash for the latest commit in a git repository"
-    (execute-with-output-to-string "git" (cli-option "git-dir" repository-path)
+    (execute->string "git" (cli-option "git-dir" repository-path)
       "log" (cli-option #\n 1) (cli-option "pretty" "format:%h") branch))
 
   (define*

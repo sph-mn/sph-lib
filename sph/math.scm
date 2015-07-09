@@ -59,7 +59,7 @@
     (abs (- n-1 n-2)))
 
   (define* (simple-format-number a #:optional (decimal-point-shift 0) (decimal-places 0))
-    "number integer integer-> string
+    "number integer integer -> string
     number as a string, rounded to decimal places, decimal mark shifted by n steps left (the direction where the string representation of an increasing number would grow towards)"
-    (if (= 0 decimal-places) (round (/ a (expt 10 decimal-point-shift)))
+    (if (= 0 decimal-places) (number->string (round (/ a (expt 10 decimal-point-shift))))
       (format #f (simple-format #f "~~,~A,~Af" decimal-places (* -1 decimal-point-shift)) a))))
