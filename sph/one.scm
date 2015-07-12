@@ -189,13 +189,13 @@
   (define-syntax-rule (limit-min a min) (max a min))
   (define-syntax-rule (limit-max a max) (min a max))
 
-  (define (n-times num proc)
+  (define (n-times n-last proc)
     "apply a procedure a number of times with a monotonically increasing number with increments of 1. starts from 0"
-    (let next ((cur-num 0)) (if (<= cur-num num) (begin (proc cur-num) (next (+ 1 cur-num))))))
+    (let loop ((n 0)) (if (<= n n-last) (begin (proc n) (loop (+ 1 n))))))
 
-  (define (n-times-accumulate times init proc)
-    (let next ((times-temp 0) (prev init))
-      (if (< times-temp times) (next (+ 1 times-temp) (proc times-temp prev)) prev)))
+  (define (n-times-accumulate n-last init proc)
+    (let loop ((n 0) (r init))
+      (if (< n n-last) (loop (+ 1 n) (proc n r)) r)))
 
   (define* (number->integer-string a #:optional (radix 10))
     "-> string

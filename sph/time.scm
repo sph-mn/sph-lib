@@ -15,6 +15,7 @@
     seconds->day-of-week
     seconds->day-seconds
     seconds->day-seconds-string
+    seconds->hours+minutes+seconds
     seconds->day-start
     seconds->formatted-date-string
     seconds->iso-date-string
@@ -87,6 +88,14 @@
   (define (seconds->day-seconds a) (- a (seconds->day-start a)))
   (define (seconds->year-seconds a) (- a (seconds->year-start a)))
   (define (seconds->month-seconds a) (- a (seconds->month-start a)))
+
+  (define (seconds->hours+minutes+seconds a)
+    "integer -> (number:hours number:minutes number:seconds)"
+    (let*
+      ( (hours (inexact->exact (truncate (/ a 60 60))))
+        (minutes (inexact->exact (truncate (/ (- a (* hours 60 60)) 60))))
+        (seconds (inexact->exact (truncate (- a (* hours 60 60) (* minutes 60))))))
+      (list hours minutes seconds)))
 
   (define (seconds->iso-date-string a)
     (let (t (gmtime a))
