@@ -3,6 +3,7 @@
     call-with-directory
     directory-delete-content
     directory-list
+    directory-list-full-path
     directory-reference?
     directory-stream
     directory-tree-paths
@@ -18,6 +19,7 @@
     is-directory?
     last
     merge-files
+    move-and-link
     mtime-difference
     path->full-path
     path->list
@@ -56,7 +58,16 @@
       filter-map
       fold-right
       map!
-      last))
+      last)
+    (sph process))
+
+  (define (move-and-link target-path source-path)
+    "string ... -> (boolean ...)
+    move source-path to target-path and replace original source-path"
+    (and (ensure-directory-structure target-path)
+      (execute+check-result "mv" "-t" target-path source-path)
+      (execute+check-result "cp" "-rst"
+        (dirname source-path) (string-append (ensure-trailing-slash target-path) (basename source-path)))))
 
   (define (directory-delete-content path)
     "string ->
@@ -90,6 +101,10 @@
           (let loop ((e (readdir d)) (r (list)))
             (if (eof-object? e) r
               (loop (readdir d) (if (every (l (p) (p e)) include?) (pair e r) r))))))))
+
+  (define (directory-list-full-path path . filter-proc)
+    (let (path (ensure-trailing-slash path))
+      (map (l (e) (path->full-path (string-append path e))) (apply directory-list path filter-proc))))
 
   (define (directory-stream directory . filter-proc)
     "string/directory-port [procedure ...] -> srfi-41-stream"
@@ -128,7 +143,8 @@
 
   (define (ensure-directory-structure path)
     "string -> boolean
-    try to create any directories of path that do not exist"
+    try to create any directories of path that do not exist.
+    every path part is considered a directory"
     (or (file-exists? path) (begin (ensure-directory-structure (dirname path)) (mkdir path))))
 
   (define (ensure-trailing-slash str) "string -> string"

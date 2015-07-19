@@ -36,7 +36,8 @@
     list-alist?
     set-alist-bindings!
     symbol-alist
-    symbol-alist-bind)
+    symbol-alist-bind
+    symbol-alist-ref)
   (import
     (rnrs base)
     (sph)
@@ -78,6 +79,10 @@
   (define-syntax-rules alist-ref
     ;a:alist k:key d:default-if-not-found
     ((a k d) ((l (r) (if r (tail r) d)) (assoc k a))) ((a k) (assoc-ref a k)))
+
+  (define-syntax-rules symbol-alist-ref
+    ((a (k ...)) (map (lambda (e) (alist-ref a e)) (quote (k ...))))
+    ((a k rest ...) (alist-ref a (quote k) rest ...)))
 
   (define-syntax-rules alists-ref ((a k) (alist-ref a k))
     ((a k ... k-last) (alist-ref (alists-ref a k ...) k-last)))
