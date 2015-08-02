@@ -23,6 +23,8 @@
     (except (rnrs hashtables) hashtable-ref)
     (only (sph filesystem) ensure-trailing-slash))
 
+  ;persisted program configuration loaded into a configuration object.
+
   (define (parse-config-file path)
     (tree-map-lists-and-self (compose alist->hashtable list->alist)
       (primitive-eval (list (q quasiquote) (file->datums path)))))

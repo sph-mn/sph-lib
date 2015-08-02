@@ -130,9 +130,9 @@
         (cond ((string-case-condition str str-n) (begin expr ...)) ... (else else-expr)))
       a))
 
-  (define (string-contains-any? str lis)
+  (define (string-contains-any? a patterns)
     "result in a boolean indicating if string contains any of the strings in list"
-    (any (l (cur-str) (string-contains str cur-str)) lis))
+    (any (l (e) (string-contains a e)) patterns))
 
   (define string-each string-for-each)
 

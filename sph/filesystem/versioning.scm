@@ -5,10 +5,7 @@
     versioning-restore)
   (import
     (guile)
-    (sph base)
-    (sph filesystem)
-    (sph process)
-    (sph read-write))
+    (sph common))
 
   ;depends on the "diff" and "patch" utilities. version-id is a monotonically increasing integer saved with hexadecimal representation
 

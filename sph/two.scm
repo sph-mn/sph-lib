@@ -65,6 +65,8 @@
     search-env-path-variable
     set-multiple-from-list!
     srfi-19-date->seconds
+    port-column-subtract!
+    port-skip+count
     string-remove-leading-zeros
     sxml->xml-string
     system-cat-merge-files
@@ -104,6 +106,12 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
+
+  (define (port-column-subtract! port integer) (set-port-column! port (- (port-column port) integer)))
+
+  (define (port-skip+count port skip-char)
+    (let loop ((char (peek-char port)) (count 0))
+      (if (eqv? char skip-char) (loop (begin (read-char port) (peek-char port)) (+ count 1)) count)))
 
   (define (file-lines-fold! path proc)
     (let

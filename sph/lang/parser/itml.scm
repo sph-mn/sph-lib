@@ -1,8 +1,8 @@
-(library (sph lang parser its)
+(library (sph lang parser itml)
   (export
-    path->parsed-its
-    port->parsed-its
-    string->parsed-its)
+    path->parsed-itml
+    port->parsed-itml
+    string->parsed-itml)
   (import
     (ice-9 peg)
     (rnrs base)
@@ -139,10 +139,10 @@
             (else e))))
       a))
 
-  (define (port->parsed-its a)
+  (define (port->parsed-itml a)
     (let (tree (read-space-indent-tree-string->denoted-tree a 2))
       (if (null? tree) tree
         (finalise-tree (tree-transform (denoted-tree->prefix-tree tree) descend ascend terminal)))))
 
-  (define (path->parsed-its a) (call-with-input-file a port->parsed-its))
-  (define (string->parsed-its a) (port->parsed-its (open-input-string a))))
+  (define (path->parsed-itml a) (call-with-input-file a port->parsed-itml))
+  (define (string->parsed-itml a) (port->parsed-itml (open-input-string a))))
