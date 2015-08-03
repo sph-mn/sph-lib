@@ -15,11 +15,10 @@
     (sph)
     (ice-9 rdelim)
     (srfi srfi-41)
-    (sph module)
     (only (guile) eof-object? close)
     (only (sph conditional) identity-if))
 
-  (export-modules (srfi srfi-41))
+  ;(export-modules (srfi srfi-41))
   ;using (srfi srfi-41) streams
 
   (define (stream-fold-right-multiple proc arg . prev)
