@@ -2,7 +2,7 @@
 ;set of commonly used modules.
 
 (module-compose (sph common) (rnrs base)
-  (rnrs-sorting) (except (srfi srfi-1) map)
+  (rnrs sorting) (except (srfi srfi-1) map)
   (sph) (sph alist)
   (sph cli) (sph conditional)
   (sph error) (sph filesystem)

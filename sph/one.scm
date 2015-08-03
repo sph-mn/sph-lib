@@ -16,6 +16,7 @@
   (export
     alist->regexp-match-replacements
     apply-values
+    call
     apply-without-arguments
     bytevector-append
     bytevector-contains?
@@ -86,6 +87,8 @@
       unfold-right
       filter
       unfold))
+
+  (define (call proc . a) (apply proc a))
 
   (define-syntax-rule (apply-values proc producer) (call-with-values (l () producer) proc))
 

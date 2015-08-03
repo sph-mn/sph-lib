@@ -60,7 +60,8 @@
     prog-sync-with-root
     read-line-crlf
     read-line-crlf-trim
-    read-line-hash-format
+    port-lines-words-hashtable-associate
+    hashtable-associate-words
     read-mime.types
     search-env-path-variable
     set-multiple-from-list!
@@ -236,13 +237,17 @@
       (let ((line (first line+delim)) (delim (tail line+delim)))
         (if (and (string? line) (char? delim)) (string-append line (string delim)) line))))
 
-  (define* (read-line-hash-format port #:optional (ht (string-hashtable)))
+  (define (hashtable-associate-words hashtable string)
+    "hashtable string ->"
+    (let (string (string-split string #\space)) (hashtable-set! hashtable (first string) (tail string))))
+
+  (define* (port-lines-words-hashtable-associate port #:optional (hashtable (string-hashtable)))
     "port [hashtable] -> hashtable
     read from port to create a hashtable from a string with lines of the format: key value ...
     one use case are configuration files for string replacements"
     (port-lines-each
-      (l (line) (let (t (string-split line #\space)) (hashtable-set! ht (first t) (tail t)))) port)
-    ht)
+      (l (line) (hashtable-associate-words hashtable line)) port)
+    hashtable)
 
   (define (bash-escape-clear)
     "display the bash escape sequence for clearing the screen - which usually means to scroll until the current line is at the top"
