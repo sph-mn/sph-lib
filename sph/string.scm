@@ -25,6 +25,7 @@
     string-camelcase->dashes
     string-case
     string-contains-any?
+    string-contains-every?
     string-downcase-first
     string-drop-suffix
     string-each
@@ -131,8 +132,12 @@
       a))
 
   (define (string-contains-any? a patterns)
-    "result in a boolean indicating if string contains any of the strings in list"
+    "result in a boolean indicating if string contains any of the patterns"
     (any (l (e) (string-contains a e)) patterns))
+
+  (define (string-contains-every? a patterns)
+    "result in a boolean indicating if string contains all of the patterns"
+    (every (l (e) (string-contains a e)) patterns))
 
   (define string-each string-for-each)
 
