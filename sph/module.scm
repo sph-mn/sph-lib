@@ -16,6 +16,8 @@
     module-compose
     module-name->path
     module-ref-no-error
+    module-interface-binding-names
+    module-names->interface-binding-names
     path->module-name
     path->symbol-list)
   (import
@@ -29,6 +31,12 @@
     (only (sph read-write) file->datums)
     (only (sph string) string-longest-prefix)
     (only (srfi srfi-1) last))
+
+  (define (module-interface-binding-names module)
+  (module-map (l (name variable) name) (module-public-interface module)))
+
+  (define (module-names->interface-binding-names a)
+    (map (compose module-interface-binding-names resolve-module) a))
 
   (define-syntax-rule (current-bindings)
     ;return a guile-hashtable of all bindings in the current module
