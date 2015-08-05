@@ -1,5 +1,6 @@
 (library (sph filesystem)
   (export
+    temp-file-port
     call-with-directory
     directory-delete-content
     directory-list
@@ -219,6 +220,9 @@
 
   (define (filename-extension a)
     (let ((r (string-split a #\.))) (if (length-greater-one? r) (last r) #f)))
+
+  (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
+    (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
 
   (define (get-unique-target-path target-path)
     (if (file-exists? target-path)

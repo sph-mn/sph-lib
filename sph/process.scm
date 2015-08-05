@@ -38,11 +38,6 @@
   (define execute system*)
   (define shell-eval system)
 
-  (define* (create-temp-fifo #:optional (permissions 438))
-    "[integer] -> string
-    create at fifo in the system-dependent temp-directory using an unique file-name (using tmpnam)"
-    (let (path (tmpnam)) (mknod path (q fifo) permissions 0) path))
-
   (define (process-replace-without-search program-path . args)
     "replaces the current process image with the execution of the program at program-path.
     executes programs conventionally with program-path as the first argument"

@@ -15,6 +15,7 @@
 (library (sph one)
   (export
     alist->regexp-match-replacements
+    create-temp-fifo
     apply-values
     call
     apply-without-arguments
@@ -87,6 +88,11 @@
       unfold-right
       filter
       unfold))
+
+  (define* (create-temp-fifo #:optional (permissions 438))
+    "[integer] -> string
+    create at fifo in the system-dependent temp-directory using an unique file-name (using tmpnam)"
+    (let (path (tmpnam)) (mknod path (q fifo) permissions 0) path))
 
   (define (call proc . a) (apply proc a))
 
