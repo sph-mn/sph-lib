@@ -1,4 +1,4 @@
-(library (sph lang docl env its-to-html-sxml)
+(library (sph lang docl env itml-to-html-sxml)
   (export
     add-paragraphs
     add-spaces

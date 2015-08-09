@@ -1,13 +1,13 @@
 ;translates indent-tree syntax to html as sxml using docl
 
-(library (sph lang docl its)
+(library (sph lang docl itml)
   (export
-    docl-its-html-sxml-env
-    docl-its-html-sxml-env-module-names
-    docl-its-parsed->html-sxml
-    docl-its-port->html-sxml
-    docl-its-string->html-sxml
-    parsed-its->html-sxml)
+    docl-itml-html-sxml-env
+    docl-itml-html-sxml-env-module-names
+    docl-itml-parsed->html-sxml
+    docl-itml-port->html-sxml
+    docl-itml-string->html-sxml
+    parsed-itml->html-sxml)
   (import
     (guile)
     (rnrs base)
@@ -15,18 +15,18 @@
     (sph)
     (sph lang docl)
     (sph lang docl env)
-    (sph lang docl env its-to-html-sxml)
-    (sph lang parser its)
+    (sph lang docl env itml-to-html-sxml)
+    (sph lang parser itml)
     (sph read-write)
     (only (sph list) insert-second)
     (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
     (only (sph tree) flatten tree-transform-with-state))
 
-  (define docl-its-html-sxml-env-module-names
-    (pair (q (sph lang docl env its-to-html-sxml)) docl-default-env-module-names))
+  (define docl-itml-html-sxml-env-module-names
+    (pair (q (sph lang docl env itml-to-html-sxml)) docl-default-env-module-names))
 
-  (define docl-its-html-sxml-env (apply environment docl-its-html-sxml-env-module-names))
+  (define docl-itml-html-sxml-env (apply environment docl-itml-html-sxml-env-module-names))
 
   (define-syntax-rule (join-heading-section a level)
     (section* level (first a) (add-paragraphs (tail a))))
@@ -102,9 +102,9 @@
       (let (r (descend-expr->sxml a re-descend level env))
         (if r (list r #f level) (list #f #t (+ 1 level))))))
 
-  (define* (parsed-its->html-sxml a env #:optional (level-init 0))
+  (define* (parsed-itml->html-sxml a env #:optional (level-init 0))
     "list environment [integer] -> sxml
-    a translator for parsed-its. does not depend on docl"
+    a translator for parsed-itml. does not depend on docl"
     (add-paragraphs
       (map
         (l (e)
@@ -116,27 +116,27 @@
         a)))
 
   (define*
-    (docl-its-parsed->html-sxml input #:optional bindings keep-prev-bindings
-      (env docl-its-html-sxml-env)
+    (docl-itml-parsed->html-sxml input #:optional bindings keep-prev-bindings
+      (env docl-itml-html-sxml-env)
       (level-init 0))
     "list [symbol-hashtable/boolean boolean environment integer] -> sxml
     this can also be used to convert list trees with strings to html"
     (docl-translate-any input
-      (l (input) (parsed-its->html-sxml input env (or (docl-env-ref (q indent-depth)) level-init)))
+      (l (input) (parsed-itml->html-sxml input env (or (docl-env-ref (q indent-depth)) level-init)))
       bindings keep-prev-bindings))
 
   (define*
-    (docl-its-port->html-sxml input #:optional bindings keep-prev-bindings
-      (env docl-its-html-sxml-env)
+    (docl-itml-port->html-sxml input #:optional bindings keep-prev-bindings
+      (env docl-itml-html-sxml-env)
       (level-init 0))
     "port [symbol-hashtable/boolean boolean environment integer] -> sxml
-    read its from a port, parse it and translate it to html-sxml"
+    read itml from a port, parse it and translate it to html-sxml"
     (docl-translate-port input
       (l (input)
-        (parsed-its->html-sxml (port->parsed-its input) env
+        (parsed-itml->html-sxml (port->parsed-itml input) env
           (or (docl-env-ref (q indent-depth)) level-init)))
       bindings keep-prev-bindings))
 
-  (define (docl-its-string->html-sxml input . docl-its-port->html-sxml-args)
+  (define (docl-itml-string->html-sxml input . docl-itml-port->html-sxml-args)
     "string [symbol-hashtable/boolean boolean environment integer] -> sxml"
-    (apply docl-its-port->html-sxml (open-input-string input) docl-its-port->html-sxml-args)))
+    (apply docl-itml-port->html-sxml (open-input-string input) docl-itml-port->html-sxml-args)))

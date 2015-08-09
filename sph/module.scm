@@ -14,10 +14,12 @@
     library-exists?
     load-with-environment
     module-compose
-    module-name->path
-    module-ref-no-error
     module-interface-binding-names
+    module-name->path
+    module-name-interface-fold
+    module-name-interface-map
     module-names->interface-binding-names
+    module-ref-no-error
     path->module-name
     path->symbol-list)
   (import
@@ -32,8 +34,17 @@
     (only (sph string) string-longest-prefix)
     (only (srfi srfi-1) last))
 
+  (define (module-name-interface-fold proc init module-name)
+    "procedure:{name any:value any:init} any (symbol ...) -> any
+    fold over the exported, bound variables for the given module-name"
+    (hash-fold (l (key val r) (if (variable-bound? val) (proc key (variable-ref val) r) r)) init
+      (module-obarray (resolve-interface module-name))))
+
+  (define (module-name-interface-map proc module-name)
+    (module-name-interface-fold (l (key value r) (pair (proc key value) r)) (list) module-name))
+
   (define (module-interface-binding-names module)
-  (module-map (l (name variable) name) (module-public-interface module)))
+    (module-map (l (name variable) name) (module-public-interface module)))
 
   (define (module-names->interface-binding-names a)
     (map (compose module-interface-binding-names resolve-module) a))

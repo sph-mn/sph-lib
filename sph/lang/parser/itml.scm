@@ -140,7 +140,7 @@
       a))
 
   (define (port->parsed-itml a)
-    (let (tree (read-space-indent-tree-string->denoted-tree a 2))
+    (let (tree (read-space-indent-tree->denoted-tree (open-input-string a) 2))
       (if (null? tree) tree
         (finalise-tree (tree-transform (denoted-tree->prefix-tree tree) descend ascend terminal)))))
 
