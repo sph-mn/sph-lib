@@ -28,7 +28,7 @@
 (execute-tests-quasiquote
   (scm-format
     ;multiple leading parenthesis spacing
-    ((let ((a001001001 1) (b001001001 2)) a-relatively-long-string) (max-chars-per-line 17))
+    (((let ((a001001001 1) (b001001001 2)) a-relatively-long-string) (max-chars-per-line 17)))
     "(let\n--(-(a001001001 1)\n----(b001001001 2))\n--a-relatively-long-string)"
     ;general nesting
     ((1 2 ((+ 3 4)))) "(1 2 ((+ 3 4)))"

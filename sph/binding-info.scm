@@ -52,15 +52,16 @@
         (q syntax) (procedure-documentation transformer)
         (macro-arguments name (procedure-property transformer (q macro-type)) transformer))))
 
-  (define (variable->binding-info name value) "string any -> vector"
+  (define (variable->binding-info value name) "string any -> vector"
     (record binding-info-layout name (q variable) #f (and bi-include-variable-values value)))
 
   (define module-binding-info
     (let
       ( (get-info
           (l (name value) "-> record"
-            (if (procedure? value) procedure->binding-info
-              (if (macro? value) macro->binding-info variable->binding-info)))))
+            ( (if (procedure? value) procedure->binding-info
+                (if (macro? value) macro->binding-info variable->binding-info))
+              value name))))
       (l (module-name) "get properties of all exported bindings for the given module"
         (module-name-interface-map get-info module-name))))
 

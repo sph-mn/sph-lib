@@ -5,6 +5,7 @@
     (guile)
     (rnrs base)
     (sph)
+    (sph binding-info)
     (sph alist)
     (sph documentation)
     (only (srfi srfi-1) remove))

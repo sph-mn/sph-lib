@@ -27,7 +27,7 @@
     "ab/cd/ef/" "ab/cd/ef/"
     "ab/cd/ef" "ab/cd/ef/"
     "" "/")
-  (dir-ref?
+  (directory-reference?
     "." #t
     ".." #t
     ".a" #f
