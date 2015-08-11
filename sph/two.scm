@@ -24,7 +24,6 @@
     copy-with-replaced-directory
     create-fifo
     create-quote
-    create-temp-fifo
     define-stack-fluid
     define-syntax-identifier
     display-line*
@@ -219,10 +218,6 @@
 
   (define* (create-fifo path #:optional (permissions 438)) (mknod path (q fifo) permissions 0))
 
-  (define* (create-temp-fifo #:optional (permissions 438))
-    "create at fifo in the system-dependent temp-directory using an unique file-name (using tmpnam)"
-    (let (path (tmpnam)) (mknod path (q fifo) permissions 0) path))
-
   (define (read-line-crlf-trim port)
     "try to read a line that is known to be cr-lf terminated and remove the cr-lf or return eof-object.
     this is supposed to be fast"
@@ -255,10 +250,10 @@
 
   (define (paths-find-file-size-sum . args)
     "string:path ... -> integer:bits
-    uses the \"find\" and \"file-size-sum\" program to display the number of bits in files specified as paths"
+    uses the \"find\" and \"file-size-sum\" program to display the sum of bits of the files specified as paths"
     (call-with-pipe
       (l (in out) (process-create-chain-with-pipes #f out (pair "find" args) "file-size-sum")
-        (close out) (* 8 (string->number (string-trim-right (get-string-all in)))))))
+        (close out) (string->number (string-trim-right (get-string-all in))))))
 
   (define (list->string-list a)
     "(any ...) -> (string ...)

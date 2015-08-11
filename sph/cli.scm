@@ -62,6 +62,11 @@
 
   (define help-text-line-description-delimiter (string-multiply " " 2))
 
+  (define (format-argument-name input-type required?) "false/symbol boolean -> string"
+    (string-append " "
+      (let (name (if input-type (symbol->string input-type) "value"))
+        (if required? name (string-append "[" name "]")))))
+
   (define*
     (named-option->help-text-line name/pattern #:optional names required? value-required
       value-optional
@@ -74,7 +79,8 @@
           (if names (pair (symbol->string name/pattern) (if (list? names) names (list names)))
             (list (symbol->string name/pattern))))
         "|")
-      (if value-required " value" (if value-optional " [value]" ""))
+      (if value-required (format-argument-name input-type value-required)
+        (if value-optional (format-argument-name input-type #f) ""))
       (if description (string-append help-text-line-description-delimiter description) "")))
 
   (define*
@@ -136,17 +142,20 @@
           " "))
       (if (string-null? arguments) arguments (string-append "arguments: " arguments "\n"))))
 
-  (define (add-typecheck type cont)
+  (define (add-typecheck type c)
     (if type
-      (l (opt name a r)
-        (let (a-after (typecheck+conversion type a))
-          (if a-after (cont opt name a-after r)
-            (begin
-              (simple-format #t
-                "error wrong-type-for-argument option-name:~A expected-type:~A given-argument:~S\n"
-                name type a)
-              (exit 1)))))
-      cont))
+      (l (opt name value r)
+        (if value
+          (let (value-after (typecheck+conversion type value))
+            (if value-after (c opt name value-after r)
+              (begin
+                (simple-format #t
+                  "error wrong-type-for-argument option-name:~A expected-type:~A given-argument:~S\n"
+                  name type value)
+                (exit 1)))
+            )
+          (c opt name value r)))
+      c))
 
   (define* (option->args-fold-option a)
     (apply
