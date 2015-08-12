@@ -1,6 +1,7 @@
 (library (sph time)
   (export
     current-datetime-string
+    current-day-seconds
     current-day-seconds-string
     current-iso-date-string
     current-local-datetime-string
@@ -15,9 +16,9 @@
     seconds->day-of-week
     seconds->day-seconds
     seconds->day-seconds-string
-    seconds->hours+minutes+seconds
     seconds->day-start
     seconds->formatted-date-string
+    seconds->hours+minutes+seconds
     seconds->iso-date-string
     seconds->month
     seconds->month-seconds
@@ -107,6 +108,8 @@
 
   (define* (current-day-seconds-string #:optional (shift 2) (decimal-places 0))
     "defaults to local hectoseconds" (seconds->day-seconds-string (current-time)))
+
+  (define (current-day-seconds) (seconds->day-seconds (current-time)))
 
   (define (seconds->datetime-string a) "iso-date with appended day-kiloseconds infixed with :"
     (string-append (seconds->iso-date-string a) ":" (seconds->day-seconds-string a)))

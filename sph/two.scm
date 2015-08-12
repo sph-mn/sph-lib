@@ -62,6 +62,9 @@
     port-lines-words-hashtable-associate
     hashtable-associate-words
     read-mime.types
+    os-seconds-at-boot
+    os-seconds-since-boot
+    seconds->short-kiloseconds-string
     search-env-path-variable
     set-multiple-from-list!
     srfi-19-date->seconds
@@ -93,12 +96,14 @@
     (sph one)
     (sph process)
     (sph read-write)
+    (sph time)
     (sph stream)
     (sph string)
     (sph tree)
     (srfi srfi-41)
     (srfi srfi-69)
     (sxml simple)
+    (sph math)
     (except (rnrs hashtables) hashtable-ref)
     (except (srfi srfi-1) map)
     (only (rnrs io ports) get-bytevector-n put-bytevector)
@@ -106,6 +111,13 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
+
+  (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
+  (define (os-seconds-at-boot) (- (current-day-seconds) (os-seconds-since-boot)))
+
+  (define (os-seconds-since-boot)
+    (let (day-seconds (seconds->day-seconds (current-time)))
+      (string->number (first (string-split (shell-eval->string "cat /proc/uptime") #\space)))))
 
   (define (port-column-subtract! port integer) (set-port-column! port (- (port-column port) integer)))
 
