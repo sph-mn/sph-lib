@@ -15,18 +15,18 @@
 (library (sph one)
   (export
     alist->regexp-match-replacements
-    create-temp-fifo
     apply-values
-    call
     apply-without-arguments
     bytevector-append
     bytevector-contains?
+    call
     call-at-approximated-interval
     call-at-interval
     call-at-interval-w-state
     call-with-pipe
     call-with-working-directory
     cli-option
+    create-temp-fifo
     define-string
     each-u8
     eq-any?
@@ -50,6 +50,8 @@
     n-times-accumulate
     number->integer-string
     pass
+    prefix-definition-names
+    prefix-imply-for
     procedure->cached-procedure
     procedure->temporarily-cached-procedure
     procedure-cond
@@ -58,6 +60,7 @@
     round-even
     search-env-path
     socket-bind
+    thunk
     string->datum
     string-if-exception
     true?
@@ -89,13 +92,56 @@
       filter
       unfold))
 
+  (define-syntax-rule (thunk body ...) (l () body ...))
+
+  (eval-when (expand load eval)
+    (define (prefix-join a) "symbol -> symbol"
+      (string->symbol (string-join (map symbol->string a) "-")))
+    (define (symbol-prepend-prefix-proc prefix)
+      (if (list? prefix) (l (a) (prefix-join (append prefix (list a))))
+        (l (a) (prefix-join (pair prefix (list a)))))))
+
+  (define-syntax-case (prefix-definition-names prefix body ...) s
+    ;symbol/(symbol ...) any ...
+    ;all defines in "body" are rewritten to bind a name prepended with symbols in prefix joined by "-".
+    ;usages are not rewritten.
+    ;example: (define-with-prefix (a b) (define c 1) (define (d e) 2)) -> (define a-b-c 1) (define (a-b-d e) 2)
+    (let
+      ( (symbol-prepend-prefix (symbol-prepend-prefix-proc (syntax->datum (syntax prefix))))
+        (body-datum (syntax->datum (syntax (body ...))))
+        (is-define? (l (a) (and (list? a) (not (null? a)) (eqv? (quote define) (first a))))))
+      (datum->syntax s
+        (pair (q begin)
+          (map
+            (l (e)
+              (if (is-define? e)
+                (apply
+                  (l (define-symbol define-name . define-body)
+                    (if (list? define-name)
+                      (pairs define-symbol
+                        (pair (symbol-prepend-prefix (first define-name)) (tail define-name))
+                        define-body)
+                      (pairs define-symbol (symbol-prepend-prefix define-name) define-body)))
+                  e)
+                e))
+            body-datum)))))
+
+  (define-syntax-case (prefix-imply-for prefix (name ...) body ...) s
+    (let*
+      ( (symbol-prepend-prefix (symbol-prepend-prefix-proc (syntax->datum (syntax prefix))))
+        (add-prefix-to-formals
+          (l (a) (map (l (e) (if (eqv? (q t) e) e (symbol-prepend-prefix e))) a)))
+        (name-datum (syntax->datum (syntax (name ...)))))
+      (datum->syntax s
+        (pair (pairs (q lambda) name-datum (syntax->datum (syntax (body ...))))
+          (add-prefix-to-formals name-datum)))))
+
   (define* (create-temp-fifo #:optional (permissions 438))
     "[integer] -> string
     create at fifo in the system-dependent temp-directory using an unique file-name (using tmpnam)"
     (let (path (tmpnam)) (mknod path (q fifo) permissions 0) path))
 
   (define (call proc . a) (apply proc a))
-
   (define-syntax-rule (apply-values proc producer) (call-with-values (l () producer) proc))
 
   (define (call-with-pipe proc) "procedure:{port:in port:out -> any} -> any"
@@ -203,8 +249,7 @@
     (let loop ((n 0)) (if (<= n n-last) (begin (proc n) (loop (+ 1 n))))))
 
   (define (n-times-accumulate n-last init proc)
-    (let loop ((n 0) (r init))
-      (if (< n n-last) (loop (+ 1 n) (proc n r)) r)))
+    (let loop ((n 0) (r init)) (if (< n n-last) (loop (+ 1 n) (proc n r)) r)))
 
   (define* (number->integer-string a #:optional (radix 10))
     "-> string

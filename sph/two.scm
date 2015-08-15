@@ -188,7 +188,7 @@
       branch (cli-option "output" target-path) additional-arguments))
 
   (define line-reverse-direction
-    ( (l () (define (split-words a) (delete "" (map string-trim-both (string-split a #\space))))
+    ( (thunk (define (split-words a) (delete "" (map string-trim-both (string-split a #\space))))
         (define (replace-range-delimiters a)
           (string-replace-chars a (ql (#\( #\)) (#\) #\() (#\[ #\]) (#\] #\[) (#\{ #\}) (#\} #\{))))
         (define (reverse-sentence-word a)
@@ -527,7 +527,7 @@
     (let ((config.exec (command-line)))
       (if (null? (tail config.exec)) (begin (simple-format #t "not enough arguments\n") (exit)))
       (catch #t
-        (l ()
+        (thunk
           (let ((path (path->full-path (list-ref config.exec 1))))
             (copy-with-replaced-directory source-root target-root path)
             (simple-format #t "sync ~A ~A\n" path target-root)))

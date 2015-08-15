@@ -154,6 +154,7 @@
   (define-syntax-rule (identity-if test else ...) ((lambda (r) (if r r (begin else ...))) test))
 
   (define-syntax-rule (list-bind a lambda-formals body ...)
+    ;let-if
     (apply (lambda lambda-formals body ...) a))
 
   (define (append-map-unless proc stop? default . a)
