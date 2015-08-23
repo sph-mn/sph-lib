@@ -224,11 +224,11 @@
   (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
     (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
 
-  (define (get-unique-target-path target-path)
+  (define* (get-unique-target-path target-path #:optional (add-date? #t))
     (if (file-exists? target-path)
       (let
         (new-target-path
-          (string-append target-path "." (seconds->iso-date-string (stat:mtime (stat target-path)))))
+          (string-append target-path "." (if add-date? (seconds->iso-date-string (stat:mtime (stat target-path))) "1")))
         (if (file-exists? new-target-path)
           (let (fn-add-count (l (a count) (string-append a "." (number->string count 32))))
             (let loop ((t (fn-add-count new-target-path 2)) (loop-count 3))

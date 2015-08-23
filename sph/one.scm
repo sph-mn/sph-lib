@@ -117,7 +117,7 @@
               (if (is-define? e)
                 (apply
                   (l (define-symbol define-name . define-body)
-                    (if (list? define-name)
+                    (if (pair? define-name)
                       (pairs define-symbol
                         (pair (symbol-prepend-prefix (first define-name)) (tail define-name))
                         define-body)
@@ -127,6 +127,7 @@
             body-datum)))))
 
   (define-syntax-case (prefix-imply-for prefix (name ...) body ...) s
+    ;bind the prefix appended names of list as names
     (let*
       ( (symbol-prepend-prefix (symbol-prepend-prefix-proc (syntax->datum (syntax prefix))))
         (add-prefix-to-formals
