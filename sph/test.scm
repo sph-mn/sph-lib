@@ -61,7 +61,7 @@
   (define before-test #f)
   (define disabled-before-test #f)
   (define prev-message-newline #t)
-  (define-syntax-rule (format-index-number arg) (number->string (+ arg 1)))
+  (define-syntax-rule (format-index-number a) (number->string (+ a 1)))
   (define (test-disable-before-test) (set! disabled-before-test before-test) (set! before-test #f))
   (define (test-enable-before-test) (set! before-test disabled-before-test))
   (define-syntax-rule (module-ref* name) (module-ref (current-module) name))
@@ -69,8 +69,8 @@
   (define* (create-extended-result #:optional output-info title (expected #t) input)
     (vector (q test-result) output-info expected input (any->string title)))
 
-  (define-syntax-rule (extended-result? arg)
-    (and (vector? arg) (= (vector-length arg) 5) (eq? (q test-result) (vector-ref arg 0))))
+  (define-syntax-rule (extended-result? a)
+    (and (vector? a) (= (vector-length a) 5) (eqv? (q test-result) (vector-ref a 0))))
 
   (define (failure-message-compact name out exp inp title index-data index-data-last)
     "symbol any any any integer integer -> unspecified"
@@ -206,9 +206,7 @@
       (l (test-spec)
         (if (list? test-spec) (evaluate-test-spec-list test-spec format-display)
           (if (symbol? test-spec)
-            (if (eqv? (q test-stop))
-              #f
-              (evaluate-test-spec-symbol test-spec format-display))
+            (if (eqv? (q test-stop)) #f (evaluate-test-spec-symbol test-spec format-display))
             (throw (q syntax-error-in-test-spec)))))
       tests))
 
@@ -231,24 +229,25 @@
 
   (define-syntax-rule (test-fail title data) (create-extended-result data title))
 
+  (define-syntax-rule (assert-failure-result result expected optional-title body)
+    (if (extended-result? result)
+      (begin
+        (if (string? optional-title)
+          (vector-set! result 4 (string-append optional-title " " (vector-ref result 4))))
+        result)
+      (create-extended-result result
+        (if (or (not (string? optional-title)) (string-null? optional-title))
+          (any->string (q body)) optional-title)
+        expected)))
+
   (define-syntax-rules assert-true
     ( (optional-title body)
-      (let (r body)
-        (if (eqv? #t r) #t
-          (create-extended-result r
-            (if (or (not (string? optional-title)) (string-null? optional-title)) (q body)
-              optional-title)
-            #t))))
+      (let (r body) (if (eqv? #t r) #t (assert-failure-result r #t optional-title body))))
     ((body) (assert-true #f body)))
 
   (define-syntax-rules assert-equal
     ( (optional-title exp body)
-      (let (r body)
-        (if (equal? exp r) #t
-          (create-extended-result r
-            (if (or (not (string? optional-title)) (string-null? optional-title))
-              (any->string (q body)) optional-title)
-            exp))))
+      (let (r body) (if (equal? exp r) #t (assert-failure-result r exp optional-title body))))
     ((exp body) (assert-equal #f exp body)))
 
   (define-syntax-rule (define-tests-quasiquote name test ...)
