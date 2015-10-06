@@ -14,6 +14,7 @@
 
 (library (sph test)
   (export
+    assert-and
     assert-equal
     assert-true
     before-test
@@ -28,8 +29,7 @@
     test-disable-before-test
     test-display-formats
     test-enable-before-test
-    test-fail
-    (rename (boolean-and assert-and)))
+    test-fail)
   (import
     (rnrs base)
     (sph)
@@ -42,6 +42,8 @@
       current-module
       string-join
       display
+      syntax
+      syntax->datum
       identity
       procedure-minimum-arity)
     (only (sph alist) list->alist)
@@ -244,6 +246,11 @@
     ( (optional-title body)
       (let (r body) (if (eqv? #t r) #t (assert-failure-result r #t optional-title body))))
     ((body) (assert-true #f body)))
+
+  (define-syntax-case (assert-and optional-title body ...)
+    (let (optional-title-datum (syntax->datum (syntax optional-title)))
+      (if (string? optional-title-datum)
+        (syntax (assert-true optional-title (boolean-and body ...))) (syntax (boolean-and optional-title body ...)))))
 
   (define-syntax-rules assert-equal
     ( (optional-title exp body)
