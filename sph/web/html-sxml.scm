@@ -14,7 +14,7 @@
     (only (sph list) interleave pair->list)
     (only (sph string) any->string))
 
-  (define (html-sxml-text->sxml arg) (interleave (string-split arg #\newline) (q (br))))
+  (define (html-sxml-text->sxml a) (interleave (string-split a #\newline) (q (br))))
 
   (define* (html-sxml-include-script path #:optional is-async) "string boolean -> sxml"
     (qq
