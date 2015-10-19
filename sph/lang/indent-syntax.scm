@@ -21,7 +21,7 @@
   (define* (prefix-tree->indent-tree-string a #:optional (base-depth 0) (indent-string "  "))
     "list:(string/list ...) -> string
     converts a list to a string of indented lines"
-    (denoted-tree->indent-tree-string (prefix-tree->denoted-tree a base-depth)))
+    (denoted-tree->indent-tree-string (prefix-tree->denoted-tree a) base-depth indent-string))
 
   (define (line->denoted-tree-element a indent-width)
     (let (prefix-count (string-skip a #\space))
