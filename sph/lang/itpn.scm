@@ -5,6 +5,8 @@
     itfpn-facets-sort
     itpn-element-contains?
     itpn-filter
+    itpn-packets-sort
+    itpn-prefixes
     line->facets)
   (import
     (guile)
@@ -18,6 +20,7 @@
     (except (srfi srfi-1) map))
 
   ;indent tree packet notation
+  ;indent tree facet packet notation
 
   (define (itpn-element-contains-all? element patterns where)
     (case where ((prefix) (string-contains-every? (first element) patterns))
@@ -35,6 +38,8 @@
   (define (facets->line a) (string-join a " "))
   (define (line-sort-facets a less?) (facets->line (list-sort less? (line->facets (first a)))))
   (define (itfpn-facets-sort a less?) (map (l (e) (pair (line-sort-facets e less?) (tail e))) a))
+  (define (itpn-prefixes a) (map first a))
+  (define (itpn-packets-sort a less?) (list-sort-with-accessor less? first a))
 
   (define (itfpn-facets-collect a)
     (delete-duplicates (append-map (l (e) (line->facets (first e))) a))))

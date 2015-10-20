@@ -21,6 +21,7 @@
     alist-merge
     alist-ref
     alist-select
+    alist-select-apply
     alist-set!
     alist-update
     alist-values
@@ -37,7 +38,8 @@
     set-alist-bindings!
     symbol-alist
     symbol-alist-bind
-    symbol-alist-ref)
+    symbol-alist-ref
+    symbol-alist-select-apply)
   (import
     (rnrs base)
     (sph)
@@ -144,4 +146,11 @@
   (define (alistv-select alist keys) (map (l (key) (alistv-ref alist key)) keys))
 
   (define (list-alist? a)
-    "return #t if list is an association list, false otherwise. works only on lists" (every pair? a)))
+    "return #t if list is an association list, false otherwise. works only on lists" (every pair? a))
+
+  (define (alist-select-apply a keys proc) (apply proc (alist-select a keys)))
+
+  (define-syntax-rule (symbol-alist-select-apply a (key ...) proc)
+    (alist-select-apply a (quote (key ...)) proc))
+
+  (define-syntax-rule (symbol-alist-select a (key ...)) (alist-select a (quote (key ...)))))
