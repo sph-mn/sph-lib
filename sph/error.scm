@@ -1,4 +1,4 @@
-;error handling based on return types and an error type
+;error handling based on return types with an error type.
 
 (library (sph error)
   (export

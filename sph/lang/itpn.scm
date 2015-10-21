@@ -1,7 +1,7 @@
 (library (sph lang itpn)
   (export
     facets->line
-    itfpn-facets-collect
+    itfpn-facets
     itfpn-facets-sort
     itpn-element-contains?
     itpn-filter
@@ -41,5 +41,7 @@
   (define (itpn-prefixes a) (map first a))
   (define (itpn-packets-sort a less?) (list-sort-with-accessor less? first a))
 
-  (define (itfpn-facets-collect a)
-    (delete-duplicates (append-map (l (e) (line->facets (first e))) a))))
+  (define (itfpn-facets a)
+    "parsed-itpn -> (string ...)
+    may include duplicates"
+    (append-map (l (e) (line->facets (first e))) a)))

@@ -204,7 +204,8 @@
     ->
     any:last-procedure-result
 
-    fold over directory-tree under path, possibly limited by max-depth and with filenames filtered by \"before-filter.\""
+    fold over directory-tree under path, possibly limited by max-depth and with filenames filtered by \"before-filter.\"
+    the directory-references \".\" and \"..\" are ignored"
     (let (path (ensure-trailing-slash path))
       (stream-fold
         (l (r e)
