@@ -3,8 +3,9 @@
     facets->line
     itfpn-facets
     itfpn-facets-sort
-    itpn-element-contains?
     itpn-filter
+    itpn-filter-all-patterns-all-parts
+    itpn-filter-some-patterns-some-parts
     itpn-packets-sort
     itpn-prefixes
     line->facets)
@@ -19,20 +20,36 @@
     (sph tree)
     (except (srfi srfi-1) map))
 
-  ;indent tree packet notation
-  ;indent tree facet packet notation
+  ;itpn: indent tree packet notation
+  ;itfpn: indent tree facet packet notation
 
-  (define (itpn-element-contains-all? element patterns where)
-    (case where ((prefix) (string-contains-every? (first element) patterns))
-      ((suffix) (any (l (e) (string-contains-every? e patterns)) (flatten (tail element))))
-      (else
-        (or (itpn-element-contains-all? element patterns (q prefix))
-          (itpn-element-contains-all? element patterns (q suffix))))))
+  (define
+    (itpn-filter a patterns-prefix patterns-suffix patterns-anywhere string-contains-multiple?
+      parts-combination)
+    "parsed-itpn (string ...) (string ...) (string ...) procedure:{string (string ...) -> boolean} procedure:{any ... -> boolean/any:last} -> pair:(filtered rejected)
+    filters itpn elements where all patterns of a set match in the corresponding portion - prefix, suffix or anywhere.
+    the empty set matches all"
+    (apply-values pair
+      (partition
+        (l (e)
+          (parts-combination
+            (or (null? patterns-prefix) (string-contains-multiple? (first e) patterns-prefix))
+            (or (null? patterns-suffix)
+              (any (l (e) (string-contains-multiple? e patterns-suffix)) (flatten (tail e))))
+            (or (null? patterns-anywhere)
+              (any (l (e) (string-contains-multiple? e patterns-anywhere)) (flatten e)))))
+        a)))
 
-  (define (itpn-filter a patterns where)
-    "parsed-itpn (string ...) symbol:both/suffix/prefix -> pair:(filtered rejected)
-    filters itpn elements where all patterns match at the relevant portion - prefix, suffix or both"
-    (apply-values pair (partition (l (e) (itpn-element-contains-all? e patterns where)) a)))
+  (define (itpn-filter-all-patterns-all-parts a patterns-prefix patterns-suffix patterns-anywhere)
+    "list list list -> (list list)
+    filters packets where all patterns-prefix match the prefix and all patterns-suffix match the suffix"
+    (itpn-filter a patterns-prefix patterns-suffix patterns-anywhere string-contains-every? and-p))
+
+  (define
+    (itpn-filter-some-patterns-some-parts a patterns-prefix patterns-suffix patterns-anywhere)
+    "list list list -> (list list)
+    filters packets where some patterns-prefix match the prefix or some patterns-suffix match the suffix"
+    (itpn-filter a patterns-prefix patterns-suffix patterns-anywhere string-contains-any? or-p))
 
   (define (line->facets a) (string-split a #\space))
   (define (facets->line a) (string-join a " "))

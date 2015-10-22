@@ -15,6 +15,7 @@
 (library (sph one)
   (export
     alist->regexp-match-replacements
+    and-p
     apply-values
     apply-without-arguments
     bytevector-append
@@ -49,6 +50,7 @@
     n-times
     n-times-accumulate
     number->integer-string
+    or-p
     pass
     prefix-definition-names
     prefix-imply-for
@@ -60,9 +62,9 @@
     round-even
     search-env-path
     socket-bind
-    thunk
     string->datum
     string-if-exception
+    thunk
     true?
     true?-s)
   (import
@@ -380,4 +382,15 @@
     (catch #t (l () expr) exception->string))
 
   (define-syntax-rule (if-exception expr consequent) (catch #t (l () expr) (l exc consequent)))
-  (define socket-bind bind))
+  (define socket-bind bind)
+
+  (define (and-p . a)
+    "any -> false/any
+    like the \"and\" syntax but as a procedure"
+    (let loop ((rest a) (previous #t))
+      (if (null? rest) previous (if (first rest) (loop (tail rest) (first rest)) #f))))
+
+  (define (or-p . a)
+    "any -> false/any
+    like the \"or\" syntax but as a procedure"
+    (any identity a)))
