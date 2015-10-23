@@ -32,12 +32,13 @@
     (apply-values pair
       (partition
         (l (e)
-          (parts-combination
-            (or (null? patterns-prefix) (string-contains-multiple? (first e) patterns-prefix))
-            (or (null? patterns-suffix)
-              (any (l (e) (string-contains-multiple? e patterns-suffix)) (flatten (tail e))))
-            (or (null? patterns-anywhere)
-              (any (l (e) (string-contains-multiple? e patterns-anywhere)) (flatten e)))))
+          (let (e (if (string? e) (list e) e))
+            (parts-combination
+              (or (null? patterns-prefix) (string-contains-multiple? (first e) patterns-prefix))
+              (or (null? patterns-suffix)
+                (any (l (e) (string-contains-multiple? e patterns-suffix)) (flatten (tail e))))
+              (or (null? patterns-anywhere)
+                (any (l (e) (string-contains-multiple? e patterns-anywhere)) (flatten e))))))
         a)))
 
   (define (itpn-filter-all-patterns-all-parts a patterns-prefix patterns-suffix patterns-anywhere)

@@ -34,7 +34,7 @@
     (only (sph one) string->datum)
     (only (sph string) string-multiply any->string))
 
-  (define html-headings (q #(h1 h1 h2 h3 h4 h5 h6)))
+  (define html-headings (q #(h1 h2 h3 h4 h5 h6)))
 
   (define (add-spaces a)
     "inserts a space before non-list elements (strings, numbers, etc) except the first and splices lists of expressions."
@@ -68,9 +68,9 @@
           (if (null? e) r
             (pair
               (if (symbol? (first e)) e
-                (pair (q div) (append (create-sxml-indent (max 0 (- indent-depth 1))) e (ql (br)))))
+                (pair (q span) (append (create-sxml-indent indent-depth) e (ql (br)))))
               r))
-          (pair (list (q span) (create-sxml-indent (max 0 (- indent-depth 1))) e (ql br)) r)))
+          (pair (list (q span) (create-sxml-indent indent-depth) e (ql br)) r)))
       (list) a))
 
   (define (list-sort-as-string string-less? a)
@@ -80,9 +80,9 @@
   (define (p a) (pair (q p) (add-spaces a)))
 
   (define (section* level title content . attributes)
-    (pair (q span)
+    (pair (q section)
       (append (if (null? attributes) attributes (list (pair (q @) attributes)))
-        (pair (h* level (list (create-sxml-indent (max 0 (- level 2))) title))
+        (pair (h* level (list (create-sxml-indent level) title))
           (if (list? content)
             (if (null? content) (list)
               (if (symbol? (first content)) (list content)
@@ -108,8 +108,8 @@
             (list) a)))
       (list (q pre) (string-join (map (l (e) (string-append indent e)) lines) "\n"))))
 
-  (define (section title . content) (section* (or (docl-env-ref (q indent-depth)) 1) title content))
-  (define (h . content) (h* (or (docl-env-ref (q indent-depth)) 1) content))
+  (define (section title . content) (section* (or (docl-env-ref (q indent-depth)) 0) title content))
+  (define (h . content) (h* (or (docl-env-ref (q indent-depth)) 0) content))
   (define (ul a . rest) (pair (q ul) (map (l (e) (list (q li) e)) a)))
   (define (ol a . rest) (pair (q ol) (map (l (e) (list (q li) e)) a)))
 

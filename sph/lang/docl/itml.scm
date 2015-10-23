@@ -30,7 +30,7 @@
   (define docl-itml-html-sxml-env (apply environment docl-itml-html-sxml-env-module-names))
 
   (define-syntax-rule (join-heading-section a level)
-    (section* level (first a) (add-paragraphs-and-indent (tail a) level)))
+    (section* level (first a) (add-paragraphs-and-indent (tail a) (+ 1 level))))
 
   (define-syntax-rule (heading-section? a)
     (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
@@ -55,11 +55,17 @@
         (pair (let (e (first content)) (if (string? e) (string-append e ": ") e)) (tail content)))
       (else (list->sxml e level level-init))))
 
+  (define (adjust-level a)
+    "integer -> integer
+    level 0 and 1 are equivalent because content of nested-lists on the top-level in
+    parsed-itml is still considered belonging to the top-level"
+    (max 0 (- a 1)))
+
   (define (ascend-proc env level-init)
     (l (e level)
       (list
         (let ((prefix (first e)) (content (tail e)))
-          (ascend-expr->sxml prefix content e env level level-init))
+          (ascend-expr->sxml prefix content e env (adjust-level level) level-init))
         (- level 1))))
 
   (define (call-for-eval level c) (docl-env-set! (q indent-depth) level)
@@ -73,9 +79,9 @@
         (call-for-eval level
           (l ()
             (let* ((content (tail a)) (prefix (first content)))
-              ( (module-ref env (if (string-equal? "#" prefix) (q escape-with-indent) (string->symbol prefix)))
-                (tail content)
-                level)))))
+              ( (module-ref env
+                  (if (string-equal? "#" prefix) (q escape-with-indent) (string->symbol prefix)))
+                (tail content) level)))))
       ( (line-scm-expr)
         (call-for-eval level
           (l ()

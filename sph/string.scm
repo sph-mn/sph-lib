@@ -85,8 +85,9 @@
     "generalized string conversion function.
     get the string representation for the value of an object.
     symbols like \".\" are converted to \"#{.}\" using display."
-    (if (symbol? a) (symbol->string a)
-      (if (string? a) a (call-with-output-string (l (port) (display a port))))))
+    (if (string? a) a
+      (if (symbol? a) (symbol->string a)
+        (call-with-output-string (l (port) (display a port))))))
 
   (define (string-last-index a) (if (string-null? a) 0 (- (string-length a) 1)))
   (define (any->string-write a) (if (symbol? a) (symbol->string a) (object->string a write)))
