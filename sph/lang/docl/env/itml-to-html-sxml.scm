@@ -66,11 +66,9 @@
       (l (e r)
         (if (list? e)
           (if (null? e) r
-            (pair
-              (if (symbol? (first e)) e
-                (pair (q span) (append (create-sxml-indent indent-depth) e (ql (br)))))
+            (pair (if (symbol? (first e)) e (append (create-sxml-indent indent-depth) e (ql (br))))
               r))
-          (pair (list (q span) (create-sxml-indent indent-depth) e (ql br)) r)))
+          (pair (list (create-sxml-indent indent-depth) e (ql br)) r)))
       (list) a))
 
   (define (list-sort-as-string string-less? a)
@@ -98,7 +96,7 @@
 
   (define (escape-with-indent a indent-depth)
     (let
-      ( (indent (string-multiply " " (* 2 (max 0 (- indent-depth 1)))))
+      ( (indent (string-multiply "  " indent-depth))
         (lines
           (fold
             (l (e r)
@@ -106,7 +104,7 @@
                 (append (string-split (prefix-tree->indent-tree-string (list e)) #\newline) r)
                 (pair e r)))
             (list) a)))
-      (list (q pre) (string-join (map (l (e) (string-append indent e)) lines) "\n"))))
+      (list (q pre) (string-append indent (string-join lines (string-append "\n" indent))))))
 
   (define (section title . content) (section* (or (docl-env-ref (q indent-depth)) 0) title content))
   (define (h . content) (h* (or (docl-env-ref (q indent-depth)) 0) content))

@@ -16,6 +16,7 @@
   (export
     any->string
     any->string-write
+    string-indices-char
     list->string-columns
     list-string-append-each
     parenthesise
@@ -29,6 +30,7 @@
     string-downcase-first
     string-drop-suffix
     string-each
+    string-slice-at-words
     string-enclose
     string-equal?
     string-indices
@@ -43,6 +45,7 @@
     string-replace-char
     string-replace-chars
     string-replace-string
+    string-slice-at-words
     string-skip-string
     string-split-regexp
     string-trim-string
@@ -53,9 +56,31 @@
     (ice-9 regex)
     (rnrs base)
     (sph)
+    (only (sph list) fold-multiple)
     (only (rnrs bytevectors) u8-list->bytevector utf8->string))
 
   (define string-equal? string=)
+
+  (define (string-slice-at-words a slice-length)
+    "string integer -> (string ...)
+    split line into slices/chunks of size slice-length, unless it would split words (subsequent characters without the space character),
+    in which case the word is moved to the next slice. ignores newlines. can be used for single lines. can be used for \"text-wrapping\""
+    ;splits string at spaces, then uses the parts to build lines while checking if the line length with spaces would exceed slice-length.
+    ;if yes, the exceeding part is moved to the next line.
+    (let
+      ( (words (string-split a #\space))
+        (prepend-line (l (e r) (pair (string-join (reverse e) " ") r))))
+      (let
+        (r
+          (fold-multiple
+            (l (word-length words line line-spaces-length current-slice-length r)
+              (if (> (+ word-length line-spaces-length current-slice-length) slice-length)
+                (list (tail words) (list (first words)) 0 word-length (prepend-line line r))
+                (list (tail words) (pair (first words) line)
+                  (+ 1 line-spaces-length) (+ word-length current-slice-length) r)))
+            (map string-length words) words (list) 0 0 (list)))
+        (apply
+          (l (words line line-spaces-length current-slice-length r) (reverse (prepend-line line r))) r))))
 
   (define (tree-string-join a delimiter)
     (string-join (map (l (e) (if (list? e) (tree-string-join e delimiter) e)) a) delimiter))
@@ -231,6 +256,14 @@
             (if (= index a-length) (pair index r)
               (loop (string-contains a search-string (+ index (max 1 str-length))) (pair index r)))
             r)))))
+
+  (define (string-indices-char a search-char)
+    "string char -> (integer ...)
+    create a list of indices at which search-char occurs in a"
+    (let (a-length (string-length a))
+      (let loop ((index 0) (r (list)))
+        (if (< index a-length)
+          (loop (+ 1 index) (if (eqv? search-char (string-ref a index)) (pair index r) r)) (reverse r)))))
 
   (define (string-replace-string a replace replacement)
     "string string string -> string

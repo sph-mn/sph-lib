@@ -21,6 +21,7 @@
     complement-both
     contains-all?
     contains-some?
+    fold-slice
     contains?
     containsq?
     containsv?
@@ -403,7 +404,7 @@
     (if (null? a) r (apply proc (first a) (apply fold-multiple-right proc (tail a) r))))
 
   (define (fold-segments proc len init a)
-    "integer {any:state element ... -> any:state} any:state list -> any
+    "{any:state element ... -> any:state} integer any:state list -> any
     fold over each overlapping segment of length \"len\""
     (let loop ((rest a) (buf (list)) (r init) (count len))
       (if (null? rest) (if (null? buf) r (apply proc r buf))
@@ -458,7 +459,7 @@
               (apply loop proc
                 (pair current prev) (first next) (tail next) (apply proc prev current next states))))))
       (l (proc a . states)
-        "procedure:{prev:list current:any next:list state:any ... -> state:any ...} list state-init:any ...
+        "procedure:{list:prev any:current list:next any:state ... -> any:state ...} list any:state-init ...
         calls proc for each list element, a list of unmodified previous list elements, a list of the next list elements
         and an arbitrary count of custom values that are updated from the list-result of each call to proc"
         (apply loop proc (list) (first a) (tail a) states))))
@@ -619,13 +620,22 @@
     map over each overlapping segment of length len"
     (fold-segments (l (r . e) (append r (list (apply proc e)))) len (list) a))
 
-  (define (map-slice slice-length proc a)
+ (define (map-slice slice-length proc a)
     "{any ... -> any} integer list
     call proc with each slice-length number of successive elements of a"
     (let loop ((rest a) (slice (list)) (slice-ele-length 0) (r (list)))
       (if (null? rest) (reverse (if (null? slice) r (pair (apply proc (reverse slice)) r)))
         (if (= slice-length slice-ele-length)
           (loop (tail rest) (list (first rest)) 1 (pair (apply proc (reverse slice)) r))
+          (loop (tail rest) (pair (first rest) slice) (+ 1 slice-ele-length) r)))))
+
+  (define (fold-slice slice-length proc init a)
+    "integer {any:state any:element ... -> any} any list
+    call proc with each slice-length number of successive elements of a"
+    (let loop ((rest a) (slice (list)) (slice-ele-length 0) (r init))
+      (if (null? rest) (reverse (if (null? slice) r (apply proc r (reverse slice))))
+        (if (= slice-length slice-ele-length)
+          (loop (tail rest) (list (first rest)) 1 (apply proc r (reverse slice)))
           (loop (tail rest) (pair (first rest) slice) (+ 1 slice-ele-length) r)))))
 
   (define (map-successive filter-proc proc a)
