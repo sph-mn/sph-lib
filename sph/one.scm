@@ -63,7 +63,9 @@
     search-env-path
     socket-bind
     string->datum
+    values->list
     string-if-exception
+    apply*
     thunk
     true?
     true?-s)
@@ -95,6 +97,10 @@
       unfold))
 
   (define-syntax-rule (thunk body ...) (l () body ...))
+
+  (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
+
+  (define-syntax-rule (apply* arguments proc) (apply proc arguments))
 
   (eval-when (expand load eval)
     (define (prefix-join a) "symbol -> symbol"
@@ -261,7 +267,7 @@
 
   (define (pass proc obj)
     "procedure any -> any
-    apply proc with obj, return obj unmodified.
+    apply proc with obj, return obj.
     example
     (+ 2 (pass write (+ 1 3)))
     writes 4 to standard output

@@ -13,21 +13,21 @@
     (rnrs base)
     (sph))
 
-  (define (apply-pass-if arg proc)
+  (define (apply-pass-if a proc)
     "list procedure:{any ... -> any} -> any
-    like pass-if but uses apply to use the contents of arg as arguments to proc"
-    (if arg (apply proc arg) #f))
+    like pass-if but uses apply to use the contents of a as arguments to proc"
+    (if a (apply proc a) #f))
 
   (define-syntax-rules pass-if
     ;"any procedure:{any -> any} -> any
-    ;apply proc with arg if arg is a true value"
+    ;apply proc with a if a is a true value"
     ((a proc) ((lambda (b) (if b (proc b) #f)) a))
     ((a proc else) ((lambda (b) (if b (proc b) else)) a)))
 
-  (define (pass-and proc . arg)
+  (define (pass-and proc . a)
     "procedure:{any ... -> any} any ... -> any
-    apply proc with arg as multiple arguments if all given arg are true values"
-    (if (any not arg) #f (apply proc arg)))
+    apply proc with a as multiple arguments if all given a are true values"
+    (if (any not a) #f (apply proc a)))
 
   (define-syntax-rule (identity-if result-if-true else ...)
     ;result in test if test is true, otherwise execute else
