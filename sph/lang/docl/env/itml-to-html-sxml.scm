@@ -30,11 +30,38 @@
       string-suffix?
       string-split
       string-join)
-    (only (sph list) simplify-list map-span)
+    (only (sph list)
+      simplify-list
+      map-span
+      interleave)
     (only (sph one) string->datum)
-    (only (sph string) string-multiply any->string))
+    (only (sph string)
+      string-multiply
+      any->string
+      string-slice-at-words))
+
+  ;the html is supposed to look almost the same in browsers that support css and text browsers that do not.
+  ;all the "indent" handling is only done because current text browsers do not support any css yet.
 
   (define html-headings (q #(h1 h2 h3 h4 h5 h6)))
+  (define text-column-max-length 160)
+
+  (define (string-list-add-indent+break a indent)
+    (interleave (map (l (e) (list indent e)) a) (ql br)))
+
+  (define (text-wrap-with-indent a indent)
+    (let (a-length (string-length a))
+      (if (> a-length text-column-max-length)
+        (pair (q p)
+          (string-list-add-indent+break (string-slice-at-words a text-column-max-length) indent))
+        (if (= 0 a-length) a (list indent a (ql br))))))
+
+  (define (text-columns-wrap-with-indent a indent-depth)
+    "this is done for supporting indent alignment for multiple lines in text-browsers.
+    text browser should support some css properties for using a box-model because this way conflicts
+    with different font-sizes and screen-filling preferences for example"
+    (let (indent (create-sxml-indent indent-depth))
+      (reverse (fold (l (e r) (if (string? e) (text-wrap-with-indent e indent) e)) (list) a))))
 
   (define (add-spaces a)
     "inserts a space before non-list elements (strings, numbers, etc) except the first and splices lists of expressions."
@@ -66,9 +93,11 @@
       (l (e r)
         (if (list? e)
           (if (null? e) r
-            (pair (if (symbol? (first e)) e (append (create-sxml-indent indent-depth) e (ql (br))))
-              r))
-          (pair (list (create-sxml-indent indent-depth) e (ql br)) r)))
+            (pair (if (symbol? (first e)) e (list (create-sxml-indent indent-depth) e (ql br))) r))
+          (pair
+            (if (string? e) (text-wrap-with-indent e (create-sxml-indent indent-depth))
+              (list (create-sxml-indent indent-depth) e (ql br)))
+            r)))
       (list) a))
 
   (define (list-sort-as-string string-less? a)
@@ -88,7 +117,7 @@
             (list (q div) content))))))
 
   (define-syntax-rule (sxml a) (list (quasiquote a)))
-  (define (h* number content) (pair (vector-ref html-headings (min 6 number)) content))
+  (define (h* number content) (pair (vector-ref html-headings (min 5 number)) content))
 
   (define (escape a indent-depth)
     (list (q pre)
@@ -98,12 +127,14 @@
     (let
       ( (indent (string-multiply "  " indent-depth))
         (lines
-          (fold
-            (l (e r)
-              (if (list? e)
-                (append (string-split (prefix-tree->indent-tree-string (list e)) #\newline) r)
-                (pair e r)))
-            (list) a)))
+          (reverse
+            (fold
+              (l (e r)
+                (if (list? e)
+                  (append
+                    (reverse (string-split (prefix-tree->indent-tree-string (list e)) #\newline)) r)
+                  (pair e r)))
+              (list) a))))
       (list (q pre) (string-append indent (string-join lines (string-append "\n" indent))))))
 
   (define (section title . content) (section* (or (docl-env-ref (q indent-depth)) 0) title content))

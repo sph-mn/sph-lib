@@ -19,9 +19,9 @@
     (sph lang docl env itml-to-html-sxml)
     (sph lang parser itml)
     (sph read-write)
-    (only (sph list) insert-second interleave)
+    (only (sph list) insert-second)
     (only (sph one) string->datum first-as-result)
-    (only (sph string) string-equal? string-slice-at-words)
+    (only (sph string) string-equal?)
     (only (sph tree) flatten tree-transform-with-state))
 
   (define docl-itml-html-sxml-env-module-names
@@ -35,21 +35,8 @@
   (define-syntax-rule (heading-section? a)
     (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
 
-  (define text-column-max-length 80)
-
-  (define (text-columns-wrap a)
-    "this is done for supporting indent alignment for multiple lines in text-browsers.
-    text browser should support some css properties for using a box-model because this way conflicts
-    with different font-sizes and screen-filling preferences for example"
-    (reverse
-      (fold
-        (l (e r)
-          (if (and (string? e) (> (string-length e) text-column-max-length))
-            (pair (pair (q p) (interleave (string-slice-at-words e text-column-max-length) (ql br))) r) (pair e r)))
-        (list) a)))
-
   (define-syntax-rule (list->sxml a level level-init)
-    (let (a (text-columns-wrap a)) (if (heading-section? a) (join-heading-section a level) a)))
+    (if (heading-section? a) (join-heading-section a level) a))
 
   (define-syntax-rule (ascend-expr->sxml prefix content e env level level-init)
     (case prefix ((line) (add-spaces content))
