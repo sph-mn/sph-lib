@@ -14,7 +14,9 @@
 
 (library (sph cli)
   (export
-    cli-create)
+    cli-command-match
+    cli-create
+    cli-option-spec->list)
   (import
     (guile)
     (ice-9 receive)
@@ -26,17 +28,20 @@
     (srfi srfi-37)
     (only (sph list)
       contains?
+      list-prefix?
       pattern-match-min-length
+      iterate-with-continue
       containsv?
       fold-multiple
       split-by-pattern)
-    (only (sph string) any->string-write)
-    (only (sph string) string-multiply)
+    (only (sph string) string-multiply any->string-write)
+    (only (sph tree) prefix-tree-product)
     (only (srfi srfi-1)
       drop-right
       drop
       drop-while
       remove
+      append-map
       partition))
 
   (define (typecheck+conversion type a)
@@ -152,8 +157,7 @@
                 (simple-format #t
                   "error wrong-type-for-argument option-name:~A expected-type:~A given-argument:~S\n"
                   name type value)
-                (exit 1)))
-            )
+                (exit 1))))
           (c opt name value r)))
       c))
 
@@ -220,7 +224,7 @@
               (list unnamed parsed))))
         (split-by-pattern pattern unnamed))))
 
-  (define (process-unnamed-options parsed-options unnamed-option-specs)
+  (define (process-unnamed-options parsed-options unnamed-option-specs) "list list ->"
     (call-with-values (l () (partition string? parsed-options))
       (l (unnamed named)
         (apply
@@ -229,10 +233,10 @@
               (apply append parsed) named))
           (fold-multiple match-unnamed-options unnamed-option-specs unnamed (list))))))
 
-  (define (keyword-list->alist a)
+  (define (keyword-list->alist a) "list -> list"
     (list->alist (map (l (e) (if (keyword? e) (keyword->symbol e) e)) a)))
 
-  (define (check-required a spec) "list:options option-spec ->"
+  (define (check-required a spec) "list:options list:option-spec ->"
     (let*
       ( (given (alist-keys a))
         (missing
@@ -246,6 +250,17 @@
   (define (default-missing-arguments-handler key count option-names)
     (format #t "~a missing argument~p ~s\n" count count option-names) (exit 1))
 
+  (define (cli-commands-spec->list a) (append-map (l (e) (prefix-tree-product e #t)) a))
+
+  (define (cli-command-match arguments commands-list)
+    (any (l (e) (if (apply list-prefix? arguments e) e #f)) commands-list))
+
+  (define (command-dispatch& command-handler arguments commands-list c)
+    (if (and command-handler (not (null? commands-list)))
+      (let (match (cli-command-match arguments commands-list))
+        (if match (command-handler match (list-tail arguments (length match))) (c)))
+      (c)))
+
   (define (cli-create . config)
     "::
      #:version string/(integer ...)
@@ -253,9 +268,11 @@
      #:help string
      #:help-arguments string/boolean
      #:arguments (string ...)
-     #:options ((symbol/list [character/string/(character/string ...) boolean boolean
      #:missing-arguments-handler procedure:{symbol any ...}
-     boolean symbol/(symbol ...) string procedure]) ...)
+     #:command-handler procedure:{list:(symbol ...):command-name list:rest-arguments -> any}
+     #:commands commands-spec
+     #:options ((symbol/list [character/string/(character/string ...) boolean boolean
+         boolean symbol/(symbol ...) string procedure]) ...)
      ->
      procedure:{string ... -> alist:((symbol . any) ...):parsed-arguments}
 
@@ -263,7 +280,8 @@
      custom-processor: args-fold-processor:{opt matched-name any result ->}
      input-type-names: symbol:string/number/integer
      option: (name/pattern alternative-names required? value-required value-optional input-type description custom-processor)
-     pattern: (symbol symbol/ellipsis:... ...)"
+     pattern: (symbol symbol/ellipsis:... ...)
+     commands-spec: (string/commands-spec ...)"
     (let*
       ( (config (keyword-list->alist config)) (options-config (alist-ref config (q options)))
         (options (config->options config options-config)))
@@ -271,18 +289,24 @@
         ( (missing-arguments-handler
             (let (v (alist-ref config (q missing-arguments-handler) (q undefined)))
               (if (eqv? (q undefined) v) default-missing-arguments-handler (and (procedure? v) v))))
-          (unnamed-options (if options-config (filter unnamed-option? options-config) (list))))
+          (unnamed-options (if options-config (filter unnamed-option? options-config) (list)))
+          (options-spec (map option->args-fold-option options))
+          (commands-list (pass-if (alist-ref config (q commands)) cli-commands-spec->list (list))))
         (l arguments
-          (let
-            (proc
-              (l ()
-                (check-required
-                  (process-unnamed-options
-                    (reverse
-                      (args-fold (if (null? arguments) (tail (program-arguments)) arguments)
-                        (map option->args-fold-option options) unrecognized-processor
-                        unnamed-processor (list)))
-                    unnamed-options)
-                  options)))
-            (if missing-arguments-handler
-              (catch (q missing-arguments) proc missing-arguments-handler) (proc))))))))
+          (let*
+            ( (arguments (if (null? arguments) (tail (program-arguments)) arguments))
+              (no-command-cli
+                (let
+                  (cli
+                    (thunk
+                      (check-required
+                        (process-unnamed-options
+                          (reverse
+                            (args-fold arguments options-spec
+                              unrecognized-processor unnamed-processor (list)))
+                          unnamed-options)
+                        options)))
+                  (if missing-arguments-handler
+                    (thunk (catch (q missing-arguments) cli missing-arguments-handler)) cli))))
+            (command-dispatch& (alist-ref config (q command-handler)) arguments
+              commands-list no-command-cli)))))))

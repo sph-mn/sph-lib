@@ -31,6 +31,7 @@
     every
     first
     fold
+    thunk
     fold-right
     identity-s
     l
@@ -187,4 +188,5 @@
     ((name (wrap-name ...) expr ...) (define name (compose-s (wrap-name ...) expr ...)))
     ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
-  (define* (display-line a #:optional (port (current-output-port))) (display a port) (newline port)))
+  (define* (display-line a #:optional (port (current-output-port))) (display a port) (newline port))
+  (define-syntax-rule (thunk body ...) (l () body ...)))

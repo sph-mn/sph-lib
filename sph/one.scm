@@ -66,7 +66,6 @@
     values->list
     string-if-exception
     apply*
-    thunk
     true?
     true?-s)
   (import
@@ -95,8 +94,6 @@
       unfold-right
       filter
       unfold))
-
-  (define-syntax-rule (thunk body ...) (l () body ...))
 
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
 

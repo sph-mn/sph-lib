@@ -11,6 +11,7 @@
 ; GNU General Public License for more details.
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
+
 (library (sph tree)
   (export
     denoted-tree->prefix-tree
@@ -18,6 +19,7 @@
     flatten
     prefix-tree->denoted-tree
     prefix-tree->path-list
+    prefix-tree-context-match
     prefix-tree-map
     prefix-tree-map-with-context
     prefix-tree-map-with-continue
@@ -104,21 +106,51 @@
     convert a tree representation like this ((0 a) (1 b) (2 c) (1 d)) to this (a (b (c) d))"
     (denoted-tree->tree-inner a depth-start r-2 r (pair r-2 r)))
 
-  (define (produce-prefix-context proc a)
+  (define* (produce-prefix-context proc a #:optional ignore-prefixes?)
     "{context element -> any} list -> list
     context is a list containing nested-list prefixes in reverse/upward order.
     for example (a (d e f) k (g h i) j) leads to proc applied with each of the following arguments:
-    (e (d a)), (f (d a)), (k (a)), (h (g a)), (i (g a)), (j (a))"
+    (d (a)), (e (d a)), (f (d a)),(k (a)), (g (a)), (h (g a)), (i (g a)), (j (a))
+    ignore-prefix-paths ignores elements that are prefixes and only considers sub-elements"
     (if (null? a) a
-      (reverse
-        (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (r (list)))
-          (if (null? rest) r
-            (loop (tail rest) prefix
-              context
-              (let (e (first rest))
-                (if (and (list? e) (not (null? e)))
-                  (loop (tail e) (first e) (pair prefix context) r)
-                  (pair (proc e (pair prefix context)) r)))))))))
+      (let*
+        ( (map-to-result (l (e prefix context r) (pair (proc e (pair prefix context)) r)))
+          (map-to-result-list (if ignore-prefixes? (l (e prefix context r) r) map-to-result)))
+        (reverse
+          (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (r (list)))
+            (if (null? rest) r
+              (loop (tail rest) prefix
+                context
+                (let (e (first rest))
+                  (if (and (list? e) (not (null? e)))
+                    (let (prefix-next (first e))
+                      (loop (tail e) prefix-next
+                        (pair prefix context) (map-to-result-list prefix-next prefix context r)))
+                    (map-to-result e prefix context r))))))))))
+
+  (define (prefix-tree-context-match a pattern)
+    "list list -> boolean
+    true if pattern exists in prefix-tree with the same tree interpretation as prefix-tree-context-produce.
+    example: (a b (d c)) contains patterns (a d c) and (a b) and (a d)"
+    (if (null? a) a
+      (null?
+        (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (pattern pattern))
+          ;(debug-log rest prefix context pattern)
+          (if (or (null? pattern) (null? rest)) pattern
+            (let*
+              ( (e (first rest))
+                (pattern
+                  (if (and (list? e) (not (null? e)))
+                    (let (prefix-next (first e))
+                      (loop (tail e) prefix-next
+                        (pair prefix context)
+                        (if (equal? prefix (first pattern)) (tail pattern) pattern)))
+                    (if (equal? prefix (first pattern))
+                      (let (pattern (tail pattern))
+                        (if (null? pattern) pattern
+                          (if (equal? e (first pattern)) (tail pattern) pattern)))
+                      pattern))))
+              (loop (tail rest) prefix context pattern)))))))
 
   (define (produce-prefix-context-mm proc a)
     "procedure:{any list -> any} list -> list
@@ -213,7 +245,7 @@
   (define (produce-with-iterator-tree iterator proc a b)
     "procedure:{proc list:elements -> any} procedure:{any:element-a any:element-b -> any}:proc list list -> any
     call proc with each ordered combination between elements of two lists with an
-    iterator procedure that is called in a nested way to create the argument combinations"
+    iterator procedure that is called in a nested (each (lambda (e-1) (each (lambda (e-2) (proc e-1 e-2)) b)) a) way to create the argument combinations"
     (iterator
       (l (e-1)
         (if (list? e-1) (produce-with-iterator-tree iterator proc e-1 b)
@@ -253,10 +285,10 @@
         \"/var\")"
     (prefix-tree-produce (l e (string-join e "/")) a))
 
-  (define (prefix-tree-product a) "list -> list"
+  (define* (prefix-tree-product a #:optional ignore-prefixes?) "list -> list"
     "combines prefixex and tails as a one-to-many relation.
     example (a (d e f) (g h i) j) -> ((a d e) (a d f) (a g h) (a g i) (a j))"
-    (produce-prefix-context (l (context e) (reverse (pair context e))) a))
+    (produce-prefix-context (l (context e) (reverse (pair context e))) a ignore-prefixes?))
 
   (define (prefix-tree-product-mm a) "list -> list"
     "like prefix-tree-product, but optionally supporting a list as prefix for many-to-many relations
