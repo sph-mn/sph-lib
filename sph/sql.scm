@@ -1,20 +1,17 @@
-#;((sph sql) - create sql expressions from scheme data-structures.
-written for the guile scheme interpreter
-Copyright (C) 2010-2014 sph <tantalum@online.de> (current maintainer)
+; (sph sql) - create sql strings from scheme data-structures
+; written for the guile scheme interpreter
+; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; This program is free software; you can redistribute it and/or modify it
+; under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 3 of the License, or
+; (at your option) any later version.
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+; GNU General Public License for more details.
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, see <http://www.gnu.org/licenses/>
-)
 (library (sph sql)
   (export
     sql-columns
@@ -57,8 +54,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>
       tree-map-lists-with-level
       prefix-tree-map-with-continue-with-level))
 
-  (define (sql-ele-data->filter expr)
-    "((column-name . value) ...) -> ((column-name value) ...)"
+  (define (sql-ele-data->filter expr) "((column-name . value) ...) -> ((column-name value) ...)"
     (if (list? expr) (map (l (ele) (if (list? ele) ele (list (first ele) (tail ele)))) expr)
       (if (pair? expr) (list (first expr) (tail expr)) expr)))
 
@@ -89,8 +85,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>
   (define (join-column-value c o v) (string-append (sql-column c) o (sql-value v)))
   (define row-expr-prefixes (q (any every not)))
 
-  (define (operator->sql-operator arg)
-    "symbol/string -> string"
+  (define (operator->sql-operator arg) "symbol/string -> string"
     (case arg ((equal =) "=")
       ((greater >) ">") ((greater-or-equal >=) ">=")
       ((less <) "<") ((less-or-equal <=) "<=")
@@ -131,8 +126,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>
                                 (string-join
                                   (map
                                     (l (v)
-                                      (if (list? v) (first v)
-                                        (join-column-value c sql-operator v)))
+                                      (if (list? v) (first v) (join-column-value c sql-operator v)))
                                     values)
                                   value-combinator))))))
                       ((if (eqv? 1 value-state) identity list) (combine-with-values c)))))
@@ -182,8 +176,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>
                 ((not) row-expr-unary) (else (pair (q invalid-row-expr-prefix) prefix)))
               prefix
               (if (pair? (first suffix))
-                (map
-                  (l (ele) (if (pair? ele) (join-column-value (first ele) "=" (tail ele)) ele))
+                (map (l (ele) (if (pair? ele) (join-column-value (first ele) "=" (tail ele)) ele))
                   suffix)
                 suffix)
               level))))
@@ -191,8 +184,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>
         (if (sql-where-filter? expr)
           (prefix-tree-map-with-continue-with-level handle-row-expr
             (l (lis proc continue level)
-              (if (or (null? lis) (contains? row-expr-prefixes (first lis)))
-                (continue lis level) (column-expr (first lis) (tail lis))))
+              (if (or (null? lis) (contains? row-expr-prefixes (first lis))) (continue lis level)
+                (column-expr (first lis) (tail lis))))
             expr)
           (throw (q not-a-sql-where-filter))))))
 
@@ -263,8 +256,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>
                   "," (if (list? limit) (number->string (list-ref limit 1)) (tail limit))))
               (else limit))
             "")
-          (if order
-            (string-append " order by " (if (list? order) (string-join order " ") order)) "")
+          (if order (string-append " order by " (if (list? order) (string-join order " ") order))
+            "")
           (if add-2 (string-append " " add-2) "")))))
 
   (define (sql-columns-list columns)
@@ -279,7 +272,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>
             column))
         columns)))
 
-  (define (sql-columns columns) "pair/list/string/boolean -> string
+  (define (sql-columns columns)
+    "pair/list/string/boolean -> string
     construct the \"column\" part of a sql expression"
     (if (pair? columns)
       (if (list? columns) (if (null? columns) #f (string-join (sql-columns-list columns) ","))
@@ -303,8 +297,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>
       ( ( (set)
           (if (list? set)
             (string-join
-              (map
-                (l (ele) (string-append (sql-column (first ele)) "=" (sql-value (tail ele)))) set)
+              (map (l (ele) (string-append (sql-column (first ele)) "=" (sql-value (tail ele))))
+                set)
               ",")
             (if (pair? set) (string-append (sql-column (first set)) "=" (sql-value (tail set)))
               (if (string? set) set #f))))
@@ -331,8 +325,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>
     (string-append "create table " (if replace "" "if not exists ")
       table-name "("
       (if (list? columns)
-        (string-join
-          (map (l (column) (if (list? column) (string-join column " ") column)) columns) ",")
+        (string-join (map (l (column) (if (list? column) (string-join column " ") column)) columns)
+          ",")
         columns)
       (if add (string-append "," add) "") ")"))
 
