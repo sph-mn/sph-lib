@@ -32,6 +32,7 @@
     alistv-ref
     alistv-select
     bindings->alist
+    keyword-list->alist+keyless
     list->alist
     list->group-alist
     list-alist?
@@ -50,6 +51,20 @@
       (assq-ref alistq-ref)
       (assv-ref alistv-ref)
       (assoc-set! alist-set!)))
+
+  (define (keyword-list->alist+keyless a)
+    "list -> (list:alist any ...)
+    parses a list with arguments similar to lambda* arguments. it creates alist entries for keywords (#: notation, #:example) and subsequently following values (#:example 3 other ...).
+    if no value follows: (#:example . #t).
+    all values that do not directly follow a keyword are collected in the tail of the result"
+    (let loop ((rest a) (r (list)) (keyless (list)))
+      (if (null? rest) (pair r keyless)
+        (let (e (first rest))
+          (if (keyword? e)
+            (let ((rest (tail rest)) (e (keyword->symbol e)))
+              (if (null? rest) (pair (pair (pair e #t) r) keyless)
+                (loop (tail rest) (pair (pair e (first rest)) r) keyless)))
+            (loop (tail rest) r (pair e keyless)))))))
 
   (define list->alist
     (let (proc (l (e alt prev r) (if alt (list #f #f (acons prev e r)) (list #t e r))))

@@ -63,6 +63,7 @@
     search-env-path
     socket-bind
     string->datum
+    keywords-list->alist
     values->list
     string-if-exception
     apply*

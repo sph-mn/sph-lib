@@ -30,6 +30,7 @@
       contains?
       list-prefix?
       pattern-match-min-length
+      first-or-null
       iterate-with-continue
       containsv?
       fold-multiple
@@ -233,9 +234,6 @@
               (apply append parsed) named))
           (fold-multiple match-unnamed-options unnamed-option-specs unnamed (list))))))
 
-  (define (keyword-list->alist a) "list -> list"
-    (list->alist (map (l (e) (if (keyword? e) (keyword->symbol e) e)) a)))
-
   (define (check-required a spec) "list:options list:option-spec ->"
     (let*
       ( (given (alist-keys a))
@@ -250,15 +248,22 @@
   (define (default-missing-arguments-handler key count option-names)
     (format #t "~a missing argument~p ~s\n" count count option-names) (exit 1))
 
-  (define (cli-commands-spec->list a) (append-map (l (e) (prefix-tree-product e #t)) a))
+  (define (cli-command-match arguments commands)
+    (any (l (e) (if (apply list-prefix? arguments (first e)) e #f)) commands))
 
-  (define (cli-command-match arguments commands-list)
-    (any (l (e) (if (apply list-prefix? arguments e) e #f)) commands-list))
-
-  (define (command-dispatch& command-handler arguments commands-list c)
-    (if (and command-handler (not (null? commands-list)))
-      (let (match (cli-command-match arguments commands-list))
-        (if match (command-handler match (list-tail arguments (length match))) (c)))
+  (define (command-dispatch& command-handler arguments commands c)
+    (if commands
+      (let (match (cli-command-match arguments commands))
+        (if match
+          (apply
+            (l (command . command-arguments)
+              (let (rest-arguments (list-tail arguments (length command)))
+                (debug-log arguments)
+                ( (or command-handler (l (a b) b)) command
+                  (if (procedure? command-arguments) (command-arguments command rest-arguments)
+                    (apply (apply cli-create command-arguments) rest-arguments)))))
+            match)
+          (c)))
       (c)))
 
   (define (cli-create . config)
@@ -273,6 +278,7 @@
      #:commands commands-spec
      #:options ((symbol/list [character/string/(character/string ...) boolean boolean
          boolean symbol/(symbol ...) string procedure]) ...)
+     option ...
      ->
      procedure:{string ... -> alist:((symbol . any) ...):parsed-arguments}
 
@@ -281,9 +287,12 @@
      input-type-names: symbol:string/number/integer
      option: (name/pattern alternative-names required? value-required value-optional input-type description custom-processor)
      pattern: (symbol symbol/ellipsis:... ...)
-     commands-spec: (string/commands-spec ...)"
+     commands-spec: (((string:command-name ...) procedure:{command arguments}/[cli-create-argument ...]) ...)"
     (let*
-      ( (config (keyword-list->alist config)) (options-config (alist-ref config (q options)))
+      ( (config+keyless (keyword-list->alist+keyless config)) (config (first config+keyless))
+        (options-config
+          (pass-if (alist-ref config (q options)) (l (a) (append a (tail config+keyless)))
+            (tail config+keyless)))
         (options (config->options config options-config)))
       (let
         ( (missing-arguments-handler
@@ -291,7 +300,8 @@
               (if (eqv? (q undefined) v) default-missing-arguments-handler (and (procedure? v) v))))
           (unnamed-options (if options-config (filter unnamed-option? options-config) (list)))
           (options-spec (map option->args-fold-option options))
-          (commands-list (pass-if (alist-ref config (q commands)) cli-commands-spec->list (list))))
+          (commands (alist-ref config (q commands)))
+          (command-handler (alist-ref config (q command-handler))))
         (l arguments
           (let*
             ( (arguments (if (null? arguments) (tail (program-arguments)) arguments))
@@ -308,5 +318,4 @@
                         options)))
                   (if missing-arguments-handler
                     (thunk (catch (q missing-arguments) cli missing-arguments-handler)) cli))))
-            (command-dispatch& (alist-ref config (q command-handler)) arguments
-              commands-list no-command-cli)))))))
+            (command-dispatch& command-handler arguments commands no-command-cli)))))))
