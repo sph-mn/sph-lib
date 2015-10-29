@@ -300,8 +300,15 @@
   (define (program-path)
     "-> string
     return the full-path of the currently executed program file"
-    (let ((part (first (program-arguments))))
-      (if (eq? #\/ (string-ref part 0)) part (string-append (getenv "PWD") "/" part))))
+    (let (part (first (program-arguments)))
+      (if (string-null? part) part (if (eqv? #\/ (string-ref part 0)) part (string-append (getenv "PWD") "/" part)))))
+
+  (define (program-name)
+    "-> string"
+    (let (part (first (program-arguments)))
+      (if (string-null? part) part
+        (if (eqv? #\/ (string-ref part 0))
+          (basename part) part))))
 
   (define-syntax-rule (true?-s expr) (if expr #t #f))
 

@@ -129,21 +129,21 @@
       " "))
 
   (define (commands->help-text-lines a) "list:commands-spec -> string"
-    (map (l (e)
-        (let ((command (if (string? e) e (string-join (first e) " "))) (command-arguments (tail e)))
-          (let (options-spec (if (null? command-arguments)
-                #f
-                (if (null? (tail command-arguments))
-                  (if (procedure? (first command-arguments)) #f command-arguments)
-                  command-arguments
-                  )))
-            (string-append
-              command
-              (if options-spec (string-append " :: " (options-spec->unnamed-arguments-string options-spec)) ""))
-
-            )
-
-          )) a))
+    (list-sort string<?
+      (map
+        (l (e)
+          (let
+            ((command (if (string? e) e (string-join (first e) " "))) (command-arguments (tail e)))
+            (let
+              (options-spec
+                (if (null? command-arguments) #f
+                  (if (null? (tail command-arguments))
+                    (if (procedure? (first command-arguments)) #f command-arguments)
+                    command-arguments)))
+              (string-append command
+                (if options-spec
+                  (string-append " :: " (options-spec->unnamed-arguments-string options-spec)) "")))))
+        a)))
 
   (define (options-remove-processors a)
     "(single-option-spec ...) -> list
@@ -155,27 +155,25 @@
 
   (define indent "  ")
 
-
-
   (define (config->usage-text a spec)
-    (let
-      (arguments (options-spec->unnamed-arguments-string spec)
- )
-      (if (string-null? arguments) arguments (string-append "arguments: " arguments "\n"))))
+    (let (arguments (options-spec->unnamed-arguments-string spec))
+      (string-append "parameters\n" indent
+        (string-join (delete not (list "options ..." arguments)) " "))))
 
   (define (display-help-proc text commands config spec)
     (l (opt name a r)
       (display
         (string-append
-          (identity-if (alist-ref config (q help-arguments)) (config->usage-text config spec))
-          (if text (string-append "\n" text "\n") "") "\noptions"
+          (identity-if (alist-ref config (q help-parameters)) (config->usage-text config spec))
+          (if (and text (not (string-null? text))) (string-append "\ndescription\n" indent text) "")
+          "\noptions"
           (string-join-lines-with-indent (options->help-text-lines (remove unnamed-option? spec))
             indent)
-          "\n"
           (if commands
             (string-append "\ncommands"
-              (string-join-lines-with-indent (commands->help-text-lines commands) indent) "\n")
-            "")))
+              (string-join-lines-with-indent (commands->help-text-lines commands) indent))
+            "")
+          "\n"))
       (exit 0)))
 
   (define (display-about-proc text config)
@@ -311,7 +309,7 @@
      #:version string/(integer ...)
      #:about string/procedure:{-> string}
      #:help string
-     #:help-arguments string/boolean
+     #:help-parameters string/boolean
      #:arguments (string ...)
      #:missing-arguments-handler procedure:{symbol any ...}
      #:command-handler procedure:{list:(symbol ...):command-name list:rest-arguments -> any}
