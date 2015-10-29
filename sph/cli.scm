@@ -112,41 +112,74 @@
       (string-append (symbol->string name/pattern)
         (if description (string-append help-text-line-description-delimiter description) ""))))
 
-  (define (options->help-text a)
+  (define (string-join-lines-with-indent a indent) "(string ...) string -> string"
+    (string-join a (string-append "\n" indent) (q prefix)))
+
+  (define (options->help-text-lines a) "list -> string"
+    (map
+      (l (e)
+        (apply (if (unnamed-option? e) unnamed-option->help-text-line named-option->help-text-line)
+          e))
+      (list-sort (l (a b) (string< (symbol->string (first a)) (symbol->string (first b)))) a)))
+
+  (define (options-spec->unnamed-arguments-string a)
     (string-join
-      (map
-        (l (e)
-          (apply
-            (if (unnamed-option? e) unnamed-option->help-text-line named-option->help-text-line) e))
-        (list-sort (l (a b) (string< (symbol->string (first a)) (symbol->string (first b)))) a))
-      "\n"))
+      (map (l (e) (if (list? e) (string-join (map symbol->string e) " ") (symbol->string e)))
+        (map first (filter unnamed-option? a)))
+      " "))
+
+  (define (commands->help-text-lines a) "list:commands-spec -> string"
+    (map (l (e)
+        (let ((command (if (string? e) e (string-join (first e) " "))) (command-arguments (tail e)))
+          (let (options-spec (if (null? command-arguments)
+                #f
+                (if (null? (tail command-arguments))
+                  (if (procedure? (first command-arguments)) #f command-arguments)
+                  command-arguments
+                  )))
+            (string-append
+              command
+              (if options-spec (string-append " :: " (options-spec->unnamed-arguments-string options-spec)) ""))
+
+            )
+
+          )) a))
 
   (define (options-remove-processors a)
+    "(single-option-spec ...) -> list
+    remove processor procedures from option-specs"
     (map (l (e) (reverse (drop-while not (reverse (if (> (length e) 6) (drop-right e 1) e))))) a))
 
   (define (display-command-line-interface-proc config spec)
     (l args (write (options-remove-processors spec)) (exit 0)))
 
-  (define (display-help-proc text config spec)
+  (define indent "  ")
+
+
+
+  (define (config->usage-text a spec)
+    (let
+      (arguments (options-spec->unnamed-arguments-string spec)
+ )
+      (if (string-null? arguments) arguments (string-append "arguments: " arguments "\n"))))
+
+  (define (display-help-proc text commands config spec)
     (l (opt name a r)
       (display
         (string-append
           (identity-if (alist-ref config (q help-arguments)) (config->usage-text config spec))
-          (if text (string-append "\n" text "\n") "") "\navailable options\n"
-          (options->help-text (remove unnamed-option? spec)) "\n"))
+          (if text (string-append "\n" text "\n") "") "\noptions"
+          (string-join-lines-with-indent (options->help-text-lines (remove unnamed-option? spec))
+            indent)
+          "\n"
+          (if commands
+            (string-append "\ncommands"
+              (string-join-lines-with-indent (commands->help-text-lines commands) indent) "\n")
+            "")))
       (exit 0)))
 
   (define (display-about-proc text config)
     (l (opt name a r) (display (string-append (if (procedure? text) (text) text) "\n")) (exit 0)))
-
-  (define (config->usage-text a spec)
-    (let
-      (arguments
-        (string-join
-          (map (l (e) (if (list? e) (string-join (map symbol->string e) " ") (symbol->string e)))
-            (map first (filter unnamed-option? spec)))
-          " "))
-      (if (string-null? arguments) arguments (string-append "arguments: " arguments "\n"))))
 
   (define (add-typecheck type c)
     (if type
@@ -202,7 +235,9 @@
               (options
                 (pair
                   (append help-option
-                    (list (display-help-proc (alist-ref a (q help)) a options-temp)))
+                    (list
+                      (display-help-proc (symbol-alist-ref a help) (symbol-alist-ref a commands)
+                        a options-temp)))
                   options)))
             (pair (append cli-option (list (display-command-line-interface-proc a options-temp)))
               options))))))
@@ -246,19 +281,24 @@
       (if (null? missing) a (throw (q missing-arguments) (length missing) missing))))
 
   (define (default-missing-arguments-handler key count option-names)
+    "symbol integer integer (string ...) ->
+    write message to standard output and exit"
     (format #t "~a missing argument~p ~s\n" count count option-names) (exit 1))
 
-  (define (cli-command-match arguments commands)
-    (any (l (e) (if (apply list-prefix? arguments (first e)) e #f)) commands))
+  (define (cli-command-match arguments commands-spec) "list list -> false/any"
+    (any (l (e) (if (apply list-prefix? arguments (first e)) e #f)) commands-spec))
 
-  (define (command-dispatch& command-handler arguments commands c)
-    (if commands
-      (let (match (cli-command-match arguments commands))
+  (define (command-dispatch& command-handler arguments commands-spec c)
+    "procedure/false list list/false procedure:{-> any} -> any
+    if a command from commands-spec is matched at the beginning of the given cli arguments, eventually calls an associated handler procedure,
+    and in any case calls the command-handler if available.
+    if no command matches, proceeds with thunk \"c\""
+    (if commands-spec
+      (let (match (cli-command-match arguments commands-spec))
         (if match
           (apply
             (l (command . command-arguments)
               (let (rest-arguments (list-tail arguments (length command)))
-                (debug-log arguments)
                 ( (or command-handler (l (a b) b)) command
                   (if (procedure? command-arguments) (command-arguments command rest-arguments)
                     (apply (apply cli-create command-arguments) rest-arguments)))))
