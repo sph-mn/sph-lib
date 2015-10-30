@@ -16,12 +16,10 @@
   (export
     any->list
     any->list-s
-    collect-map
     complement
     complement-both
     contains-all?
     contains-some?
-    fold-slice
     contains?
     containsq?
     containsv?
@@ -52,6 +50,7 @@
     fold-multiple
     fold-multiple-right
     fold-segments
+    fold-slice
     fold-span
     fold-unless
     fold-unless-check-init
@@ -107,6 +106,7 @@
     produce-controlled
     produce-unless
     replace
+    replace-at-once
     simplify
     simplify-list
     splice
@@ -184,17 +184,19 @@
   (define-syntax-rule (true->list-s a) (if a (any->list-s a) a))
   (define (true->list a) "wraps a true non-list argument in a list" (true->list-s a))
 
-  (define (collect-map collect-proc proc a)
+  (define (replace-at-once match? proc a)
     "procedure:{any -> boolean} procedure:{list:matched-elements -> list:replacements} list:source -> list
-    applies proc with a list of all elements matching collect-proc.
-    the result must be a list of zero to matched-elements-count length and is used to
-    replace matched elements in order in the source list. collect-proc is evaluated only once per source element"
-    (let (collected (map (l (e) (pair (collect-proc e) e)) a))
-      (fold-multiple
-        (l (e r replacements)
-          (if (first e) (pair (pair (first replacements) r) (tail replacements))
-            (pair (pair (tail e) r) replacements)))
-        a (list) (proc (map tail collected)))))
+    all elements matching \"match?\" are collected in a list and passed to \"proc\".
+    the result of \"proc\" is then used to replaces the matched elements in source in order.
+    in the case that the result list is shorter than the matched elements,"
+    (reverse
+      (first
+        (let (a-extended (map (l (e) (pair (match? e) e)) a))
+          (fold-multiple
+            (l (e r replacements)
+              (if (first e) (list (pair (first replacements) r) (tail replacements))
+                (list (pair (tail e) r) replacements)))
+            a-extended (list) (proc (filter-map (l (e) (if (first e) (tail e) #f)) a-extended)))))))
 
   (define (contains-all? a . values)
     "list ... -> boolean
@@ -385,8 +387,7 @@
 
   (define (fold-span filter-proc proc a)
     "procedure:{any -> any/false} procedure:{list -> any} list -> any
-    fold over each list of elements that successively matched filter-proc (utilising the "
-    span " procedure)"
+    fold over each list of elements that successively matched filter-proc (utilising the \"span\" procedure)"
     (let loop ((rest a) (r (list)))
       (if (null? rest) (reverse r)
         (let-values (((successive rest) (span filter-proc rest)))
@@ -478,7 +479,7 @@
         like iterate-three but takes two additional procedures - one for stopping the iteration with the current result, and one that is called for the last element or when stop? is true"
         (loop stop? end map-proc (list) (first a) (tail a)))))
 
- (define (iterate-with-continue proc a . states)
+  (define (iterate-with-continue proc a . states)
     "procedure:{any:element list:rest procedure:continue:{list:next-pair any:state-value ...} any:state-value ... -> any} list any:state-value ..."
     (apply
       (rec (loop rest . states)
@@ -612,7 +613,9 @@
     map the first element that matches match?"
     (let loop ((rest a) (r (list)))
       (if (null? rest) r
-        (let (e (first rest)) (if (match? e) (append (reverse (pair (proc e) r)) (tail rest)) (loop (tail rest) (pair e r)))))))
+        (let (e (first rest))
+          (if (match? e) (append (reverse (pair (proc e) r)) (tail rest))
+            (loop (tail rest) (pair e r)))))))
 
   (define (map-segments proc len a)
     "
@@ -620,7 +623,7 @@
     map over each overlapping segment of length len"
     (fold-segments (l (r . e) (append r (list (apply proc e)))) len (list) a))
 
- (define (map-slice slice-length proc a)
+  (define (map-slice slice-length proc a)
     "{any ... -> any} integer list
     call proc with each slice-length number of successive elements of a"
     (let loop ((rest a) (slice (list)) (slice-ele-length 0) (r (list)))
@@ -646,7 +649,7 @@
 
   (define (map-span filter-proc proc a)
     "procedure:{any -> any/false} procedure:{any any ... -> any} list -> list
-    apply proc with with each list of elements that successively matched filter-proc. may be only one element at a time"
+    apply proc with with each list of elements that successively matched filter-proc. may turn out to be only one element at a time"
     (fold-span filter-proc (l (e r) (pair (apply proc e) r)) a))
 
   (define (map-unless proc stop? default . a)
@@ -693,9 +696,8 @@
     (let loop ((rest a)) (if (null? rest) (list) (pair (proc rest) (loop (tail rest))))))
 
   (define (pair-reverse a)
-    "
-    pair -> pair
-    reverses the order of the two values in a pair"
+    "pair -> pair
+    reverses the order of the values in a pair"
     (pair (tail a) (first a)))
 
   (define (pair->list a) (list (first a) (tail a)))

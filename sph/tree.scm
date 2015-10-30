@@ -39,7 +39,7 @@
     produce-tree-lists-with-levels
     produce-with-iterator-tree
     tree->denoted-tree
-    tree-collect-map
+    tree-replace-at-once
     tree-contains-any-not?
     tree-contains-any?
     tree-contains-every?
@@ -505,12 +505,12 @@
     a tree-transform descend-proc that does not apply transformations on descend"
     (list #f #t))
 
-  (define (tree-collect-map collect-proc proc a)
+  (define (tree-replace-at-once match? proc a)
     "procedure:{element -> boolean} procedure:{list:matched-elements -> list} list -> list
     searches through tree recursively, collecting all elements (including lists) that match collect-proc, then calls
     proc with a list of matched elements. the result of proc must of length zero (no replacement) or matched-element-count (replaces all matches).
     results in the tree with the matched elements are replaced in order by the result elements from calling proc"
-    (tree-replace-by-list a collect-proc (proc (tree-filter->flat-list collect-proc a))))
+    (tree-replace-by-list a match? (proc (tree-filter->flat-list match? a))))
 
   (define* (tree-contains? a search-value #:optional (equal-proc equal?))
     "list any [procedure:{any any -> boolean}] -> boolean

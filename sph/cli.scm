@@ -11,6 +11,9 @@
 ; GNU General Public License for more details.
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
+;possible-enhancements
+; * automatic parameters usage help text also for multiple unnamed-option patterns
+; * allow commands to be specified at the end of the root-cli option list (currently either commands or root cli run, this would make root cli run first)
 
 (library (sph cli)
   (export
@@ -222,7 +225,7 @@
                 #f #f #f #f #f (display-version-proc version-spec))
               options))))
       (l (options)
-        (pass-if (alist-ref a (q about))
+        (pass-if (symbol-alist-ref a about)
           (l (text) (pair (list (q about) #\a #f #f #f #f #f (display-about-proc text a)) options))))
       (l (options)
         (let
@@ -286,7 +289,7 @@
   (define (cli-command-match arguments commands-spec) "list list -> false/any"
     (any (l (e) (if (apply list-prefix? arguments (first e)) e #f)) commands-spec))
 
-  (define (command-dispatch& command-handler arguments commands-spec c)
+  (define (command-dispatch& command-handler arguments commands-spec command-options c)
     "procedure/false list list/false procedure:{-> any} -> any
     if a command from commands-spec is matched at the beginning of the given cli arguments, eventually calls an associated handler procedure,
     and in any case calls the command-handler if available.
@@ -299,7 +302,11 @@
               (let (rest-arguments (list-tail arguments (length command)))
                 ( (or command-handler (l (a b) b)) command
                   (if (procedure? command-arguments) (command-arguments command rest-arguments)
-                    (apply (apply cli-create command-arguments) rest-arguments)))))
+                    (apply
+                      (apply cli-create
+                        (if command-options (append command-options command-arguments)
+                          command-arguments))
+                      rest-arguments)))))
             match)
           (c)))
       (c)))
@@ -314,13 +321,19 @@
      #:missing-arguments-handler procedure:{symbol any ...}
      #:command-handler procedure:{list:(symbol ...):command-name list:rest-arguments -> any}
      #:commands commands-spec
+     #:command-options option-spec
      #:options ((symbol/list [character/string/(character/string ...) boolean boolean
          boolean symbol/(symbol ...) string procedure]) ...)
      option ...
      ->
      procedure:{string ... -> alist:((symbol . any) ...):parsed-arguments}
 
-     data-structures
+     # description
+     commands-options: options shared between commands
+     commands: specify sub-commands that are recognised as leading keywords in the program arguments. with options or handler procedures
+     command-handler: command-handler called for all commands (after individual command handlers)
+     options: specify long, short and unnamed options
+     # data-structures
      custom-processor: args-fold-processor:{opt matched-name any result ->}
      input-type-names: symbol:string/number/integer
      option: (name/pattern alternative-names required? value-required value-optional input-type description custom-processor)
@@ -339,7 +352,8 @@
           (unnamed-options (if options-config (filter unnamed-option? options-config) (list)))
           (options-spec (map option->args-fold-option options))
           (commands (alist-ref config (q commands)))
-          (command-handler (alist-ref config (q command-handler))))
+          (command-handler (alist-ref config (q command-handler)))
+          (command-options (alist-ref config (q command-options))))
         (l arguments
           (let*
             ( (arguments (if (null? arguments) (tail (program-arguments)) arguments))
@@ -356,4 +370,4 @@
                         options)))
                   (if missing-arguments-handler
                     (thunk (catch (q missing-arguments) cli missing-arguments-handler)) cli))))
-            (command-dispatch& command-handler arguments commands no-command-cli)))))))
+            (command-dispatch& command-handler arguments commands command-options no-command-cli)))))))

@@ -3,6 +3,9 @@
   (sph test)
   (sph list))
 
+(define (test-env-replace-at-once-proc a)
+  (map (l (e) (* 3 e)) a))
+
 (execute-tests-quasiquote
   (intersection
     ((1 2 3) (5 6 2 8)) (2)
@@ -16,6 +19,13 @@
     (() ()) ()
     ((1 2 2 3 3) (4 2 2 5)) (4 5 1 3 3)
     ((1 2) (1 2)) ())
+  (replace-at-once
+    ;matches in the middle, modification of matches
+    ((unquote even?) (unquote test-env-replace-at-once-proc) (1 2 3 4 5))
+    (1 6 3 12 5)
+    ;matches at beginning and end
+    ((unquote odd?) (unquote test-env-replace-at-once-proc) (1 2 3 4 5))
+    (3 2 9 4 15))
   (complement
     ((1 2 3) (5 6 2 8)) (1 3)
     ((1 2 3) (4 5 6)) (1 2 3)
