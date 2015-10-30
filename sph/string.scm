@@ -16,7 +16,6 @@
   (export
     any->string
     any->string-write
-    string-indices-char
     list->string-columns
     list-string-append-each
     parenthesise
@@ -30,10 +29,10 @@
     string-downcase-first
     string-drop-suffix
     string-each
-    string-slice-at-words
     string-enclose
     string-equal?
     string-indices
+    string-indices-char
     string-last-index
     string-longest-prefix
     string-lowercase?
@@ -45,8 +44,8 @@
     string-replace-char
     string-replace-chars
     string-replace-string
-    string-slice-at-words
     string-skip-string
+    string-slice-at-words
     string-split-regexp
     string-trim-string
     symbol?->string
@@ -56,8 +55,8 @@
     (ice-9 regex)
     (rnrs base)
     (sph)
-    (only (sph list) fold-multiple)
-    (only (rnrs bytevectors) u8-list->bytevector utf8->string))
+    (only (rnrs bytevectors) u8-list->bytevector utf8->string)
+    (only (sph list) fold-multiple))
 
   (define string-equal? string=)
 
@@ -80,7 +79,8 @@
                   (+ 1 line-spaces-length) (+ word-length current-slice-length) r)))
             (map string-length words) words (list) 0 0 (list)))
         (apply
-          (l (words line line-spaces-length current-slice-length r) (reverse (prepend-line line r))) r))))
+          (l (words line line-spaces-length current-slice-length r) (reverse (prepend-line line r)))
+          r))))
 
   (define (tree-string-join a delimiter)
     (string-join (map (l (e) (if (list? e) (tree-string-join e delimiter) e)) a) delimiter))
@@ -111,8 +111,7 @@
     get the string representation for the value of an object.
     symbols like \".\" are converted to \"#{.}\" using display."
     (if (string? a) a
-      (if (symbol? a) (symbol->string a)
-        (call-with-output-string (l (port) (display a port))))))
+      (if (symbol? a) (symbol->string a) (call-with-output-string (l (port) (display a port))))))
 
   (define (string-last-index a) (if (string-null? a) 0 (- (string-length a) 1)))
   (define (any->string-write a) (if (symbol? a) (symbol->string a) (object->string a write)))
@@ -152,10 +151,8 @@
         (if (list? str-n-datum) (syntax (member str (quote str-n))) (syntax (member str str-n))))))
 
   (define-syntax-rule (string-case a (str-n expr ...) ... else-expr)
-    ;required else expression
-    ( (lambda (str)
-        (cond ((string-case-condition str str-n) (begin expr ...)) ... (else else-expr)))
-      a))
+    ;requires else expression
+    ((lambda (str) (cond ((string-case-condition str str-n) expr ...) ... (else else-expr))) a))
 
   (define (string-contains-any? a patterns)
     "result in a boolean indicating if string contains any of the patterns"
@@ -263,7 +260,8 @@
     (let (a-length (string-length a))
       (let loop ((index 0) (r (list)))
         (if (< index a-length)
-          (loop (+ 1 index) (if (eqv? search-char (string-ref a index)) (pair index r) r)) (reverse r)))))
+          (loop (+ 1 index) (if (eqv? search-char (string-ref a index)) (pair index r) r))
+          (reverse r)))))
 
   (define (string-replace-string a replace replacement)
     "string string string -> string
