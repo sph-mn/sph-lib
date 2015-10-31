@@ -39,6 +39,7 @@
     set-alist-bindings!
     symbol-alist
     symbol-alist-bind
+    symbol-alist-bind-and
     symbol-alist-ref
     symbol-alist-select-apply)
   (import
@@ -118,6 +119,10 @@
 
   (define-syntax-rule (symbol-alist-bind alist (key ...) body ...)
     ((lambda (key ...) body ...) (alist-ref alist (quote key)) ...))
+
+  (define-syntax-rule (symbol-alist-bind-and alist (key ...) body ...)
+    ;body is only evaluated if all alist values are true
+    (symbol-alist-bind alist (key ...) (if (and key ...) (begin body ...) #f)))
 
   (define-syntax-rule (bindings->alist identifier ...)
     ;create an alist with keys named like the identifiers and values from identified variables

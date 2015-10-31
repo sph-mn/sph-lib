@@ -31,6 +31,7 @@
     (srfi srfi-37)
     (only (sph list)
       contains?
+      any->list
       list-prefix?
       pattern-match-min-length
       first-or-null
@@ -66,7 +67,7 @@
           "\n"))
       (exit 0)))
 
-  (define (unnamed-option? a)
+  (define (unnamed-option? a) "list -> boolean"
     (or (list? (first a)) (and (not (null? (tail a))) (null? (first (tail a))))))
 
   (define help-text-line-description-delimiter (string-multiply " " 2))
@@ -125,27 +126,31 @@
           e))
       (list-sort (l (a b) (string< (symbol->string (first a)) (symbol->string (first b)))) a)))
 
-  (define (options-spec->unnamed-arguments-string a)
-    (string-join
-      (map (l (e) (if (list? e) (string-join (map symbol->string e) " ") (symbol->string e)))
-        (map first (filter unnamed-option? a)))
-      " "))
+  (define (options-spec->unnamed-arguments-strings a)
+    (map (l (e) (string-join (map symbol->string e) " ")) (map first (filter unnamed-option? a))))
+
+  (define (config->option-spec a)
+    (apply
+      (l (named . unnamed)
+        (pass-if (alist-ref named (q options)) (l (a) (append a unnamed)) unnamed))
+      (keyword-list->alist+keyless a)))
 
   (define (commands->help-text-lines a) "list:commands-spec -> string"
     (list-sort string<?
       (map
         (l (e)
-          (let
-            ((command (if (string? e) e (string-join (first e) " "))) (command-arguments (tail e)))
+          (let ((command (string-join (first e) " ")) (command-arguments (tail e)))
             (let
-              (options-spec
-                (if (null? command-arguments) #f
+              (option-spec
+                (if (null? command-arguments) (list)
                   (if (null? (tail command-arguments))
-                    (if (procedure? (first command-arguments)) #f command-arguments)
-                    command-arguments)))
+                    (if (procedure? (first command-arguments)) (list)
+                      (config->option-spec command-arguments))
+                    (config->option-spec command-arguments))))
               (string-append command
-                (if options-spec
-                  (string-append " :: " (options-spec->unnamed-arguments-string options-spec)) "")))))
+                (if (null? option-spec) ""
+                  (string-append " :: "
+                    (first (options-spec->unnamed-arguments-strings option-spec))))))))
         a)))
 
   (define (options-remove-processors a)
@@ -157,17 +162,21 @@
     (l args (write (options-remove-processors spec)) (exit 0)))
 
   (define indent "  ")
+  (define options-parameter "options ...")
 
-  (define (config->usage-text a spec)
-    (let (arguments (options-spec->unnamed-arguments-string spec))
+  (define (config->parameters-text a spec)
+    (let
+      (arguments
+        (map (l (e) (string-append options-parameter " " e))
+          (options-spec->unnamed-arguments-strings spec)))
       (string-append "parameters\n" indent
-        (string-join (delete not (list "options ..." arguments)) " "))))
+        (if (null? arguments) options-parameter (string-join arguments (string-append "\n" indent))))))
 
   (define (display-help-proc text commands config spec)
     (l (opt name a r)
       (display
         (string-append
-          (identity-if (alist-ref config (q help-parameters)) (config->usage-text config spec))
+          (identity-if (alist-ref config (q help-parameters)) (config->parameters-text config spec))
           (if (and text (not (string-null? text))) (string-append "\ndescription\n" indent text) "")
           "\noptions"
           (string-join-lines-with-indent (options->help-text-lines (remove unnamed-option? spec))
@@ -214,7 +223,7 @@
                 (pair (pair name (if a a #t)) r))))))
       a))
 
-  (define (config->options-default-options a)
+  (define (config->options-default-options a commands)
     "alist:config -> (procedure:{options -> list:extended-options/false})"
     (list
       (l (options)
@@ -236,17 +245,15 @@
               (options
                 (pair
                   (append help-option
-                    (list
-                      (display-help-proc (symbol-alist-ref a help) (symbol-alist-ref a commands)
-                        a options-temp)))
+                    (list (display-help-proc (symbol-alist-ref a help) commands a options-temp)))
                   options)))
             (pair (append cli-option (list (display-command-line-interface-proc a options-temp)))
               options))))))
 
-  (define (config->options a options-config) "config list -> list"
+  (define (config->options a options-config commands) "config list -> list"
     (remove unnamed-option?
       (fold (l (default-option-proc options) (or (default-option-proc options) options))
-        (if options-config options-config (list)) (config->options-default-options a))))
+        (if options-config options-config (list)) (config->options-default-options a commands))))
 
   (define (match-unnamed-options spec unnamed parsed)
     "list list list:matches -> (list:rest list:matches)"
@@ -311,6 +318,13 @@
           (c)))
       (c)))
 
+  (define (config->commands a) "list -> list"
+    (false-if-exception
+      (map
+        (l (e)
+          (if (string? e) (list (list e)) (if (string? (first e)) (pair (list (first e)) (tail e)))))
+        (alist-ref a (q commands)))))
+
   (define (cli-create . config)
     "::
      #:version string/(integer ...)
@@ -344,14 +358,14 @@
         (options-config
           (pass-if (alist-ref config (q options)) (l (a) (append a (tail config+keyless)))
             (tail config+keyless)))
-        (options (config->options config options-config)))
+        (commands (config->commands config))
+        (options (config->options config options-config commands)))
       (let
         ( (missing-arguments-handler
             (let (v (alist-ref config (q missing-arguments-handler) (q undefined)))
               (if (eqv? (q undefined) v) default-missing-arguments-handler (and (procedure? v) v))))
           (unnamed-options (if options-config (filter unnamed-option? options-config) (list)))
           (options-spec (map option->args-fold-option options))
-          (commands (alist-ref config (q commands)))
           (command-handler (alist-ref config (q command-handler)))
           (command-options (alist-ref config (q command-options))))
         (l arguments
