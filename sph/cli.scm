@@ -149,8 +149,8 @@
                     (config->option-spec command-arguments))))
               (string-append command
                 (if (null? option-spec) ""
-                  (string-append " :: "
-                    (first (options-spec->unnamed-arguments-strings option-spec))))))))
+                  (let (unnamed (options-spec->unnamed-arguments-strings option-spec))
+                    (if (null? unnamed) "" (string-append " :: " (first unnamed)))))))))
         a)))
 
   (define (options-remove-processors a)
@@ -293,6 +293,11 @@
     write message to standard output and exit"
     (format #t "~a missing argument~p ~s\n" count count option-names) (exit 1))
 
+  (define (default-unsupported-option-handler key option option-name)
+    "symbol srfi-37-option string ->
+    write message to standard output and exit"
+    (format #t "unsupported option ~s\n" option-name) (exit 1))
+
   (define (cli-command-match arguments commands-spec) "list list -> false/any"
     (any (l (e) (if (apply list-prefix? arguments (first e)) e #f)) commands-spec))
 
@@ -325,6 +330,14 @@
           (if (string? e) (list (list e)) (if (string? (first e)) (pair (list (first e)) (tail e)))))
         (alist-ref a (q commands)))))
 
+  (define (config->missing-arguments-handler a) "list -> procedure/false"
+    (let (v (symbol-alist-ref a missing-arguments-handler (q undefined)))
+      (if (eqv? (q undefined) v) default-missing-arguments-handler (and (procedure? v) v))))
+
+  (define (config->unsupported-option-handler a) "list -> procedure/false"
+    (let (v (symbol-alist-ref a unsupported-option-handler (q undefined)))
+      (if (eqv? (q undefined) v) default-unsupported-option-handler (and (procedure? v) v))))
+
   (define (cli-create . config)
     "::
      #:version string/(integer ...)
@@ -333,6 +346,7 @@
      #:help-parameters string/boolean
      #:arguments (string ...)
      #:missing-arguments-handler procedure:{symbol any ...}
+     #:unsupported-option-handler procedure:{symbol srfi-37-option option-name ...}
      #:command-handler procedure:{list:(symbol ...):command-name list:rest-arguments -> any}
      #:commands commands-spec
      #:command-options option-spec
@@ -361,9 +375,8 @@
         (commands (config->commands config))
         (options (config->options config options-config commands)))
       (let
-        ( (missing-arguments-handler
-            (let (v (alist-ref config (q missing-arguments-handler) (q undefined)))
-              (if (eqv? (q undefined) v) default-missing-arguments-handler (and (procedure? v) v))))
+        ( (missing-arguments-handler (config->missing-arguments-handler config))
+          (unsupported-option-handler (config->unsupported-option-handler config))
           (unnamed-options (if options-config (filter unnamed-option? options-config) (list)))
           (options-spec (map option->args-fold-option options))
           (command-handler (alist-ref config (q command-handler)))
@@ -382,6 +395,10 @@
                               unrecognized-processor unnamed-processor (list)))
                           unnamed-options)
                         options)))
-                  (if missing-arguments-handler
-                    (thunk (catch (q missing-arguments) cli missing-arguments-handler)) cli))))
+                  (let
+                    (cli
+                      (if missing-arguments-handler
+                        (thunk (catch (q missing-arguments) cli missing-arguments-handler)) cli))
+                    (if unsupported-option-handler
+                      (thunk (catch (q unsupported-option) cli unsupported-option-handler)) cli)))))
             (command-dispatch& command-handler arguments commands command-options no-command-cli)))))))
