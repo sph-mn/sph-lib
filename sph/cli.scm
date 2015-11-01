@@ -314,8 +314,7 @@
               (let (rest-arguments (list-tail arguments (length command)))
                 ( (or command-handler (l (a b) b)) command
                   (if (procedure? command-arguments) (command-arguments command rest-arguments)
-                    (apply
-                      (apply cli-create
+                    ( (apply cli-create
                         (if command-options (append command-options command-arguments)
                           command-arguments))
                       rest-arguments)))))
@@ -354,7 +353,7 @@
          boolean symbol/(symbol ...) string procedure]) ...)
      option ...
      ->
-     procedure:{string ... -> alist:((symbol . any) ...):parsed-arguments}
+     procedure:{(string ...) -> alist:((symbol . any) ...):parsed-arguments}
 
      # description
      commands-options: options shared between commands
@@ -383,7 +382,7 @@
           (command-options (alist-ref config (q command-options))))
         (l arguments
           (let*
-            ( (arguments (if (null? arguments) (tail (program-arguments)) arguments))
+            ( (arguments (if (null? arguments) (tail (program-arguments)) (first arguments)))
               (no-command-cli
                 (let
                   (cli
