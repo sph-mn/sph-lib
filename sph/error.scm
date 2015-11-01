@@ -1,7 +1,6 @@
-;error handling based on return types with an error type.
-
 (library (sph error)
   (export
+    error->list
     error-create
     error-create-p
     error-data
@@ -17,10 +16,15 @@
     (sph)
     (srfi srfi-9))
 
-  (define-record-type error (error-create origin name data)
-    error? (origin error-origin) (name error-name) (data error-data))
+  ;error handling based on return types with an error type.
 
-  (define (error-create-p . a) (apply error-create a))
+  (define-record-type error (primitive-error-create name data origin)
+    error? (name error-name) (data error-data) (origin error-origin))
+
+  (define (error-create-p . a) (apply primitive-error-create a))
+
+  (define-syntax-rules error-create ((name data origin) (primitive-error-create name data origin))
+    ((name data) (error-create name data #f)) ((name) (error-create name #f #f)))
 
   (define (error-false a)
     "any -> any
@@ -34,5 +38,7 @@
   (define-syntax-rules error-require
     ;requires the given assertion to be true, otherwise it results in an error
     ( (assertion when-true ...)
-      (if assertion (begin when-true ...) (error-create (current-source-location) #f (q assertion))))
-    ((assertion) (error-require assertion #t))))
+      (if assertion (begin when-true ...) (error-create #f (q assertion) (current-source-location))))
+    ((assertion) (error-require assertion #t)))
+
+  (define (error->list a) (list (error-origin a) (error-name a) (error-data a))))
