@@ -299,7 +299,10 @@
     (format #t "unsupported option ~s\n" option-name) (exit 1))
 
   (define (cli-command-match arguments commands-spec) "list list -> false/any"
-    (any (l (e) (if (apply list-prefix? arguments (first e)) e #f)) commands-spec))
+
+    (any (l (e)
+
+        (if (apply list-prefix? arguments (first e)) e #f)) commands-spec))
 
   (define (command-dispatch& command-handler arguments commands-spec command-options c)
     "procedure/false list list/false procedure:{-> any} -> any
@@ -327,7 +330,7 @@
     (false-if-exception
       (map
         (l (e)
-          (if (string? e) (list (list e)) (if (string? (first e)) (pair (list (first e)) (tail e)))))
+          (if (string? e) (list (list e)) (if (string? (first e)) (pair (list (first e)) (tail e)) e)))
         (alist-ref a (q commands)))))
 
   (define (config->missing-arguments-handler a) "list -> procedure/false"
