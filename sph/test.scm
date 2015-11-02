@@ -44,6 +44,7 @@
       display
       syntax
       syntax->datum
+      procedure-name
       identity
       procedure-minimum-arity)
     (only (sph alist) list->alist)
@@ -88,7 +89,7 @@
           (string-append "\n" indent-data
             "inp "
             (if (list? inp) (string-join (map any->string-write inp) " ") (any->string-write inp))))
-        (if (eq? (q undefined) exp) ""
+        (if (eqv? (q undefined) exp) ""
           (string-append "\n" indent-data "exp " (any->string-write exp)))
         "\n" indent-data "out " (any->string-write out) (begin (set! prev-message-newline #t) "\n"))))
 
@@ -163,38 +164,49 @@
   (define-syntax-rule (test-proc-name name)
     (let (proc-name (symbol-append (q test-) name)) (if (defined? proc-name) proc-name name)))
 
-  (define (apply-test-proc name test-proc-name data-test index)
-    (if (eq? name test-proc-name)
+  (define (apply-test-proc-from-name name test-proc-name data-test index)
+    (if (eqv? name test-proc-name)
+      ;not test-proc has been found
       (list (symbol->string name) index
         data-test (default-test name index (first data-test) (tail data-test)))
-      (let*
-        ( (test-proc (module-ref* test-proc-name)) (arity (procedure-minimum-arity test-proc))
-          (arity-first (first arity)))
-        (list (symbol->string name) index
-          data-test
-          (if (or (> arity-first 2) (last arity))
-            (test-proc name index (first data-test) (tail data-test))
-            (if (> arity-first 1) (test-proc (first data-test) (tail data-test))
-              (if (> arity-first 0) (test-proc (first data-test)) (test-proc))))))))
+      (apply-test-proc (module-ref* test-proc-name) test-proc-name data-test index)))
+
+  (define (create-anonymous-test-proc-name index)
+    (string->symbol (string-append "test-" (number->string index))))
+
+  (define (apply-test-proc proc name data-test index)
+    (let*
+      ( (name (or name (procedure-name proc) (create-anonymous-test-proc-name index)))
+        (arity (procedure-minimum-arity proc)) (arity-first (first arity)))
+      (list (symbol->string name) index
+        data-test
+        (if (or (> arity-first 2) (last arity))
+          (proc name index (first data-test) (tail data-test))
+          (if (> arity-first 1) (proc (first data-test) (tail data-test))
+            (if (> arity-first 0) (proc (first data-test)) (proc)))))))
 
   (define (evaluate-test-spec-list test-spec format-display)
-    (let (name (first test-spec))
+    (let (name/proc (first test-spec))
       (if (> (length test-spec) 1)
         ;test-spec with multiple test-data
         (begin
           (fold-unless
-            (l (data-test index) (if before-test (before-test name index))
+            (l (data-test index) (if before-test (before-test name/proc index))
               (if
                 (apply evaluate-result format-display
                   (- (/ (- (length test-spec) 1) 2) 1)
-                  (apply-test-proc (first test-spec) (test-proc-name (first test-spec))
-                    data-test index))
+                  (if (procedure? name/proc) (apply-test-proc name/proc #f data-test index)
+                    (apply-test-proc-from-name (first test-spec) (test-proc-name (first test-spec))
+                      data-test index)))
                 (+ 1 index) #f))
             not #f 0 (list->alist (tail test-spec))))
         ;test-spec with no test-data
-        (begin (if before-test (before-test name 1))
+        (begin (if before-test (before-test name/proc 1))
           (apply evaluate-result format-display
-            0 (apply-test-proc (first test-spec) (test-proc-name name) (pair (list) #t) 0))))))
+            0
+            (if (procedure? name/proc) (apply-test-proc name/proc #f (pair (list) #t) 0)
+              (apply-test-proc-from-name (first test-spec) (test-proc-name name/proc)
+                (pair (list) #t) 0)))))))
 
   (define (evaluate-test-spec-symbol test-spec format-display)
     (if before-test (before-test test-spec 1))
@@ -250,7 +262,8 @@
   (define-syntax-case (assert-and optional-title body ...)
     (let (optional-title-datum (syntax->datum (syntax optional-title)))
       (if (string? optional-title-datum)
-        (syntax (assert-true optional-title (boolean-and body ...))) (syntax (boolean-and optional-title body ...)))))
+        (syntax (assert-true optional-title (boolean-and body ...)))
+        (syntax (boolean-and optional-title body ...)))))
 
   (define-syntax-rules assert-equal
     ( (optional-title exp body)
