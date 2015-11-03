@@ -245,7 +245,7 @@
               (options
                 (pair
                   (append help-option
-                    (list (display-help-proc (symbol-alist-ref a help) commands a options-temp)))
+                    (list (display-help-proc (symbol-alist-ref a description) commands a options-temp)))
                   options)))
             (pair (append cli-option (list (display-command-line-interface-proc a options-temp)))
               options))))))
@@ -341,6 +341,7 @@
     "::
      #:version string/(integer ...)
      #:about string/procedure:{-> string}
+     #:description string
      #:help string
      #:help-parameters string/boolean
      #:arguments (string ...)
