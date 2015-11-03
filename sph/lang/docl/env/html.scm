@@ -11,7 +11,7 @@
     (sph)
     (only (sph list) any->list)
     (sph web html-sxml)
-    (sph lang docl env base))
+    (sph lang docl env default))
 
   (define html-headings (q #("" h1 h2 h3 h4 h5 h6)))
 

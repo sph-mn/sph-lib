@@ -1,14 +1,12 @@
-;translates indent-tree syntax to html as sxml using docl.
-;prefixes become headings inside sections, and list-tails become content of the sections.
 
-(library (sph lang docl itml)
+(library (sph lang docl itml-to-sxml-html)
   (export
-    docl-itml-html-sxml-env
-    docl-itml-html-sxml-env-module-names
-    docl-itml-parsed->html-sxml
-    docl-itml-port->html-sxml
-    docl-itml-string->html-sxml
-    parsed-itml->html-sxml)
+    docl-itml-sxml-html-env
+    docl-itml-sxml-html-env-module-names
+    docl-itml-parsed->sxml-html
+    docl-itml-port->sxml-html
+    docl-itml-string->sxml-html
+    parsed-itml->sxml-html)
   (import
     (guile)
     (rnrs base)
@@ -16,7 +14,7 @@
     (sph)
     (sph lang docl)
     (sph lang docl env)
-    (sph lang docl env itml-to-html-sxml)
+    (sph lang docl env itml-to-sxml-html)
     (sph lang parser itml)
     (sph read-write)
     (only (sph list) insert-second)
@@ -24,10 +22,14 @@
     (only (sph string) string-equal?)
     (only (sph tree) flatten tree-transform-with-state))
 
-  (define docl-itml-html-sxml-env-module-names
-    (pair (q (sph lang docl env itml-to-html-sxml)) docl-default-env-module-names))
+  ;translates indent-tree-markup-language to html as sxml using docl.
+  ;the html is supposed to look almost the same in browsers that support css and text browsers that do not support css.
+  ;all the "indent" handling is only done because current text browsers do not support css yet.
 
-  (define docl-itml-html-sxml-env (apply environment docl-itml-html-sxml-env-module-names))
+  (define docl-itml-sxml-html-env-module-names
+    (pair (q (sph lang docl env itml-to-sxml-html)) docl-default-env-module-names))
+
+  (define docl-itml-sxml-html-env (apply environment docl-itml-sxml-html-env-module-names))
 
   (define-syntax-rule (join-heading-section a level)
     (section* level (first a) (add-paragraphs-and-indent (tail a) (+ 1 level))))
@@ -109,7 +111,7 @@
       (let (r (descend-expr->sxml a re-descend level env))
         (if r (list r #f level) (list #f #t (+ 1 level))))))
 
-  (define* (parsed-itml->html-sxml a env #:optional (level-init 0))
+  (define* (parsed-itml->sxml-html a env #:optional (level-init 0))
     "list environment [integer] -> sxml
     a translator for parsed-itml. does not depend on docl"
     (add-paragraphs-and-indent
@@ -124,27 +126,27 @@
       level-init))
 
   (define*
-    (docl-itml-parsed->html-sxml input #:optional bindings keep-prev-bindings
-      (env docl-itml-html-sxml-env)
+    (docl-itml-parsed->sxml-html input #:optional bindings keep-prev-bindings
+      (env docl-itml-sxml-html-env)
       (level-init 0))
     "list [symbol-hashtable/boolean boolean environment integer] -> sxml
     this can also be used to convert list trees with strings to html"
     (docl-translate-any input
-      (l (input) (parsed-itml->html-sxml input env (or (docl-env-ref (q indent-depth)) level-init)))
+      (l (input) (parsed-itml->sxml-html input env (or (docl-env-ref (q indent-depth)) level-init)))
       bindings keep-prev-bindings))
 
   (define*
-    (docl-itml-port->html-sxml input #:optional bindings keep-prev-bindings
-      (env docl-itml-html-sxml-env)
+    (docl-itml-port->sxml-html input #:optional bindings keep-prev-bindings
+      (env docl-itml-sxml-html-env)
       (level-init 0))
     "port [symbol-hashtable/boolean boolean environment integer] -> sxml
-    read itml from a port, parse it and translate it to html-sxml"
+    read itml from a port, parse it and translate it to sxml-html"
     (docl-translate-port input
       (l (input)
-        (parsed-itml->html-sxml (port->parsed-itml input) env
+        (parsed-itml->sxml-html (port->parsed-itml input) env
           (or (docl-env-ref (q indent-depth)) level-init)))
       bindings keep-prev-bindings))
 
-  (define (docl-itml-string->html-sxml input . docl-itml-port->html-sxml-args)
+  (define (docl-itml-string->sxml-html input . docl-itml-port->sxml-html-args)
     "string [symbol-hashtable/boolean boolean environment integer] -> sxml"
-    (apply docl-itml-port->html-sxml (open-input-string input) docl-itml-port->html-sxml-args)))
+    (apply docl-itml-port->sxml-html (open-input-string input) docl-itml-port->sxml-html-args)))

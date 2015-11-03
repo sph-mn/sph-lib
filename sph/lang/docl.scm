@@ -17,7 +17,7 @@
     (only (sph two) define-stack-fluid))
 
   (define-stack-fluid docl-include-stack)
-  (define docl-default-env-module-names (q ((rnrs base) (guile) (sph lang docl env))))
+  (define docl-default-env-module-names (q ((rnrs base) (guile) (sph lang docl env) (sph lang docl env default))))
 
   (define
     (call-with-docl get-source-identifier get-source-position bindings keep-prev-bindings exception-keys input
