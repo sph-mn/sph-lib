@@ -10,7 +10,7 @@
     (guile)
     (sph)
     (only (sph list) any->list)
-    (sph web html-sxml)
+    (sph web sxml-html)
     (sph lang docl env default))
 
   (define html-headings (q #("" h1 h2 h3 h4 h5 h6)))
@@ -30,4 +30,4 @@
 
   (define* (hlink name #:optional (target name)) "string string -> sxml
     create a html hyperlink <a> tag for name and target."
-    (list (html-sxml-link name target))))
+    (list (sxml-html-link name target))))

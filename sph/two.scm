@@ -53,7 +53,7 @@
     not-scm-file?
     path->mime-type
     paths-find-file-size-sum
-    plaintext->html-sxml
+    plaintext->sxml-html
     port-each-line-alternate-direction
     primitive-eval-port
     prog-sync-with-root
@@ -138,7 +138,7 @@
 
   (define (sxml->xml-string a) (call-with-output-string (l (b) (sxml->xml a b) b)))
 
-  (define (plaintext->html-sxml a)
+  (define (plaintext->sxml-html a)
     "string -> list:sxml
     convert double newlines to paragraphs <p> and single newlines to breaks <br>."
     (map (l (e) (list (q p) (interleave (string-split e #\newline) (ql br))))

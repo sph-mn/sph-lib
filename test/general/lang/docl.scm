@@ -1,8 +1,8 @@
-(import (sph) (sph test) (sph lang docl) (sph lang docl itml))
-(define (test-itml->html-sxml inp) (docl-itml-port->html-sxml (open-input-string inp)))
+(import (sph) (sph test) (sph lang docl) (sph lang docl itml-to-sxml-html))
+(define (test-itml->sxml-html inp) (docl-itml-port->sxml-html (open-input-string inp)))
 
 (execute-tests-quasiquote
-  (itml->html-sxml
+  (itml->sxml-html
     "\\\\.(+ 1 2)" ((p "\\.(+ 1 2)"))
     "\\.quote\n  (section (\"a\" \"b\")\n  (\"c\"))" ((section ("a" "b") ("c")))
     "\\string-reverse: a b c" ((p "c b a"))

@@ -4,7 +4,6 @@
     docl-itml-port->text
     docl-itml-string->text
     docl-itml-text-env
-    docl-itml-text-env-module-names
     parsed-itml->text)
   (import
     (guile)
@@ -23,7 +22,6 @@
 
   ;translates indent-tree-markup-language to indent-tree text by evaluating all expressions.
   (define docl-itml-text-env (apply environment docl-default-env-module-names))
-  (define indent "  ")
 
   (define (call-for-eval level c) (docl-env-set! (q indent-depth) level)
     (let (r (c)) (docl-env-set! (q indent-depth) #f) r))
@@ -66,7 +64,8 @@
           (call-for-eval level
             (thunk
               (let* ((content (tail a)) (prefix (first content)))
-                (if (string-equal? "#" prefix) (tail content)
+                (if (string-equal? "#" prefix)
+                  (prefix-tree->indent-tree-string (tail content) level)
                   ((module-ref env (string->symbol prefix)) (tail content) level)))))))
       ( (line-scm-expr)
         (any->string
@@ -102,14 +101,14 @@
     "list environment [integer] -> string
     a translator for parsed-itml. does not depend on docl"
     (prefix-tree->indent-tree-string
-      (debug-log (map
-          (l (e)
-            (if (list? e)
-              (first
-                (tree-transform-with-state e (descend-proc env level-init)
-                  (ascend-proc env level-init) (l a a) level-init))
-              (if (eqv? (q line) e) "\n" e)))
-          a))
+      (map
+        (l (e)
+          (if (list? e)
+            (first
+              (tree-transform-with-state e (descend-proc env level-init)
+                (ascend-proc env level-init) (l a a) level-init))
+            (if (eqv? (q line) e) "" e)))
+        a)
       level-init))
 
   (define*

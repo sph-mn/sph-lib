@@ -157,7 +157,7 @@
     string -> text"
     (list
       (if (string? arg) (text->sxml arg)
-        (if (list? arg) (html-sxml-list->list arg) (any->string arg)))))
+        (if (list? arg) (sxml-html-list->list arg) (any->string arg)))))
 
   (define-syntax-rule (sxml expr)
     ;return the enclosed expression as sxml.
