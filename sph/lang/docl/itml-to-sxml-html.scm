@@ -1,11 +1,10 @@
-
 (library (sph lang docl itml-to-sxml-html)
   (export
-    docl-itml-sxml-html-env
-    docl-itml-sxml-html-env-module-names
     docl-itml-parsed->sxml-html
     docl-itml-port->sxml-html
     docl-itml-string->sxml-html
+    docl-itml-sxml-html-env
+    docl-itml-sxml-html-env-module-names
     parsed-itml->sxml-html)
   (import
     (guile)

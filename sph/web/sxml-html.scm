@@ -4,15 +4,22 @@
     sxml-html-hyperlink
     sxml-html-include-script
     sxml-html-include-style
+    sxml-html-indent
+    sxml-html-indent-create
     sxml-html-list->list
     sxml-html-list->table
     sxml-html-text->sxml)
   (import
     (rnrs base)
     (sph)
-    (only (guile) string-split)
+    (only (guile) string-split make-list)
     (only (sph list) interleave pair->list)
     (only (sph string) any->string))
+
+  (define sxml-html-indent (ql (*ENTITY* "#160") (*ENTITY* "#160")))
+
+  (define (sxml-html-indent-create indent-level)
+    (apply append (make-list indent-level sxml-html-indent)))
 
   (define (sxml-html-text->sxml a) (interleave (string-split a #\newline) (q (br))))
 
@@ -24,7 +31,8 @@
   (define (sxml-html-include-style path) "string -> sxml"
     (qq (link (@ (rel "stylesheet") (type "text/css") (href (unquote path))))))
 
-  (define* (sxml-html-hyperlink name #:optional (value name)) (qq (a (@ (href (unquote value))) (unquote name))))
+  (define* (sxml-html-hyperlink name #:optional (value name))
+    (qq (a (@ (href (unquote value))) (unquote name))))
 
   (define (sxml-html-alist->options arg) "((content . value/false) ...) -> list"
     (map

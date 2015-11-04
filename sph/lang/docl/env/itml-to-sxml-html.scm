@@ -1,9 +1,12 @@
 (library (sph lang docl env itml-to-sxml-html)
   (export
+    a
     add-paragraphs-and-indent
     add-spaces
     as-list
-    create-sxml-indent
+    assign
+    bttl-class-prefix
+    current-indent-depth
     escape
     escape-with-indent
     h
@@ -15,10 +18,8 @@
     section*
     sort
     sxml
-    a
-    assign
-    bttl-class-prefix
-    sxml-indent
+    sxml-html-indent
+    sxml-html-indent-create
     table
     text->sxml
     ul)
@@ -28,8 +29,8 @@
     (rnrs sorting)
     (sph)
     (sph lang docl env)
-    (sph web sxml-html)
     (sph lang indent-syntax)
+    (sph web sxml-html)
     (only (guile)
       cons*
       string-split
@@ -60,6 +61,7 @@
       partition!
       reverse!))
 
+  (define-syntax-rule (current-indent-depth) (or (docl-env-ref (q indent-depth)) 0))
   ;the assign syntax is for applying css styles inline, while css inclusion is handled automatically
 
   (define-syntax-rule (a arg ...)
@@ -182,7 +184,7 @@
     "this is done for supporting indent alignment for multiple lines in text-browsers.
     text browser should support some css properties for using a box-model because this way conflicts
     with different font-sizes and screen-filling preferences for example"
-    (let (indent (create-sxml-indent indent-depth))
+    (let (indent (sxml-html-indent-create indent-depth))
       (reverse (fold (l (e r) (if (string? e) (text-wrap-with-indent e indent) e)) (list) a))))
 
   (define (add-spaces a)
@@ -205,9 +207,6 @@
               (pair (list (q li) e) r)))
           (list) a))))
 
-  (define sxml-indent (ql (*ENTITY* "#160") (*ENTITY* "#160")))
-  (define (create-sxml-indent indent-depth) (apply append (make-list indent-depth sxml-indent)))
-
   (define (add-paragraphs-and-indent a indent-depth)
     "removes empty list elements, unneccessary nesting, and wraps lists that do not have a symbol as the first element
     with <p>"
@@ -215,10 +214,11 @@
       (l (e r)
         (if (list? e)
           (if (null? e) r
-            (pair (if (symbol? (first e)) e (list (create-sxml-indent indent-depth) e (ql br))) r))
+            (pair
+              (if (symbol? (first e)) e (list (sxml-html-indent-create indent-depth) e (ql br))) r))
           (pair
-            (if (string? e) (text-wrap-with-indent e (create-sxml-indent indent-depth))
-              (list (create-sxml-indent indent-depth) e (ql br)))
+            (if (string? e) (text-wrap-with-indent e (sxml-html-indent-create indent-depth))
+              (list (sxml-html-indent-create indent-depth) e (ql br)))
             r)))
       (list) a))
 
@@ -231,7 +231,7 @@
   (define (section* level title content . attributes)
     (pair (q section)
       (append (if (null? attributes) attributes (list (pair (q @) attributes)))
-        (pair (h* level (list (create-sxml-indent level) title))
+        (pair (h* level (list (sxml-html-indent-create level) title))
           (if (list? content)
             (if (null? content) (list)
               (if (symbol? (first content)) (list content)
