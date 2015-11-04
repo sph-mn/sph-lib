@@ -28,6 +28,7 @@
     (rnrs sorting)
     (sph)
     (sph lang docl env)
+    (sph web sxml-html)
     (sph lang indent-syntax)
     (only (guile)
       cons*
