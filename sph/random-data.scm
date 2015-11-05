@@ -1,11 +1,14 @@
 (library (sph random-data)
   (export
+    list-ref-random
     primitive-random
     random
     random-ascii-string
+    random-boolean
     random-bytevector
     random-list
-    random-string)
+    random-string
+    random-weighted-boolean)
   (import
     (rnrs base)
     (rnrs bytevectors)
@@ -16,12 +19,21 @@
     (rename (guile) (random primitive-random)))
 
   (define random-state (random-state-from-platform))
+  (define (random-boolean) "-> boolean" (= (random 2) 0))
+
+  (define (random-weighted-boolean percentage)
+    "integer -> boolean
+    percentage is proportional to the amount of false values"
+    ;random generates values from 0-99. 99 will always be smaller than a percentage value of 100.
+    (< (random 100) percentage))
 
   (define* (random max-value #:optional (min-value 0) (state random-state))
     "integer [integer random-state] -> integer
     create a number between min-value and max-value.
     if the result number is an integer or real number depends on the type of the given max-value"
     (+ min-value (primitive-random (- max-value min-value) state)))
+
+  (define (list-ref-random a) (list-ref a (random (length a))))
 
   (define* (random-list list-length #:optional (max-value 255) (min-value 0) (state random-state))
     "integer integer integer random-state -> (integer ...)
