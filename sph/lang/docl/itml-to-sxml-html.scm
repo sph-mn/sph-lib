@@ -44,13 +44,13 @@
       ;eval is used so that syntax forms work in docl expressions.
       ( (inline-expr)
         (call-for-eval level
-          (l () (eval (list (string->symbol (first content)) (list (q quote) (tail content))) env))))
+          (thunk (eval (list (string->symbol (first content)) (list (q quote) (tail content))) env))))
       ( (line-expr)
         (call-for-eval level
-          (l () (eval (pair (string->symbol (first content)) (tail content)) env))))
+          (thunk (eval (pair (string->symbol (first content)) (tail content)) env))))
       ( (indent-expr)
         (call-for-eval level
-          (l () ((module-ref env (string->symbol (first content))) (tail content)))))
+          (thunk ((module-ref env (string->symbol (first content))) (tail content)))))
       ( (association)
         (pair (let (e (first content)) (if (string? e) (string-append e ": ") e)) (tail content)))
       (else (list->sxml e level level-init))))
@@ -74,17 +74,17 @@
   (define (descend-expr->sxml a re-descend level env)
     (case (first a)
       ( (inline-scm-expr)
-        (call-for-eval level (l () (eval (string->datum (first (tail a)) read) env))))
+        (call-for-eval level (thunk (eval (string->datum (first (tail a)) read) env))))
       ( (indent-descend-expr)
         (call-for-eval level
-          (l ()
+          (thunk
             (let* ((content (tail a)) (prefix (first content)))
               ( (module-ref env
                   (if (string-equal? "#" prefix) (q escape-with-indent) (string->symbol prefix)))
                 (tail content) level)))))
       ( (line-scm-expr)
         (call-for-eval level
-          (l ()
+          (thunk
             (eval
               (string->datum
                 (string-append
@@ -95,7 +95,7 @@
               env))))
       ( (indent-scm-expr)
         (call-for-eval level
-          (l ()
+          (thunk
             (eval
               (string->datum
                 (call-with-output-string
@@ -113,16 +113,14 @@
   (define* (parsed-itml->sxml-html a env #:optional (level-init 0))
     "list environment [integer] -> sxml
     a translator for parsed-itml. does not depend on docl"
-    (add-paragraphs-and-indent
-      (map
-        (l (e)
-          (if (list? e)
-            (first
-              (tree-transform-with-state e (descend-proc env level-init)
-                (ascend-proc env level-init) (l a a) level-init))
-            (if (eqv? (q line) e) (q (br)) e)))
-        a)
-      level-init))
+    (map
+      (l (e)
+        (if (list? e)
+          (first
+            (tree-transform-with-state e (descend-proc env level-init)
+              (ascend-proc env level-init) (l a a) level-init))
+          (if (eqv? (q line) e) (q (br)) e)))
+      a))
 
   (define*
     (docl-itml-parsed->sxml-html input #:optional bindings keep-prev-bindings

@@ -145,5 +145,4 @@
         (finalise-tree (tree-transform (denoted-tree->prefix-tree tree) descend ascend terminal)))))
 
   (define (path->parsed-itml a) (call-with-input-file a port->parsed-itml))
-  (define (string->parsed-itml a)
-    (port->parsed-itml (open-input-string a))))
+  (define (string->parsed-itml a) (port->parsed-itml (open-input-string a))))

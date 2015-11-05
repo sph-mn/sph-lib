@@ -207,7 +207,7 @@
               (pair (list (q li) e) r)))
           (list) a))))
 
-  (define (add-paragraphs-and-indent a indent-depth)
+  (define (add-paragraphs-and-indent a indent-level)
     "removes empty list elements, unneccessary nesting, and wraps lists that do not have a symbol as the first element
     with <p>"
     (fold-right
@@ -215,10 +215,10 @@
         (if (list? e)
           (if (null? e) r
             (pair
-              (if (symbol? (first e)) e (list (sxml-html-indent-create indent-depth) e (ql br))) r))
+              (if (symbol? (first e)) e (list (sxml-html-indent-create indent-level) e (ql br))) r))
           (pair
-            (if (string? e) (text-wrap-with-indent e (sxml-html-indent-create indent-depth))
-              (list (sxml-html-indent-create indent-depth) e (ql br)))
+            (if (string? e) (text-wrap-with-indent e (sxml-html-indent-create indent-level))
+              (list (sxml-html-indent-create indent-level) e (ql br)))
             r)))
       (list) a))
 
