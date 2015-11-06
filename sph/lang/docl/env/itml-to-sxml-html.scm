@@ -12,6 +12,8 @@
     h*
     ol
     p
+    string-text-wrap+indent->sxml-html
+    string-text-wrap->sxml-html
     scm*
     section
     section*
@@ -169,25 +171,34 @@
   (define html-headings (q #(h1 h2 h3 h4 h5 h6)))
   (define text-column-max-length 160)
 
-  (define (string-list-add-indent+break a indent)
-    (interleave (map (l (e) (list indent e)) a) (ql br)))
+  (define (string-text-wrap+indent-words->sxml-html a indent-level)
+    "string integer -> list/sxml
+    splits strings into multiple lines
+    text length must be > 0"
+    (let
+      ( (words (string-slice-at-words a text-column-max-length))
+        (indent (sxml-html-indent-create (+ 1 indent-level))))
+      (pair (first words)
+        (let loop ((rest (tail words)))
+          (if (null? rest) rest (pairs indent (first rest) (ql br) (loop (tail rest))))))))
 
-  (define (text-wrap-with-indent a indent)
+ (define (string-text-wrap+indent->sxml-html a indent-level) "string sxml -> sxml
+    text-wrap, indent addition"
     (let (a-length (string-length a))
-      (if (> a-length text-column-max-length)
-        (pair (q p)
-          (string-list-add-indent+break (string-slice-at-words a text-column-max-length) indent))
-        (if (= 0 a-length) a (list indent a (ql br))))))
+      (if (> a-length text-column-max-length) (string-text-wrap+indent-words->sxml-html a indent-level)
+        (if (= 0 a-length) a
+          (append (if (= indent-level 0) (list) (sxml-html-indent-create indent-level))
+            (list a))))))
 
-  (define (text-columns-wrap-with-indent a indent-depth)
-    "this is done for supporting indent alignment for multiple lines in text-browsers.
-    text browser should support some css properties for using a box-model because this way conflicts
-    with different font-sizes and screen-filling preferences for example"
-    (let (indent (sxml-html-indent-create indent-depth))
-      (reverse (fold (l (e r) (if (string? e) (text-wrap-with-indent e indent) e)) (list) a))))
+  (define (string-text-wrap->sxml-html a indent-prefix? indent-level) "string sxml -> sxml
+    text-wrap"
+    (let (a-length (string-length a))
+      (if (> a-length text-column-max-length) (string-text-wrap+indent-words->sxml-html a indent-level)
+        a)))
 
   (define (add-spaces a)
-    "inserts a space before non-list elements (strings, numbers, etc) except the first and splices lists of expressions."
+    "list -> list
+    inserts a space before non-list elements (strings, numbers, etc) except the first and splices lists of expressions."
     (fold-right
       (l (e r)
         (if (list? e) (if (null? e) (pair e r) (if (symbol? (first e)) (pair e r) (append e r)))
