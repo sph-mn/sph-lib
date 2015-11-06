@@ -15,8 +15,8 @@
     (sph lang docl env)
     (sph lang docl env itml-to-sxml-html)
     (sph lang parser itml)
+    (sph list)
     (sph read-write)
-    (only (sph list) insert-second)
     (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
     (only (sph tree) flatten tree-transform-with-state))
@@ -31,7 +31,7 @@
   (define docl-itml-sxml-html-env (apply environment docl-itml-sxml-html-env-module-names))
 
   (define-syntax-rule (join-heading-section a level)
-    (section* level (first a) (add-paragraphs-and-indent (tail a) (+ 1 level))))
+    (section* level (first a) (process-top-level-lines (tail a) (+ 1 level))))
 
   (define-syntax-rule (heading-section? a)
     (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
@@ -41,7 +41,7 @@
 
   (define-syntax-rule (ascend-expr->sxml prefix content e env level level-init)
     (case prefix ((line) (add-spaces content))
-      ;eval is used so that syntax forms work in docl expressions.
+      ;eval is used to support macros in itml-expressions
       ( (inline-expr)
         (call-for-eval level
           (thunk (eval (list (string->symbol (first content)) (list (q quote) (tail content))) env))))
@@ -52,7 +52,7 @@
         (call-for-eval level
           (thunk ((module-ref env (string->symbol (first content))) (tail content)))))
       ( (association)
-        (pair (let (e (first content)) (if (string? e) (string-append e ": ") e)) (tail content)))
+        (debug-log (pairs (sxml-html-indent-create level-init) (first content) ": " (tail content))))
       (else (list->sxml e level level-init))))
 
   (define (adjust-level a)
@@ -110,17 +110,46 @@
       (let (r (descend-expr->sxml a re-descend level env))
         (if r (list r #f level) (list #f #t (+ 1 level))))))
 
+  (define (splice-non-tag-lists+reverse a) "list -> list"
+    (fold
+      (l (e r)
+        (if (list? e)
+          (if (null? e) (append e r)
+            (if (symbol? (first e)) (pair e r)
+              (append (reverse (splice-non-tag-lists+reverse e)) r)))
+          (pair e r)))
+      (list) a))
+
+  (define (process-top-level-lines a indent-level) "list integer -> list"
+    (debug-log a)
+    (if (null? a) a
+      (reverse
+        (first
+          (iterate-three
+            (l (prev e next r)
+              (list
+                (if (or (string? e) (symbol? e))
+                  (let
+                    (e (if (> indent-level 0) (list (sxml-html-indent-create indent-level) e) e))
+                    (if (null? next) (pair e r)
+                      (let (e-next (first next))
+                        (if (or (string? e-next) (symbol? e-next)) (pairs (ql br) e r) (pair e r)))))
+                  (pair e r))))
+            a (list))))))
+
   (define* (parsed-itml->sxml-html a env #:optional (level-init 0))
     "list environment [integer] -> sxml
     a translator for parsed-itml. does not depend on docl"
-    (map
-      (l (e)
-        (if (list? e)
-          (first
-            (tree-transform-with-state e (descend-proc env level-init)
-              (ascend-proc env level-init) (l a a) level-init))
-          (if (eqv? (q line) e) (q (br)) e)))
-      a))
+    (process-top-level-lines
+      (map
+        (l (e)
+          (if (list? e)
+            (first
+              (tree-transform-with-state e (descend-proc env level-init)
+                (ascend-proc env level-init) (l a a) level-init))
+            (if (eqv? (q line) e) (q (br)) e)))
+        a)
+      level-init))
 
   (define*
     (docl-itml-parsed->sxml-html input #:optional bindings keep-prev-bindings

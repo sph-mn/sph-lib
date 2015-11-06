@@ -618,8 +618,7 @@
             (loop (tail rest) (pair e r)))))))
 
   (define (map-segments proc len a)
-    "
-    procedure:{any ... -> any} integer list -> list
+    "procedure:{any ... -> any} integer list -> list
     map over each overlapping segment of length len"
     (fold-segments (l (r . e) (append r (list (apply proc e)))) len (list) a))
 

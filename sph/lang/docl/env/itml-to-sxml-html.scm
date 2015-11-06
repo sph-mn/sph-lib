@@ -1,7 +1,6 @@
 (library (sph lang docl env itml-to-sxml-html)
   (export
     a
-    add-paragraphs-and-indent
     add-spaces
     as-list
     assign
@@ -206,21 +205,6 @@
                 (if (symbol? (first e)) (pair (list (q li) e) r) (pair (pair (q li) e) r)))
               (pair (list (q li) e) r)))
           (list) a))))
-
-  (define (add-paragraphs-and-indent a indent-level)
-    "removes empty list elements, unneccessary nesting, and wraps lists that do not have a symbol as the first element
-    with <p>"
-    (fold-right
-      (l (e r)
-        (if (list? e)
-          (if (null? e) r
-            (pair
-              (if (symbol? (first e)) e (list (sxml-html-indent-create indent-level) e (ql br))) r))
-          (pair
-            (if (string? e) (text-wrap-with-indent e (sxml-html-indent-create indent-level))
-              (list (sxml-html-indent-create indent-level) e (ql br)))
-            r)))
-      (list) a))
 
   (define (list-sort-as-string string-less? a)
     (list-sort (l (a b) (string-less? (any->string a) (any->string b))) a))
