@@ -39,7 +39,11 @@
     approximates indent-width to the next higher indent depth if it is not a multiple of indent-width"
     (let loop ((line (get-line port)) (r (list)))
       (if (eof-object? line) (reverse r)
-        (loop (get-line port) (pair (line->denoted-tree-element line indent-width) r)))))
+        (loop (get-line port)
+          (pair
+            (if (string-null? line) (list (if (null? r) 0 (first (first r))) line)
+              (line->denoted-tree-element line indent-width))
+            r)))))
 
   (define* (read-space-indent-tree-element->denoted-tree port #:optional (indent-width 2))
     ;this assumes that unread-string works on the port.

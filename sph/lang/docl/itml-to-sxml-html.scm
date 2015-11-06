@@ -19,7 +19,8 @@
     (sph read-write)
     (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
-    (only (sph tree) flatten tree-transform-with-state))
+    (only (sph tree) flatten tree-transform-with-state)
+    (only (srfi srfi-1) remove))
 
   ;translates indent-tree-markup-language to html as sxml using docl.
   ;the html is supposed to look almost the same in browsers that support css and text browsers that do not support css.
@@ -52,7 +53,9 @@
         (call-for-eval level
           (thunk ((module-ref env (string->symbol (first content))) (tail content)))))
       ( (association)
-        (debug-log (pairs (sxml-html-indent-create level-init) (first content) ": " (tail content))))
+        (pairs (first content) ": " (tail content))
+        #;(if (> level 0) (pairs (sxml-html-indent-create level) (first content) ": " (tail content))
+ (pairs (first content) ": " (tail content))))
       (else (list->sxml e level level-init))))
 
   (define (adjust-level a)
@@ -79,8 +82,8 @@
         (call-for-eval level
           (thunk
             (let* ((content (tail a)) (prefix (first content)))
-              ( (module-ref env
-                  (if (string-equal? "#" prefix) (q escape-with-indent) (string->symbol prefix)))
+              ( (if (string-equal? "#" prefix) escape-with-indent
+                  (module-ref env (string->symbol prefix)))
                 (tail content) level)))))
       ( (line-scm-expr)
         (call-for-eval level
@@ -110,32 +113,29 @@
       (let (r (descend-expr->sxml a re-descend level env))
         (if r (list r #f level) (list #f #t (+ 1 level))))))
 
-  (define (splice-non-tag-lists+reverse a) "list -> list"
-    (fold
-      (l (e r)
-        (if (list? e)
-          (if (null? e) (append e r)
-            (if (symbol? (first e)) (pair e r)
-              (append (reverse (splice-non-tag-lists+reverse e)) r)))
-          (pair e r)))
-      (list) a))
+  (define (tag-element? a)
+    "list:non-null-list -> boolean
+    top-level-lines are everything on the top-level except lists with symbols as the first element"
+    (and (list? a) (symbol? (first a))))
 
-  (define (process-top-level-lines a indent-level) "list integer -> list"
-    (debug-log a)
+  (define (process-top-level-lines-add-indent-and-br e r next indent-level) " ->"
+    (let (e (if (> indent-level 0) (list (sxml-html-indent-create indent-level) e) e))
+      (if (null? next) (pair e r)
+        (let (e-next (first next)) (if (tag-element? e-next) (pair e r) (pairs (ql br) e r))))))
+
+  (define (process-top-level-lines a indent-level)
+    "list integer -> list
+    the top-level is interpreted as a list of lines. this procedure inserts line breaks between string or symbol elements.
+    sub-expressions creators are supposed to handle line breaks and indent themselves"
     (if (null? a) a
       (reverse
         (first
           (iterate-three
             (l (prev e next r)
               (list
-                (if (or (string? e) (symbol? e))
-                  (let
-                    (e (if (> indent-level 0) (list (sxml-html-indent-create indent-level) e) e))
-                    (if (null? next) (pair e r)
-                      (let (e-next (first next))
-                        (if (or (string? e-next) (symbol? e-next)) (pairs (ql br) e r) (pair e r)))))
-                  (pair e r))))
-            a (list))))))
+                (if (tag-element? e) (pair e r)
+                  (process-top-level-lines-add-indent-and-br e r next indent-level))))
+            (remove null? a) (list))))))
 
   (define* (parsed-itml->sxml-html a env #:optional (level-init 0))
     "list environment [integer] -> sxml
@@ -146,7 +146,7 @@
           (if (list? e)
             (first
               (tree-transform-with-state e (descend-proc env level-init)
-                (ascend-proc env level-init) (l a a) level-init))
+                  (ascend-proc env level-init) (l a a) level-init))
             (if (eqv? (q line) e) (q (br)) e)))
         a)
       level-init))

@@ -125,7 +125,7 @@
           (pair e r)))
       (list) (reverse a)))
 
-  (define (finalise-tree a)
+  (define (finalise-tree a) "list -> list"
     (tree-map-lists
       (l (e)
         (let (e (append-double-backslash e))
@@ -133,9 +133,9 @@
             ((inline-expr-inner) (tail e)) ((association-infix) #f)
             ((association) (remove not e))
             ( (inline-expr)
-              (let (tail-e (tail e))
-                (if (null? tail-e) e
-                  (pairs (first e) (string-trim-right (first tail-e)) (tail tail-e)))))
+              (let (e-tail (tail e))
+                (if (null? e-tail) e
+                  (pairs (first e) (string-trim-right (first e-tail)) (tail e-tail)))))
             (else e))))
       a))
 
