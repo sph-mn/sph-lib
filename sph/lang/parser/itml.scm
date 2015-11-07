@@ -125,17 +125,27 @@
           (pair e r)))
       (list) (reverse a)))
 
+  (define (splice-non-symbol-prefix-lists a)
+    (if (null? a) a
+      (let (e (first a))
+        ( (if (list? e)
+            (if (null? e) append
+              (if (symbol? (first e)) pair (l (e a) (append (splice-non-symbol-prefix-lists e) a))))
+            pair)
+          e (splice-non-symbol-prefix-lists (tail a))))))
+
   (define (finalise-tree a) "list -> list"
     (tree-map-lists
       (l (e)
         (let (e (append-double-backslash e))
           (case (first e) ((identifier) (first (tail e)))
             ((inline-expr-inner) (tail e)) ((association-infix) #f)
-            ((association) (remove not e))
+            ( (association)
+              (pair (q association) (splice-non-symbol-prefix-lists (remove not (tail e)))))
             ( (inline-expr)
               (let (e-tail (tail e))
                 (if (null? e-tail) e
-                  (pairs (first e) (string-trim-right (first e-tail)) (tail e-tail)))))
+                  (pairs (q inline-expr) (string-trim-right (first e-tail)) (tail e-tail)))))
             (else e))))
       a))
 

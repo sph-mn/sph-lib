@@ -87,7 +87,6 @@
     map-apply
     map-map
     map-one
-    map-only
     map-segments
     map-slice
     map-span

@@ -53,7 +53,8 @@
         (call-for-eval level
           (thunk ((module-ref env (string->symbol (first content))) (tail content)))))
       ( (association)
-        (let (content (map (l (e) (if (string? e) (string-text-wrap->sxml-html e 0 level) e)) content))
+        (let
+          (content (map (l (e) (if (string? e) (string-text-wrap->sxml-html e 0 level) e)) content))
           (pairs (first content) ": " (tail content))))
       (else (list->sxml e level level-init))))
 
@@ -120,8 +121,10 @@
   (define (process-top-level-lines-add-indent-and-br e r next indent-level) " ->"
     (let
       (e
-        (if (string? e) (string-text-wrap+indent->sxml-html e indent-level)
-          (append (if (= 0 indent-level) (list) (sxml-html-indent-create indent-level)) (list e))))
+        (if (string? e) (string-text-wrap+indent->sxml-html e indent-level #t)
+          (if (list? e)
+            (map (l (e) (if (string? e) (string-text-wrap+indent->sxml-html e indent-level #t) e)) e)
+            (append (sxml-html-indent-create indent-level) (list e)))))
       (if (null? next) (pair e r)
         (let (e-next (first next)) (if (tag-element? e-next) (pair e r) (pairs (ql br) e r))))))
 
