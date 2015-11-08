@@ -22,17 +22,13 @@
     (only (sph tree) flatten tree-transform-with-state)
     (only (srfi srfi-1) remove))
 
-  ;translates indent-tree-markup-language to html as sxml using docl.
-  ;the html is supposed to look almost the same in browsers that support css and text browsers that do not support css.
-  ;all the "indent" handling is only done because current text browsers do not support css yet.
-
   (define docl-itml-sxml-html-env-module-names
     (pair (q (sph lang docl env itml-to-sxml-html)) docl-default-env-module-names))
 
   (define docl-itml-sxml-html-env (apply environment docl-itml-sxml-html-env-module-names))
 
   (define-syntax-rule (join-heading-section a level)
-    (section* level (first a) (process-top-level-lines (tail a) (+ 1 level))))
+    (section* level (first a) (process-top-level-lines (tail a))))
 
   (define-syntax-rule (heading-section? a)
     (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
@@ -52,10 +48,7 @@
       ( (indent-expr)
         (call-for-eval level
           (thunk ((module-ref env (string->symbol (first content))) (tail content)))))
-      ( (association)
-        (let
-          (content (map (l (e) (if (string? e) (string-text-wrap->sxml-html e 0 level) e)) content))
-          (pairs (first content) ": " (tail content))))
+      ((association) (pairs (first content) ": " (tail content)))
       (else (list->sxml e level level-init))))
 
   (define (adjust-level a)
@@ -71,8 +64,8 @@
           (ascend-expr->sxml prefix content e env (adjust-level level) level-init))
         (- level 1))))
 
-  (define (call-for-eval level c) (docl-env-set! (q indent-depth) level)
-    (let (r (c)) (docl-env-set! (q indent-depth) #f) r))
+  (define (call-for-eval level c) (docl-env-set! (q nesting-level) level)
+    (let (r (c)) (docl-env-set! (q nesting-level) #f) r))
 
   (define (descend-expr->sxml a re-descend level env)
     (case (first a)
@@ -82,8 +75,7 @@
         (call-for-eval level
           (thunk
             (let* ((content (tail a)) (prefix (first content)))
-              ( (if (string-equal? "#" prefix) escape-with-indent
-                  (module-ref env (string->symbol prefix)))
+              ( (if (string-equal? "#" prefix) escape (module-ref env (string->symbol prefix)))
                 (tail content) level)))))
       ( (line-scm-expr)
         (call-for-eval level
@@ -118,29 +110,22 @@
     top-level-lines are everything on the top-level except lists with symbols as the first element"
     (and (list? a) (symbol? (first a))))
 
-  (define (process-top-level-lines-add-indent-and-br e r next indent-level) " ->"
-    (let
-      (e
-        (if (string? e) (string-text-wrap+indent->sxml-html e indent-level #t)
-          (if (list? e)
-            (map (l (e) (if (string? e) (string-text-wrap+indent->sxml-html e indent-level #t) e)) e)
-            (append (sxml-html-indent-create indent-level) (list e)))))
-      (if (null? next) (pair e r)
-        (let (e-next (first next)) (if (tag-element? e-next) (pair e r) (pairs (ql br) e r))))))
-
-  (define (process-top-level-lines a indent-level)
+  (define (process-top-level-lines a)
     "list integer -> list
     the top-level is interpreted as a list of lines. this procedure inserts line breaks between string or symbol elements.
-    sub-expressions creators are supposed to handle line breaks and indent themselves"
+    removes empty lists and merges sub-lists that are not tag elements.
+    sub-expressions creators are supposed to handle line breaks themselves"
     (if (null? a) a
-      (reverse
-        (first
-          (iterate-three
-            (l (prev e next r)
-              (list
-                (if (tag-element? e) (pair e r)
-                  (process-top-level-lines-add-indent-and-br e r next indent-level))))
-            (remove null? a) (list))))))
+      (let (e (first a))
+        ( (if (list? e)
+            (if (null? e) (l (e r) r)
+              (if (symbol? (first e)) pair
+                (l (e r) (if (null? r) (append e r) (append e (list (ql br)) r)))))
+            (if (null? (tail a)) pair
+              (let (e-next (first a))
+                (if (tag-element? e-next) pair
+                  (l (e r) (if (null? r) (pair e r) (pairs e (ql br) r)))))))
+          e (process-top-level-lines (tail a))))))
 
   (define* (parsed-itml->sxml-html a env #:optional (level-init 0))
     "list environment [integer] -> sxml
@@ -152,9 +137,8 @@
             (first
               (tree-transform-with-state e (descend-proc env level-init)
                 (ascend-proc env level-init) (l a a) level-init))
-            (if (eqv? (q line) e) (q (br)) e)))
-        a)
-      level-init))
+            (if (eqv? (q line) e) (ql br) e)))
+        a)))
 
   (define*
     (docl-itml-parsed->sxml-html input #:optional bindings keep-prev-bindings
@@ -163,7 +147,8 @@
     "list [symbol-hashtable/boolean boolean environment integer] -> sxml
     this can also be used to convert list trees with strings to html"
     (docl-translate-any input
-      (l (input) (parsed-itml->sxml-html input env (or (docl-env-ref (q indent-depth)) level-init)))
+      (l (input)
+        (parsed-itml->sxml-html input env (or (docl-env-ref (q nesting-level)) level-init)))
       bindings keep-prev-bindings))
 
   (define*
@@ -173,9 +158,7 @@
     "port [symbol-hashtable/boolean boolean environment integer] -> sxml
     read itml from a port, parse it and translate it to sxml-html"
     (docl-translate-port input
-      (l (input)
-        (parsed-itml->sxml-html (port->parsed-itml input) env
-          (or (docl-env-ref (q indent-depth)) level-init)))
+      (l (input) (parsed-itml->sxml-html (port->parsed-itml input) env (current-nesting-level)))
       bindings keep-prev-bindings))
 
   (define (docl-itml-string->sxml-html input . docl-itml-port->sxml-html-args)

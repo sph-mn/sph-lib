@@ -5,9 +5,8 @@
     as-list
     assign
     bttl-class-prefix
-    current-indent-depth
+    current-nesting-level
     escape
-    escape-with-indent
     h
     h*
     ol
@@ -16,11 +15,7 @@
     section
     section*
     sort
-    string-text-wrap+indent->sxml-html
-    string-text-wrap->sxml-html
     sxml
-    sxml-html-indent
-    sxml-html-indent-create
     table
     text->sxml
     ul)
@@ -62,7 +57,7 @@
       partition!
       reverse!))
 
-  (define-syntax-rule (current-indent-depth) (or (docl-env-ref (q indent-depth)) 0))
+  (define-syntax-rule (current-nesting-level) (or (docl-env-ref (q nesting-level)) 0))
   ;the assign syntax is for applying css styles inline, while css inclusion is handled automatically
 
   (define-syntax-rule (a arg ...)
@@ -171,34 +166,6 @@
   (define html-headings (q #(h1 h2 h3 h4 h5 h6)))
   (define text-column-max-length 120)
 
-  (define (string-text-wrap+indent-words->sxml-html a indent-level prefix-indent?)
-    "string integer -> list/sxml
-    splits strings into multiple lines
-    text length must be > 0"
-    (let
-      ( (lines (string-slice-at-words a text-column-max-length))
-        (indent (sxml-html-indent-create (+ 1 indent-level))))
-      (append (if prefix-indent? (tail (tail indent)) (list))
-        (pairs (first lines)
-          (let loop ((rest (tail lines)))
-            (if (null? rest) rest (pairs (ql br) indent (first rest) (loop (tail rest)))))))))
-
-  (define (string-text-wrap+indent->sxml-html a indent-level indent-prefix?)
-    "string sxml -> sxml
-    text-wrap, indent addition"
-    (let (a-length (string-length a))
-      (if (> a-length text-column-max-length)
-        (string-text-wrap+indent-words->sxml-html a indent-level indent-prefix?)
-        (if (= 0 a-length) a
-          (append (if (= indent-level 0) (list) (sxml-html-indent-create indent-level)) (list a))))))
-
-  (define (string-text-wrap->sxml-html a indent-prefix? indent-level)
-    "string sxml -> sxml
-    text-wrap"
-    (let (a-length (string-length a))
-      (if (> a-length text-column-max-length)
-        (string-text-wrap+indent-words->sxml-html a indent-level #f) a)))
-
   (define (add-spaces a)
     "list -> list
     inserts a space before non-list elements (strings, numbers, etc) except the first and splices lists of expressions."
@@ -229,36 +196,21 @@
   (define (section* level title content . attributes)
     (pair (q section)
       (append (if (null? attributes) attributes (list (pair (q @) attributes)))
-        (pair (h* level (list (sxml-html-indent-create level) title))
+        (pair (h* level title)
           (if (list? content)
             (if (null? content) (list)
-              (if (symbol? (first content)) (list content)
-                (map-span (compose not list?) (l non-lists (pair (q div) non-lists)) content)))
-            (list (q div) content))))))
+              (if (symbol? (first content)) (list content) (list (pair (q div) content))))
+            (list (list (q div) content)))))))
 
   (define-syntax-rule (sxml a) (list (quasiquote a)))
-  (define (h* number content) (pair (vector-ref html-headings (min 5 number)) content))
+  (define (h* number . content) (pair (vector-ref html-headings (min 5 number)) content))
 
-  (define (escape a indent-depth)
+  (define (escape a nesting-level)
     (list (q pre)
       (string-join (map (l (e) (if (list? e) (prefix-tree->indent-tree-string (list e)) e)) a) "\n")))
 
-  (define (escape-with-indent a indent-depth)
-    (let
-      ( (indent (string-multiply "  " indent-depth))
-        (lines
-          (reverse
-            (fold
-              (l (e r)
-                (if (list? e)
-                  (append
-                    (reverse (string-split (prefix-tree->indent-tree-string (list e)) #\newline)) r)
-                  (pair e r)))
-              (list) a))))
-      (list (q pre) (string-append indent (string-join lines (string-append "\n" indent))))))
-
-  (define (section title . content) (section* (or (docl-env-ref (q indent-depth)) 0) title content))
-  (define (h . content) (h* (or (docl-env-ref (q indent-depth)) 0) content))
+  (define (section title . content) (section* (current-nesting-level) title content))
+  (define (h . content) (apply h* (current-nesting-level) content))
   (define (ul a . rest) (pair (q ul) (map (l (e) (list (q li) e)) a)))
   (define (ol a . rest) (pair (q ol) (map (l (e) (list (q li) e)) a)))
 

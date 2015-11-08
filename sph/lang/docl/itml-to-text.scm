@@ -23,8 +23,8 @@
   ;translates indent-tree-markup-language to indent-tree text by evaluating all expressions.
   (define docl-itml-text-env (apply environment docl-default-env-module-names))
 
-  (define (call-for-eval level c) (docl-env-set! (q indent-depth) level)
-    (let (r (c)) (docl-env-set! (q indent-depth) #f) r))
+  (define (call-for-eval level c) (docl-env-set! (q nesting-level) level)
+    (let (r (c)) (docl-env-set! (q nesting-level) #f) r))
 
   (define-syntax-rule (ascend-expr->text prefix content e env level level-init)
     (case prefix ((line) content)
@@ -117,7 +117,7 @@
     "list [symbol-hashtable/boolean boolean environment integer] -> text
     this can also be used to convert list trees with strings to html"
     (docl-translate-any input
-      (l (input) (parsed-itml->text input env (or (docl-env-ref (q indent-depth)) level-init)))
+      (l (input) (parsed-itml->text input env (or (docl-env-ref (q nesting-level)) level-init)))
       bindings keep-prev-bindings))
 
   (define*
@@ -128,7 +128,7 @@
     (docl-translate-port input
       (l (input)
         (parsed-itml->text (port->parsed-itml input) env
-          (or (docl-env-ref (q indent-depth)) level-init)))
+          (or (docl-env-ref (q nesting-level)) level-init)))
       bindings keep-prev-bindings))
 
   (define (docl-itml-string->text input . docl-itml-port->text-arguments)
