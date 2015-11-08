@@ -829,7 +829,7 @@
     splits the list into two lists, the first being a list of all beginning elements of a that successively match
     proc, the second being the rest.
     like srfi-1 span but results in a list instead of multiple values"
-    (call-with-values (l () (span proc a)) (l r r)))
+    (call-with-values (thunk (span proc a)) (l r r)))
 
   (define (insert-second e a)
     "any list -> list

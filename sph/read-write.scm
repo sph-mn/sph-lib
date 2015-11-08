@@ -176,4 +176,6 @@
       port-input port-output))
 
   (define (port->lines a) "port -> (string ...)"
-    (unfold-right eof-object? identity (l args (get-line a)) (get-line a))))
+    (let loop ((line (get-line a)))
+      (if (eof-object? line) (list)
+        (pair line (loop (get-line a)))))))

@@ -15,7 +15,6 @@
       string-trim-right
       string-drop-right)
     (only (sph conditional) pass-if)
-    (only (sph list) simplify-list)
     (only (srfi srfi-1) remove))
 
   (define-peg-pattern double-backslash all "\\\\")
@@ -82,7 +81,7 @@
       (+
         (and (not-followed-by (or (and " " association-infix) escaped-association-infix))
           association-left-char))
-      association-infix (* (or double-backslash line-scm-expr inline-scm-expr line-expr peg-any))))
+      association-infix (* (or double-backslash line-scm-expr inline-scm-expr line-expr escaped-association-infix peg-any))))
 
   (define-peg-pattern line all
     (*
@@ -114,7 +113,7 @@
 
   (define (terminal a)
     (let (e (peg:tree (match-pattern line a)))
-      (or (and (list? e) (eqv? (q line) (first e)) (= 2 (length e)) (first (tail e))) e)))
+      (if (list? e) (if (= 2 (length e)) (first (tail e)) e) (if (symbol? e) (q line-empty) e))))
 
   (define (append-double-backslash a)
     (fold

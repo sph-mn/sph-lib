@@ -37,7 +37,7 @@
     (if (heading-section? a) (join-heading-section a level) a))
 
   (define-syntax-rule (ascend-expr->sxml prefix content e env level level-init)
-    (case prefix ((line) (add-spaces content))
+    (case prefix ((line) (if (null? content) "" (add-spaces content)))
       ;eval is used to support macros in itml-expressions
       ( (inline-expr)
         (call-for-eval level
@@ -110,6 +110,11 @@
     top-level-lines are everything on the top-level except lists with symbols as the first element"
     (and (list? a) (symbol? (first a))))
 
+  (define html-tags-inline
+    (ql span a br object img script select button input label select textarea))
+
+  (define (html-tag-inline? a) (and (symbol? a) (containsv? html-tags-inline a)))
+
   (define (process-top-level-lines a)
     "list integer -> list
     the top-level is interpreted as a list of lines. this procedure inserts line breaks between string or symbol elements.
@@ -119,13 +124,19 @@
       (let (e (first a))
         ( (if (list? e)
             (if (null? e) (l (e r) r)
-              (if (symbol? (first e)) pair
-                (l (e r) (if (null? r) (append e r) (append e (list (ql br)) r)))))
+              (let (prefix (first e))
+                (if (symbol? prefix)
+                  (if (containsv? html-tags-inline prefix)
+                    (l (e r) (if (null? r) (pair e r) (pairs e (list (ql br)) r))) pair)
+                  (l (e r) (if (null? r) (append e r) (append e (list (ql br)) r))))))
             (if (null? (tail a)) pair
               (let (e-next (first a))
                 (if (tag-element? e-next) pair
                   (l (e r) (if (null? r) (pair e r) (pairs e (ql br) r)))))))
           e (process-top-level-lines (tail a))))))
+
+  (define-syntax-rule (handle-line-empty a) (if (eqv? (q line-empty) a) (ql br) a))
+  (define (handle-terminal a level-init) (list (handle-line-empty a) level-init))
 
   (define* (parsed-itml->sxml-html a env #:optional (level-init 0))
     "list environment [integer] -> sxml
@@ -136,8 +147,8 @@
           (if (list? e)
             (first
               (tree-transform-with-state e (descend-proc env level-init)
-                (ascend-proc env level-init) (l a a) level-init))
-            (if (eqv? (q line) e) (ql br) e)))
+                (ascend-proc env level-init) handle-terminal level-init))
+            (handle-line-empty e)))
         a)))
 
   (define*
