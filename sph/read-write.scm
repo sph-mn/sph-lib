@@ -39,8 +39,7 @@
     (only (srfi srfi-1) drop unfold-right))
 
   (define (rw-port->list read port)
-    (let loop ((e (read port)) (result (list)))
-      (if (eof-object? e) (reverse result) (loop (read port) (pair e result)))))
+    (let loop ((e (read port))) (if (eof-object? e) (list) (pair e (loop (read port))))))
 
   (define (rw-port->port read write port port-2)
     (let loop ((e (read port))) (if (eof-object? e) e (begin (write e port-2) (loop (read port))))))
@@ -176,6 +175,4 @@
       port-input port-output))
 
   (define (port->lines a) "port -> (string ...)"
-    (let loop ((line (get-line a)))
-      (if (eof-object? line) (list)
-        (pair line (loop (get-line a)))))))
+    (let loop ((line (get-line a))) (if (eof-object? line) (list) (pair line (loop (get-line a)))))))

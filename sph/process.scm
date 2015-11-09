@@ -3,9 +3,9 @@
     execlp-new-process
     execute
     execute+check-result
-    execute-and
     execute->file
     execute->string
+    execute-and
     execute-with-pipe
     primitive-process-create-chain-with-pipes
     process-chain-finished-successfully?
@@ -80,12 +80,15 @@
       (dup2 error-fd 2)))
 
   (define* (process-create content #:optional (input-port #t) (output-port #t) (error-port #t))
-    "procedure port/false port/false port/false -> process-id
+    "procedure:{-> integer:exit-code} port/false port/false port/false -> process-id
     apply zero parameter procedure content in a background copied process image created by fork and result in
     the childs process-id in the foreground process. the optional arguments set the standard-ports for the new process"
-    (let ((process-id (primitive-fork)))
+    (let (process-id (primitive-fork))
       (if (= 0 process-id)
-        (begin (process-set-standard-ports input-port output-port error-port) (exit (content)))
+        (begin
+          ; this creates issues with newer guile versions (~2.1.1) - wip 2015-11-9
+          #;(process-set-standard-ports input-port output-port error-port)
+          (exit (content)))
         process-id)))
 
   (define process-primitive-create-chain-with-pipes
@@ -94,7 +97,7 @@
           (l (inp last-out proc . rest)
             (if (null? rest) (process-create proc inp last-out)
               (let (ports (pipe))
-                (process-create (l () (close (first ports)) (proc)) inp (tail ports))
+                (process-create (thunk (close (first ports)) (proc)) inp (tail ports))
                 (close (tail ports)) (apply loop (first ports) last-out rest))))))
       (l (input-port output-port . proc)
         "each proc is executed in a separate process. the standard input and output of the processes are linked by pipes"
@@ -103,7 +106,7 @@
             (if (and output-port (boolean? output-port)) (current-output-port) output-port) proc)))))
 
   (define (command/proc->procedure a)
-    (if (procedure? a) a (if (list? a) (l () (apply execute a)) (l () (execute a)))))
+    (if (procedure? a) a (if (list? a) (thunk (apply execute a)) (thunk (execute a)))))
 
   (define process-create-chain-with-pipes
     (l (input-port output-port . command/proc)
@@ -159,7 +162,7 @@
     execute command with system, check exit-status and return true if it is zero, false otherwise."
     (let ((status (status:exit-val (system command-str)))) (true? (and status (= status 0)))))
 
-  (define-syntax-rule (type-path? arg) (eq? (q path) arg))
+  (define-syntax-rule (type-path? a) (eqv? (q path) a))
 
   (define (process-chain-finished-successfully? pid)
     "integer/any -> integer/boolean
@@ -180,44 +183,45 @@
             ;currently in this case it is necessary that proc creates a sub-process
             (let (pid (proc source-path)) (port->file source source-path)
               (close source)
-              ;and no stream processing in this case, because the author does not know how to handle this
+              ;and no stream processing in this case, because it is not yet clear how to handle this
               (first-as-result (process-chain-finished-successfully? pid) (delete-file source-path))))
           (first-as-result (proc source) (close source))))
       (proc source)))
 
   (define (chain-with-paths/pipes-call-with-source-first source source-type proc)
+    "any symbol procedure:{any:source ->} -> any"
     (if (string? source)
       (if (type-path? source-type) (proc source) (call-with-input-file source proc))
       (if (and (port? source) (type-path? source-type))
         (let (path (create-temp-fifo)) (proc path) (port->file source path)) (proc source))))
 
   (define (chain-with-paths/pipes-call-with-target source target-type proc)
-    "-> string/port:next-input"
+    "any symbol procedure:{any string/port -> any} -> string/port:next-input"
     (if (type-path? target-type)
       (let (target-path (create-temp-fifo))
-        (process-create (l () (proc source target-path)) (port-or-true source)) target-path)
+        (process-create (thunk (proc source target-path)) (port-or-true source)) target-path)
       (let (ports (pipe))
-        (process-create (l () (close (first ports)) (proc source (tail ports))) (tail ports)
+        (process-create (thunk (close (first ports)) (proc source (tail ports))) (tail ports)
           (port-or-true source))
         (close (tail ports)) (first ports))))
 
   (define-syntax-rule (port-or-true a) (or (and (port? a) a) #t))
 
   (define (chain-with-paths/pipes-call-with-target-last source target target-type proc)
-    "-> integer:process-id/any"
+    "any any symbol procedure:{any any ->} -> integer:process-id/any"
     (if (type-path? target-type)
       (if (port? target)
         (let (target-path (create-temp-fifo))
-          (process-create (l () (proc source target-path)) (port-or-true source))
+          (process-create (thunk (proc source target-path)) (port-or-true source))
           (process-create
-            (l () (call-with-input-file target-path (l (port) (port-copy-all port target)))
+            (thunk (call-with-input-file target-path (l (port) (port-copy-all port target)))
               (delete-file target-path))))
-        (process-create (l () (proc source target)) (port-or-true source)))
+        (process-create (thunk (proc source target)) (port-or-true source)))
       (if (string? target)
         (process-create
-          (l () (let (target (open target (logior O_WRONLY O_CREAT))) (proc source target)))
+          (thunk (let (target (open target (logior O_WRONLY O_CREAT))) (proc source target)))
           (port-or-true source))
-        (process-create (l () (proc source target)) (port-or-true source) (port-or-true target)))))
+        (process-create (thunk (proc source target)) (port-or-true source) (port-or-true target)))))
 
   (define (process-create-chain-with-paths/pipes source target . proc-config)
     "::
@@ -227,16 +231,15 @@
      ->
      integer:last-process-pid/unspecified
 
-     similar to process-create-chain-with-pipes but also supports intermediate file paths as automatically created temporary named-pipes.
+     similar to process-create-chain-with-pipes, but also supports intermediate file paths in the form of automatically created temporary named-pipes.
      procedures of varying type signatures can be used for processes - processes that read from or write to files, or processes that read from or write to ports, all mixed.
      procedures of proc-config are applied in series in separate processes with source and target ports in a data-flow chaining manner, like using | with bash.
-     the source and target arguments are made compatible automatically, with their expected input and output types configured by the first two symbols of a proc-config element.
-     the procedure arguments may be file-paths, named-pipes or unnamed-pipes/ports. the type of the first source and last target is unrestricted and can be anything.
+     the source and target arguments are made compatible automatically, with their expected input and output types specified by the first two symbols of a proc-config element.
+     the procedure arguments may be file-paths, named-pipes or unnamed-pipes/ports. the type of the first source and last target is completely unrestricted and can be anything.
      as an example, you could connect a program that reads from a file and writes to standard out with a program that also reads from a file and writes to a port with arguments like this:
      (#f target-port (list (q any) (q port) (\"cat\" filename)) (list (q path) (q port) (l (path port) (do-stuff path port))))"
     (if (null? proc-config) #t
-      (let-syntax
-        ((get-port (syntax-rule (arg default) (if (and arg (boolean? arg)) default arg))))
+      (let-syntax ((get-port (syntax-rule (a default) (if (and a (boolean? a)) default a))))
         (apply
           (rec (loop is-first source config . rest)
             (apply
