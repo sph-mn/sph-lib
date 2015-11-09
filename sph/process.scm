@@ -248,7 +248,9 @@
      the source and target arguments are made compatible automatically, with their expected input and output types specified by the first two symbols of a proc-config element.
      the procedure arguments may be file-paths, named-pipes or unnamed-pipes/ports. the type of the first source and last target is completely unrestricted and can be anything.
      as an example, you could connect a program that reads from a file and writes to standard out with a program that also reads from a file and writes to a port with arguments like this:
-     (#f target-port (list (q any) (q port) (\"cat\" filename)) (list (q path) (q port) (l (path port) (do-stuff path port))))"
+     (#f target-port (list (q any) (q port) (\"cat\" filename)) (list (q path) (q port) (l (path port) (do-stuff path port))))
+    note: this procedure does not wait until the last process has finished. you can use \"waitpid\" or \"process-chain-finished-successfully?\" to archieve that. (relevant for example when
+    processes write to a tty, the program exits but new output appears after the new prompt)"
     ;debugging tip: look at the port types (input/output) that are passed to process-create by displaying the port objects
     (if (null? proc-config) #t
       (let-syntax ((get-port (syntax-rule (a default) (if (and a (boolean? a)) default a))))
