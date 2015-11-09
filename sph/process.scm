@@ -1,3 +1,17 @@
+; (sph process) - process creation and inter-process communication.
+; written for the guile scheme interpreter
+; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; This program is free software; you can redistribute it and/or modify it
+; under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 3 of the License, or
+; (at your option) any later version.
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+; GNU General Public License for more details.
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, see <http://www.gnu.org/licenses/>.
+
 (library (sph process)
   (export
     execlp-new-process
@@ -85,10 +99,7 @@
     the childs process-id in the foreground process. the optional arguments set the standard-ports for the new process"
     (let (process-id (primitive-fork))
       (if (= 0 process-id)
-        (begin
-          ; this creates issues with newer guile versions (~2.1.1) - wip 2015-11-9
-          #;(process-set-standard-ports input-port output-port error-port)
-          (exit (content)))
+        (begin (process-set-standard-ports input-port output-port error-port) (exit (content)))
         process-id)))
 
   (define process-primitive-create-chain-with-pipes
@@ -201,8 +212,8 @@
       (let (target-path (create-temp-fifo))
         (process-create (thunk (proc source target-path)) (port-or-true source)) target-path)
       (let (ports (pipe))
-        (process-create (thunk (close (first ports)) (proc source (tail ports))) (tail ports)
-          (port-or-true source))
+        (process-create (thunk (close (first ports)) (proc source (tail ports)))
+          (port-or-true source) (tail ports))
         (close (tail ports)) (first ports))))
 
   (define-syntax-rule (port-or-true a) (or (and (port? a) a) #t))
@@ -238,6 +249,7 @@
      the procedure arguments may be file-paths, named-pipes or unnamed-pipes/ports. the type of the first source and last target is completely unrestricted and can be anything.
      as an example, you could connect a program that reads from a file and writes to standard out with a program that also reads from a file and writes to a port with arguments like this:
      (#f target-port (list (q any) (q port) (\"cat\" filename)) (list (q path) (q port) (l (path port) (do-stuff path port))))"
+    ;debugging tip: look at the port types (input/output) that are passed to process-create by displaying the port objects
     (if (null? proc-config) #t
       (let-syntax ((get-port (syntax-rule (a default) (if (and a (boolean? a)) default a))))
         (apply
