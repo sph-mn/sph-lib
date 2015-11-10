@@ -1,6 +1,6 @@
 dependencies
   guile >= 2
-  install script dependencies: bash/dash
+  dependencies for the install script: bash/dash
 installation
   \##
     su root

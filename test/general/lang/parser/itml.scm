@@ -2,7 +2,7 @@
 
 (execute-tests-quasiquote
   (string->parsed-itml
-    "aa: \\\\.(+ 1 2)" ((association "aa" ("\\.(+ 1 2)")))
+    "aa: \\\\.(+ 1 2)" ((association "aa" "\\.(+ 1 2)"))
     "\\.keyword content\non\nmultiple lines\n" (indent-scm-expr "keyword" " content" "on" "multiple lines")
     "\\.keyword content\n  (a b)\n  \\.(+ 1 2) \"c\"" ((indent-scm-expr "keyword" " content" "(a b)" "\\.(+ 1 2) \"c\""))
     "\\keyword: content on line" ((line-expr "keyword" "content on line"))
@@ -19,5 +19,5 @@
     "\\\\keyword content" ((line "\\keyword content"))
     "keyword:content" ("keyword:content")
     "keyword: content" ((association "keyword" "content"))
-    "key\\.(+ 3 4)word: con\\.(+ 1 2)tent" ((line "key" (inline-scm-expr "(+ 3 4)") (association "word" ("con" (inline-scm-expr "(+ 1 2)") "tent"))))
+    "key\\.(+ 3 4)word: con\\.(+ 1 2)tent" ((line "key" (inline-scm-expr "(+ 3 4)") (association "word" "con" (inline-scm-expr "(+ 1 2)") "tent")))
 ))

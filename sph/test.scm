@@ -99,7 +99,7 @@
     (let (indent (if (> index-data 0) " " ""))
       (if (or (= index-data 0) title prev-message-newline)
         (string-append (if prev-message-newline "" "\n") indent
-          "success" (if (= index-data 0) (string-append " " name) "")
+          (if (= index-data 0) name "")
           (if (= index-data-last 0) "" (string-append " " (format-index-number index-data)))
           (begin (set! prev-message-newline (or title (= index-data index-data-last)))
             (if prev-message-newline (string-append (if title (string-append " - " title) "") "\n")

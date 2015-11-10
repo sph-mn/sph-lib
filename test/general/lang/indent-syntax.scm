@@ -1,7 +1,7 @@
 
 (import
   (sph)
-  (sph indent-syntax)
+  (sph lang indent-syntax)
   (sph test)
   (sph tree))
 
