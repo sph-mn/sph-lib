@@ -133,7 +133,7 @@
             body-datum)))))
 
   (define-syntax-case (prefix-imply-for prefix (name ...) body ...) s
-    ;bind the prefix appended names of list as names
+    ;bind the values of the indentifiers "{prefix}-{name}" to "name" in the scope for "body"
     (let*
       ( (symbol-prepend-prefix (symbol-prepend-prefix-proc (syntax->datum (syntax prefix))))
         (add-prefix-to-formals
