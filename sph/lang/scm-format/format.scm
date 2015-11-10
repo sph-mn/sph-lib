@@ -201,7 +201,10 @@
                     (pair (format-docstring (first body) config current-indent)
                       (map-recurse recurse (tail body) current-indent))
                     (map-recurse recurse body current-indent))
-                  body)))))
+                  body)))
+            (_
+              ;probably not an effective lambda but data instead
+              (tail a))))
         config current-indent
         3 (hashtable-ref config (q max-exprs-per-line-middle))
         (hashtable-ref config (q max-exprs-per-line-end)))
@@ -234,7 +237,8 @@
                   (string-join-with-vertical-spacing
                     (map (l (e) (first (recurse e current-indent))) body) indent
                     vertical-spacing (hashtable-ref config (q toplevel-vertical-spacing-oneline)))
-                  ")"))))))
+                  ")"))))
+          (_ a)))
       #f))
 
   (define (format-list a config current-indent start middle end)
