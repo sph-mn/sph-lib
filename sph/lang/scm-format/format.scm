@@ -263,7 +263,7 @@
                 (+ 1 current-indent))
               (map-recurse recurse body current-indent))
             config current-indent))
-        (_ #f))
+        (_ a))
       #f))
 
   (define (format-range-comment a recurse config current-indent)
