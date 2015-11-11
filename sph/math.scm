@@ -8,7 +8,6 @@
     increment-one
     integer-and-fraction&
     log-base
-    nearest-divisor-without-remainder
     number-length
     percent
     percent-as-integer
@@ -64,10 +63,6 @@
     "number number -> number
     calculate the number of digits of \"a\" represented in base \"base\""
     (+ 1 (floor (log-base a base))))
-
-  (define (nearest-divisor-without-remainder a range) "number number -> number"
-    (integer-and-fraction& (/ range a)
-      (l (integer fraction) ((if (< fraction 0.5) - +) a (* a (/ fraction integer))))))
 
   (define (round-to-decimal-places a decimal-places) "number number -> number"
     (let (modifier (expt 10 decimal-places)) (/ (round (* a modifier)) modifier)))
