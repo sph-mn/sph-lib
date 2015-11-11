@@ -1,11 +1,14 @@
 (library (sph math)
   (export
-    abs-difference
+    absolute-difference
     average
     bit->byte-length
     decrement-one
     golden-ratio
     increment-one
+    integer-and-fraction&
+    log-base
+    nearest-divisor-without-remainder
     number-length
     percent
     percent-as-integer
@@ -25,24 +28,51 @@
       exact->inexact))
 
   (define golden-ratio 1.6180339887)
-  (define (round-to-increment a increment) (* (round (/ a increment)) increment))
-  ;currently math and number procedures mixed
+
+  (define (round-to-increment a increment)
+    "number number -> number
+    round a number to the the nearest multiple of \"increment\" (using \"round\").
+    if the number is exactly half-way in between increments, take the lower increment.
+    example: (1.1 3) -> 0, (1.6 3) -> 3, (1.5 3) -> 0"
+    (* (round (/ a increment)) increment))
+
   (define (bit->byte-length a) (inexact->exact (ceiling (/ a 8))))
   (define (percent value base) "how many percent is value from base" (/ (* value 100) base))
   (define-syntax-rule (percent-as-integer value base) (round (inexact->exact (percent value base))))
 
+  (define (integer-and-fraction& a c)
+    "number procedure:{integer real} -> any
+    splits a number into its integer and fractional part. example: 1.74 -> 1 0.74"
+    (let (integer (truncate a)) (c integer (- a integer))))
+
   (define (signed-integer-binary-length a)
+    "integer -> integer
+    calculates the minimum number of digits required to represent \"a\" in base 2"
     (let (a (abs a)) (if (< a 2) 2 (+ 1 (inexact->exact (ceiling (/ (log (+ 1 a)) (log 2))))))))
 
   (define (unsigned-integer-binary-length a)
+    "integer -> integer
+    calculates the minimum number of digits required to represent \"a\" in base 2"
     (let (a (abs a)) (if (< a 2) 2 (+ 1 (inexact->exact (ceiling (/ (log (+ 1 a)) (log 2))))))))
 
-  (define (number-length a base) (string-length (number->string a base)))
+  (define (log-base a base)
+    "number number -> number
+    result in the logarithm with \"base\" of \"a\""
+    (/ (log a) (log base)))
 
-  (define (round-to-decimal-places a decimal-places)
+  (define (number-length a base)
+    "number number -> number
+    calculate the number of digits of \"a\" represented in base \"base\""
+    (+ 1 (floor (log-base a base))))
+
+  (define (nearest-divisor-without-remainder a range) "number number -> number"
+    (integer-and-fraction& (/ range a)
+      (l (integer fraction) ((if (< fraction 0.5) - +) a (* a (/ fraction integer))))))
+
+  (define (round-to-decimal-places a decimal-places) "number number -> number"
     (let (modifier (expt 10 decimal-places)) (/ (round (* a modifier)) modifier)))
 
-  (define (truncate-to-decimal-places a decimal-places)
+  (define (truncate-to-decimal-places a decimal-places) "number number -> number"
     (let (modifier (expt 10 decimal-places)) (/ (truncate (* a modifier)) modifier)))
 
   (define (increment-one a) (+ 1 a))
@@ -53,7 +83,7 @@
     calculate the average of the given numbers"
     (/ (apply + a) (length a)))
 
-  (define (abs-difference n-1 n-2)
+  (define (absolute-difference n-1 n-2)
     "number number -> number
     result in the non-negative difference of two numbers"
     (abs (- n-1 n-2)))
