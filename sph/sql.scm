@@ -41,7 +41,7 @@
       string-fold
       simple-format)
     (only (rnrs io simple) display)
-    (only (sph alist) symbol-alist-bind)
+    (only (sph alist) alist-quoted-bind)
     (only (sph list)
       any->list
       contains?
@@ -242,7 +242,7 @@
     at the beginning of the statement or one at the end"
     ;order - string/(string ...)
     ;limit - string/(offset limit)
-    (symbol-alist-bind config (limit add-1 add-2 order)
+    (alist-quoted-bind config (limit add-1 add-2 order)
       ;build sql parts
       (values
         ;beginning part

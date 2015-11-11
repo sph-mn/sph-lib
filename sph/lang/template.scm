@@ -36,7 +36,7 @@
     (l (key . default) (alist-ref data key (if (null? default) "" (first default)))))
 
   (define (template-fold fold-proc source bindings env result)
-    "template-fold-proc template-source symbol-alist environment any -> any
+    "template-fold-proc template-source alist-quoted environment any -> any
     template-source: string:path/template-procedure/port/(string:path:merged/template-procedure/port/(string:path:wrapped/template-procedure/port/list:already-ready-result ...) ...)
     template-fold-proc: procedure:{procedure:{key [default: \"\"] -> value/default} any:inserted-content}"
     (template-source-fold source

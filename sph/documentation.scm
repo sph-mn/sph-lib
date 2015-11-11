@@ -42,7 +42,7 @@
     (if
       (and (eqv? (q procedure) type) (list? arguments)
         (not (null? arguments)) (pair? (first arguments)))
-      (symbol-alist-bind arguments (optional rest required keyword allow-other-keys?)
+      (alist-quoted-bind arguments (optional rest required keyword allow-other-keys?)
         (let
           ( (optional-string
               (if (or (not optional) (null? optional)) ""
@@ -93,7 +93,7 @@
 
   (define-as display-format-itpn
     ;this defines the default formatter
-    symbol-alist format-arguments
+    alist-quoted format-arguments
     default-format-arguments format-binding-info
     (l (bi formatted-arguments) "vector:record string -> string"
       (string-append (symbol->string (bi-name bi)) "\n"
@@ -113,7 +113,7 @@
     (l (module-name md) "any (string ...) -> string" (string-join md "\n"))
     format-modules-documentation (l (mds) "(string ...) -> string" (apply string-append mds)))
 
-  (define-as documentation-display-formats symbol-alist
+  (define-as documentation-display-formats alist-quoted
     default display-format-itpn itpn display-format-itpn)
 
   (define* (format-module-documentation module-names #:optional (format-handler-name (q default)))
@@ -125,7 +125,7 @@
           (or (assoc-ref documentation-display-formats format-handler-name)
             (throw (q no-such-display-format))))
         (module-names (if (list? (first module-names)) module-names (list module-names))))
-      (symbol-alist-bind format-handler
+      (alist-quoted-bind format-handler
         (format-arguments format-binding-info format-module-documentation
           format-modules-documentation)
         (format-modules-documentation

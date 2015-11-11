@@ -44,7 +44,7 @@
     (string-append (string-drop-right (config-load-default-get-path path name) 4) ".runtime.scm"))
 
   (define (config-load-default name options)
-    "string symbol-alist -> config-object
+    "string alist-quoted -> config-object
     the default config-loader.
     loads config from a file either from a path given as an element in options like (symbol . string) or
     in a directory named \"config\" in the current working directory.

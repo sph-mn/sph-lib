@@ -1,4 +1,4 @@
-; (sph cli) - creating command line interfaces
+; (sph cli) - creating command-line interfaces
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -11,10 +11,6 @@
 ; GNU General Public License for more details.
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
-;possible-enhancements
-; * automatic parameters usage help text also for multiple unnamed-option patterns
-; * allow commands to be specified at the end of the root-cli option list (currently either commands or root cli run, this would make root cli run first)
-
 (library (sph cli)
   (export
     cli-command-match
@@ -234,7 +230,7 @@
                 #f #f #f #f #f (display-version-proc version-spec))
               options))))
       (l (options)
-        (pass-if (symbol-alist-ref a about)
+        (pass-if (alist-quoted-ref a about)
           (l (text) (pair (list (q about) #\a #f #f #f #f #f (display-about-proc text a)) options))))
       (l (options)
         (let
@@ -245,7 +241,7 @@
               (options
                 (pair
                   (append help-option
-                    (list (display-help-proc (symbol-alist-ref a description) commands a options-temp)))
+                    (list (display-help-proc (alist-quoted-ref a description) commands a options-temp)))
                   options)))
             (pair (append cli-option (list (display-command-line-interface-proc a options-temp)))
               options))))))
@@ -330,11 +326,11 @@
         (alist-ref a (q commands)))))
 
   (define (config->missing-arguments-handler a) "list -> procedure/false"
-    (let (v (symbol-alist-ref a missing-arguments-handler (q undefined)))
+    (let (v (alist-quoted-ref a missing-arguments-handler (q undefined)))
       (if (eqv? (q undefined) v) default-missing-arguments-handler (and (procedure? v) v))))
 
   (define (config->unsupported-option-handler a) "list -> procedure/false"
-    (let (v (symbol-alist-ref a unsupported-option-handler (q undefined)))
+    (let (v (alist-quoted-ref a unsupported-option-handler (q undefined)))
       (if (eqv? (q undefined) v) default-unsupported-option-handler (and (procedure? v) v))))
 
   (define (cli-create . config)

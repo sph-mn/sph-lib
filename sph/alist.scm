@@ -37,11 +37,12 @@
     list->group-alist
     list-alist?
     set-alist-bindings!
-    symbol-alist
-    symbol-alist-bind
-    symbol-alist-bind-and*
-    symbol-alist-ref
-    symbol-alist-select-apply)
+    alist-quoted
+    alist-quoted-bind
+    alist-quoted-bind-and*
+    alist-quoted-ref
+    alist-quoted-select
+    alist-quoted-select-apply)
   (import
     (rnrs base)
     (sph)
@@ -98,7 +99,7 @@
     ;a:alist k:key d:default-if-not-found
     ((a k d) ((l (r) (if r (tail r) d)) (assoc k a))) ((a k) (assoc-ref a k)))
 
-  (define-syntax-rules symbol-alist-ref
+  (define-syntax-rules alist-quoted-ref
     ;a:alist k:unquoted-key d:default-if-not-found
     ((a k d) ((l (r) (if r (tail r) d)) (assoc (quote k) a))) ((a k) (assoc-ref a (quote k))))
 
@@ -115,12 +116,14 @@
     (alist (quote a) 1 \"b\" 2 (quote c) 3)"
     (list->alist key/value))
 
-  (define-syntax-rule (symbol-alist key/value ...) (list->alist (quote-odd key/value ...)))
+  (define-syntax-rule (alist-quoted key/value ...)
+    ;only the keys are quoted
+    (list->alist (quote-odd key/value ...)))
 
-  (define-syntax-rule (symbol-alist-bind alist (key ...) body ...)
+  (define-syntax-rule (alist-quoted-bind alist (key ...) body ...)
     ((lambda (key ...) body ...) (alist-ref alist (quote key)) ...))
 
-  (define-syntax-rule (symbol-alist-bind-and* alist (key ...) body ...)
+  (define-syntax-rule (alist-quoted-bind-and* alist (key ...) body ...)
     ;alist values are bound in order of keys, and false is returned if any key value is false
     (and-let* ((key (alist-ref alist (quote key))) ...) (begin body ...)))
 
@@ -168,9 +171,13 @@
   (define (list-alist? a)
     "return #t if list is an association list, false otherwise. works only on lists" (every pair? a))
 
-  (define (alist-select-apply a keys proc) (apply proc (alist-select a keys)))
+  (define (alist-select-apply a keys proc)
+    "list list procedure:{any:key-value ...} -> any
+    applies proc with all alist values for keys in order"
+    (apply proc (alist-select a keys)))
 
-  (define-syntax-rule (symbol-alist-select-apply a (key ...) proc)
+  (define-syntax-rule (alist-quoted-select-apply a (key ...) proc)
     (alist-select-apply a (quote (key ...)) proc))
 
-  (define-syntax-rule (symbol-alist-select a (key ...)) (alist-select a (quote (key ...)))))
+  (define-syntax-rule (alist-quoted-select a (key ...))
+    (alist-select a (quote (key ...)))))
