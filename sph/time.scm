@@ -31,7 +31,7 @@
     (guile)
     (rnrs base)
     (sph)
-    (only (sph math) round-to-decimal-places simple-format-number))
+    (only (sph number) round-to-decimal-places simple-format-number))
 
   ;epoch is 1970-01-01 00:00:00 UTC, excluding leap seconds.
 

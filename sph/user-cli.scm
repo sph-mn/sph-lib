@@ -10,7 +10,7 @@
     (sph)
     (sph list)
     (only (ice-9 rdelim) read-line)
-    (only (sph math) increment-one decrement-one)
+    (only (sph number) increment-one decrement-one)
     (only (srfi srfi-1) remove))
 
   (define* (user-cli-choice proposition names #:optional (max-choices 1) (min-choices 1))

@@ -1,28 +1,29 @@
-(library (sph math)
+(library (sph number)
   (export
     absolute-difference
     average
     bit->byte-length
+    call-with-multiple/
+    container-length->number-max
     decrement-one
     golden-ratio
     increment-one
     integer-and-fraction&
     log-base
-    number-length
+    number-container-length
     percent
-    percent-as-integer
     round-to-decimal-places
     round-to-increment
-    signed-integer-binary-length
     simple-format-number
-    truncate-to-decimal-places
-    unsigned-integer-binary-length)
+    truncate-to-decimal-places)
   (import
     (ice-9 format)
+    (rnrs arithmetic flonums)
     (rnrs base)
     (sph)
     (only (guile)
       simple-format
+      string-split
       inexact->exact
       exact->inexact))
 
@@ -31,44 +32,52 @@
   (define (round-to-increment a increment)
     "number number -> number
     round a number to the the nearest multiple of \"increment\" (using \"round\").
-    if the number is exactly half-way in between increments, take the lower increment.
+    if the number is exactly half-way in between increments, take the lower increment multiple.
     example: (1.1 3) -> 0, (1.6 3) -> 3, (1.5 3) -> 0"
     (* (round (/ a increment)) increment))
 
-  (define (bit->byte-length a) (inexact->exact (ceiling (/ a 8))))
+  (define (bit->byte-length a)
+    "integer -> integer
+    calculate the bytes required to store the number of bits"
+    (inexact->exact (ceiling (/ a 8))))
+
+  (define (container-length->number-max digit-count base)
+    "integer integer -> integer
+    calculate the maximum value that can represented with the given number of digits in the given base"
+    (- (expt base digit-count) 1))
+
+  (define (number-container-length a base)
+    "integer:positive-integer integer -> integer
+    results in the number of vector elements of size base required to store the individual digits of the given positive number in the given base.
+    example use case is calculating the size of a bytevector for storing an integer"
+    (if (= 0 a) 0 (+ 1 (inexact->exact (floor (log-base a base))))))
+
   (define (percent value base) "how many percent is value from base" (/ (* value 100) base))
-  (define-syntax-rule (percent-as-integer value base) (round (inexact->exact (percent value base))))
 
   (define (integer-and-fraction& a c)
-    "number procedure:{integer real} -> any
+    "number procedure:{integer real -> any:result} -> any:result
     splits a number into its integer and fractional part. example: 1.74 -> 1 0.74"
-    (let (integer (truncate a)) (c integer (- a integer))))
-
-  (define (signed-integer-binary-length a)
-    "integer -> integer
-    calculates the minimum number of digits required to represent \"a\" in base 2"
-    (let (a (abs a)) (if (< a 2) 2 (+ 1 (inexact->exact (ceiling (/ (log (+ 1 a)) (log 2))))))))
-
-  (define (unsigned-integer-binary-length a)
-    "integer -> integer
-    calculates the minimum number of digits required to represent \"a\" in base 2"
-    (let (a (abs a)) (if (< a 2) 2 (+ 1 (inexact->exact (ceiling (/ (log (+ 1 a)) (log 2))))))))
+    ;this implementation is slow, but it works with real numbers without rounding errors
+    (apply
+      (l (integer fraction)
+        (c (string->number integer) (string->number (string-append "0." fraction))))
+      (string-split (number->string a) #\.)))
 
   (define (log-base a base)
     "number number -> number
     result in the logarithm with \"base\" of \"a\""
     (/ (log a) (log base)))
 
-  (define (number-length a base)
-    "number number -> number
-    calculate the number of digits of \"a\" represented in base \"base\""
-    (+ 1 (floor (log-base a base))))
+  (define (call-with-multiple/ proc a factor)
+    "procedure:{number -> number} number number -> number
+    call proc with \"a\" multiplied by factor and afterwards divide by factor"
+    (/ (proc (* a factor)) factor))
 
   (define (round-to-decimal-places a decimal-places) "number number -> number"
-    (let (modifier (expt 10 decimal-places)) (/ (round (* a modifier)) modifier)))
+    (call-with-multiple/ round a (expt 10 decimal-places)))
 
   (define (truncate-to-decimal-places a decimal-places) "number number -> number"
-    (let (modifier (expt 10 decimal-places)) (/ (truncate (* a modifier)) modifier)))
+    (call-with-multiple/ truncate a (expt 10 decimal-places)))
 
   (define (increment-one a) (+ 1 a))
   (define (decrement-one a) (- a 1))

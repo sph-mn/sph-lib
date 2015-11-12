@@ -1,13 +1,13 @@
 (import
   (sph one)
   (sph test)
-  (sph math)
+  (sph number)
   (rnrs bytevectors))
 
 (define (test-integer->bytevector inp exp)
   (= inp
     (bytevector-sint-ref (integer->bytevector inp) 0
-      (native-endianness) (bit->byte-length (signed-integer-binary-length inp)))))
+      (native-endianness) (bit->byte-length (number-container-length (abs inp) 2)))))
 
 (execute-tests-quasiquote
   (integer->bytevector 1383213160 #t -1383213160 #t)

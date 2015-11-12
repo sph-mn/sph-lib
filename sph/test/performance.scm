@@ -9,7 +9,7 @@
     (rnrs sorting)
     (sph)
     (sph list)
-    (sph math)
+    (sph number)
     (sph string)
     (only (guile)
       current-time
