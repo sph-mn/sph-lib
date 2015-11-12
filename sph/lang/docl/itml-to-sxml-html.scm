@@ -16,7 +16,9 @@
     (sph lang docl env itml-to-sxml-html)
     (sph lang parser itml)
     (sph list)
+    (only (sph hashtable) hashtable-ref)
     (sph read-write)
+    (sph set)
     (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
     (only (sph tree) flatten tree-transform-with-state)
@@ -28,7 +30,7 @@
   (define docl-itml-sxml-html-env (apply environment docl-itml-sxml-html-env-module-names))
 
   (define-syntax-rule (join-heading-section a level)
-    (section* level (first a) (process-top-level-lines (tail a))))
+    (section* level (first a) (process-lines (tail a))))
 
   (define-syntax-rule (heading-section? a)
     (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
@@ -110,30 +112,29 @@
     top-level-lines are everything on the top-level except lists with symbols as the first element"
     (and (list? a) (symbol? (first a))))
 
-  (define html-tags-inline
-    (ql span a br object img script select button input label select textarea))
+  (define html-tags-no-newline
+    (apply set-symbol-create
+      (ql span a object img script select button input label select textarea)))
 
-  (define (html-tag-inline? a) (and (symbol? a) (containsv? html-tags-inline a)))
+  (define (html-tag-no-newline? a) (hashtable-ref html-tags-no-newline a))
+  (define (handle-line a) (list (q p) a))
+  (define (handle-line-list a) (pair (q p) a))
 
-  (define (process-top-level-lines a)
+  (define (process-lines a)
     "list integer -> list
     the top-level is interpreted as a list of lines. this procedure inserts line breaks between string or symbol elements.
     removes empty lists and merges sub-lists that are not tag elements.
     sub-expressions creators are supposed to handle line breaks themselves"
     (if (null? a) a
-      (let (e (first a))
-        ( (if (list? e)
-            (if (null? e) (l (e r) r)
-              (let (prefix (first e))
-                (if (symbol? prefix)
-                  (if (containsv? html-tags-inline prefix)
-                    (l (e r) (if (null? r) (pair e r) (pairs e (list (ql br)) r))) pair)
-                  (l (e r) (if (null? r) (append e r) (append e (list (ql br)) r))))))
-            (if (null? (tail a)) pair
-              (let (e-next (first a))
-                (if (tag-element? e-next) pair
-                  (l (e r) (if (null? r) (pair e r) (pairs e (ql br) r)))))))
-          e (process-top-level-lines (tail a))))))
+      (let ((e (first a)) (r (process-lines (tail a))))
+        (if (list? e)
+          (if (null? e) r
+            (let (prefix (first e))
+              (pair
+                (if (symbol? prefix) (if (html-tag-no-newline? prefix) (handle-line e) e)
+                  (handle-line-list e))
+                r)))
+          (pair (handle-line e) r)))))
 
   (define-syntax-rule (handle-line-empty a) (if (eqv? (q line-empty) a) (ql br) a))
   (define (handle-terminal a level-init) (list (handle-line-empty a) level-init))
@@ -141,7 +142,7 @@
   (define* (parsed-itml->sxml-html a env #:optional (level-init 0))
     "list environment [integer] -> sxml
     a translator for parsed-itml. does not depend on docl"
-    (process-top-level-lines
+    (process-lines
       (map
         (l (e)
           (if (list? e)
@@ -155,7 +156,7 @@
     (docl-itml-parsed->sxml-html input #:optional bindings keep-prev-bindings
       (env docl-itml-sxml-html-env)
       (level-init 0))
-    "list [hashtable-quoted/boolean boolean environment integer] -> sxml
+    "list [symbol-hashtable/boolean boolean environment integer] -> sxml
     this can also be used to convert list trees with strings to html"
     (docl-translate-any input
       (l (input)
@@ -166,12 +167,12 @@
     (docl-itml-port->sxml-html input #:optional bindings keep-prev-bindings
       (env docl-itml-sxml-html-env)
       (level-init 0))
-    "port [hashtable-quoted/boolean boolean environment integer] -> sxml
+    "port [symbol-hashtable/boolean boolean environment integer] -> sxml
     read itml from a port, parse it and translate it to sxml-html"
     (docl-translate-port input
       (l (input) (parsed-itml->sxml-html (port->parsed-itml input) env (current-nesting-level)))
       bindings keep-prev-bindings))
 
   (define (docl-itml-string->sxml-html input . docl-itml-port->sxml-html-args)
-    "string [hashtable-quoted/boolean boolean environment integer] -> sxml"
+    "string [symbol-hashtable/boolean boolean environment integer] -> sxml"
     (apply docl-itml-port->sxml-html (open-input-string input) docl-itml-port->sxml-html-args)))

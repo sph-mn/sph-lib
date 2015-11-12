@@ -40,13 +40,13 @@
   (define (interface-format-text-write-data a port)
     (if (not (unspecified? a)) (begin (display a) (if (not (string-suffix? "\n" a)) (newline)))))
 
-  (define-as interface-format-writers hashtable-quoted
+  (define-as interface-format-writers symbol-hashtable
     text
-    (hashtable-quoted error interface-format-text-write-error
+    (symbol-hashtable error interface-format-text-write-error
       message interface-format-text-write-message
       lines interface-format-text-write-lines data interface-format-text-write-data)
     scm
-    (hashtable-quoted error interface-format-scm-write-error
+    (symbol-hashtable error interface-format-scm-write-error
       message interface-format-scm-write-message
       lines interface-format-scm-write-lines data interface-format-scm-write-data))
 

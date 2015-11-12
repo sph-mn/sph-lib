@@ -2,9 +2,9 @@
 
 (library (sph set)
   (export
-    create-set
-    create-string-set
-    create-symbol-set
+    set-create
+    set-string-create
+    set-symbol-create
     set-add!
     set-add-multiple
     set-contains?
@@ -15,14 +15,14 @@
     (sph)
     (sph string))
 
-  (define-syntax-rule (primitive-create-set entries hash-proc equiv)
+  (define-syntax-rule (primitive-set-create entries hash-proc equiv)
     (let (r (make-hashtable hash-proc equiv)) (each (l (e) (hashtable-set! r e #t)) entries) r))
 
-  (define (create-set . entries) (primitive-create-set entries equal-hash equal?))
-  (define (create-string-set . entries) (primitive-create-set entries string-hash string-equal?))
-  (define (create-symbol-set . entries) (primitive-create-set entries symbol-hash eq?))
+  (define (set-create . entries) (primitive-set-create entries equal-hash equal?))
+  (define (set-string-create . entries) (primitive-set-create entries string-hash string-equal?))
+  (define (set-symbol-create . entries) (primitive-set-create entries symbol-hash eq?))
   (define (set-contains? a value) (hashtable-ref a value #f))
   (define (set-add! a value) (hashtable-set! a value #t))
 
   (define (set-add-multiple a . entries)
-    (apply create-set (append entries (vector->list (hashtable-keys a))))))
+    (apply set-create (append entries (vector->list (hashtable-keys a))))))

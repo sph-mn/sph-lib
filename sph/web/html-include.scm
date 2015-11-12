@@ -70,7 +70,7 @@
     (if (equal? (q stylesheet) arg) sxml-html-stylesheet-tag sxml-html-javascript-tag))
 
   (define (html-include-proc include-config content-type->search-paths)
-      #;(include-config (hashtable-quoted content-type (vector (alist suffix single-action ...) action target-path)))
+      #;(include-config (symbol-hashtable content-type (vector (alist suffix single-action ...) action target-path)))
     (lambda (content-type . paths)
       (let
         (path

@@ -27,9 +27,9 @@
 
   (define default-format-ascend format-application)
 
-  (define-as scm-format-default-config hashtable-quoted
+  (define-as scm-format-default-config symbol-hashtable
     format
-    (hashtable-quoted indent-string (string-multiply " " 2)
+    (symbol-hashtable indent-string (string-multiply " " 2)
       max-chars-per-line 100
       max-exprs-per-line-start 3
       max-exprs-per-line-middle 2
@@ -37,10 +37,10 @@
       multiple-leading-parenthesis-spacing #t
       toplevel-vertical-spacing 1 toplevel-vertical-spacing-oneline 0)
     transform
-    (hashtable-quoted sort-export #t
+    (symbol-hashtable sort-export #t
       sort-import #t sort-definitions #f separate-unexported-definitions #f))
 
-  (define-as descend-prefix->format-proc hashtable-quoted
+  (define-as descend-prefix->format-proc symbol-hashtable
     semicolon-comment format-semicolon-comment
     scsh-block-comment format-scsh-block-comment
     hash-bang format-hash-bang

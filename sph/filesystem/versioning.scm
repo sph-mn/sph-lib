@@ -1,3 +1,6 @@
+; create new file versions and manage versions
+; optionally depends on the "diff" and "patch" utilities. version-id is a monotonically increasing integer saved with hexadecimal representation
+
 (library (sph filesystem versioning)
   (export
     versioning-create
@@ -7,9 +10,7 @@
     (guile)
     (sph common))
 
-  ;depends on the "diff" and "patch" utilities. version-id is a monotonically increasing integer saved with hexadecimal representation
-
-  (define-as versioning-default-config hashtable-quoted
+  (define-as versioning-default-config symbol-hashtable
     max-count 3 max-size (inf) path-versions "versions/" path-temp "temp/")
 
   (define (get-existing-version-ids path-versions) "string -> (integer ...)"

@@ -125,7 +125,7 @@
       (any->string-write (list "failure" name (+ index-data 1) (if title title "") inp exp out)) "\n"))
 
   (define test-display-formats
-    (hashtable-quoted compact (pair failure-message-compact success-message-compact)
+    (symbol-hashtable compact (pair failure-message-compact success-message-compact)
       scm (pair failure-message-scm success-message-scm)
       csv (pair failure-message-csv success-message-csv)))
 

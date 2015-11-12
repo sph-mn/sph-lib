@@ -50,7 +50,7 @@
     (sph string)
     (sph time)
     (srfi srfi-41)
-    (only (sph hashtable) hashtable-ref hashtable-quoted)
+    (only (sph hashtable) hashtable-ref symbol-hashtable)
     (only (sph list)
       any->list
       length-greater-one?
@@ -154,7 +154,7 @@
       (string-append str "/") str))
 
   (define stat-field-name->stat-accessor-ht
-    (hashtable-quoted mtime stat:mtime
+    (symbol-hashtable mtime stat:mtime
       atime stat:atime
       size stat:size mode stat:mode uid stat:uid gid stat:gid nlink stat:nlink ctime stat:ctime))
 

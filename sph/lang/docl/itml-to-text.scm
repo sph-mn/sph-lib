@@ -114,7 +114,7 @@
   (define*
     (docl-itml-parsed->text input #:optional bindings keep-prev-bindings (env docl-itml-text-env)
       (level-init 0))
-    "list [hashtable-quoted/boolean boolean environment integer] -> text
+    "list [symbol-hashtable/boolean boolean environment integer] -> text
     this can also be used to convert list trees with strings to html"
     (docl-translate-any input
       (l (input) (parsed-itml->text input env (or (docl-env-ref (q nesting-level)) level-init)))
@@ -123,7 +123,7 @@
   (define*
     (docl-itml-port->text input #:optional bindings keep-prev-bindings (env docl-itml-text-env)
       (level-init 0))
-    "port [hashtable-quoted/boolean boolean environment integer] -> text
+    "port [symbol-hashtable/boolean boolean environment integer] -> text
     read itml from a port, parse it and translate it to text"
     (docl-translate-port input
       (l (input)
@@ -132,5 +132,5 @@
       bindings keep-prev-bindings))
 
   (define (docl-itml-string->text input . docl-itml-port->text-arguments)
-    "string [hashtable-quoted/boolean boolean environment integer] -> text"
+    "string [symbol-hashtable/boolean boolean environment integer] -> text"
     (apply docl-itml-port->text (open-input-string input) docl-itml-port->text-arguments)))

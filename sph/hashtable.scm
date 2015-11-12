@@ -33,7 +33,7 @@
     hashtable-map!
     hashtable-merge
     hashtable-merge!
-    hashtable-quoted
+    symbol-hashtable
     hashtable-quoted-bind
     hashtable-ref
     hashtable-set-multiple
@@ -71,8 +71,8 @@
     example: (hashtable 'a 1 'b 2 'c 3)"
     (list->hashtable associations))
 
-  (define-syntax-rules hashtable-quoted
-    ;like hashtable, but keys are implicitly quoted
+  (define-syntax-rules symbol-hashtable
+    ;like hashtable, but create a hashtable optimised for symbol keys
     (() (make-hashtable symbol-hash eqv?))
     ((associations ...) (list->hashtable (quote-odd associations ...) eqv? symbol-hash)))
 

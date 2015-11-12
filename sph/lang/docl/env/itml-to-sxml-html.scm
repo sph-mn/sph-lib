@@ -28,7 +28,6 @@
     (sph lang indent-syntax)
     (sph web sxml-html)
     (only (guile)
-      cons*
       string-split
       string-join
       make-list
@@ -60,9 +59,9 @@
   (define-syntax-rule (current-nesting-level) (or (docl-env-ref (q nesting-level)) 0))
   ;the assign syntax is for applying css styles inline, while css inclusion is handled automatically
 
-  (define-syntax-rule (a arg ...)
+  (define-syntax-rule (a a ...)
     ;alias for assign
-    (assign arg ...))
+    (assign a ...))
 
   (define temporary-class
     (let (count 0)
@@ -74,21 +73,21 @@
 
   (define bttl-class-prefix "bttl-")
 
-  (define (style-value arg)
+  (define (style-value a)
     "string\\number\\symbol -> string
     handle values for a style property"
-    (if (string? arg) arg
-      (if (number? arg) (number->string arg)
-        (if (symbol? arg) (symbol->string arg) (throw (q wrong-type-for-argument) arg)))))
+    (if (string? a) a
+      (if (number? a) (number->string a)
+        (if (symbol? a) (symbol->string a) (throw (q wrong-type-for-argument) a)))))
 
-  (define (style-property arg)
+  (define (style-property a)
     "pair -> string
     handle one property to value expression"
     (let
       ( (property-name
-          (let ((property-name (first arg)))
+          (let ((property-name (first a)))
             (if (string? property-name) property-name (symbol->string property-name))))
-        (value (tail arg)))
+        (value (tail a)))
       (string-append property-name ":"
         (if (list? value) (string-join (map style-value value) " ") (style-value value)))))
 
@@ -112,7 +111,7 @@
           (let (class (map! symbol->string class))
             (if (null? style) (list class)
               (let (temp-class (temporary-class))
-                (list (cons temp-class class) (assign-stylesheet temp-class style)))))))))
+                (list (pair temp-class class) (assign-stylesheet temp-class style)))))))))
 
   (define (assign-stylesheet class styles)
     "list -> string
@@ -134,29 +133,26 @@
           (let (class (map! symbol->string class))
             (if (null? style) (list class)
               (let (temp-class (temporary-class))
-                (list (cons temp-class class) (assign-stylesheet temp-class style)))))))))
+                (list (pair temp-class class) (assign-stylesheet temp-class style)))))))))
 
   (define-syntax-rule (assign class\style ... text)
     ;assign classes and css styles to the contained text
     (primitive-assign (quote (class\style ...)) text))
 
-  (define (text->sxml arg)
+  (define (text->sxml a)
     "string -> sxml
     convert newlines in string to (br) and result in an sxml expression"
-    (let (arg (string-split arg #\newline))
-      (if (length-eq-one? arg) (first arg)
-        (tail
-          (fold-right (l (ele prev) (cons (q (br)) (cons ele prev))) (list (first arg)) (tail arg))))))
+    (let (a (string-split a #\newline))
+      (if (length-eq-one? a) (first a)
+        (tail (fold-right (l (e r) (pair (ql br) (pair e r))) (list (first a)) (tail a))))))
 
-  (define (scm* arg)
+  (define (scm* a)
     "s-expr -> sxml
     evaluates a scheme expression and formats the result for use as html
     vector -> table
     list -> unordered list
     string -> text"
-    (list
-      (if (string? arg) (text->sxml arg)
-        (if (list? arg) (sxml-html-list->list arg) (any->string arg)))))
+    (list (if (string? a) (text->sxml a) (if (list? a) (sxml-html-list->list a) (any->string a)))))
 
   (define-syntax-rule (sxml expr)
     ;return the enclosed expression as sxml.
