@@ -29,7 +29,7 @@
     (tree-map-lists-and-self (compose alist->hashtable list->alist)
       (primitive-eval (list (q quasiquote) (file->datums path)))))
 
-  (define sph-config-object (symbol-hashtable))
+  (define sph-config-object (hashtable-quoted))
 
   (define (config-load-default-get-path path name)
     "string/false string -> string
@@ -58,8 +58,8 @@
       (config-save-default-get-path (alist-ref options (q path)) (hashtable-ref config (q name)))
       (l (port) (write (hashtable->alist config 32) port))))
 
-  (define-as config-loaders symbol-hashtable default config-load-default)
-  (define-as config-savers symbol-hashtable default config-save-default)
+  (define-as config-loaders hashtable-quoted default config-load-default)
+  (define-as config-savers hashtable-quoted default config-save-default)
 
   (define* (config-load #:optional name/config (loader-key (q default)) loader-options)
     "symbol/hashtable:name/config [alist] -> config-object
@@ -79,7 +79,7 @@
     (config-save #:optional (saver-key (q default)) saver-options (config sph-config-object))
     ((hashtable-ref config-savers saver-key) config saver-options))
 
-  (define (config-clear! name/config) (set! sph-config-object (symbol-hashtable)))
+  (define (config-clear! name/config) (set! sph-config-object (hashtable-quoted)))
 
   (define-syntax-rule (primitive-config-set! symbol ... value)
     (hashtables-set! sph-config-object symbol ... value))
