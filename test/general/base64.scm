@@ -5,8 +5,8 @@
   (sph base64))
 
 (define (test-base64-encode+decode inp exp)
-  (let (res (base64-decode (base64-encode inp)))
-    (if (equal? (bytevector=? inp res) exp) exp res)))
+  (let (r (base64-decode (base64-encode inp)))
+    (if (equal? (bytevector=? inp r) exp) exp r)))
 
 (execute-tests-quasiquote
   (base64-encode+decode
