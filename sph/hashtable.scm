@@ -24,7 +24,7 @@
     hashtable
     hashtable->alist
     hashtable->indent-tree-string
-    symbol-hashtable-bind
+    hashtable-quoted-bind
     hashtable-copy-empty
     hashtable-each
     hashtable-each-key
@@ -49,7 +49,7 @@
     list->hashtable
     rnrs-hashtable-ref
     string-hashtable
-    symbol-hashtable)
+    hashtable-quoted)
   (import
     (rnrs base)
     (sph)
@@ -75,7 +75,7 @@
     example (hashtable 'a 1 'b 2 'c 3)"
     (list->hashtable associations))
 
-  (define-syntax-rules symbol-hashtable (() (make-hashtable symbol-hash eqv?))
+  (define-syntax-rules hashtable-quoted (() (make-hashtable symbol-hash eqv?))
     ((associations ...) (list->hashtable (quote-odd associations ...) eqv? symbol-hash)))
 
   (define-syntax-rules string-hashtable (() (make-hashtable string-hash string-equal?))
@@ -87,7 +87,7 @@
   (define-syntax-rules eqv-hashtable (() (make-eqv-hashtable))
     ((associations ...) (list->hashtable (quote-odd associations ...) eqv? hashv)))
 
-  (define-syntax-rule (symbol-hashtable-bind ht (key ...) body ...)
+  (define-syntax-rule (hashtable-quoted-bind ht (key ...) body ...)
     ;selectively bind keys of alist to variables
     ((lambda (key ...) body ...) (hashtable-ref ht (quote key)) ...))
 
