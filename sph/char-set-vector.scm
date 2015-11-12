@@ -1,4 +1,4 @@
-;redefines preset char-sets as vectors
+;redefines guiles preset char-sets that are special objects as vectors
 
 (library (sph char-set-vector)
   (export

@@ -1,1 +1,6 @@
-find test/general/ -type f |xargs -n 1 guile
+#!/usr/bin/guile
+!#
+
+(import (sph common))
+(define files (directory-tree-paths "test/general" (l (e) (string-suffix? ".scm" e))))
+(each (l (e) (display-line e) (execute "guile" e) (newline)) files)

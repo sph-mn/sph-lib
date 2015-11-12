@@ -175,7 +175,7 @@
     (docl-itml-parsed->sxml-html input #:optional bindings keep-prev-bindings
       (env docl-itml-sxml-html-env)
       (level-init 0))
-    "list [symbol-hashtable/boolean boolean environment integer] -> sxml
+    "list [hashtable-quoted/boolean boolean environment integer] -> sxml
     this can also be used to convert list trees with strings to html"
     (docl-translate-any input
       (l (input)
@@ -186,12 +186,12 @@
     (docl-itml-port->sxml-html input #:optional bindings keep-prev-bindings
       (env docl-itml-sxml-html-env)
       (level-init 0))
-    "port [symbol-hashtable/boolean boolean environment integer] -> sxml
+    "port [hashtable-quoted/boolean boolean environment integer] -> sxml
     read itml from a port, parse it and translate it to sxml-html"
     (docl-translate-port input
       (l (input) (parsed-itml->sxml-html (port->parsed-itml input) env (current-nesting-level)))
       bindings keep-prev-bindings))
 
   (define (docl-itml-string->sxml-html input . docl-itml-port->sxml-html-args)
-    "string [symbol-hashtable/boolean boolean environment integer] -> sxml"
+    "string [hashtable-quoted/boolean boolean environment integer] -> sxml"
     (apply docl-itml-port->sxml-html (open-input-string input) docl-itml-port->sxml-html-args)))

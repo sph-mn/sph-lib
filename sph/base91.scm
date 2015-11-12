@@ -1,3 +1,17 @@
+; (sph base91) - base91 encoding/decoding
+; written for the guile scheme interpreter
+; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; This program is free software; you can redistribute it and/or modify it
+; under the terms of the GNU General Public License as published by
+; the Free Software Foundation; either version 3 of the License, or
+; (at your option) any later version.
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+; GNU General Public License for more details.
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, see <http://www.gnu.org/licenses/>.
+
 (library (sph base91)
   (export
     base91-decode
@@ -8,9 +22,7 @@
     (rnrs bytevectors)
     (rnrs hashtables)
     (sph)
-    (only (guile) reverse!)
-    (only (rnrs lists) cons*)
-    (only (rnrs r5rs) modulo)
+    (only (guile) modulo reverse!)
     (only (sph vector) vector-each-with-index))
 
   (define chars-encode
@@ -22,16 +34,16 @@
       #\? #\@ #\[ #\] #\^ #\_ #\` #\{ #\| #\} #\~ #\"))
 
   (define chars-decode
-    (let (res (make-eq-hashtable 91))
-      (vector-each-with-index (l (ele index) (hashtable-set! res ele index)) chars-encode) res))
+    (let (r (make-eqv-hashtable 91))
+      (vector-each-with-index (l (e index) (hashtable-set! r e index)) chars-encode) r))
 
-  (define (base91-decode arg) "string -> bytevector"
+  (define (base91-decode a) "string -> bytevector"
     (u8-list->bytevector
       (reverse!
-        (let (arg-length (string-length arg))
-          (let next ((index 0) (bits 0) (shift 0) (value #f) (res (list)))
-            (if (< index arg-length)
-              (let (index-decode (hashtable-ref chars-decode (string-ref arg index) #f))
+        (let (a-length (string-length a))
+          (let next ((index 0) (bits 0) (shift 0) (value #f) (r (list)))
+            (if (< index a-length)
+              (let (index-decode (hashtable-ref chars-decode (string-ref a index) #f))
                 (if index-decode
                   (if value
                     (let*
@@ -40,45 +52,45 @@
                         (shift (+ shift (if (> (bitwise-and value 8191) 88) 13 14))))
                       (let next-2
                         ( (bits (bitwise-arithmetic-shift-right bits 8)) (shift (- shift 8))
-                          (res (cons (bitwise-and bits 255) res)))
+                          (r (pair (bitwise-and bits 255) r)))
                         (if (> shift 7)
                           (next-2 (bitwise-arithmetic-shift-right bits 8) (- shift 8)
-                            (cons (bitwise-and bits 255) res))
-                          (next (+ 1 index) bits shift #f res))))
-                    (next (+ 1 index) bits shift index-decode res))
-                  (next (+ 1 index) bits shift value res)))
+                            (pair (bitwise-and bits 255) r))
+                          (next (+ 1 index) bits shift #f r))))
+                    (next (+ 1 index) bits shift index-decode r))
+                  (next (+ 1 index) bits shift value r)))
               (if (> value 0)
                 (cons
                   (bitwise-and (bitwise-arithmetic-shift-left (bitwise-ior bits value) shift) 255)
-                  res)
-                res)))))))
+                  r)
+                r)))))))
 
-  (define (base91-encode arg) "bytevector -> string"
+  (define (base91-encode a) "bytevector -> string"
     (list->string
       (reverse!
-        (let (arg-length (bytevector-length arg))
-          (let next ((index 0) (shift 0) (bits 0) (res (list)))
-            (if (< index arg-length)
+        (let (a-length (bytevector-length a))
+          (let next ((index 0) (shift 0) (bits 0) (r (list)))
+            (if (< index a-length)
               (let
                 (bits
                   (bitwise-ior bits
-                    (bitwise-arithmetic-shift-left (bytevector-u8-ref arg index) shift)))
+                    (bitwise-arithmetic-shift-left (bytevector-u8-ref a index) shift)))
                 (if (> (+ 8 shift) 13)
                   (let (value (bitwise-and bits 8191))
                     (if (> value 88)
                       (next (+ 1 index) (- shift 5)
                         (bitwise-arithmetic-shift-right bits 13)
-                        (cons* (vector-ref chars-encode (truncate (/ value 91)))
-                          (vector-ref chars-encode (modulo value 91)) res))
+                        (pairs (vector-ref chars-encode (truncate (/ value 91)))
+                          (vector-ref chars-encode (modulo value 91)) r))
                       (next (+ 1 index) (- shift 6)
                         (bitwise-arithmetic-shift-right bits 14)
                         (let (value (bitwise-and bits 16383))
-                          (cons* (vector-ref chars-encode (truncate (/ value 91)))
-                            (vector-ref chars-encode (modulo value 91)) res)))))
-                  (next (+ 1 index) (+ 8 shift) bits res)))
+                          (pairs (vector-ref chars-encode (truncate (/ value 91)))
+                            (vector-ref chars-encode (modulo value 91)) r)))))
+                  (next (+ 1 index) (+ 8 shift) bits r)))
               (if (> shift 0)
-                ( (l (res)
+                ( (l (r)
                     (if (or (> shift 7) (> bits 90))
-                      (cons (vector-ref chars-encode (truncate (/ bits 91))) res) res))
-                  (cons (vector-ref chars-encode (modulo bits 91)) res))
-                res))))))))
+                      (pair (vector-ref chars-encode (truncate (/ bits 91))) r) r))
+                  (pair (vector-ref chars-encode (modulo bits 91)) r))
+                r))))))))

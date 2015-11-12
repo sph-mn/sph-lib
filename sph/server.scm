@@ -1,4 +1,4 @@
-;a generic socket-based server that uses a thread-pool for request processing
+; a generic socket-based server that uses a thread-pool for request processing
 
 (library (sph server)
   (export
@@ -33,7 +33,7 @@
     (server-create-bound-socket address #:optional (port-number 6500) (type SOCK_STREAM)
       (protocol 0))
     "string [integer integer integer] -> socket
-    create a socket, bind, and result in the socket.
+    create a socket, bind, and result in the socket object.
     defaults:
     - if address is a path starting with \"/\" then a local unix socket is created (no port necessary)
     - if address contains \":\" then an ip6 tcp socket is created
@@ -55,16 +55,16 @@
 
   (define (call-with-signal-handling s proc)
     "socket procedure -> any
-    setup sigint and sigterm signals to stop the listening, and reset original handlers on any kind of exit"
+    setup sigint and sigterm signals for stopping the listening, and reset to original handlers on any kind of exit"
     (let
       ((signal-numbers (list SIGPIPE SIGINT SIGTERM)) (handlers #f) (stop (l (n) (close-port s))))
-      (dynamic-wind (l () (set! handlers (map sigaction signal-numbers (list SIG_IGN stop stop))))
+      (dynamic-wind (thunk (set! handlers (map sigaction signal-numbers (list SIG_IGN stop stop))))
         proc
-        (l ()
+        (thunk
           (map (l (n handler) (sigaction n (first handler) (tail handler))) signal-numbers handlers)))))
 
   (define (call-with-exception-handling exception-keys exception-handler loop-listen proc)
-    "boolean/(symbol ...) false/procedure:{key procedure:resume exception-arguments ...} procedure:resume procedure ->
+    "boolean/(symbol ...) false/procedure:{key procedure:resume exception-arguments ... -> any} procedure:resume procedure -> any
     if exception-handler or -keys is not false then install given these handlers for the inner request processing.
     the exception-handler receives a procedure to resume listening"
     (if (and exception-handler exception-keys)
@@ -72,7 +72,8 @@
       (proc)))
 
   (define (call-with-epipe-and-ebadf-handling loop-listen proc)
-    "handle broken pipe errors and the accept error when the socket is closed"
+    "procedure:continue-listening procedure:thunk -> any
+    handle broken pipe errors and the accept error when the socket is closed"
     (catch (q system-error) proc
       (l exc
         (let (errno (system-error-errno exc))
@@ -83,13 +84,13 @@
   (define-syntax-rule
     (loop-listen exception-keys exception-handler socket connection-identifier body ...)
     (call-with-signal-handling socket
-      (l ()
+      (thunk
         (let loop-listen ()
           (call-with-exception-handling exception-keys exception-handler
             loop-listen
-            (l ()
+            (thunk
               (call-with-epipe-and-ebadf-handling loop-listen
-                (l ()
+                (thunk
                   (let loop-process (connection-identifier (first (accept socket)))
                     (setvbuf connection-identifier _IONBF 0) body
                     ... (loop-process (first (accept socket))))))))))))
@@ -107,7 +108,7 @@
     "procedure:{port ->} socket procedure:{resume key a ... ->} symbol/(symbol ...)/boolean-true ->
     worker-count is the number of separate processing threads. 1 means no separate threads and single-thread operation.
     the default is equal to the current processor count or 1 if less than 3 processors are available.
-    with only 2 cores the overhead of using multiple workers could likely diminish performance (it did so in tests).
+    with only 2 processors (cores) the overhead of using multiple workers could likely diminish performance (it did so in tests).
     the default exception handler catches all exceptions and resumes"
     (listen socket server-listen-queue-length)
     (let (cpu-count (current-processor-count))
@@ -116,7 +117,7 @@
         (apply
           (l (queue-add! . thread-pool)
             (loop-listen exception-keys exception-handler
-              socket c (queue-add! (l () (proc c) (close-port c))))
+              socket c (queue-add! (thunk (proc c) (close-port c))))
             (thread-pool-destroy thread-pool))
           (thread-pool-create (or worker-count cpu-count)
             (thread-pool-handle-sigpipe exception-handler exception-keys) #t))))))

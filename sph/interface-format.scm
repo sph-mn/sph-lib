@@ -1,3 +1,8 @@
+;for programs that offer textual input/output in multiple formats.
+;uses a transmission format for generic program result objects.
+;example object types: user-messages, errors, data.
+;example use case: command-line interfaces that offer both serialised and natural language output.
+
 (library (sph interface-format)
   (export
     interface-format-create-data
@@ -9,12 +14,8 @@
   (import
     (sph common))
 
-  ;for programs that textual input/output in multiple formats.
-  ;uses a generic transmission format for generic program output objects.
-  ;example object types: user messages, errors, data
-  ;example use case: command-line interfaces that offer both serialised and natural language output.
   (define indent " ")
-  (define (any->string-exlude-unspecified a) (if (unspecified? a) a (any->string a)))
+  (define (any->string-exclude-unspecified a) (if (unspecified? a) a (any->string a)))
 
   (define (interface-format-text-write-error a port)
     (display-line
@@ -39,19 +40,19 @@
   (define (interface-format-text-write-data a port)
     (if (not (unspecified? a)) (begin (display a) (if (not (string-suffix? "\n" a)) (newline)))))
 
-  (define-as interface-format-writers symbol-hashtable
+  (define-as interface-format-writers hashtable-quoted
     text
-    (symbol-hashtable error interface-format-text-write-error
+    (hashtable-quoted error interface-format-text-write-error
       message interface-format-text-write-message
       lines interface-format-text-write-lines data interface-format-text-write-data)
     scm
-    (symbol-hashtable error interface-format-scm-write-error
+    (hashtable-quoted error interface-format-scm-write-error
       message interface-format-scm-write-message
       lines interface-format-scm-write-lines data interface-format-scm-write-data))
 
   (define object-types (ql error message lines data))
 
-  (define (interface-format-object->type a)
+  (define (interface-format-object->type a) "any -> symbol"
     (if (error? a) (q error)
       (if (list? a)
         (if (null? a) (q data)

@@ -1,6 +1,5 @@
 (library (sph random-data)
   (export
-    list-ref-random
     primitive-random
     random
     random-ascii-string
@@ -30,10 +29,8 @@
   (define* (random max-value #:optional (min-value 0) (state random-state))
     "integer [integer random-state] -> integer
     create a number between min-value and max-value.
-    if the result number is an integer or real number depends on the type of the given max-value"
+    if the result number will be an integer or real number depends on the type of the given max-value"
     (+ min-value (primitive-random (- max-value min-value) state)))
-
-  (define (list-ref-random a) (list-ref a (random (length a))))
 
   (define* (random-list list-length #:optional (max-value 255) (min-value 0) (state random-state))
     "integer integer integer random-state -> (integer ...)

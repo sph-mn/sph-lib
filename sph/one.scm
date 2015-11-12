@@ -16,6 +16,7 @@
   (export
     alist->regexp-match-replacements
     and-p
+    apply*
     apply-values
     apply-without-arguments
     bytevector-append
@@ -44,6 +45,7 @@
     in-between?
     in-range?
     integer->bytevector
+    keywords-list->alist
     limit
     limit-max
     limit-min
@@ -63,12 +65,10 @@
     search-env-path
     socket-bind
     string->datum
-    keywords-list->alist
-    values->list
     string-if-exception
-    apply*
     true?
-    true?-s)
+    true?-s
+    values->list)
   (import
     (guile)
     (ice-9 popen)
@@ -78,7 +78,7 @@
     (rnrs io ports)
     (rnrs sorting)
     (sph)
-    (sph math)
+    (sph number)
     (sph string)
     (except (rnrs base) map)
     (only (ice-9 popen)
@@ -97,7 +97,6 @@
       unfold))
 
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
-
   (define-syntax-rule (apply* arguments proc) (apply proc arguments))
 
   (eval-when (expand load eval)
@@ -175,8 +174,10 @@
 
   (define-syntax-rule (first-as-result result body ...) ((l (r) (begin body ...) r) result))
 
-  (define (integer->bytevector a)
-    (let* ((size (bit->byte-length (signed-integer-binary-length a))) (r (make-bytevector size)))
+  (define (integer->bytevector a) "integer:signed-integer -> bytevector"
+    (let*
+      ( (size (bit->byte-length (+ 1 (number-container-length (abs a) 2))))
+        (r (make-bytevector size)))
       size (bytevector-sint-set! r 0 a (native-endianness) size) r))
 
   (define (bytevector-append . a) "bytevector ... -> bytevector"
@@ -301,14 +302,12 @@
     "-> string
     return the full-path of the currently executed program file"
     (let (part (first (program-arguments)))
-      (if (string-null? part) part (if (eqv? #\/ (string-ref part 0)) part (string-append (getenv "PWD") "/" part)))))
-
-  (define (program-name)
-    "-> string"
-    (let (part (first (program-arguments)))
       (if (string-null? part) part
-        (if (eqv? #\/ (string-ref part 0))
-          (basename part) part))))
+        (if (eqv? #\/ (string-ref part 0)) part (string-append (getenv "PWD") "/" part)))))
+
+  (define (program-name) "-> string"
+    (let (part (first (program-arguments)))
+      (if (string-null? part) part (if (eqv? #\/ (string-ref part 0)) (basename part) part))))
 
   (define-syntax-rule (true?-s expr) (if expr #t #f))
 

@@ -1,3 +1,5 @@
+;persisted program configuration loaded into a configuration object. config can be read, writing is not completely implemented
+
 (library (sph config)
   (export
     config-clear!
@@ -23,13 +25,12 @@
     (except (rnrs hashtables) hashtable-ref)
     (only (sph filesystem) ensure-trailing-slash))
 
-  ;persisted program configuration loaded into a configuration object.
-
   (define (parse-config-file path)
+    "string -> list"
     (tree-map-lists-and-self (compose alist->hashtable list->alist)
       (primitive-eval (list (q quasiquote) (file->datums path)))))
 
-  (define sph-config-object (symbol-hashtable))
+  (define sph-config-object (hashtable-quoted))
 
   (define (config-load-default-get-path path name)
     "string/false string -> string
@@ -41,10 +42,11 @@
       name ".scm"))
 
   (define (config-save-default-get-path path name)
+    "string string -> string"
     (string-append (string-drop-right (config-load-default-get-path path name) 4) ".runtime.scm"))
 
   (define (config-load-default name options)
-    "string alist-quoted -> config-object
+    "string list:symbol-alist -> hashtable:config-object
     the default config-loader.
     loads config from a file either from a path given as an element in options like (symbol . string) or
     in a directory named \"config\" in the current working directory.
@@ -58,8 +60,8 @@
       (config-save-default-get-path (alist-ref options (q path)) (hashtable-ref config (q name)))
       (l (port) (write (hashtable->alist config 32) port))))
 
-  (define-as config-loaders symbol-hashtable default config-load-default)
-  (define-as config-savers symbol-hashtable default config-save-default)
+  (define-as config-loaders hashtable-quoted default config-load-default)
+  (define-as config-savers hashtable-quoted default config-save-default)
 
   (define* (config-load #:optional name/config (loader-key (q default)) loader-options)
     "symbol/hashtable:name/config [alist] -> config-object
@@ -79,7 +81,7 @@
     (config-save #:optional (saver-key (q default)) saver-options (config sph-config-object))
     ((hashtable-ref config-savers saver-key) config saver-options))
 
-  (define (config-clear! name/config) (set! sph-config-object (symbol-hashtable)))
+  (define (config-clear! name/config) (set! sph-config-object (hashtable-quoted)))
 
   (define-syntax-rule (primitive-config-set! symbol ... value)
     (hashtables-set! sph-config-object symbol ... value))

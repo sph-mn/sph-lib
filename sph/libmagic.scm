@@ -1,3 +1,5 @@
+;bindings to the libmagic library from the "file" utility that guesses file types
+
 (library (sph libmagic)
   (export
     path->mime-type

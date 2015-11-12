@@ -1,6 +1,6 @@
-; (sph scgi) - a server that acts as an scgi interface
+; (sph scgi) - scgi interface, a server that accepts and parses scgi requests
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2014 sph <sph@posteo.eu>
+; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or

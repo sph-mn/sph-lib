@@ -9,7 +9,7 @@
 
   ;depends on the "diff" and "patch" utilities. version-id is a monotonically increasing integer saved with hexadecimal representation
 
-  (define-as versioning-default-config symbol-hashtable
+  (define-as versioning-default-config hashtable-quoted
     max-count 3 max-size (inf) path-versions "versions/" path-temp "temp/")
 
   (define (get-existing-version-ids path-versions) "string -> (integer ...)"

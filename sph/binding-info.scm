@@ -1,3 +1,5 @@
+;retrieve information about module bindings
+
 (library (sph binding-info)
   (export
     bi-arguments

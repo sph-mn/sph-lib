@@ -1,4 +1,4 @@
-; (sph sql) - create sql strings from scheme data-structures
+; (sph sql) - create sql expressions from scheme data structures
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -55,50 +55,54 @@
       prefix-tree-map-with-continue-with-level))
 
   (define (sql-ele-data->filter expr) "((column-name . value) ...) -> ((column-name value) ...)"
-    (if (list? expr) (map (l (ele) (if (list? ele) ele (list (first ele) (tail ele)))) expr)
+    (if (list? expr) (map (l (e) (if (list? e) e (list (first e) (tail e)))) expr)
       (if (pair? expr) (list (first expr) (tail expr)) expr)))
 
-  (define (sql-filter->ele-data arg) "list -> (pair ...)"
-    (if (string? arg) arg
+  (define (sql-filter->ele-data a) "string/list -> (pair ...)"
+    (if (string? a) a
       (map
-        (l (ele)
-          (if (list? ele)
-            (if (> (length ele) 2) (pair (list-ref ele 1) (list-ref ele 2))
-              (pair (first ele) (list-ref ele 1)))
-            ele))
-        arg)))
+        (l (e)
+          (if (list? e)
+            (if (> (length e) 2) (pair (list-ref e 1) (list-ref e 2))
+              (pair (first e) (list-ref e 1)))
+            e))
+        a)))
 
-  (define (sql-string arg)
+  (define (sql-string a)
     "string -> string
     escapes string values for sql"
-    (string-append "'" (string-replace-chars arg (q ((#\' #\' #\') (#\\ #\\ #\\)))) "'"))
+    (string-append "'" (string-replace-chars a (q ((#\' #\' #\') (#\\ #\\ #\\)))) "'"))
 
-  (define (sql-value arg) "convert types, escape and quote strings"
-    (if (number? arg) (number->string arg)
-      (if (string? arg) (sql-string arg)
-        (if (eq? (q null) arg) "NULL"
-          (if (eq? (q isnull) arg) "ISNULL"
-            (if (symbol? arg) (sql-string (symbol->string arg))
-              (sql-string (object->string arg display))))))))
+  (define (sql-value a)
+    "any -> string
+    convert types, escape and quote strings"
+    (if (number? a) (number->string a)
+      (if (string? a) (sql-string a)
+        (if (eq? (q null) a) "NULL"
+          (if (eq? (q isnull) a) "ISNULL"
+            (if (symbol? a) (sql-string (symbol->string a)) (sql-string (object->string a display))))))))
 
-  (define (sql-column arg) "symbol/string -> string" (if (symbol? arg) (symbol->string arg) arg))
-  (define (join-column-value c o v) (string-append (sql-column c) o (sql-value v)))
+  (define (sql-column a) "symbol/string -> string" (if (symbol? a) (symbol->string a) a))
+
+  (define (join-column-value c o v) "sql-column string sql-column -> string"
+    (string-append (sql-column c) o (sql-value v)))
+
   (define row-expr-prefixes (q (any every not)))
 
-  (define (operator->sql-operator arg) "symbol/string -> string"
-    (case arg ((equal =) "=")
+  (define (operator->sql-operator a) "symbol/string -> string"
+    (case a ((equal =) "=")
       ((greater >) ">") ((greater-or-equal >=) ">=")
       ((less <) "<") ((less-or-equal <=) "<=")
       ((like) " like ")
-      ;not is already used for row-expressions, so use 'isnot
+      ;not is already used for row-expressions, so use "isnot"
       ((isnot) " is not ") ((space) " ")
       (else
-        (if (string? arg) arg
-          (if (symbol? arg) (string-append " " (symbol->string arg) " ")
+        (if (string? a) a
+          (if (symbol? a) (string-append " " (symbol->string a) " ")
             (throw (q wrong-type-for-argument)))))))
 
   (define (sql-where-column-expr-produce-proc column-name state->combinator)
-    ;this procedure may contain too much at once, split it if you can
+    ;this procedure may do too much at once, split it if you can
     (let*
       ( (join-values
           (l (c values operator sql-operator)
@@ -176,8 +180,7 @@
                 ((not) row-expr-unary) (else (pair (q invalid-row-expr-prefix) prefix)))
               prefix
               (if (pair? (first suffix))
-                (map (l (ele) (if (pair? ele) (join-column-value (first ele) "=" (tail ele)) ele))
-                  suffix)
+                (map (l (e) (if (pair? e) (join-column-value (first e) "=" (tail e)) e)) suffix)
                 suffix)
               level))))
       (lambda (expr) "sql-where-expr -> sql-string"
@@ -189,17 +192,15 @@
             expr)
           (throw (q not-a-sql-where-filter))))))
 
-  (define (sql-row-data? expr)
-    (if
-      (or (string? expr)
-        (every (l (ele) (or (and (pair? ele) (not (list? ele))) (string? ele))) expr))
+  (define (sql-row-data? expr) "any -> boolean"
+    (if (or (string? expr) (every (l (e) (or (and (pair? e) (not (list? e))) (string? e))) expr))
       #t #f))
 
-  (define (sql-where-filter-column? expr)
+  (define (sql-where-filter-column? expr) "any -> boolean"
     (and (list? expr) (in-between? (length expr) 1 5)
       (not (contains? row-expr-prefixes (first expr)))))
 
-  (define (sql-where-filter? expr)
+  (define (sql-where-filter? expr) "any -> boolean"
     (match expr
       ( ( (or (quote any) (quote every) (quote not))
           (or (? sql-where-filter?) (? sql-where-filter-column?)) ...)
@@ -217,29 +218,30 @@
 
   (define sql-insert-values
     (let (handle-column (l (c) (if (symbol? (first c)) (symbol->string (first c)) (first c))))
-      (lambda (arg)
+      (l (a)
         "alist -> string
         convert to a sql values specification for the insert statement
         ((a . 1) (b . 2)) -> (a,b)values(1,2)"
-        (if (pair? arg)
-          (if (null? arg) #f
+        (if (pair? a)
+          (if (null? a) #f
             (string-append "("
-              (if (list? arg) (string-join (map handle-column arg) ",")
-                (sql-value (handle-column arg)))
+              (if (list? a) (string-join (map handle-column a) ",") (sql-value (handle-column a)))
               ")values("
-              (if (list? arg) (string-join (map (l (ele) (sql-value (tail ele))) arg) ",")
-                (sql-value (tail arg)))
+              (if (list? a) (string-join (map (l (e) (sql-value (tail e))) a) ",")
+                (sql-value (tail a)))
               ")"))
           #f))))
 
-  (define (sql-where where)
+  (define (sql-where where) "string/pair/list -> string"
     (if (null? where) ""
       (string-append " where "
         (if (pair? where) (sql-where-expr where) (if (string? where) where #f)))))
 
   (define (sql-config config)
-    "constructing the additional options parts of a sql statement, usually some part
-    at the beginning of the statement or one at the end"
+    "list:alist -> string:begin-part string:end-part
+    constructs the additional-options part of an sql-statement, usually some part
+    at the beginning of the statement or one at the end
+    alist keys can be: limit, add-1, add-2, order"
     ;order - string/(string ...)
     ;limit - string/(offset limit)
     (alist-quoted-bind config (limit add-1 add-2 order)
@@ -260,7 +262,7 @@
             "")
           (if add-2 (string-append " " add-2) "")))))
 
-  (define (sql-columns-list columns)
+  (define (sql-columns-list columns) "(pair/list/string ...) -> list"
     (flatten
       (map
         (l (column)
@@ -274,14 +276,14 @@
 
   (define (sql-columns columns)
     "pair/list/string/boolean -> string
-    construct the \"column\" part of a sql expression"
+    construct the \"column\" part of an sql expression"
     (if (pair? columns)
       (if (list? columns) (if (null? columns) #f (string-join (sql-columns-list columns) ","))
         (string-append (first columns) "." (tail columns)))
       (if (string? columns) columns (if (and (boolean? columns) columns) "*" #f))))
 
   (define* (sql-select tables #:optional (columns #t) where config)
-    "string/(string ...) [string/(string ...):columns string/list/pair string/list] -> string"
+    "string/(string ...) [string/(string ...)/boolean:all-columns string/list/pair string/list] -> string"
     (let-values
       ( ( (columns) (sql-columns columns))
         ( (tables)
@@ -292,14 +294,13 @@
         (string-append "select " config-1 columns " from " tables where config-2) #f)))
 
   (define* (sql-update table-name set #:optional where config)
-    "(sql-update \"table-name\" ((a . 1) (b . 2))) -> \"update table-name set a=1 and b=2\""
+    "string pair/list/string sql-where list -> string
+    example: (sql-update \"table-name\" ((a . 1) (b . 2))) -> \"update table-name set a=1 and b=2\""
     (let-values
       ( ( (set)
           (if (list? set)
             (string-join
-              (map (l (ele) (string-append (sql-column (first ele)) "=" (sql-value (tail ele))))
-                set)
-              ",")
+              (map (l (e) (string-append (sql-column (first e)) "=" (sql-value (tail e)))) set) ",")
             (if (pair? set) (string-append (sql-column (first set)) "=" (sql-value (tail set)))
               (if (string? set) set #f))))
         ((where) (if where (sql-where where) "")) ((config-1 config-2) (sql-config config)))
@@ -307,21 +308,21 @@
         (string-append "update " config-1 table-name " set " set where config-2) #f)))
 
   (define* (sql-insert table-name new-data #:optional config)
+    "string string/boolean/(pair ...) -> string"
     (let-values
       ( ( (config-1 config-2) (sql-config config))
         ( (new-data)
-          (cond ((string? new-data) new-data) ((and (boolean? new-data)) " default values")
+          (cond ((string? new-data) new-data) ((boolean? new-data) " default values")
             (else (sql-insert-values new-data)))))
       (if (and table-name (sql-row-data? new-data) config-1 config-2)
         (string-append "insert" config-1 " into " table-name new-data config-2) #f)))
 
-  (define* (sql-delete table-name #:optional where config)
-    ;(simple-format #t "~S\n" where)
+  (define* (sql-delete table-name #:optional where config) "string sql-where sql-config -> string"
     (let-values (((config-1 config-2) (sql-config config)))
       (string-append "delete from " table-name (if where (sql-where where) "") config-2)))
 
   (define* (sql-create-table table-name columns #:optional (replace #t) add)
-    "columns (name type options ...) OR string"
+    "string ((name type options ...)/string ...) [boolean string:custom-suffix]"
     (string-append "create table " (if replace "" "if not exists ")
       table-name "("
       (if (list? columns)
@@ -330,7 +331,7 @@
         columns)
       (if add (string-append "," add) "") ")"))
 
-  (define (sql-create-index name table-name . columns)
+  (define (sql-create-index name table-name . columns) "string string string ... -> string"
     (string-append "create index " name " on " table-name " (" (string-join columns ",") ")"))
 
-  (define (sql-delete-table table-name) (string-append "drop table " table-name)))
+  (define (sql-delete-table table-name) "string -> string" (string-append "drop table " table-name)))

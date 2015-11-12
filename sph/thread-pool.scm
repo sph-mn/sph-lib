@@ -10,6 +10,8 @@
     (sph)
     (only (sph list) n-times-map))
 
+  ; a generic thread-pool that uses signal-conditions and has a customisable queue
+
   (define-as thread-pool-queue-lifo list
     list null?
     (l (queue a) (set! queue (pair a queue)))
@@ -23,13 +25,13 @@
       (let
         (t
           (call-with-new-thread
-            (l () (lock-mutex queue-mutex)
+            (thunk (lock-mutex queue-mutex)
               (if (and exception-handler exception-keys)
                 (let loop ()
                   (catch exception-keys process-queue
                     (l (key . args) (apply exception-handler key loop args))))
                 (process-queue)))))
-        (set-thread-cleanup! t (l () (unlock-mutex queue-mutex))) t)))
+        (set-thread-cleanup! t (thunk (unlock-mutex queue-mutex))) t)))
 
   (define* (thread-pool-create #:optional count exception-handler exception-keys queue-type)
     "[integer] procedure true/symbol/(symbol ...) list/symbol:lifo/fifo -> (procedure:{procedure:{->} ->}:queue-add! thread ...)
@@ -37,7 +39,7 @@
     the last-in-first-out queue just uses scheme lists and earlier tasks wait if there are not enough threads available to handle all tasks.
     the returned queue-add! procedure can be used to add procedures to the queue.
     the default thread-count is the current processor count.
-    queue-type can also be a custom queue with the following signature
+    queue-type can be a custom queue with the following signature
     queue-type: (procedure:make-queue procedure:empty?:{queue -> boolean} procedure:enqueue:{queue a ->} procedure:dequeue:{queue -> any})"
     (apply
       (l (make-queue q-empty? enq! deq!)
@@ -50,7 +52,7 @@
             (n-times-map (or (and (integer? count) count) (current-processor-count))
               (letrec
                 ( (process-queue
-                    (l ()
+                    (thunk
                       (if (q-empty? queue) (wait-condition-variable queue-not-empty queue-mutex))
                       (or (q-empty? queue) ((deq! queue))) (process-queue))))
                 (thread-pool-create-thread-proc queue-mutex process-queue

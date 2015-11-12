@@ -1,4 +1,4 @@
-; (sph documentation) - retrieve or display documentation from guile scheme libraries
+; (sph documentation) - retrieve or display documentation for guile scheme libraries
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -66,30 +66,32 @@
           (if arguments (call-with-output-string (l (port) (display arguments port))) "")
           (raise (q unknown-binding-type))))))
 
-  (define (docstring->lines arg)
-    (let (arg (regexp-substitute/global #f " +" arg (q pre) " " (q post)))
-      (map (l (arg) (string-trim arg)) (string-split arg #\newline))))
+  (define (docstring->lines a)
+    "string -> (string ...)"
+    (let (a (regexp-substitute/global #f " +" a (q pre) " " (q post)))
+      (map (l (a) (string-trim a)) (string-split a #\newline))))
 
   (define itpn-indent (string #\space #\space))
 
- (define (itpn-docstring-split-signature arg continue)
+  (define (itpn-docstring-split-signature a continue)
     "string procedure:{string:type-signatures string:rest-of-docstring} -> any
     if a string starts with a type-signature, split string at the end of it"
-    (if arg
-      (let (signature (match-pattern peg-type-signature arg))
+    (if a
+      (let (signature (match-pattern peg-type-signature a))
         (if signature
           (continue
             (parsed-type-signature->string (peg:tree signature)
               (string-append itpn-indent itpn-indent))
-            (docstring->lines (string-drop arg (peg:end signature))))
-          (continue #f (docstring->lines arg))))
+            (docstring->lines (string-drop a (peg:end signature))))
+          (continue #f (docstring->lines a))))
       (continue #f (list))))
 
-  (define (lines->docstring arg indent)
-    (let (arg (remove string-null? arg))
-      (if (null? arg) ""
+  (define (lines->docstring a indent)
+    "list (string ...) -> string"
+    (let (a (remove string-null? a))
+      (if (null? a) ""
         (string-append indent "description"
-          (string-join arg (string-append "\n" indent indent) (q prefix)) "\n"))))
+          (string-join a (string-append "\n" indent indent) (q prefix)) "\n"))))
 
   (define-as display-format-itpn
     ;this defines the default formatter

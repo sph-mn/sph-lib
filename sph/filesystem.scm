@@ -1,10 +1,10 @@
 (library (sph filesystem)
   (export
-    temp-file-port
     call-with-directory
     directory-delete-content
     directory-list
     directory-list-full-path
+    directory-read-all
     directory-reference?
     directory-stream
     directory-tree-paths
@@ -35,18 +35,22 @@
     stat-diff
     stat-diff->accessors
     stat-field-name->stat-accessor
-    string->file)
+    string->file
+    temp-file-port)
   (import
     (guile)
+    (ice-9 ftw)
     (rnrs base)
     (rnrs bytevectors)
     (rnrs io ports)
     (sph)
+    (sph process)
     (sph read-write)
     (sph stream)
     (sph string)
     (sph time)
     (srfi srfi-41)
+    (only (sph hashtable) hashtable-ref hashtable-quoted)
     (only (sph list)
       any->list
       length-greater-one?
@@ -59,8 +63,9 @@
       filter-map
       fold-right
       map!
-      last)
-    (sph process))
+      last))
+
+  (define directory-read-all scandir)
 
   (define (move-and-link target-path source-path)
     "string ... -> (boolean ...)
@@ -68,7 +73,8 @@
     (and (ensure-directory-structure target-path)
       (execute+check-result "mv" "-t" target-path source-path)
       (execute+check-result "cp" "-rst"
-        (dirname source-path) (string-append (ensure-trailing-slash target-path) (basename source-path)))))
+        (dirname source-path)
+        (string-append (ensure-trailing-slash target-path) (basename source-path)))))
 
   (define (directory-delete-content path)
     "string ->
@@ -117,25 +123,20 @@
           (if (every (l (proc) (proc e)) filter-proc) (stream-cons e (loop (readdir port)))
             (loop (readdir port)))))))
 
-  (define (directory-tree-paths path . filter-list)
+  (define* (directory-tree-paths path #:optional (select? identity))
     "-> (full-path ...)
     string procedure ... -> (string ...)
-    results in a list of all paths under path, excluding path"
-    (let*
-      ( (dir (opendir path)) (path (ensure-trailing-slash path))
-        (full-path (l (filename) (string-append path filename))))
-      (let loop ((filename (readdir dir)) (directory-paths (list)) (other-paths (list)))
-        (if (eof-object? filename)
-          (if (null? directory-paths) other-paths
-            (append other-paths (append-map directory-tree-paths directory-paths)))
-          (if
-            (or (string= "." filename) (string= ".." filename)
-              (any (l (filter) (filter filename)) filter-list))
-            (loop (readdir dir) directory-paths other-paths)
-            (let ((cur-path (full-path filename)))
-              (if (and (file-exists? cur-path) (equal? (q directory) (stat:type (stat cur-path))))
-                (loop (readdir dir) (pair cur-path directory-paths) (pair cur-path other-paths))
-                (loop (readdir dir) directory-paths (pair cur-path other-paths)))))))))
+    results in a list of all paths under path, excluding path and directory references . and .."
+    ;breadth-first search
+    (let (entries (directory-read-all path (negate directory-reference?)))
+      (fold-right
+        (l (e r)
+          (let (e (string-append path "/" e))
+            (let (stat-info (stat e))
+              ( (if (eqv? (q directory) (stat:type stat-info))
+                  (l (r) (append (directory-tree-paths e select?) r)) identity)
+                (if (select? e) (pair e r) r)))))
+        (list) entries)))
 
   (define (dotfile? name)
     "string -> boolean
@@ -152,17 +153,16 @@
     (if (or (string-null? str) (not (eqv? #\/ (string-ref str (- (string-length str) 1)))))
       (string-append str "/") str))
 
+  (define stat-field-name->stat-accessor-ht
+    (hashtable-quoted mtime stat:mtime
+      atime stat:atime
+      size stat:size mode stat:mode uid stat:uid gid stat:gid nlink stat:nlink ctime stat:ctime))
+
   (define (stat-field-name->stat-accessor a)
     "symbol -> guile-stat-accessor
     a guile-stat-accessor is for example stat:mtime, and the argument is as symbol for the part after stat:, in this case mtime.
     utility for functions working with file change events and stat-records"
-    (if (eqv? (q mtime) a) stat:mtime
-      (if (eqv? (q atime) a) stat:atime
-        (if (eqv? (q size) a) stat:size
-          (if (eqv? (q mode) a) stat:mode
-            (if (eqv? (q uid) a) stat:uid
-              (if (eqv? (q gid) a) stat:gid
-                (if (eqv? (q nlink) a) stat:nlink (if (eqv? (q ctime) a) stat:ctime)))))))))
+    (hashtable-ref stat-field-name->stat-accessor-ht a))
 
   (define (find-file-any relative-path search-path filter-proc)
     "-> (full-path . filename-extension)
@@ -229,7 +229,8 @@
     (if (file-exists? target-path)
       (let
         (new-target-path
-          (string-append target-path "." (if add-date? (seconds->iso-date-string (stat:mtime (stat target-path))) "1")))
+          (string-append target-path "."
+            (if add-date? (seconds->iso-date-string (stat:mtime (stat target-path))) "1")))
         (if (file-exists? new-target-path)
           (let (fn-add-count (l (a count) (string-append a "." (number->string count 32))))
             (let loop ((t (fn-add-count new-target-path 2)) (loop-count 3))

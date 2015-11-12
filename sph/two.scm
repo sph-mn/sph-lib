@@ -103,7 +103,7 @@
     (srfi srfi-41)
     (srfi srfi-69)
     (sxml simple)
-    (sph math)
+    (sph number)
     (except (rnrs hashtables) hashtable-ref)
     (except (srfi srfi-1) map)
     (only (rnrs io ports) get-bytevector-n put-bytevector)

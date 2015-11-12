@@ -11,6 +11,7 @@
 ; GNU General Public License for more details.
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
+
 (library (sph record)
   (export
     alist->record
@@ -57,6 +58,8 @@
     (only (srfi srfi-1) filter-map))
 
   (define (any->symbol a)
+    "any -> symbol/false
+    converts strings, numbers and symbols to symbol, or false for everything else"
     (cond ((string? a) (string->symbol a)) ((number? a) (string->symbol (number->string a)))
       ((symbol? a) a) (else #f)))
 
@@ -104,14 +107,14 @@
       (if (integer? index) (l (record) (vector-ref record index)) (throw (q no-such-field)))))
 
   (define* (record-accessors record-layout)
-    "record-layout -> (proc ...)
+    "hashtable:record-layout -> (proc ...)
     returns all accessors for the given record-layout in a list"
     (n-times-map (hashtable-size record-layout) (l (index) (l (record) (vector-ref record index)))))
 
   (define record-append vector-append)
 
   (define (record-field-names record-layout)
-    "record-layout -> vector:#(symbol ...)
+    "hashtable:record-layout -> vector:#(symbol ...)
     result in the field-names of record in the same order as they were specified."
     (call-with-values (l () (hashtable-entries record-layout))
       (l (keys values)
