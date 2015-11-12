@@ -67,7 +67,7 @@
     (let (count 0)
       (lambda ()
         "create a temporary style class. the classes are numbered,
-        	each new one counted upwards as long as the process runs."
+        each new one counted upwards as long as the process runs."
         (if (> count 9223372036854775806) (set! count 0) (set! count (+ 1 count)))
         (string-append bttl-class-prefix (number->string count 32)))))
 

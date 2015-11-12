@@ -5,6 +5,7 @@
     docl-itml-string->sxml-html
     docl-itml-sxml-html-env
     docl-itml-sxml-html-env-module-names
+    process-lines
     parsed-itml->sxml-html)
   (import
     (guile)
