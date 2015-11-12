@@ -34,25 +34,10 @@
     (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
 
   (define-syntax-rule (list->sxml a level level-init)
-    (if (heading-section? a) (join-heading-section a level) (list-handle-long-strings a)))
-
-  (define long-string-limit 120)
-
-  (define (handle-long-string a) "string -> list"
-    (if (and (string? a) (> (string-length a) long-string-limit))
-      (list (q p) (q (@ (style "border:1px solid green"))) a) a))
-
-  (define (list-handle-long-strings a) "list -> list" (map handle-long-string a))
-
-  (define (list-sum-string-lengths a) "list -> string"
-    (fold (l (e r) (if (string? e) (+ r (string-length e)) r)) 0 a))
-
-  (define (list-handle-long-string-lines a) "list:non-tag-list -> list"
-    (if (> (list-sum-string-lengths a) long-string-limit)
-      (list (pairs (q p) (q (@ (style "border:1px solid orange"))) a)) a))
+    (if (heading-section? a) (join-heading-section a level) a))
 
   (define-syntax-rule (ascend-expr->sxml prefix content e env level level-init)
-    (case prefix ((line) (add-spaces (list-handle-long-string-lines content)))
+    (case prefix ((line) (if (null? content) "" (add-spaces content)))
       ;eval is used to support macros in itml-expressions
       ( (inline-expr)
         (call-for-eval level
@@ -125,14 +110,10 @@
     top-level-lines are everything on the top-level except lists with symbols as the first element"
     (and (list? a) (symbol? (first a))))
 
-  (define html-tags-no-newline
-    (ql span a object img script select button input label select textarea))
+  (define html-tags-inline
+    (ql span a br object img script select button input label select textarea))
 
-  (define (html-tag-no-newline? a) (and (symbol? a) (containsv? html-tags-no-newline a)))
-
-  (define (list-handle-long-string-lines& a c-long-string c-no-action) "list:non-tag-list -> list"
-    (if (> (list-sum-string-lengths a) long-string-limit)
-      (c-long-string (pairs (q p) (q (@ (style "border:1px solid yellow"))) a)) (c-no-action a)))
+  (define (html-tag-inline? a) (and (symbol? a) (containsv? html-tags-inline a)))
 
   (define (process-top-level-lines a)
     "list integer -> list
@@ -140,20 +121,19 @@
     removes empty lists and merges sub-lists that are not tag elements.
     sub-expressions creators are supposed to handle line breaks themselves"
     (if (null? a) a
-      (let* ((e (first a)) (r (process-top-level-lines (tail a))))
-        (if (list? e)
-          (if (null? e) r
-            (let (prefix (first e))
-              (if (symbol? prefix)
-                (if (containsv? html-tags-no-newline prefix)
-                  (if (null? r) (pair e r) (pairs e (list (ql br)) r)) (pair e r))
-                (if (null? r) (append e r)
-                  (list-handle-long-string-lines& e (l (e) (pair e r))
-                    (l (e) (append e (pair (ql br) r))))))))
-          (let (e (handle-long-string e))
-            (if (null? (tail a)) (pair e r)
+      (let (e (first a))
+        ( (if (list? e)
+            (if (null? e) (l (e r) r)
+              (let (prefix (first e))
+                (if (symbol? prefix)
+                  (if (containsv? html-tags-inline prefix)
+                    (l (e r) (if (null? r) (pair e r) (pairs e (list (ql br)) r))) pair)
+                  (l (e r) (if (null? r) (append e r) (append e (list (ql br)) r))))))
+            (if (null? (tail a)) pair
               (let (e-next (first a))
-                (if (tag-element? e-next) (pair e r) (if (null? r) (pair e r) (pairs e (ql br) r))))))))))
+                (if (tag-element? e-next) pair
+                  (l (e r) (if (null? r) (pair e r) (pairs e (ql br) r)))))))
+          e (process-top-level-lines (tail a))))))
 
   (define-syntax-rule (handle-line-empty a) (if (eqv? (q line-empty) a) (ql br) a))
   (define (handle-terminal a level-init) (list (handle-line-empty a) level-init))

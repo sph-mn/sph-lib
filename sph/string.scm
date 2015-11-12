@@ -162,7 +162,7 @@
 
   (define-syntax-rule (string-case a (a-n expr ...) ... else-expr)
     ;requires an else expression
-    ((lambda (a) (cond ((string-case-condition a a-n) expr ...) ... (else else-expr))) a))
+    ((lambda (b) (cond ((string-case-condition b a-n) expr ...) ... (else else-expr))) a))
 
   (define (string-contains-any? a patterns)
     "string (string ...) -> boolean

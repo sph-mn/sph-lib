@@ -45,10 +45,13 @@
       a)
     (if (> (hashtable-size a) 1) (unread-char port)) (display "}" port))
 
-  (define-syntax-rule (object-key->json a port) "string/symbol port ->"
+  (define-syntax-rule (object-key->json a port)
+    ;"string/symbol port ->"
     (if (string? a) (string->json a port) (string->json (symbol->string a) port)))
 
-  (define-syntax-rule (boolean->json a port) "boolean port ->" (display (if a "true" "false") port))
+  (define-syntax-rule (boolean->json a port)
+    ;"boolean port ->"
+    (display (if a "true" "false") port))
 
   (define* (scm->json a #:optional (port (current-output-port))) "any ->"
     (cond ((list? a) (list->json a port)) ((vector? a) (vector->json a port))
