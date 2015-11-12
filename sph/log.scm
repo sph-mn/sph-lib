@@ -1,3 +1,5 @@
+;a diagnostic-logging system with routing
+
 (library (sph log)
   (export
     log-default-formatter
@@ -16,10 +18,11 @@
       string-drop-right
       string-drop)
     (only (sph list) list-set-match-contains?)
-    (only (sph string) any->string-write any->string string-replace-chars)
+    (only (sph string)
+      any->string-write
+      any->string
+      string-replace-chars)
     (only (sph time) current-local-datetime-string))
-
-  ;a diagnostic-logging system with routing
 
   (define (apply-log-route arg categories args)
     (let (message ((vector-ref arg 1) categories args))

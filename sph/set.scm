@@ -1,29 +1,28 @@
+;sets based on hashtables
+
 (library (sph set)
-  ;sets based on hashtables
   (export
-    (rename (hashtable-delete! set-delete!))
-    set-contains?
-    set-add-multiple
-    set-add!
     create-set
     create-string-set
-    create-symbol-set)
+    create-symbol-set
+    set-add!
+    set-add-multiple
+    set-contains?
+    (rename (hashtable-delete! set-delete!)))
   (import
-    (sph string)
     (rnrs base)
     (rnrs hashtables)
-    (sph))
+    (sph)
+    (sph string))
 
   (define-syntax-rule (primitive-create-set entries hash-proc equiv)
-    (let (res (make-hashtable hash-proc equiv))
-      (each (l (ele) (hashtable-set! res ele #t)) entries)
-      res))
+    (let (r (make-hashtable hash-proc equiv)) (each (l (e) (hashtable-set! r e #t)) entries) r))
 
   (define (create-set . entries) (primitive-create-set entries equal-hash equal?))
   (define (create-string-set . entries) (primitive-create-set entries string-hash string-equal?))
   (define (create-symbol-set . entries) (primitive-create-set entries symbol-hash eq?))
-  (define (set-contains? arg value) (hashtable-ref arg value #f))
-  (define (set-add! arg value) (hashtable-set! arg value #t))
+  (define (set-contains? a value) (hashtable-ref a value #f))
+  (define (set-add! a value) (hashtable-set! a value #t))
 
-  (define (set-add-multiple arg . entries)
-    (apply create-set (append entries (vector->list (hashtable-keys arg))))))
+  (define (set-add-multiple a . entries)
+    (apply create-set (append entries (vector->list (hashtable-keys a))))))

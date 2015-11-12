@@ -1,3 +1,8 @@
+;for programs that offer textual input/output in multiple formats.
+;uses a transmission format for generic program result objects.
+;example object types: user-messages, errors, data.
+;example use case: command-line interfaces that offer both serialised and natural language output.
+
 (library (sph interface-format)
   (export
     interface-format-create-data
@@ -9,12 +14,8 @@
   (import
     (sph common))
 
-  ;for programs that textual input/output in multiple formats.
-  ;uses a generic transmission format for generic program output objects.
-  ;example object types: user messages, errors, data
-  ;example use case: command-line interfaces that offer both serialised and natural language output.
   (define indent " ")
-  (define (any->string-exlude-unspecified a) (if (unspecified? a) a (any->string a)))
+  (define (any->string-exclude-unspecified a) (if (unspecified? a) a (any->string a)))
 
   (define (interface-format-text-write-error a port)
     (display-line
@@ -51,7 +52,7 @@
 
   (define object-types (ql error message lines data))
 
-  (define (interface-format-object->type a)
+  (define (interface-format-object->type a) "any -> symbol"
     (if (error? a) (q error)
       (if (list? a)
         (if (null? a) (q data)

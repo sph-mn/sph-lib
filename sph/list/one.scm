@@ -1,5 +1,8 @@
+; additional list processing procedures which depend on libraries that depend on (sph list) to avoid a circular dependency
+
 (library (sph list one)
   (export
+    list-ref-random
     list-replace-by-table
     randomise)
   (import
@@ -10,6 +13,11 @@
     (sph list)
     (sph random-data)
     (only (srfi srfi-1) delete-duplicates))
+
+  (define (list-ref-random a)
+    "list -> any
+    retrieve a random element of a list. uses the default random-state of (sph random-data) which changes with every interpreter start"
+    (list-ref a (random (length a))))
 
   (define (randomise a)
     "list -> list

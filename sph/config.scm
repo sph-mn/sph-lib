@@ -1,3 +1,5 @@
+;persisted program configuration loaded into a configuration object. config can be read, writing is not completely implemented
+
 (library (sph config)
   (export
     config-clear!
@@ -23,9 +25,8 @@
     (except (rnrs hashtables) hashtable-ref)
     (only (sph filesystem) ensure-trailing-slash))
 
-  ;persisted program configuration loaded into a configuration object.
-
   (define (parse-config-file path)
+    "string -> list"
     (tree-map-lists-and-self (compose alist->hashtable list->alist)
       (primitive-eval (list (q quasiquote) (file->datums path)))))
 
@@ -41,10 +42,11 @@
       name ".scm"))
 
   (define (config-save-default-get-path path name)
+    "string string -> string"
     (string-append (string-drop-right (config-load-default-get-path path name) 4) ".runtime.scm"))
 
   (define (config-load-default name options)
-    "string alist-quoted -> config-object
+    "string list:symbol-alist -> hashtable:config-object
     the default config-loader.
     loads config from a file either from a path given as an element in options like (symbol . string) or
     in a directory named \"config\" in the current working directory.

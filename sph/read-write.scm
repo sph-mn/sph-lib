@@ -36,7 +36,7 @@
     (rnrs base)
     (rnrs io ports)
     (sph)
-    (only (srfi srfi-1) drop unfold-right))
+    (only (srfi srfi-1) drop))
 
   (define (rw-port->list read port)
     (let loop ((e (read port))) (if (eof-object? e) (list) (pair e (loop (read port))))))
@@ -102,9 +102,14 @@
   (define (rw-any->list read a) "except string->list and list->list"
     (cond ((port? a) (rw-port->list read a)) ((string? a) (rw-file->list read a))))
 
-  (define (port->file a path) (call-with-output-file path (l (port) (port-copy-all a port))))
+  (define (port->file a path)
+    "port string ->
+    read all available data from port and write it to a file specified by path"
+    (call-with-output-file path (l (port) (port-copy-all a port))))
 
   (define (port-copy-some port port-2 count)
+    "port port integer ->
+    copy \"count\" number of bytes from \"port\" to \"port-2\""
     (rw-port->port (l (port) (let (r (get-bytevector-n port 512)) (or r (eof-object))))
       (l (data port) (put-bytevector port data)) port port-2))
 
@@ -142,8 +147,7 @@
 
   (define* (file->datums path #:optional (port->datum read))
     "string procedure:reader -> list
-    read all scheme datums of file specified by path.
-    can not read more than stack-size number of top-level-expressions at once"
+    read all scheme datums of a file specified by path"
     (call-with-input-file path
       (l (port)
         (let loop ((e (port->datum port)))
@@ -152,7 +156,7 @@
   (define*
     (port-lines-each proc #:optional (port (current-input-port)) #:key (handle-delim (q trim)))
     "procedure:{line ->} port symbol ->
-     call proc with each line read from a port"
+     call proc once with every line read from a port"
     (let loop ((line (read-line port handle-delim)))
       (if (not (eof-object? line)) (begin (proc line) (loop (read-line port handle-delim))))))
 
@@ -171,8 +175,13 @@
   (define*
     (port-lines-map->port proc #:optional (port-input (current-input-port))
       (port-output (current-output-port)))
+    "procedure [port port] ->
+    map lines from port to port.
+    the default ports are the current input and output ports"
     (rw-port->port (l (port) (read-line port (q concat))) (l (e port) (display (proc e) port))
       port-input port-output))
 
-  (define (port->lines a) "port -> (string ...)"
+  (define (port->lines a)
+    "port -> (string ...)
+    read all lines from port and return them as strings in a list"
     (let loop ((line (get-line a))) (if (eof-object? line) (list) (pair line (loop (get-line a)))))))
