@@ -64,6 +64,7 @@
     (call-with-input-file path (l (port) (rw-port->string read write port))))
 
   (define (rw-file->file read write path path-2)
+    "the target file at \"path-2\" is truncated or created before the writing starts"
     (call-with-output-file path-2 (l (port) (rw-file->port read write path port))))
 
   (define (rw-string->list read a) (call-with-input-string a (l (port) (rw-port->list read port))))

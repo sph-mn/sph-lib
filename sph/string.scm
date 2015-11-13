@@ -29,6 +29,8 @@
     string-downcase-first
     string-drop-prefix
     string-drop-suffix
+    string-drop-prefix-if-exists
+    string-drop-suffix-if-exists
     string-each
     string-enclose
     string-equal?
@@ -190,7 +192,17 @@
       #f prefix-list))
 
   (define (string-drop-prefix prefix a) "string string -> string"
-    (substring a (string-length prefix)))
+    (string-drop a (string-length prefix)))
+
+  (define (string-drop-prefix-if-exists prefix a)
+    "string string -> string
+    remove prefix if string has prefix"
+    (if (string-prefix? prefix a) (string-drop-prefix prefix a) a))
+
+  (define (string-drop-suffix-if-exists suffix a)
+    "string string -> string
+    remove suffix if string has suffix"
+    (if (string-suffix? suffix a) (string-drop-suffix suffix a) a))
 
   (define (string-lowercase? a) "test if a string contains no uppercase characters"
     (not (string-any (l (c) (eqv? (char-general-category c) (q Lu))) a)))

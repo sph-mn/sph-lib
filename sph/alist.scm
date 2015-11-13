@@ -101,7 +101,7 @@
 
   (define-syntax-rules alist-quoted-ref
     ;a:alist k:unquoted-key d:default-if-not-found
-    ((a k d) ((l (r) (if r (tail r) d)) (assoc (quote k) a))) ((a k) (assoc-ref a (quote k))))
+    ((a k d) (alist-ref a (quote k) d)) ((a k) (alist-ref a (quote k))))
 
   (define-syntax-rules alists-ref ((a k) (alist-ref a k))
     ((a k ... k-last) (alist-ref (alists-ref a k ...) k-last)))

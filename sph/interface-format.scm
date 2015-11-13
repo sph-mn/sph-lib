@@ -38,7 +38,7 @@
   (define (interface-format-scm-write-data a port) (if (not (unspecified? a)) (write a)))
 
   (define (interface-format-text-write-data a port)
-    (if (not (unspecified? a)) (begin (display a) (if (not (string-suffix? "\n" a)) (newline)))))
+    (if (not (unspecified? a)) (begin (display a) (if (not (and (string? a) (string-suffix? "\n" a))) (newline)))))
 
   (define-as interface-format-writers symbol-hashtable
     text

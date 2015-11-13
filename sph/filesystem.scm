@@ -19,6 +19,7 @@
     get-unique-target-path
     is-directory?
     last
+    remove-trailing-slash
     merge-files
     move-and-link
     mtime-difference
@@ -50,7 +51,7 @@
     (sph string)
     (sph time)
     (srfi srfi-41)
-    (only (sph hashtable) hashtable-ref symbol-hashtable)
+    (only (sph hashtable) hashtable hashtable-ref symbol-hashtable)
     (only (sph list)
       any->list
       length-greater-one?
@@ -153,7 +154,7 @@
     (if (or (string-null? str) (not (eqv? #\/ (string-ref str (- (string-length str) 1)))))
       (string-append str "/") str))
 
-  (define stat-field-name->stat-accessor-ht
+ (define stat-field-name->stat-accessor-ht
     (symbol-hashtable mtime stat:mtime
       atime stat:atime
       size stat:size mode stat:mode uid stat:uid gid stat:gid nlink stat:nlink ctime stat:ctime))
@@ -163,6 +164,15 @@
     a guile-stat-accessor is for example stat:mtime, and the argument is as symbol for the part after stat:, in this case mtime.
     utility for functions working with file change events and stat-records"
     (hashtable-ref stat-field-name->stat-accessor-ht a))
+
+  (define stat-accessor->stat-field-name-ht
+    (hashtable stat:mtime (q mtime)
+      stat:atime (q atime)
+      stat:size (q size)  stat:mode (q mode)  stat:uid (q uid)  stat:gid (q gid)  stat:nlink (q nlink)  stat:ctime (q ctime) ))
+
+  (define (stat-accessor->stat-field-name a)
+    "utility for functions working with file change events and stat-records"
+    (hashtable-ref stat-accessor->stat-field-name-ht a))
 
   (define (find-file-any relative-path search-path filter-proc)
     "-> (full-path . filename-extension)
@@ -220,12 +230,19 @@
           (l (name) (and (not (directory-reference? name)) (before-filter name)))))))
 
   (define (filename-extension a)
-    (let ((r (string-split a #\.))) (if (length-greater-one? r) (last r) #f)))
+    "string -> string
+    results in the last dot-separated part of string or the empty-string if no such part exists"
+    (let ((r (string-split a #\.))) (if (length-greater-one? r) (last r) "")))
 
   (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
+    "[string] [string:infix] -> port
+    create a new unique file in the file system and return a new buffered port for reading and writing to the file"
     (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
 
   (define* (get-unique-target-path target-path #:optional (add-date? #t))
+    "string boolean -> string
+    find a target path that is similar to \"target-path\" but unique in the directory.
+    adds incrementing numbers or/and a file modification time date if \"add-date?\" is true (default) to find the result path"
     (if (file-exists? target-path)
       (let
         (new-target-path
@@ -240,8 +257,9 @@
       target-path))
 
   (define (merge-files target-path . source-paths)
-    (let ((buffer (make-string 2000000)))
-      (call-with-output-file target-path
+    "string string ... ->
+    creates or truncates \"target-path\" and appends the contents of all source-paths in order"
+    (call-with-output-file target-path
         (l (target-file)
           (each
             (l (source-path)
@@ -249,13 +267,17 @@
                 (l (source-file)
                   (stream-each (l (block) (put-bytevector target-file block))
                     (port->buffered-octet-stream source-file 200000)))))
-            source-paths)))))
+            source-paths))))
 
   (define (mtime-difference . paths)
     "string ... -> integer
     get the mtimes for paths and subtract from the first mtime all subsequent.
     at least one file has changed if the number is not zero"
     (apply - (par-map (compose stat:mtime stat) paths)))
+
+  (define (remove-trailing-slash a)
+    "remove trailing slashes if existant, otherwise result in a"
+    (string-trim-right a #\/))
 
   (define-syntax-rule (path-append-internal tail-map-proc first-arg args)
     (if (null? args) first-arg
@@ -303,14 +325,16 @@
           (l (extension filename)
             (if (string-suffix? extension filename)
               (string-drop-right filename (+ 1 (string-length extension))) filename))))
-      (lambda (name . fn-extensions)
-        "string [string ...] -> string
-        remove one or multiple filename-extensions from the end of a string."
-        (if (null? fn-extensions)
-          (let ((fn-extension (string-split name #\.)))
-            (if (> (length fn-extension) 1)
-              (remove-filename-extension-one (last fn-extension) name) name))
-          (fold remove-filename-extension-one name fn-extensions)))))
+      (l* (name #:optional fn-extensions all?)
+        "string [(string)] [boolean]-> string
+        remove specific, all or the last filename-extension from a string"
+        (if fn-extensions
+          (fold remove-filename-extension-one name fn-extensions)
+          (let (name-split (string-split name #\.))
+            (if (null? (tail name-split)) name
+              (if all?
+                (first name-split)
+                (string-drop-right name (+ 1 (string-length (last name-split)))))))))))
 
   (define* (search-load-path path #:optional (load-paths %load-path))
     "searches for the first match of a relative-path in load-paths.
@@ -321,16 +345,6 @@
       (l (base-path)
         (let (full-path (string-append base-path path)) (if (file-exists? full-path) full-path #f)))
       load-paths))
-
-  (define (stat-accessor->stat-field-name a)
-    "utility for functions working with file change events and stat-records"
-    (if (eqv? (q mtime) a) stat:mtime
-      (if (eqv? (q atime) a) stat:atime
-        (if (eqv? (q size) a) stat:size
-          (if (eqv? (q mode) a) stat:mode
-            (if (eqv? (q uid) a) stat:uid
-              (if (eqv? (q gid) a) stat:gid
-                (if (eqv? (q nlink) a) stat:nlink (if (eqv? (q ctime) a) stat:ctime)))))))))
 
   (define (stat-diff->accessors stat-info-1 stat-info-2 accessors)
     "-> (stat-accessor ...)
