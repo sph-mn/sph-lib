@@ -1,3 +1,5 @@
+;transformations on the abstract syntax tree
+
 (library (sph lang scm-format transform)
   (export
     is-library?
@@ -9,10 +11,10 @@
     (rnrs lists)
     (rnrs sorting)
     (sph)
-    (only (srfi srfi-1) delete-duplicates)
     (sph hashtable)
     (sph list)
-    (sph string))
+    (sph string)
+    (only (srfi srfi-1) delete-duplicates))
 
   (define (definition? a)
     (and (list? a) (not (null? a))
@@ -56,7 +58,7 @@
   (define (delete-duplicate-import-exports a) "list -> list" (delete-duplicates a))
   (define (split-definitions a proc) (call-with-values (l () (partition definition? a)) proc))
 
-  (define (transform-library a config)
+  (define (transform-library a config) "any hashtable -> list/any"
     (match a
       ( (_ name (_ export ...) (_ import ...) body ...)
         (pairs (q library) name
@@ -79,7 +81,8 @@
                 body)))))
       (_ a)))
 
-  (define (is-library? a) (and (list? a) (not (null? a)) (eqv? (q library) (first a))))
+  (define (is-library? a) "any -> boolean"
+    (and (list? a) (not (null? a)) (eqv? (q library) (first a))))
 
   (define (scm-format-transform-tree a config) "toplevel-exprs config-transform"
     (map (l (e) (if (is-library? e) (transform-library e config) e)) a)))

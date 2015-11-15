@@ -1,3 +1,5 @@
+;formatters for expressions
+
 (library (sph lang scm-format format)
   (export
     format-application
@@ -45,7 +47,7 @@
   (define-syntax-rule (create-vertical-spacing* spacing)
     (if (string? spacing) spacing (create-vertical-spacing spacing)))
 
-  (define (format-application-expr-proc config current-indent)
+  (define (format-application-expr-proc config current-indent) "hashtable integer -> list"
     (hashtable-quoted-bind config
       (indent-string max-chars-per-line max-exprs-per-line-start
         max-exprs-per-line-middle max-exprs-per-line-end)
@@ -133,6 +135,8 @@
     (string-append "(" a (if (string-suffix? "\n" a) (string-append indent ")") ")")))
 
   (define (successive-parentheses-indentation a indent-string)
+    "string string -> string
+    offsets leading parentheses on one line by the level of idendation. example: ( ("
     (let (index (string-skip a #\())
       (if (and index (> index 1))
         (string-append
@@ -141,7 +145,9 @@
           "(" (substring a index))
         a)))
 
-  (define (format-application a config current-indent) "list hashtable integer -> string"
+  (define (format-application a config current-indent)
+    "list hashtable integer -> string
+    format the standard list application form. example (append a b)"
     (let*
       ((indent (create-indent config current-indent)) (line-spacing (string-append "\n" indent)))
       (apply
@@ -213,7 +219,8 @@
   (define (format-let a recurse config current-indent)
     (list
       (format-application (map-recurse recurse a current-indent)
-        (match a ((let (? symbol?) _ ...) (hashtable-set-multiple config (q max-exprs-per-line-start) 3))
+        (match a
+          ((let (? symbol?) _ ...) (hashtable-set-multiple config (q max-exprs-per-line-start) 3))
           (else config))
         current-indent)
       #f))
@@ -284,6 +291,7 @@
   (define (format-string a . rest) (string-append "\"" a "\""))
 
   (define (string-join-with-vertical-spacing a indent vertical-spacing vertical-spacing-oneline)
+    "(string ...) string string string -> string"
     (if (null? a) ""
       (if (length-eq-one? a) (first a)
         (string-join
@@ -294,7 +302,9 @@
                 (map-successive
                   (l (e)
                     ;consider newlines, they designate a required newline for an expression
-                    (not (or (string-null? e) (let (a (string-contains e "\n")) (and a (< a (- (string-length e) 1)))))))
+                    (not
+                      (or (string-null? e)
+                        (let (a (string-contains e "\n")) (and a (< a (- (string-length e) 1)))))))
                   (l matches
                     (string-join
                       (map (l (e) (if (string-suffix? "\n" e) (string-drop-right e 1) e)) matches)

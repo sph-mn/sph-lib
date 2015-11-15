@@ -85,6 +85,6 @@
 
   (define-syntax-rules evaluate-performance
     ;takes a list of procedure names, procedures with the signature (n) ->
-    ((seconds tests) (evaluate-result seconds tests))
-    ( (seconds identifier ...)
-      (evaluate-result seconds (list (cons (quote identifier) identifier) ...)))))
+    ((minimum-seconds tests) (evaluate-result minimum-seconds tests))
+    ( (minimum-seconds identifier ...)
+      (evaluate-result minimum-seconds (list (cons (quote identifier) identifier) ...)))))

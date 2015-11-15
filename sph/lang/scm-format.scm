@@ -1,3 +1,5 @@
+;scheme source code formatting
+
 (library (sph lang scm-format)
   (export
     ascend-prefix->format-proc
@@ -54,7 +56,7 @@
 
   (define ascend-prefix->format-proc (hashtable))
 
-  (define (config-add-defaults c)
+  (define (config-add-defaults c) "r6rs-hashtable -> r6rs-hashtable"
     (let
       ( (config-format (hashtable-ref c (q format)))
         (config-transform (hashtable-ref c (q transform)))
@@ -88,7 +90,8 @@
           current-indent))
       nesting-depth))
 
-  (define (primitive-scm-format a current-indent config) "toplevel-exprs current-indent config ->"
+  (define (primitive-scm-format a current-indent config)
+    "any integer:current-indent r6rs-hashtable:config -> string"
     (apply
       (l (r is-library)
         (string-join-with-vertical-spacing r ""
@@ -103,9 +106,9 @@
           (any->string a))
         (any is-library? a))))
 
-  (define* (scm-format a #:optional (current-indent 0) config)
+  (define* (scm-format a #:optional (current-indent 0) config) "any -> string"
     (primitive-scm-format a 0 (if config (config-add-defaults config) scm-format-default-config)))
 
-  (define* (scm-format-port a #:optional config)
+  (define* (scm-format-port a #:optional config) "port [r6rs-hashtable] -> string"
     (let (config (if config (config-add-defaults config) scm-format-default-config))
       (primitive-scm-format (stream->list (port->stream a read-for-formatting)) 0 config))))

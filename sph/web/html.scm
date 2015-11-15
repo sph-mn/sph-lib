@@ -66,26 +66,27 @@
     parse an application/x-www-form-urlencoded string and result in an alist"
     (if (string-null? request-body) (list)
       (map
-        (l (ele)
-          (let (split-index (string-index ele #\=))
-            (pair (substring ele 0 split-index) (substring ele (+ 1 split-index)))))
+        (l (e)
+          (let (split-index (string-index e #\=))
+            (pair (substring e 0 split-index) (substring e (+ 1 split-index)))))
         (string-split (html-uri-decode request-body) #\&))))
 
   (define* (html-multipart-form-data? headers #:optional (header-key "content_type"))
+    "(string ...) [string] -> boolean"
     (pass-if (assoc-ref headers header-key)
       (l (content-type) (string-prefix? "multipart/form-data" content-type))))
 
-  (define (get-boundary-from-headers headers)
+  (define (get-boundary-from-headers headers) "(string ...) -> string/boolean-false"
     (let (content-type (assoc-ref headers "content_type"))
       (if content-type (assoc-ref (http-read-header-value content-type) "boundary") content-type)))
 
-  (define (read-boundary port)
+  (define (read-boundary port) "port -> string/eof-object"
     (let (boundary (read-line-crlf-trim port))
       (if (eof-object? boundary) boundary
         (if (string-null? boundary) (throw (q boundary-not-found) boundary) boundary))))
 
-  (define-syntax-rule (header-multipart-mixed? arg)
-    (pass-if (or (alist-ref arg "content-type") (alist-ref arg "Content-Type"))
+  (define-syntax-rule (header-multipart-mixed? a)
+    (pass-if (or (alist-ref a "content-type") (alist-ref a "Content-Type"))
       (l (content-type) (alist-ref content-type "multipart/mixed"))))
 
   (define* (html-fold-multipart-form-data proc-part proc-multipart result port #:optional boundary)
@@ -96,7 +97,8 @@
      any
 
      a functional parser for multipart-form-data that allows to stop after any cr-lf-terminated line or part and reads content stream-like via a reader procedure
-     and supports nested multipart/mixed data"
+     and supports nested multipart/mixed data.
+    see also html-read-multipart-form-data"
     (let* ((boundary (if boundary boundary (read-boundary port))) (header (http-read-header port)))
       (if (header-multipart-mixed? header) (proc-multipart header port result)
         (letrec
@@ -118,7 +120,7 @@
   (define (html-read-multipart-form-data port)
     "port -> list
     parses all multipart form data available on port into a list.
-    for stream-like and conditional parsing see html-fold-multipart-form-data."
+    for stream-like and conditional parsing see html-fold-multipart-form-data"
     (reverse
       (html-fold-multipart-form-data
         (l (header fold-lines result)
@@ -137,15 +139,15 @@
         (l (header port result) (pair (pair header (html-read-multipart-form-data port)) result))
         (list) port)))
 
-  (define (html-multipart-form-data-ref arg name)
+  (define (html-multipart-form-data-ref a name)
     "list string -> pair
     for parsed multipart form data like html-read-multipart-form-data creates.
-    retrieves (alist:header . string:body) pairs by content-disposition names"
+    retrieves (alist:header . string:body) pairs by content-disposition name"
     (find
-      (l (ele)
+      (l (e)
         (string-equal? name
           (assoc-ref
-            (or (assoc-ref (first ele) "content-disposition")
-              (assoc-ref (first ele) "Content-Disposition"))
+            (or (assoc-ref (first e) "content-disposition")
+              (assoc-ref (first e) "Content-Disposition"))
             "name")))
-      arg)))
+      a)))

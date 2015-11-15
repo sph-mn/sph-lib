@@ -81,7 +81,10 @@
       (+
         (and (not-followed-by (or (and " " association-infix) escaped-association-infix))
           association-left-char))
-      association-infix (* (or double-backslash line-scm-expr inline-scm-expr line-expr escaped-association-infix peg-any))))
+      association-infix
+      (*
+        (or double-backslash line-scm-expr
+          inline-scm-expr line-expr escaped-association-infix peg-any))))
 
   (define-peg-pattern line all
     (*
@@ -111,11 +114,11 @@
             a))
         a)))
 
-  (define (terminal a)
+  (define (terminal a) "string -> any"
     (let (e (peg:tree (match-pattern line a)))
       (if (list? e) (if (= 2 (length e)) (first (tail e)) e) (if (symbol? e) (q line-empty) e))))
 
-  (define (append-double-backslash a)
+  (define (append-double-backslash a) "list -> list"
     (fold
       (l (e r)
         (if (and (list? e) (not (null? e)) (eqv? (q double-backslash) (first e)))
@@ -124,7 +127,7 @@
           (pair e r)))
       (list) (reverse a)))
 
-  (define (splice-non-symbol-prefix-lists a)
+  (define (splice-non-symbol-prefix-lists a) "list -> list"
     (if (null? a) a
       (let (e (first a))
         ( (if (list? e)
@@ -149,9 +152,18 @@
       a))
 
   (define (port->parsed-itml a)
+    "port -> list
+    reads an itml string from port, parses it and returns the abstract syntax tree"
     (let (tree (read-space-indent-tree->denoted-tree a 2))
       (if (null? tree) tree
         (finalise-tree (tree-transform (denoted-tree->prefix-tree tree) descend ascend terminal)))))
 
-  (define (path->parsed-itml a) (call-with-input-file a port->parsed-itml))
-  (define (string->parsed-itml a) (port->parsed-itml (open-input-string a))))
+  (define (path->parsed-itml a)
+    "string -> list
+    like port->parsed-itml but takes a path to a file to read from"
+    (call-with-input-file a port->parsed-itml))
+
+  (define (string->parsed-itml a)
+    "string -> list
+    like port->parsed-itml but takes a string to parse"
+    (port->parsed-itml (open-input-string a))))

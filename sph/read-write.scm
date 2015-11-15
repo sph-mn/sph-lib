@@ -175,11 +175,11 @@
 
   (define*
     (port-lines-map->port proc #:optional (port-input (current-input-port))
-      (port-output (current-output-port)))
-    "procedure [port port] ->
-    map lines from port to port.
+      (port-output (current-output-port)) #:key (handle-delim (q concat)))
+    "procedure [port port symbol:concat/trim/peek/split] ->
+    map lines from port to port. the trailing newline is included by default but this behaviour can be set like for read-line.
     the default ports are the current input and output ports"
-    (rw-port->port (l (port) (read-line port (q concat))) (l (e port) (display (proc e) port))
+    (rw-port->port (l (port) (read-line port handle-delim)) (l (e port) (display (proc e) port))
       port-input port-output))
 
   (define (port->lines a)
