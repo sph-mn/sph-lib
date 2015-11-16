@@ -20,8 +20,8 @@
     "abc/./def" "abc/def")
   (filename-extension
     ("ab.d.e.fg") "fg"
-    ("ab") #f
-    ("") #f)
+    ("ab") ""
+    ("") "")
   (ensure-trailing-slash
     "/" "/"
     "ab/cd/ef/" "ab/cd/ef/"
