@@ -48,6 +48,8 @@
     tree-each-leaf
     tree-filter->flat-list
     tree-fold
+    tree-fold-lists-right
+    tree-fold-right
     tree-fold-reverse
     tree-fold-reverse-with-level
     tree-fold-with-level
@@ -192,9 +194,21 @@
 
   (define (tree-fold p r t)
     "procedure:{any:element any:result -> any:result} any:result list:tree -> any
-    like fold but descends into lists and replaces them at position with the result of the sub-fold.
+    fold over all lists and non-list elements in tree
     non-lists from left-to-right, lists bottom-to-top"
+    ;does perhaps not make much sense without an enter? predicate
     (fold (l (e r) (if (list? e) (p (tree-fold p (list) e) r) (p e r))) r t))
+
+  (define (tree-fold-right p r t)
+    "procedure:{any:element any:result -> any:result} any:result list:tree -> any
+    fold over all lists and non-list elements in tree
+    non-lists from left-to-right, lists bottom-to-top"
+    (fold-right (l (e r) (if (list? e) (p (tree-fold-right p (list) e) r) (p e r))) r t))
+
+  (define (tree-fold-lists-right enter? p r t)
+    "procedure:{any -> boolean} procedure:{any any -> any} list -> any"
+    (fold-right
+      (l (e r) (if (list? e) (if (enter? e) (tree-fold-lists-right enter? p r e) (p e r)) r)) r t))
 
   (define (tree-fold-reverse p r t)
     "
