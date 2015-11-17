@@ -15,6 +15,7 @@
     filename-extension
     find-file-any
     find-files-any
+    path-directories
     fold-directory-tree
     get-unique-target-path
     is-directory?
@@ -22,6 +23,7 @@
     remove-trailing-slash
     merge-files
     move-and-link
+    ensure-directory-structure-and-mode
     mtime-difference
     path->full-path
     path->list
@@ -61,6 +63,7 @@
     (only (srfi srfi-1)
       append-map
       delete!
+      unfold
       filter-map
       fold-right
       map!
@@ -150,9 +153,21 @@
     every path part is considered a directory"
     (or (file-exists? path) (begin (ensure-directory-structure (dirname path)) (mkdir path))))
 
+  (define (ensure-directory-structure-and-mode path mode)
+    "string -> boolean
+    like ensure-directory-structure but also sets the file mode/permissions.
+    the mode is influenced by the umask"
+    (or (file-exists? path) (begin (ensure-directory-structure-and-mode (dirname path) mode) (mkdir path mode))))
+
   (define (ensure-trailing-slash str) "string -> string"
     (if (or (string-null? str) (not (eqv? #\/ (string-ref str (- (string-length str) 1)))))
       (string-append str "/") str))
+
+  (define (path-directories a)
+    "string -> (string ...)
+    creates a list of the full paths of all directories above the given path"
+    (unfold (l (e) (or (string-equal? "/" e) (string-equal? "." e)))
+      identity dirname a))
 
  (define stat-field-name->stat-accessor-ht
     (symbol-hashtable mtime stat:mtime

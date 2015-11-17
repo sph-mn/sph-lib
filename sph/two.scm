@@ -37,6 +37,7 @@
     git-archive->file
     git-current-short-commit-hash
     hash-select
+    hashtable-associate-words
     let-if
     let-if*
     line-reverse-direction
@@ -51,25 +52,24 @@
     md5sum-file
     nl-string->list
     not-scm-file?
+    os-seconds-at-boot
+    os-seconds-since-boot
     path->mime-type
     paths-find-file-size-sum
     plaintext->sxml-html
+    port-column-subtract!
     port-each-line-alternate-direction
+    port-lines-words-hashtable-associate
+    port-skip+count
     primitive-eval-port
     prog-sync-with-root
     read-line-crlf
     read-line-crlf-trim
-    port-lines-words-hashtable-associate
-    hashtable-associate-words
     read-mime.types
-    os-seconds-at-boot
-    os-seconds-since-boot
-    seconds->short-kiloseconds-string
     search-env-path-variable
+    seconds->short-kiloseconds-string
     set-multiple-from-list!
     srfi-19-date->seconds
-    port-column-subtract!
-    port-skip+count
     string-remove-leading-zeros
     sxml->xml-string
     system-cat-merge-files
@@ -90,20 +90,22 @@
     (rnrs bytevectors)
     (rnrs io ports)
     (sph)
+    (sph alist)
+    (sph cli)
     (sph conditional)
     (sph filesystem)
     (sph hashtable)
+    (sph number)
     (sph one)
     (sph process)
     (sph read-write)
-    (sph time)
     (sph stream)
     (sph string)
+    (sph time)
     (sph tree)
     (srfi srfi-41)
     (srfi srfi-69)
     (sxml simple)
-    (sph number)
     (except (rnrs hashtables) hashtable-ref)
     (except (srfi srfi-1) map)
     (only (rnrs io ports) get-bytevector-n put-bytevector)
@@ -119,7 +121,8 @@
     (let (day-seconds (seconds->day-seconds (current-time)))
       (string->number (first (string-split (shell-eval->string "cat /proc/uptime") #\space)))))
 
-  (define (port-column-subtract! port integer) (set-port-column! port (- (port-column port) integer)))
+  (define (port-column-subtract! port integer)
+    (set-port-column! port (- (port-column port) integer)))
 
   (define (port-skip+count port skip-char)
     (let loop ((char (peek-char port)) (count 0))
@@ -244,17 +247,15 @@
       (let ((line (first line+delim)) (delim (tail line+delim)))
         (if (and (string? line) (char? delim)) (string-append line (string delim)) line))))
 
-  (define (hashtable-associate-words hashtable string)
-    "hashtable string ->"
-    (let (string (string-split string #\space)) (hashtable-set! hashtable (first string) (tail string))))
+  (define (hashtable-associate-words hashtable string) "hashtable string ->"
+    (let (string (string-split string #\space))
+      (hashtable-set! hashtable (first string) (tail string))))
 
   (define* (port-lines-words-hashtable-associate port #:optional (hashtable (string-hashtable)))
     "port [hashtable] -> hashtable
     read from port to create a hashtable from a string with lines of the format: key value ...
     one use case are configuration files for string replacements"
-    (port-lines-each
-      (l (line) (hashtable-associate-words hashtable line)) port)
-    hashtable)
+    (port-lines-each (l (line) (hashtable-associate-words hashtable line)) port) hashtable)
 
   (define (bash-escape-clear)
     "display the bash escape sequence for clearing the screen - which usually means to scroll until the current line is at the top"
