@@ -1,4 +1,4 @@
-; (sph process) - process creation and inter-process communication.
+; (sph process) - process creation, management and inter-process communication.
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -14,6 +14,7 @@
 
 (library (sph process)
   (export
+    call-with-working-directory
     execlp-new-process
     execute
     execute+check-result
@@ -51,6 +52,9 @@
 
   (define execute system*)
   (define shell-eval system)
+
+  (define (call-with-working-directory path p)
+    (let ((cwd (getcwd)) (r (begin (chdir path) (p)))) (chdir cwd) r))
 
   (define (process-replace-without-search program-path . args)
     "replaces the current process image with the execution of the program at program-path.
