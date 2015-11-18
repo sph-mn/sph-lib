@@ -143,19 +143,19 @@
       (if
         (or is-expected-result (and is-extended-result (equal? (tail data-test) (vector-ref r 1))))
         (begin
-          (if sph-test-log-success
+          (if (and format sph-test-log-success)
             (display
               ( (success-message-proc format) name (if is-extended-result (vector-ref r 2) #f)
                 index-data index-data-last)))
           #t)
         (begin
-          (display
-            (if is-extended-result
-              ( (failure-message-proc format) name (vector-ref r 1)
-                (vector-ref r 2) (or (vector-ref r 3) (first data-test))
-                (vector-ref r 4) index-data index-data-last)
-              ( (failure-message-proc format) name r
-                (tail data-test) (first data-test) #f index-data index-data-last)))
+          (if format (display
+              (if is-extended-result
+                ( (failure-message-proc format) name (vector-ref r 1)
+                  (vector-ref r 2) (or (vector-ref r 3) (first data-test))
+                  (vector-ref r 4) index-data index-data-last)
+                ( (failure-message-proc format) name r
+                  (tail data-test) (first data-test) #f index-data index-data-last))))
           #f))))
 
   (define (default-test proc-name index inp exp) "apply a procedure proc-name with arguments inp"

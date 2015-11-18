@@ -25,7 +25,8 @@
     (sph)
     (sph cli)
     (only (sph alist) alist-quoted-ref)
-    (only (sph filesystem) path-append ensure-directory-structure-and-mode)
+    (only (sph conditional) pass-if)
+    (only (sph filesystem) path-append path->full-path ensure-directory-structure-and-mode)
     (only (sph process) execute+check-result))
 
   (define (install target target-prefix symlink? directory-mode . source)
@@ -40,7 +41,7 @@
         (cp-arguments
           (qq
             ("--preserve=mode" "--recursive" (unquote-splicing (if symlink? (list "-s") (list)))
-              (unquote (string-append "--target-directory=" target)) (unquote-splicing source)))))
+              (unquote (string-append "--target-directory=" target)) (unquote-splicing (map path->full-path source))))))
       ;without the umask the mode settings might not apply as specified
       (umask 0) (ensure-directory-structure-and-mode target directory-mode)
       (apply execute+check-result "cp" cp-arguments)))
@@ -60,17 +61,19 @@
     (install-multiple target-prefix symlink? directory-mode (install-arguments ...) ...)
     (install-multiple-p target-prefix symlink? directory-mode (list install-arguments ...) ...))
 
+  (define (cli-handle-optional a default) (if a (if (equal? "-" a) default a) default))
+
   (define install-cli-guile-p
     (let
       ( (get-program-arguments&
           (l (c)
             (apply
-              (l*
-                (#:optional (target-prefix "") (path-lib-scheme "/usr/share/guile/site")
-                  symlink? (directory-mode 493))
-                (c target-prefix path-lib-scheme
-                  symlink?
-                  (if (string? directory-mode) (string->number directory-mode 8) directory-mode)))
+              (l* (#:optional target-prefix path-lib-scheme symlink? directory-mode)
+                (c (cli-handle-optional target-prefix "")
+                  (cli-handle-optional path-lib-scheme "/usr/share/guile/site")
+                  (cli-handle-optional symlink? #f)
+                  (pass-if (cli-handle-optional directory-mode 493)
+                    (l (e) (if (string? e) (string->number directory-mode 8) e)))))
               (alist-quoted-ref
                 ( (cli-create #:help-parameters
                     "parameters\n  options ... [target-prefix path-lib-scheme symlink? directory-mode]"))
@@ -101,7 +104,7 @@
       \"path-lib-scheme\" is the path where scheme libraries should be installed, it is /usr/share/guile/site if nothing else is specified.
       command-line arguments are: target-prefix:install-prefix path-lib-scheme:guile-site symlink?:true/false directory-mode.
       symlink? can be \"true\" or \"false\". directory-mode is an integer.
-      all command-line arguments are optional.
+      all command-line arguments are optional and can be \"-\" to be set to the default value.
       see install-multiple for how source files are actually handled.
       usage example:
       (install-cli-guile (\"/usr/lib\" \"temp/libguile-dg.so\")
