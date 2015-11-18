@@ -26,7 +26,10 @@
     (sph cli)
     (only (sph alist) alist-quoted-ref)
     (only (sph conditional) pass-if)
-    (only (sph filesystem) path-append path->full-path ensure-directory-structure-and-mode)
+    (only (sph filesystem)
+      path-append
+      path->full-path
+      ensure-directory-structure-and-mode)
     (only (sph process) execute+check-result))
 
   (define (install target target-prefix symlink? directory-mode . source)
@@ -40,8 +43,10 @@
       ( (target (path-append target-prefix target))
         (cp-arguments
           (qq
-            ("--preserve=mode" "--recursive" (unquote-splicing (if symlink? (list "-s") (list)))
-              (unquote (string-append "--target-directory=" target)) (unquote-splicing (map path->full-path source))))))
+            ("--preserve=mode" "--recursive" "--force"
+              (unquote-splicing (if symlink? (list "--symbolic-link") (list)))
+              (unquote (string-append "--target-directory=" target))
+              (unquote-splicing (map path->full-path source))))))
       ;without the umask the mode settings might not apply as specified
       (umask 0) (ensure-directory-structure-and-mode target directory-mode)
       (apply execute+check-result "cp" cp-arguments)))
