@@ -77,15 +77,18 @@
                 unnamed (list)))))
         (replace-placeholders
           (let*
-            ( (handle-list-path
+            ( (handle-symbol-path
+                (l (a path-lib-scheme) (if (eqv? (q path-lib-scheme) a) path-lib-scheme a)))
+              (handle-list-path
                 (l (a path-lib-scheme) "list string -> string:path"
-                  (apply path-append
-                    (map (l (e) (if (eqv? (q path-lib-scheme) e) path-lib-scheme e)) a))))
+                  (apply path-append (map handle-symbol-path a))))
               (handle-target+source-one-proc
                 (l (path-lib-scheme)
                   (l (e)
                     (let (target (first e))
-                      (pair (if (list? target) (handle-list-path target path-lib-scheme) target)
+                      (pair
+                        (if (list? target) (handle-list-path target path-lib-scheme)
+                          (if (symbol? target) (handle-symbol-path target path-lib-scheme) target))
                         (tail e)))))))
             (l (target+source path-lib-scheme)
               (map (handle-target+source-one-proc path-lib-scheme) target+source)))))
