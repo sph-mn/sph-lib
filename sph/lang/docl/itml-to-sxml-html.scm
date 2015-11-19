@@ -5,8 +5,8 @@
     docl-itml-string->sxml-html
     docl-itml-sxml-html-env
     docl-itml-sxml-html-env-module-names
-    process-lines
-    parsed-itml->sxml-html)
+    parsed-itml->sxml-html
+    process-lines)
   (import
     (guile)
     (rnrs base)
@@ -17,9 +17,9 @@
     (sph lang docl env itml-to-sxml-html)
     (sph lang parser itml)
     (sph list)
-    (only (sph hashtable) hashtable-ref)
     (sph read-write)
     (sph set)
+    (only (sph hashtable) hashtable-ref)
     (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
     (only (sph tree) flatten tree-transform-with-state)
@@ -54,13 +54,13 @@
       ((association) (pairs (first content) ": " (tail content)))
       (else (list->sxml e level level-init))))
 
-(define (adjust-level a)
+  (define (adjust-level a)
     "integer -> integer
     level 0 and 1 are equivalent because content of nested-lists on the top-level in
     parsed-itml is still considered belonging to the top-level"
     (max 0 (- a 1)))
 
- (define (ascend-proc env level-init)
+  (define (ascend-proc env level-init)
     (l (e level)
       (list
         (let ((prefix (first e)) (content (tail e)))
