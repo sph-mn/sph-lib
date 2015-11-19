@@ -54,13 +54,13 @@
       ((association) (pairs (first content) ": " (tail content)))
       (else (list->sxml e level level-init))))
 
-  (define (adjust-level a)
+(define (adjust-level a)
     "integer -> integer
     level 0 and 1 are equivalent because content of nested-lists on the top-level in
     parsed-itml is still considered belonging to the top-level"
     (max 0 (- a 1)))
 
-  (define (ascend-proc env level-init)
+ (define (ascend-proc env level-init)
     (l (e level)
       (list
         (let ((prefix (first e)) (content (tail e)))

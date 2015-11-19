@@ -1,3 +1,5 @@
+;translates itml to a source similar indent-tree but with expressions evaluated
+
 (library (sph lang docl itml-to-text)
   (export
     docl-itml-parsed->text
@@ -20,7 +22,6 @@
     (only (sph string) any->string string-equal?)
     (only (sph tree) flatten tree-transform-with-state))
 
-  ;translates indent-tree-markup-language to indent-tree text by evaluating all expressions.
   (define docl-itml-text-env (apply environment docl-default-env-module-names))
 
   (define (call-for-eval level c) (docl-env-set! (q nesting-level) level)
