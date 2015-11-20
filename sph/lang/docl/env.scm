@@ -2,6 +2,7 @@
 
 (library (sph lang docl env)
   (export
+    current-nesting-level
     docl-env-bindings
     docl-env-ref
     docl-env-reset!
@@ -13,13 +14,14 @@
       make-fluid
       fluid-ref
       fluid-set!)
-    (only (rnrs base) define)
+    (rnrs base)
     (except (rnrs hashtables) hashtable-ref)
     (only (sph hashtable)
       hashtable
       hashtable-ref
       hashtable-merge!))
 
+  (define (current-nesting-level) (or (docl-env-ref (q nesting-level)) 0))
   (define docl-env-bindings (make-fluid))
   (define (docl-env-reset!) (fluid-set! docl-env-bindings (hashtable)))
   (define (docl-env-ref key) (hashtable-ref (fluid-ref docl-env-bindings) key))

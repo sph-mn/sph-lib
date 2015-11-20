@@ -60,6 +60,10 @@
     port-column-subtract!
     port-each-line-alternate-direction
     port-lines-words-hashtable-associate
+    vhash-set
+    vhash-ref
+    vhash-setq
+    vhash-refq
     port-skip+count
     primitive-eval-port
     prog-sync-with-root
@@ -114,7 +118,20 @@
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
 
-  (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
+(define (vhash-ref a key) (identity-if (vhash-assoc key a) #f))
+(define (vhash-refq a key) (identity-if (vhash-assq key a) #f))
+
+(define (vhash-set-p a key value vhash-cons)
+  (let loop ((rest a))
+    (if (vlist-null? rest) vlist-null
+      (let* ((e (vlist-head rest)) (e-key (first e)))
+        (if (equal? key e-key) (vhash-cons key value (vlist-tail rest))
+          (vhash-cons e-key (tail e) (loop (vlist-tail rest))))))))
+
+(define (vhash-setq a key value)
+ (vhash-set-p a key value vhash-consq))
+
+(define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
   (define (os-seconds-at-boot) (- (current-day-seconds) (os-seconds-since-boot)))
 
   (define (os-seconds-since-boot)
@@ -370,13 +387,13 @@
     ;may only be called at the top-level of a program or library.
     ;defines a thread-local stack and 3 procedures to add, remove and retrieve it.
     ;if the names for the add and remove procedures are not given, it is created from the stack name
-    ;by appending -add and -remove respectively.
+    ;by appending -add! and -remove! respectively.
     ((name name.add name.remove) (syntax (primitive-define-stack-fluid name name.add name.remove)))
     ( (name)
       (let*
         ( (name-sym (syntax->datum (syntax name)))
-          (name.add (datum->syntax (syntax name) (symbol-append name-sym (q -add))))
-          (name.remove (datum->syntax (syntax name) (symbol-append name-sym (q -remove)))))
+          (name.add (datum->syntax (syntax name) (symbol-append name-sym (q -add!))))
+          (name.remove (datum->syntax (syntax name) (symbol-append name-sym (q -remove!)))))
         (quasisyntax (primitive-define-stack-fluid name (unsyntax name.add) (unsyntax name.remove))))))
 
   (define-syntax-rule (define-syntax-identifier identifier expr)

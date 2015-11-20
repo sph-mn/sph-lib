@@ -1,5 +1,9 @@
 (library (sph lang docl env default)
   (export
-    (rename (identity scm)))
+    quote
+    (rename identity scm))
   (import
-    (only (guile) identity)))
+    (guile)
+    (rnrs base)
+    (sph)
+    (sph lang docl env)))

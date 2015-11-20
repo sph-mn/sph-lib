@@ -15,6 +15,7 @@
 (library (sph alist)
   (export
     alist
+    alist-set
     alist-cond
     alist-keys
     alist-map
@@ -180,4 +181,11 @@
     (alist-select-apply a (quote (key ...)) proc))
 
   (define-syntax-rule (alist-quoted-select a (key ...))
-    (alist-select a (quote (key ...)))))
+    (alist-select a (quote (key ...))))
+
+ (define (alist-set a key value) "list any any -> list
+    add or update an entry in an association list"
+    (let loop ((rest a))
+      (if (null? rest) (list)
+        (if (equal? key (first rest)) (pair (pair key value) (tail rest))
+          (pair e (loop (tail rest))))))))
