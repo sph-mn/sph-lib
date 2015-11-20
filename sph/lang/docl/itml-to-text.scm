@@ -13,38 +13,43 @@
     (rnrs eval)
     (sph)
     (sph conditional)
+    (sph hashtable)
     (sph lang docl)
     (sph lang docl itml)
     (sph lang indent-syntax)
     (sph string))
 
   (define docl-itml-text-env
-    (apply environment (q (sph lang docl env itml-to-text)) docl-default-env-module-names))
+    (apply environment (q (sph lang docl env itml-to-text))
+      (ql guile) docl-default-env-module-names))
 
+  (module-ref docl-itml-text-env (q scm))
   (define (ascend-handle-line a nesting-depth docl-state env) a)
 
   (define (ascend-handle-association a nesting-depth docl-state env)
     (pair (let (prefix (first a)) (if (string? prefix) (string-append prefix ": ") prefix))
       (tail a)))
 
+  (define-as ascend-prefix->handler-ht symbol-hashtable
+    line ascend-handle-line
+    inline-expr itml-eval-ascend-inline-expr
+    line-expr itml-eval-ascend-line-expr
+    indent-expr itml-eval-ascend-indent-expr association ascend-handle-association)
+
+  (define-as descend-prefix->handler-ht symbol-hashtable
+    inline-scm-expr itml-eval-descend-inline-scm-expr
+    line-scm-expr itml-eval-descend-line-scm-expr
+    indent-scm-expr itml-eval-descend-indent-scm-expr
+    indent-descend-expr itml-eval-descend-indent-descend-expr)
+
+  (define-syntax-rule (expr->text prefix->handler a proc-arguments ...)
+    (let (p (hashtable-ref prefix->handler (first a))) (and p (p (tail a) proc-arguments ...))))
+
   (define (ascend-expr->text a nesting-depth docl-state env)
-    (let (a-tail (tail a))
-      (case (first a) ((line) (ascend-handle-line a-tail nesting-depth docl-state env))
-        ((inline-expr) (ascend-eval-inline-expr a-tail nesting-depth docl-state env))
-        ((line-expr) (ascend-eval-line-expr a-tail nesting-depth docl-state env))
-        ((indent-expr) (ascend-eval-indent-expr a-tail nesting-depth docl-state env))
-        ((association) (ascend-handle-association a-tail nesting-depth docl-state env)) (else a))))
+    (or (expr->text ascend-prefix->handler-ht a nesting-depth docl-state env) a))
 
   (define (descend-expr->text a re-descend nesting-depth docl-state env)
-    (pass-if
-      (let (a-tail (tail a))
-        (case (first a)
-          ((inline-scm-expr) (descend-eval-inline-scm-expr a-tail nesting-depth docl-state env))
-          ( (indent-descend-expr)
-            (descend-eval-indent-descend-expr a-tail nesting-depth docl-state env))
-          ((line-scm-expr) (descend-eval-line-scm-expr a-tail nesting-depth docl-state env))
-          ((indent-scm-expr) (descend-eval-indent-scm-expr a-tail nesting-depth docl-state env))
-          (else #f)))
+    (pass-if (expr->text descend-prefix->handler-ht a re-descend nesting-depth docl-state env)
       any->string))
 
   (define (handle-top-level-terminal a nesting-depth docl-state env)
@@ -55,7 +60,7 @@
   (define itml-parsed->text
     (itml-parsed->result-proc
       (l (a nesting-depth docl-state env) (prefix-tree->indent-tree-string a nesting-depth))
-      (descend-proc descend-expr->text) (ascend-proc ascend-expr->text)
+      (itml-descend-proc descend-expr->text) (itml-ascend-proc ascend-expr->text)
       handle-top-level-terminal handle-terminal))
 
   (define docl-itml-parsed->text
