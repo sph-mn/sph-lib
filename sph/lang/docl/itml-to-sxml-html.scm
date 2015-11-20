@@ -13,7 +13,6 @@
     (rnrs eval)
     (sph)
     (sph lang docl)
-    (sph lang docl env)
     (sph lang docl env itml-to-sxml-html)
     (sph lang parser itml)
     (sph list)

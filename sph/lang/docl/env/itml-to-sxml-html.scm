@@ -20,7 +20,6 @@
     (rnrs base)
     (rnrs sorting)
     (sph)
-    (sph lang docl env)
     (sph lang indent-syntax)
     (sph web sxml-html)
     (only (guile)
