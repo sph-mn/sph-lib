@@ -91,9 +91,8 @@
         (l (input docl-state) (itml-parsed->result input nesting-depth docl-state env)) docl-state)))
 
   (define
-    (itml-parsed->result-proc create-result descend ascend  handle-top-level-terminal
-      handle-terminal
-      default-env)
+    (itml-parsed->result-proc create-result descend ascend handle-top-level-terminal
+      handle-terminal)
     (l (a nesting-depth docl-state env)
       "list [integer vhash environment] -> any
       a translator for itml-parsed"

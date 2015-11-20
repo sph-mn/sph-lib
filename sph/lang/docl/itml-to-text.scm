@@ -47,12 +47,16 @@
           (else #f)))
       any->string))
 
-  (define (handle-top-level-terminal a) (if (eqv? (q line-empty) a) "" a))
-  (define (handle-terminal a nesting-depth) (list (handle-top-level-terminal a) nesting-depth))
+  (define (handle-top-level-terminal a nesting-depth docl-state env)
+    (if (eqv? (q line-empty) a) "" a))
+
+  (define (handle-terminal a . states) (pair (apply handle-top-level-terminal a states) states))
 
   (define itml-parsed->text
-    (itml-parsed->result-proc prefix-tree->indent-tree-string (descend-proc descend-expr->text)
-      (ascend-proc ascend-expr->text) handle-top-level-terminal handle-terminal docl-itml-text-env))
+    (itml-parsed->result-proc
+      (l (a nesting-depth docl-state env) (prefix-tree->indent-tree-string a nesting-depth))
+      (descend-proc descend-expr->text) (ascend-proc ascend-expr->text)
+      handle-top-level-terminal handle-terminal))
 
   (define docl-itml-parsed->text
     (docl-itml-parsed->result-proc itml-parsed->text docl-itml-text-env))

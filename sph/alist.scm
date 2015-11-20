@@ -187,5 +187,6 @@
     add or update an entry in an association list"
     (let loop ((rest a))
       (if (null? rest) (list)
-        (if (equal? key (first rest)) (pair (pair key value) (tail rest))
-          (pair e (loop (tail rest))))))))
+        (let (e (first rest))
+          (if (equal? key (first e)) (pair (pair key value) (tail rest))
+            (pair e (loop (tail rest)))))))))

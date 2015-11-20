@@ -122,14 +122,16 @@
   (define (vhash-ref a key) (identity-if (vhash-assoc key a) #f))
   (define (vhash-refq a key) (identity-if (vhash-assq key a) #f))
 
-  (define (vhash-set-p a key value vhash-cons)
-    (let loop ((rest a))
-      (if (vlist-null? rest) vlist-null
-        (let* ((e (vlist-head rest)) (e-key (first e)))
-          (if (equal? key e-key) (vhash-cons key value (vlist-tail rest))
-            (vhash-cons e-key (tail e) (loop (vlist-tail rest))))))))
+  (define (vhash-set-p a key value vhash-ref vhash-cons)
+    (if (vhash-ref a key)
+      (let loop ((rest a))
+        (if (vlist-null? rest) vlist-null
+          (let* ((e (vlist-head rest)) (e-key (first e)))
+            (if (equal? key e-key) (vhash-cons key value (vlist-tail rest))
+              (vhash-cons e-key (tail e) (loop (vlist-tail rest)))))))
+      (vhash-cons key value a)))
 
-  (define (vhash-setq a key value) (vhash-set-p a key value vhash-consq))
+  (define (vhash-setq a key value) (vhash-set-p a key value vhash-refq vhash-consq))
   (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
   (define (os-seconds-at-boot) (- (current-day-seconds) (os-seconds-since-boot)))
 

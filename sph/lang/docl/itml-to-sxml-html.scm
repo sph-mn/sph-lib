@@ -5,7 +5,7 @@
     docl-itml-string->sxml-html
     docl-itml-sxml-html-env
     docl-itml-sxml-html-env-module-names
-    parsed-itml->sxml-html
+    itml-parsed->sxml-html
     process-lines)
   (import
     (guile)
@@ -45,14 +45,14 @@
         ((indent-scm-expr) (descend-eval-indent-scm-expr (tail a) level env)) (else #f))
       any->string))
 
-  (define parsed-itml->text
-    (parsed-itml->result-proc (descend-proc-proc descend-expr->text)
+  (define itml-parsed->text
+    (itml-parsed->result-proc (descend-proc-proc descend-expr->text)
       (ascend-proc-proc ascend-expr->text) prefix-tree->indent-tree-string (const "")))
 
   (define docl-itml-parsed->text
-    (docl-itml-parsed->result-proc parsed-itml->text docl-itml-text-env))
+    (docl-itml-parsed->result-proc itml-parsed->text docl-itml-text-env))
 
-  (define docl-itml-port->text (docl-itml-port->result-proc parsed-itml->text docl-itml-text-env))
+  (define docl-itml-port->text (docl-itml-port->result-proc itml-parsed->text docl-itml-text-env))
   (define docl-itml-string->text (docl-itml-string->result-proc docl-itml-port->text))
 
   (define-syntax-rule (join-heading-section a level)
@@ -82,7 +82,7 @@
   (define (adjust-level a)
     "integer -> integer
     level 0 and 1 are equivalent because content of nested-lists on the top-level in
-    parsed-itml is still considered belonging to the top-level"
+    itml-parsed is still considered belonging to the top-level"
     (max 0 (- a 1)))
 
   (define (ascend-proc env level-init)
@@ -92,8 +92,8 @@
           (ascend-expr->sxml prefix content e env (adjust-level level) level-init))
         (- level 1))))
 
-  (define (call-for-eval level c) (docl-env-set! (q nesting-level) level)
-    (let (r (c)) (docl-env-set! (q nesting-level) #f) r))
+  (define (call-for-eval level c) (docl-env-set! (q nesting-depth) level)
+    (let (r (c)) (docl-env-set! (q nesting-depth) #f) r))
 
   (define (descend-expr->sxml a re-descend level env)
     (case (first a)
@@ -165,9 +165,9 @@
   (define-syntax-rule (handle-line-empty a) (if (eqv? (q line-empty) a) (ql br) a))
   (define (handle-terminal a level-init) (list (handle-line-empty a) level-init))
 
-  (define* (parsed-itml->sxml-html a env #:optional (level-init 0))
+  (define* (itml-parsed->sxml-html a env #:optional (level-init 0))
     "list environment [integer] -> sxml
-    a translator for parsed-itml. does not depend on docl"
+    a translator for itml-parsed. does not depend on docl"
     (process-lines
       (map
         (l (e)
@@ -186,7 +186,7 @@
     this can also be used to convert list trees with strings to html"
     (docl-translate-any input
       (l (input)
-        (parsed-itml->sxml-html input env (or (docl-env-ref (q nesting-level)) level-init)))
+        (itml-parsed->sxml-html input env (or (docl-env-ref (q nesting-depth)) level-init)))
       bindings keep-prev-bindings))
 
   (define*
@@ -196,7 +196,7 @@
     "port [symbol-hashtable/boolean boolean environment integer] -> sxml
     read itml from a port, parse it and translate it to sxml-html"
     (docl-translate-port input
-      (l (input) (parsed-itml->sxml-html (port->parsed-itml input) env (current-nesting-level)))
+      (l (input) (itml-parsed->sxml-html (port->itml-parsed input) env (current-nesting-depth)))
       bindings keep-prev-bindings))
 
   (define (docl-itml-string->sxml-html input . docl-itml-port->sxml-html-args)
