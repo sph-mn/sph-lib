@@ -4,12 +4,9 @@
   (import
     (rnrs base)
     (sph)
-    (sph lang docl env)
     (sph lang indent-syntax)
     (only (guile) string-join))
 
-  (define (escape a)
-    (let (nesting-level (current-nesting-level))
-      (string-join
-        (map (l (e) (if (list? e) (prefix-tree->indent-tree-string (list e) nesting-level) e)) a)
-        "\n"))))
+  (define (escape a nesting-depth docl-state)
+    (string-join
+      (map (l (e) (if (list? e) (prefix-tree->indent-tree-string (list e) nesting-depth) e)) a) "\n")))

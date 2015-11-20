@@ -6,7 +6,7 @@
     docl-itml-port->text
     docl-itml-string->text
     docl-itml-text-env
-    parsed-itml->text)
+    itml-parsed->text)
   (import
     (guile)
     (rnrs base)
@@ -14,41 +14,48 @@
     (sph)
     (sph conditional)
     (sph lang docl)
-    (sph lang docl one)
+    (sph lang docl itml)
     (sph lang indent-syntax)
     (sph string))
 
-  (define docl-itml-text-env (apply environment (q (sph lang docl env itml-to-text)) docl-default-env-module-names))
-  (define (ascend-handle-line a content level env) content)
+  (define docl-itml-text-env
+    (apply environment (q (sph lang docl env itml-to-text)) docl-default-env-module-names))
 
-  (define (ascend-handle-association a content level env)
-    (pair (let (e (first content)) (if (string? e) (string-append e ": ") e)) (tail content)))
+  (define (ascend-handle-line a nesting-depth docl-state env) a)
 
-  (define (ascend-expr->text a env level level-init)
-    (case prefix ((line) (ascend-handle-line e content level env))
-      ((inline-expr) (ascend-eval-inline-expr e content level env))
-      ((line-expr) (ascend-eval-line-expr e content level env))
-      ((indent-expr) (ascend-eval-indent-expr e content level env))
-      ((association) (ascend-handle-association e content level env)) (else e)))
+  (define (ascend-handle-association a nesting-depth docl-state env)
+    (pair (let (prefix (first a)) (if (string? prefix) (string-append prefix ": ") prefix))
+      (tail a)))
 
-  (define (descend-expr->text a re-descend level env)
+  (define (ascend-expr->text a nesting-depth docl-state env)
+    (let (a-tail (tail a))
+      (case (first a) ((line) (ascend-handle-line a-tail nesting-depth docl-state env))
+        ((inline-expr) (ascend-eval-inline-expr a-tail nesting-depth docl-state env))
+        ((line-expr) (ascend-eval-line-expr a-tail nesting-depth docl-state env))
+        ((indent-expr) (ascend-eval-indent-expr a-tail nesting-depth docl-state env))
+        ((association) (ascend-handle-association a-tail nesting-depth docl-state env)) (else a))))
+
+  (define (descend-expr->text a re-descend nesting-depth docl-state env)
     (pass-if
-      (case (first a) ((inline-scm-expr) (descend-eval-inline-scm-expr (tail a) level env))
-        ((indent-descend-expr) (descend-eval-indent-descend-expr (tail a) level env))
-        ((line-scm-expr) (descend-eval-line-scm-expr (tail a) level env))
-        ((indent-scm-expr) (descend-eval-indent-scm-expr (tail a) level env)) (else #f))
+      (let (a-tail (tail a))
+        (case (first a)
+          ((inline-scm-expr) (descend-eval-inline-scm-expr a-tail nesting-depth docl-state env))
+          ( (indent-descend-expr)
+            (descend-eval-indent-descend-expr a-tail nesting-depth docl-state env))
+          ((line-scm-expr) (descend-eval-line-scm-expr a-tail nesting-depth docl-state env))
+          ((indent-scm-expr) (descend-eval-indent-scm-expr a-tail nesting-depth docl-state env))
+          (else #f)))
       any->string))
 
   (define (handle-top-level-terminal a) (if (eqv? (q line-empty) a) "" a))
-  (define (handle-terminal a level-init) (list (handle-top-level-terminal a) level-init))
+  (define (handle-terminal a nesting-depth) (list (handle-top-level-terminal a) nesting-depth))
 
-  (define parsed-itml->text
-    (parsed-itml->result-proc (descend-proc-proc descend-expr->text)
-      (ascend-proc-proc ascend-expr->text) prefix-tree->indent-tree-string
-      handle-top-level-terminal handle-terminal))
+  (define itml-parsed->text
+    (itml-parsed->result-proc prefix-tree->indent-tree-string (descend-proc descend-expr->text)
+      (ascend-proc ascend-expr->text) handle-top-level-terminal handle-terminal docl-itml-text-env))
 
   (define docl-itml-parsed->text
-    (docl-itml-parsed->result-proc parsed-itml->text docl-itml-text-env))
+    (docl-itml-parsed->result-proc itml-parsed->text docl-itml-text-env))
 
-  (define docl-itml-port->text (docl-itml-port->result-proc parsed-itml->text docl-itml-text-env))
+  (define docl-itml-port->text (docl-itml-port->result-proc itml-parsed->text docl-itml-text-env))
   (define docl-itml-string->text (docl-itml-string->result-proc docl-itml-port->text)))

@@ -1,8 +1,8 @@
 (library (sph lang parser itml)
   (export
-    path->parsed-itml
-    port->parsed-itml
-    string->parsed-itml)
+    path->itml-parsed
+    port->itml-parsed
+    string->itml-parsed)
   (import
     (ice-9 peg)
     (rnrs base)
@@ -151,19 +151,19 @@
             (else e))))
       a))
 
-  (define (port->parsed-itml a)
+  (define (port->itml-parsed a)
     "port -> list
     reads an itml string from port, parses it and returns the abstract syntax tree"
     (let (tree (read-space-indent-tree->denoted-tree a 2))
       (if (null? tree) tree
         (finalise-tree (tree-transform (denoted-tree->prefix-tree tree) descend ascend terminal)))))
 
-  (define (path->parsed-itml a)
+  (define (path->itml-parsed a)
     "string -> list
-    like port->parsed-itml but takes a path to a file to read from"
-    (call-with-input-file a port->parsed-itml))
+    like port->itml-parsed but takes a path to a file to read from"
+    (call-with-input-file a port->itml-parsed))
 
-  (define (string->parsed-itml a)
+  (define (string->itml-parsed a)
     "string -> list
-    like port->parsed-itml but takes a string to parse"
-    (port->parsed-itml (open-input-string a))))
+    like port->itml-parsed but takes a string to parse"
+    (port->itml-parsed (open-input-string a))))

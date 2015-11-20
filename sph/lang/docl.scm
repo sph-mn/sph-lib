@@ -3,6 +3,7 @@
     call-with-docl
     docl-default-env-module-names
     docl-include-stack
+    docl-state-empty
     docl-translate-any
     docl-translate-port)
   (import
@@ -20,7 +21,7 @@
     (only (sph one) first-as-result)
     (only (sph two) vhash-refq vhash-setq))
 
-  (define docl-default-env-module-names (ql (sph lang docl env) (sph lang docl env default)))
+  (define docl-default-env-module-names (q ((sph lang docl env default))))
   (define docl-state-empty vlist-null)
 
   (define (call-with-docl get-source-identifier get-source-position input proc docl-state)
