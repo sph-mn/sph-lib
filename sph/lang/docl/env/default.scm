@@ -1,8 +1,8 @@
 (library (sph lang docl env default)
   (export
-    quote
-    scm)
+    list
+    + - / *
+    quote)
   (import
-    (rnrs base))
-
-  (define (scm a nesting-depth docl-state) a))
+    (guile)
+    (rnrs base)))

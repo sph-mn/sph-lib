@@ -14,123 +14,45 @@
     (sph)
     (sph lang docl)
     (sph lang docl env itml-to-sxml-html)
+    (sph lang docl itml)
     (sph lang parser itml)
     (sph list)
     (sph read-write)
     (sph set)
-    (only (sph hashtable) hashtable-ref)
+    (only (sph hashtable) hashtable-ref symbol-hashtable)
     (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
     (only (sph tree) flatten tree-transform-with-state)
     (only (srfi srfi-1) remove))
 
-  (define docl-itml-sxml-html-env-module-names
-    (pair (q (sph lang docl env itml-to-sxml-html)) docl-default-env-module-names))
+  (define html-headings (q #(h1 h2 h3 h4 h5 h6)))
 
-  (define docl-itml-sxml-html-env (apply environment docl-itml-sxml-html-env-module-names))
+  (define (sxml-html-heading nesting-depth . content)
+    (pair (vector-ref html-headings (min 5 nesting-depth)) content))
 
-  (define (ascend-expr->text prefix content e env level level-init)
-    (case prefix ((line) (ascend-handle-line e content level env))
-      ((inline-expr) (ascend-eval-inline-expr e content level env))
-      ((line-expr) (ascend-eval-line-expr e content level env))
-      ((indent-expr) (ascend-eval-indent-expr e content level env))
-      ((association) (ascend-handle-association e content level env)) (else e)))
+  (define (section nesting-depth title content . attributes)
+    (pair (q section)
+      (append (if (null? attributes) attributes (list (pair (q @) attributes)))
+        (pair (sxml-html-heading nesting-depth title)
+          (if (list? content)
+            (if (null? content) (list)
+              (if (symbol? (first content)) (list content) (list (pair (q div) content))))
+            (list (list (q div) content)))))))
 
-  (define (descend-expr->text a re-descend level env)
-    (pass-if
-      (case (first a) ((inline-scm-expr) (descend-eval-inline-scm-expr (tail a) level env))
-        ((indent-descend-expr) (descend-eval-indent-descend-expr (tail a) level env))
-        ((line-scm-expr) (descend-eval-line-scm-expr (tail a) level env))
-        ((indent-scm-expr) (descend-eval-indent-scm-expr (tail a) level env)) (else #f))
-      any->string))
+  (define (add-spaces a)
+    "list -> list
+    inserts a space before non-list elements (strings, numbers, etc) except the first and splices lists of expressions."
+    (fold-right
+      (l (e r)
+        (if (list? e) (if (null? e) (pair e r) (if (symbol? (first e)) (pair e r) (append e r)))
+          (if (null? r) (pair e r)
+            (if (and (string? e) (string-suffix? " " e)) (pair e r) (pairs e " " r)))))
+      (list) a))
 
-  (define itml-parsed->text
-    (itml-parsed->result-proc (descend-proc-proc descend-expr->text)
-      (ascend-proc-proc ascend-expr->text) prefix-tree->indent-tree-string (const "")))
-
-  (define docl-itml-parsed->text
-    (docl-itml-parsed->result-proc itml-parsed->text docl-itml-text-env))
-
-  (define docl-itml-port->text (docl-itml-port->result-proc itml-parsed->text docl-itml-text-env))
-  (define docl-itml-string->text (docl-itml-string->result-proc docl-itml-port->text))
-
-  (define-syntax-rule (join-heading-section a level)
-    (section* level (first a) (process-lines (tail a))))
-
-  (define-syntax-rule (heading-section? a)
-    (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
-
-  (define-syntax-rule (list->sxml a level level-init)
-    (if (heading-section? a) (join-heading-section a level) a))
-
-  (define-syntax-rule (ascend-expr->sxml prefix content e env level level-init)
-    (case prefix ((line) (if (null? content) "" (add-spaces content)))
-      ;eval is used to support macros in itml-expressions
-      ( (inline-expr)
-        (call-for-eval level
-          (thunk (eval (list (string->symbol (first content)) (list (q quote) (tail content))) env))))
-      ( (line-expr)
-        (call-for-eval level
-          (thunk (eval (pair (string->symbol (first content)) (tail content)) env))))
-      ( (indent-expr)
-        (call-for-eval level
-          (thunk ((module-ref env (string->symbol (first content))) (tail content)))))
-      ((association) (pairs (first content) ": " (tail content)))
-      (else (list->sxml e level level-init))))
-
-  (define (adjust-level a)
-    "integer -> integer
-    level 0 and 1 are equivalent because content of nested-lists on the top-level in
-    itml-parsed is still considered belonging to the top-level"
-    (max 0 (- a 1)))
-
-  (define (ascend-proc env level-init)
-    (l (e level)
-      (list
-        (let ((prefix (first e)) (content (tail e)))
-          (ascend-expr->sxml prefix content e env (adjust-level level) level-init))
-        (- level 1))))
-
-  (define (call-for-eval level c) (docl-env-set! (q nesting-depth) level)
-    (let (r (c)) (docl-env-set! (q nesting-depth) #f) r))
-
-  (define (descend-expr->sxml a re-descend level env)
-    (case (first a)
-      ( (inline-scm-expr)
-        (call-for-eval level (thunk (eval (string->datum (first (tail a)) read) env))))
-      ( (indent-descend-expr)
-        (call-for-eval level
-          (thunk
-            (let* ((content (tail a)) (prefix (first content)))
-              ( (if (string-equal? "#" prefix) escape (module-ref env (string->symbol prefix)))
-                (tail content) level)))))
-      ( (line-scm-expr)
-        (call-for-eval level
-          (thunk
-            (eval
-              (string->datum
-                (string-append
-                  (let (content (tail a))
-                    (apply string-append "(" (first content) " " (tail content)))
-                  ")")
-                read)
-              env))))
-      ( (indent-scm-expr)
-        (call-for-eval level
-          (thunk
-            (eval
-              (string->datum
-                (call-with-output-string
-                  (l (port)
-                    ;display converts a string-list to a scheme-expression with symbols. flatten is used to ignore the indent-tree nesting
-                    (display (flatten (tail a)) port))))
-              env))))
-      (else #f)))
-
-  (define (descend-proc env level-init)
-    (l (a re-descend level)
-      (let (r (descend-expr->sxml a re-descend level env))
-        (if r (list r #f level) (list #f #t (+ 1 level))))))
+  (define (string->sxml a nesting-level docl-state)
+    "string -> sxml
+    convert newlines in string to (br) and result in an sxml expression"
+    (let (a (string-split a #\newline)) (if (length-eq-one? a) (first a) (interleave a (ql br)))))
 
   (define (tag-element? a)
     "list:non-null-list -> boolean
@@ -141,9 +63,9 @@
     (apply set-symbol-create
       (ql span a object img script select button input label select textarea)))
 
-  (define (html-tag-no-newline? a) (hashtable-ref html-tags-no-newline a))
-  (define (handle-line a) (list (q p) a))
-  (define (handle-line-list a) (pair (q p) a))
+  (define-syntax-rule (html-tag-no-newline? a) (hashtable-ref html-tags-no-newline a))
+  (define-syntax-rule (handle-line a) (list (q p) a))
+  (define-syntax-rule (handle-line-list a) (pair (q p) a))
 
   (define (process-lines a)
     "list integer -> list
@@ -161,43 +83,59 @@
                 r)))
           (pair (handle-line e) r)))))
 
-  (define-syntax-rule (handle-line-empty a) (if (eqv? (q line-empty) a) (ql br) a))
-  (define (handle-terminal a level-init) (list (handle-line-empty a) level-init))
+  (define-syntax-rule (join-heading-section a nesting-depth)
+    (section nesting-depth (first a) (process-lines (tail a))))
 
-  (define* (itml-parsed->sxml-html a env #:optional (level-init 0))
-    "list environment [integer] -> sxml
-    a translator for itml-parsed. does not depend on docl"
-    (process-lines
-      (map
-        (l (e)
-          (if (list? e)
-            (first
-              (tree-transform-with-state e (descend-proc env level-init)
-                (ascend-proc env level-init) handle-terminal level-init))
-            (handle-line-empty e)))
-        a)))
+  (define-syntax-rule (heading-section? a)
+    (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
 
-  (define*
-    (docl-itml-parsed->sxml-html input #:optional bindings keep-prev-bindings
-      (env docl-itml-sxml-html-env)
-      (level-init 0))
-    "list [symbol-hashtable/boolean boolean environment integer] -> sxml
-    this can also be used to convert list trees with strings to html"
-    (docl-translate-any input
-      (l (input)
-        (itml-parsed->sxml-html input env (or (docl-env-ref (q nesting-depth)) level-init)))
-      bindings keep-prev-bindings))
+  (define-syntax-rule (list->sxml a nesting-depth)
+    (if (heading-section? a) (join-heading-section a nesting-depth) a))
 
-  (define*
-    (docl-itml-port->sxml-html input #:optional bindings keep-prev-bindings
-      (env docl-itml-sxml-html-env)
-      (level-init 0))
-    "port [symbol-hashtable/boolean boolean environment integer] -> sxml
-    read itml from a port, parse it and translate it to sxml-html"
-    (docl-translate-port input
-      (l (input) (itml-parsed->sxml-html (port->itml-parsed input) env (current-nesting-depth)))
-      bindings keep-prev-bindings))
+  (define docl-itml-env-html-sxml
+    (apply environment (q (sph lang docl env itml-to-sxml-html)) docl-default-env-module-names))
 
-  (define (docl-itml-string->sxml-html input . docl-itml-port->sxml-html-args)
-    "string [symbol-hashtable/boolean boolean environment integer] -> sxml"
-    (apply docl-itml-port->sxml-html (open-input-string input) docl-itml-port->sxml-html-args)))
+  (define (ascend-handle-line a nesting-depth docl-state env) (if (null? a) "" (add-spaces a)))
+  (define (descend-handle-double-backslash a nesting-depth docl-state env) "\\")
+
+  (define (ascend-handle-association a nesting-depth docl-state env)
+    (pairs (first a) ": " (tail a)))
+
+  (define-as ascend-prefix->handler-ht symbol-hashtable
+    line ascend-handle-line
+    inline-expr itml-eval-ascend-inline-expr
+    line-expr itml-eval-ascend-line-expr
+    indent-expr itml-eval-ascend-indent-expr association ascend-handle-association)
+
+  (define-as descend-prefix->handler-ht symbol-hashtable
+    inline-scm-expr itml-eval-descend-inline-scm-expr
+    line-scm-expr itml-eval-descend-line-scm-expr
+    indent-scm-expr itml-eval-descend-indent-scm-expr
+    indent-descend-expr itml-eval-descend-indent-descend-expr
+    double-backslash descend-handle-double-backslash)
+
+  (define-syntax-rule (expr->sxml-html prefix->handler a proc-arguments ...)
+    (let (p (hashtable-ref prefix->handler (first a))) (and p (p (tail a) proc-arguments ...))))
+
+  (define (ascend-expr->sxml-html a nesting-depth docl-state env)
+    (or (expr->sxml-html ascend-prefix->handler-ht a nesting-depth docl-state env)
+      (list->sxml a nesting-depth)))
+
+  (define (descend-expr->sxml-html a re-descend nesting-depth docl-state env)
+    (expr->sxml-html descend-prefix->handler-ht a nesting-depth docl-state env))
+
+  (define (handle-top-level-terminal a . states) (if (eqv? (q line-empty) a) (ql br) a))
+  (define (handle-terminal a . states) (pair (handle-top-level-terminal a) states))
+
+  (define itml-parsed->sxml-html
+    (itml-parsed->result-proc (l (a nesting-depth docl-state env) (process-lines a))
+      (itml-descend-proc descend-expr->sxml-html) (itml-ascend-proc ascend-expr->sxml-html)
+      handle-top-level-terminal handle-terminal))
+
+  (define docl-itml-parsed->sxml-html
+    (docl-itml-parsed->result-proc itml-parsed->sxml-html docl-itml-env-html-sxml))
+
+  (define docl-itml-port->sxml-html
+    (docl-itml-port->result-proc itml-parsed->sxml-html docl-itml-env-html-sxml))
+
+  (define docl-itml-string->sxml-html (docl-itml-string->result-proc docl-itml-port->sxml-html)))

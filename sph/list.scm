@@ -85,6 +85,7 @@
     list-sort-by-list-with-accessor
     list-sort-with-accessor
     map-apply
+    map-selected
     map-map
     map-one
     map-segments
@@ -596,6 +597,11 @@
     "procedure:{any any -> boolean} procedure:{any:list-element -> any} list -> list
     sort list by applying accessor for each argument before comparison. only the order changes, the elements stay the same"
     (list-sort (l (a b) (less? (accessor a) (accessor b))) a))
+
+  (define (map-selected select? proc . a)
+    "procedure procedure list ... -> list
+    apply proc only to elements for which \"select?\" is true. non-matched items are included in the result list"
+    (apply map (l e (if (apply select? e) (apply proc e) e)) a))
 
   (define (map-apply proc . a)
     "procedure:{any ...} list:(list ...)

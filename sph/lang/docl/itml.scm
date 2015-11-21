@@ -43,32 +43,39 @@
 
   (define (module-ref-string env a) (module-ref env (string->symbol a)))
 
-  (define-syntax-rule (itml-list-eval a nesting-depth docl-state env)
-    ((module-ref env (first a)) (eval (pair (q list) (tail a)) env) nesting-depth docl-state))
+  (define-syntax-rule (itml-list-eval a env proc-arguments ...)
+    ((module-ref env (first a)) (eval (pair (q list) (tail a)) env) proc-arguments ...))
 
-  (define-syntax-rule (itml-list-string-eval a nesting-depth docl-state env)
-    ( (module-ref env (string->symbol (first a))) (eval (list (q quote) (tail a)) env) nesting-depth
-      docl-state))
+  (define-syntax-rule (itml-list-string-eval a env proc-arguments ...)
+    ( (module-ref env (string->symbol (first a))) (eval (list (q quote) (tail a)) env)
+      proc-arguments ...))
 
-  (define (itml-eval-list-string-1 a nesting-depth docl-state env)
-    (itml-list-string-eval a nesting-depth docl-state env))
+  (define (itml-eval-ascend-list-string-1 a nesting-depth docl-state env)
+    (itml-list-string-eval a env nesting-depth docl-state))
 
-  (define (itml-eval-descend-indent-scm-expr a re-descend nesting-depth docl-state env)
+  (define (itml-eval-descend-list-string-1 a nesting-depth docl-state env)
+    (itml-list-string-eval a env nesting-depth docl-state))
+
+  (define (itml-eval-descend-indent-scm-expr a nesting-depth docl-state env)
     (let (a (string->datum (parenthesise (string-join (flatten a) " ")) read))
-      (itml-list-eval a nesting-depth docl-state env)))
+      (itml-list-eval a env nesting-depth docl-state)))
 
-  (define (itml-eval-descend-line-scm-expr a re-descend nesting-depth docl-state env)
+  (define (itml-eval-descend-line-scm-expr a nesting-depth docl-state env)
     (let (a (string->datum (parenthesise (string-join a " ")) read))
-      (itml-list-eval a nesting-depth docl-state env)))
+      (itml-list-eval a env nesting-depth docl-state)))
 
-  (define (itml-eval-descend-inline-scm-expr a re-descend nesting-depth docl-state env)
-    (let (a (string->datum (first a) read)) (itml-list-eval a nesting-depth docl-state env)))
+  (define (itml-eval-descend-inline-scm-expr a nesting-depth docl-state env)
+    (let (a (string->datum (first a) read)) (itml-list-eval a env nesting-depth docl-state)))
 
-  (define itml-eval-descend-line-expr itml-eval-list-string-1)
-  (define itml-eval-descend-indent-descend-expr itml-eval-list-string-1)
-  (define itml-eval-ascend-inline-expr itml-eval-list-string-1)
-  (define itml-eval-ascend-line-expr itml-eval-list-string-1)
-  (define itml-eval-ascend-indent-expr itml-eval-list-string-1)
+  (define itml-eval-descend-line-expr itml-eval-descend-list-string-1)
+  (define itml-eval-descend-indent-descend-expr itml-eval-descend-list-string-1)
+  ;(define itml-eval-ascend-inline-expr itml-eval-ascend-list-string-1)
+
+  (define (itml-eval-ascend-inline-expr a nesting-depth docl-state env)
+    (itml-list-string-eval a env nesting-depth docl-state))
+
+  (define itml-eval-ascend-line-expr itml-eval-ascend-list-string-1)
+  (define itml-eval-ascend-indent-expr itml-eval-ascend-list-string-1)
 
   (define (itml-ascend-proc create-result) "environment integer -> procedure"
     (l (a nesting-depth docl-state env) "list integer vhash environment -> any"
