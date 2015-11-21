@@ -1,11 +1,14 @@
 (library (sph lang docl itml-to-sxml-html)
   (export
+    docl-itml-env-sxml-html
+    docl-itml-env-sxml-html-module-names
     docl-itml-parsed->sxml-html
     docl-itml-port->sxml-html
     docl-itml-string->sxml-html
-    docl-itml-sxml-html-env
     docl-itml-sxml-html-env-module-names
     itml-parsed->sxml-html
+    section
+    sxml-html-heading
     process-lines)
   (import
     (guile)
@@ -92,9 +95,10 @@
   (define-syntax-rule (list->sxml a nesting-depth)
     (if (heading-section? a) (join-heading-section a nesting-depth) a))
 
-  (define docl-itml-env-html-sxml
-    (apply environment (q (sph lang docl env itml-to-sxml-html)) docl-default-env-module-names))
+  (define docl-itml-env-sxml-html-module-names
+    (pair (q (sph lang docl env itml-to-sxml-html)) docl-default-env-module-names))
 
+  (define docl-itml-env-sxml-html (apply environment docl-itml-env-sxml-html-module-names))
   (define (ascend-handle-line a nesting-depth docl-state env) (if (null? a) "" (add-spaces a)))
   (define (descend-handle-double-backslash a nesting-depth docl-state env) "\\")
 
@@ -132,10 +136,6 @@
       (itml-descend-proc descend-expr->sxml-html) (itml-ascend-proc ascend-expr->sxml-html)
       handle-top-level-terminal handle-terminal))
 
-  (define docl-itml-parsed->sxml-html
-    (docl-itml-parsed->result-proc itml-parsed->sxml-html docl-itml-env-html-sxml))
-
-  (define docl-itml-port->sxml-html
-    (docl-itml-port->result-proc itml-parsed->sxml-html docl-itml-env-html-sxml))
-
+  (define docl-itml-parsed->sxml-html (docl-itml-parsed->result-proc itml-parsed->sxml-html))
+  (define docl-itml-port->sxml-html (docl-itml-port->result-proc itml-parsed->sxml-html))
   (define docl-itml-string->sxml-html (docl-itml-string->result-proc docl-itml-port->sxml-html)))

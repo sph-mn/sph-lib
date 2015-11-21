@@ -25,7 +25,7 @@
   (define docl-state-empty vlist-null)
 
   (define (call-with-docl get-source-identifier get-source-position input proc docl-state)
-    "{any:input -> any} {input -> any} symbol-hashtable/boolean boolean boolean/(symbol ..) any:input {input -> any} -> any/string
+    "{any:input -> any} {input -> any} any {input -> any} vhash -> any/string
     installs a handler that amends exceptions with source information so that an exception-handler
     receives the arguments (key source-name source-position other-exception-arguments ...) for exceptions matching exception-keys.
     sets up the circular inclusion protection and bindings which are accessible with
@@ -51,7 +51,7 @@
     (call-with-docl equal-hash #f input proc docl-state))
 
   (define (docl-translate-port input proc docl-state)
-    "port procedure:{port -> any} symbol-hashtable/boolean boolean -> any
+    "port procedure:{port -> any} vhash -> any
     calls proc with input and enables docl features as with call-with-docl.
     input must be a port, and the source-identifier and source-position arguments for exceptions are set using port-filename and port-position"
     (call-with-docl port-filename port-position input proc docl-state)))

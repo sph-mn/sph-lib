@@ -88,24 +88,22 @@
         (if r (list r #f nesting-depth docl-state env)
           (list #f #t (+ 1 nesting-depth) docl-state env)))))
 
-  (define (docl-itml-port->result-proc create-result default-env)
-    (l* (input #:optional (nesting-depth 0) (docl-state docl-state-empty) (env default-env))
-      "read itml from a port, parse it and translate it to text"
-      (docl-translate-port input
-        (l (input docl-state)
-          (create-result (port->itml-parsed input) nesting-depth docl-state env))
+  (define (docl-itml-port->result-proc create-result)
+    (l (a nesting-depth docl-state env) "read itml from a port, parse it and translate it to text"
+      (docl-translate-port a
+        (l (a docl-state) (create-result (port->itml-parsed a) nesting-depth docl-state env))
         docl-state)))
 
   (define (docl-itml-string->result-proc port->result)
-    (l (input . port->result-arguments) "string _ ... -> text"
-      (apply port->result (open-input-string input) port->result-arguments)))
+    (l (a . port->result-arguments) "string _ ... -> text"
+      (apply port->result (open-input-string a) port->result-arguments)))
 
-  (define (docl-itml-parsed->result-proc itml-parsed->result default-env)
-    (l* (input #:optional (nesting-depth 0) (docl-state docl-state-empty) (env default-env))
+  (define (docl-itml-parsed->result-proc itml-parsed->result)
+    (l (a nesting-depth docl-state env)
       "list [integer vhash environment] -> any
       this can also be used to convert list trees with strings to html"
-      (docl-translate-any input
-        (l (input docl-state) (itml-parsed->result input nesting-depth docl-state env)) docl-state)))
+      (docl-translate-any a (l (a docl-state) (itml-parsed->result a nesting-depth docl-state env))
+        docl-state)))
 
   (define
     (itml-parsed->result-proc create-result descend ascend handle-top-level-terminal

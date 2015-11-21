@@ -64,7 +64,7 @@
       handle-top-level-terminal handle-terminal))
 
   (define docl-itml-parsed->text
-    (docl-itml-parsed->result-proc itml-parsed->text docl-itml-env-text))
+    (docl-itml-parsed->result-proc itml-parsed->text))
 
-  (define docl-itml-port->text (docl-itml-port->result-proc itml-parsed->text docl-itml-env-text))
+  (define docl-itml-port->text (docl-itml-port->result-proc itml-parsed->text))
   (define docl-itml-string->text (docl-itml-string->result-proc docl-itml-port->text)))
