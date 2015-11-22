@@ -2,6 +2,7 @@
   (export
     escape
     scm
+    sxml
     text-reverse)
   (import
     (guile)
@@ -9,6 +10,7 @@
     (sph)
     (only (sph lang indent-syntax) prefix-tree->indent-tree-string))
 
+  (define (sxml a nesting-depth docl-state) a)
   (define (scm a nesting-depth docl-state) a)
   (define (text-reverse a nesting-depth docl-state) (pair (q div) (reverse a)))
 

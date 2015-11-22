@@ -18,7 +18,7 @@
     like pass-if but uses apply to use the contents of \"a\" as arguments to proc"
     (if a (apply proc a) #f))
 
-  (define-syntax-rules pass-if
+ (define-syntax-rules pass-if
     ;"any procedure:{any -> any} -> any
     ;apply proc with "a" if "a" is a true value, otherwise return false or evaluate else"
     ((a proc) ((lambda (b) (if b (proc b) #f)) a))
@@ -42,14 +42,12 @@
     (if test consequent #f))
 
   (define-syntax-rules check
-    ;return the result of executing expr only after all given proc applied with the result
-    ;resulted in a true value
+    ;the result of "expr" is passed to all "proc" separately. if all are true, the result of expr is the result, otherwise false
     (((proc ...) expr) ((lambda (r) (and (proc r) ...) r #f) expr))
     ((proc expr) ((lambda (r) (if (proc r) r #f)) expr)))
 
   (define-syntax-rules check-not
-    ;return the result of executing expr only after none of the given proc applied with the result
-    ;resulted in a true value
+    ;the result of "expr" is passed to all "proc" separately. if none are true, the result of expr is the result, otherwise false
     (((proc ...) expr) ((lambda (r) (if (or (proc r) ...) #f r)) expr))
     ((proc expr) ((lambda (r) (if (proc r) #f r)) expr)))
 
