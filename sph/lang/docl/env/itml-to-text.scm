@@ -1,8 +1,7 @@
 (library (sph lang docl env itml-to-text)
   (export
     escape
-    scm
-    text-reverse)
+    scm)
   (import
     (rnrs base)
     (sph)
@@ -16,8 +15,6 @@
 
   (define (scm nesting-depth docl-state . a)
     (if (null? a) a (if (list? (first a)) (first a) (string-join (map any->string a) " "))))
-
-  (define (text-reverse nesting-depth docl-state . a) (string-join (reverse a) " "))
 
   (define (escape nesting-depth docl-state . a)
     (string-join
