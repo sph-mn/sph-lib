@@ -22,7 +22,7 @@
     (only (sph two) vhash-refq vhash-setq))
 
   (define docl-default-env-module-names (ql (sph lang docl env default)))
-  (define docl-state-empty vlist-null)
+  (define docl-state-empty (list))
 
   (define (call-with-docl get-source-identifier get-source-position input proc docl-state)
     "{any:input -> any} {input -> any} any {input -> any} vhash -> any/string
@@ -30,20 +30,15 @@
     receives the arguments (key source-name source-position other-exception-arguments ...) for exceptions matching exception-keys.
     sets up the circular inclusion protection and bindings which are accessible with
     the procedures from (sph lang docl env). then calls \"proc\" with \"input\""
-    (let (thread (current-thread))
-      (let
-        ( (source-name (get-source-identifier input))
-          (recursion-stack (or (vhash-refq docl-state thread) (list))))
-        (if (and source-name (contains? recursion-stack source-name)) ""
-          (let*
-            ( (recursion-stack (pair source-name recursion-stack))
-              (docl-state (vhash-setq docl-state thread recursion-stack)))
-            (first-as-result
-              (catch #t (thunk (proc input docl-state))
-                (l (key . args)
-                  (error-create key args
-                    (pair source-name (and get-source-position (get-source-position input))))))
-              (vhash-setq docl-state thread (tail recursion-stack))))))))
+    (let (source-name (get-source-identifier input))
+      (if (and source-name (contains? docl-state source-name)) ""
+        (let (docl-state (pair source-name docl-state))
+          (first-as-result
+            (catch #t (thunk (proc input docl-state))
+              (l (key . args)
+                (error-create key args
+                  (pair source-name (and get-source-position (get-source-position input))))))
+            (tail docl-state))))))
 
   (define (docl-translate-any input proc docl-state)
     "calls proc with input and enables docl features as with call-with-docl.
