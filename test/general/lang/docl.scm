@@ -1,5 +1,5 @@
 (import (sph) (sph test) (sph lang docl) (sph lang docl itml-to-sxml-html))
-(define (test-itml->sxml-html inp) (docl-itml-port->sxml-html (open-input-string inp)))
+(define (test-itml->sxml-html inp) (docl-itml-string->sxml-html inp 0 docl-state-empty docl-itml-env-sxml-html))
 
 (execute-tests-quasiquote
   (itml->sxml-html "\\\\.(+ 1 2)" ((p "\\.(+ 1 2)"))

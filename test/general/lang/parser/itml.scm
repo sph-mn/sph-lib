@@ -1,7 +1,7 @@
 (import (sph) (sph test) (sph lang parser itml))
 
 (execute-tests-quasiquote
-  (string->parsed-itml
+  (string->itml-parsed
     "aa: \\\\.(+ 1 2)" ((association "aa" "\\.(+ 1 2)"))
     "\\.keyword content\non\nmultiple lines\n" (indent-scm-expr "keyword" " content" "on" "multiple lines")
     "\\.keyword content\n  (a b)\n  \\.(+ 1 2) \"c\"" ((indent-scm-expr "keyword" " content" "(a b)" "\\.(+ 1 2) \"c\""))
