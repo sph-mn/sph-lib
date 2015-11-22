@@ -40,7 +40,7 @@
     inline-scm-expr itml-eval-descend-inline-scm-expr
     line-scm-expr itml-eval-descend-line-scm-expr
     indent-scm-expr itml-eval-descend-indent-scm-expr
-    indent-descend-expr itml-eval-descend-indent-descend-expr
+    indent-descend-expr itml-eval-descend-indent-expr
     double-backslash descend-handle-double-backslash)
 
   (define-syntax-rule (expr->text prefix->handler a proc-arguments ...)

@@ -1,3 +1,5 @@
+;generic bindings to evaluate itml expressions a and convert from itml to another language
+
 (library (sph lang docl itml)
   (export
     docl-itml-parsed->result-proc
@@ -9,7 +11,7 @@
     itml-eval-ascend-indent-expr
     itml-eval-ascend-inline-expr
     itml-eval-ascend-line-expr
-    itml-eval-descend-indent-descend-expr
+    itml-eval-descend-indent-expr
     itml-eval-descend-indent-scm-expr
     itml-eval-descend-inline-expr
     itml-eval-descend-inline-scm-expr
@@ -17,6 +19,7 @@
     itml-eval-descend-line-scm-expr
     itml-parsed->result-proc)
   (import
+    (ice-9 threads)
     (rnrs base)
     (rnrs eval)
     (sph)
@@ -31,6 +34,7 @@
       read
       open-input-string)
     (only (sph lang indent-syntax) prefix-tree->indent-tree-string)
+    (only (sph list) simplify-list)
     (only (sph one) string->datum)
     (only (sph string) parenthesise)
     (only (sph tree) flatten tree-transform-with-state))
@@ -41,41 +45,36 @@
     itml-parsed is still considered belonging to the top-level"
     (max 0 (- a 1)))
 
-  (define (module-ref-string env a) (module-ref env (string->symbol a)))
-
-  (define-syntax-rule (itml-list-eval a env proc-arguments ...)
-    ((module-ref env (first a)) (eval (pair (q list) (tail a)) env) proc-arguments ...))
+  (define (itml-list-eval a env . proc-arguments)
+    (let
+      ( (docl-call (l (proc . arguments) (apply proc arguments proc-arguments)))
+        (docl-proc
+          (eval
+            (qq
+              (l (docl-call nesting-depth docl-state)
+                ((unquote (first a)) nesting-depth docl-state (unquote-splicing (tail a)))))
+            env)))
+      (apply docl-proc docl-call proc-arguments)))
 
   (define-syntax-rule (itml-list-string-eval a env proc-arguments ...)
-    ( (module-ref env (string->symbol (first a))) (eval (list (q quote) (tail a)) env)
+    (itml-list-eval (pair (string->symbol (first a)) (map (l (a) (list (q quote) a)) (tail a))) env
       proc-arguments ...))
 
-  (define (itml-eval-ascend-list-string-1 a nesting-depth docl-state env)
+  (define (itml-eval-1 a nesting-depth docl-state env)
     (itml-list-string-eval a env nesting-depth docl-state))
 
-  (define (itml-eval-descend-list-string-1 a nesting-depth docl-state env)
-    (itml-list-string-eval a env nesting-depth docl-state))
-
-  (define (itml-eval-descend-indent-scm-expr a nesting-depth docl-state env)
-    (let (a (string->datum (parenthesise (string-join (flatten a) " ")) read))
+  (define (itml-eval-2 a nesting-depth docl-state env)
+    (let (a (simplify-list (string->datum (parenthesise (string-join a " ")) read)))
       (itml-list-eval a env nesting-depth docl-state)))
 
-  (define (itml-eval-descend-line-scm-expr a nesting-depth docl-state env)
-    (let (a (string->datum (parenthesise (string-join a " ")) read))
-      (itml-list-eval a env nesting-depth docl-state)))
-
-  (define (itml-eval-descend-inline-scm-expr a nesting-depth docl-state env)
-    (let (a (string->datum (first a) read)) (itml-list-eval a env nesting-depth docl-state)))
-
-  (define itml-eval-descend-line-expr itml-eval-descend-list-string-1)
-  (define itml-eval-descend-indent-descend-expr itml-eval-descend-list-string-1)
-  ;(define itml-eval-ascend-inline-expr itml-eval-ascend-list-string-1)
-
-  (define (itml-eval-ascend-inline-expr a nesting-depth docl-state env)
-    (itml-list-string-eval a env nesting-depth docl-state))
-
-  (define itml-eval-ascend-line-expr itml-eval-ascend-list-string-1)
-  (define itml-eval-ascend-indent-expr itml-eval-ascend-list-string-1)
+  (define itml-eval-descend-line-scm-expr itml-eval-2)
+  (define itml-eval-descend-inline-scm-expr itml-eval-2)
+  (define itml-eval-descend-indent-scm-expr itml-eval-2)
+  (define itml-eval-descend-line-expr itml-eval-1)
+  (define itml-eval-descend-indent-expr itml-eval-1)
+  (define itml-eval-ascend-inline-expr itml-eval-1)
+  (define itml-eval-ascend-line-expr itml-eval-1)
+  (define itml-eval-ascend-indent-expr itml-eval-1)
 
   (define (itml-ascend-proc create-result) "environment integer -> procedure"
     (l (a nesting-depth docl-state env) "list integer vhash environment -> any"
@@ -112,7 +111,7 @@
       "list [integer vhash environment] -> any
       a translator for itml-parsed"
       (create-result
-        (map
+        (par-map
           (l (e)
             (if (list? e)
               (first
