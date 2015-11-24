@@ -89,7 +89,7 @@
                 (l (a path-lib-scheme) (if (eqv? (q path-lib-scheme) a) path-lib-scheme a)))
               (handle-list-path
                 (l (a path-lib-scheme) "list string -> string:path"
-                  (apply path-append (map handle-symbol-path a))))
+                  (apply path-append (map (l (e) (handle-symbol-path e path-lib-scheme)) a))))
               (handle-target+source-one-proc
                 (l (path-lib-scheme)
                   (l (e)
