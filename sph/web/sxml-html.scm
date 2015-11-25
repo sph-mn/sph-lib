@@ -46,9 +46,9 @@
       (map (l (ele) (list (q li) (if (list? ele) (sxml-html-list->list ele) (any->string ele))))
         arg)))
 
-  (define (sxml-html-list->table arg) "(list/pair:columns ...) -> sxml"
+  (define (sxml-html-list->table a) "((sxml ...) ...) -> sxml"
     (pair (q table)
       (map
-        (l (ele)
-          (pair (q tr) (map (l (ele) (list (q td) ele)) (if (pair? ele) (pair->list ele) ele))))
-        arg))))
+        (l (e)
+          (pair (q tr) (map (l (e) (list (q td) e)) e)))
+        a))))
