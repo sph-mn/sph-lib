@@ -9,7 +9,7 @@
     (sph)
     (only (sph lang indent-syntax) prefix-tree->indent-tree-string))
 
-  (define-syntax-rule (sxml nesting-depth docl-state a) (qq a))
+  (define-syntax-rule (sxml nesting-depth docl-state a ...) (qq (a ...)))
 
   (define (scm nesting-depth docl-state . a) (first a))
 

@@ -64,7 +64,7 @@
     (itml-list-string-eval a env nesting-depth docl-state))
 
   (define (itml-eval-2 a nesting-depth docl-state env)
-    (let (a (simplify-list (string->datum (parenthesise (string-join a " ")) read)))
+    (let (a (simplify-list (string->datum (parenthesise (string-join (flatten a) " ")) read)))
       (itml-list-eval a env nesting-depth docl-state)))
 
   (define itml-eval-descend-line-scm-expr itml-eval-2)
