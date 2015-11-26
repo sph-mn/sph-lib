@@ -7,15 +7,16 @@
     docl-itml-string->sxml-html
     docl-itml-sxml-html-env-module-names
     itml-parsed->sxml-html
+    process-lines
     section
-    sxml-html-heading
-    process-lines)
+    sxml-html-heading)
   (import
     (guile)
     (rnrs base)
     (rnrs eval)
     (sph)
     (sph lang docl)
+    (sph lang itml)
     (sph lang docl env itml-to-sxml-html)
     (sph lang docl itml)
     (sph lang parser itml)
@@ -133,8 +134,9 @@
 
   (define itml-parsed->sxml-html
     (itml-parsed->result-proc (l (a nesting-depth docl-state env) (process-lines a))
-      (itml-descend-proc descend-expr->sxml-html) (itml-ascend-proc ascend-expr->sxml-html)
-      handle-top-level-terminal handle-terminal))
+      (itml-descend-proc descend-expr->sxml-html)
+      (itml-ascend-proc ascend-expr->sxml-html itml-adjust-nesting-depth) handle-top-level-terminal
+      handle-terminal))
 
   (define docl-itml-parsed->sxml-html (docl-itml-parsed->result-proc itml-parsed->sxml-html))
   (define docl-itml-port->sxml-html (docl-itml-port->result-proc itml-parsed->sxml-html))

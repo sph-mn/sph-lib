@@ -66,7 +66,8 @@
     (and unescaped-backslash ignored-dot identifier ignored-association-infix (* peg-any)))
 
   (define-peg-pattern indent-scm-expr all
-    (and unescaped-backslash ignored-dot identifier (not-followed-by association-infix) (* peg-any)))
+    (and unescaped-backslash ignored-dot
+      identifier (not-followed-by association-infix) (? ignored-space) (* peg-any)))
 
   (define-peg-pattern indent-expr all
     (and unescaped-backslash (not-followed-by ".") identifier (? (and ignored-space (* peg-any)))))
@@ -74,7 +75,7 @@
   (define-peg-pattern indent-descend-expr all
     (and unescaped-backslash (ignore "#") identifier (? (and ignored-space (* peg-any)))))
 
-  (define-peg-pattern escaped-association-infix body (and unescaped-backslash ": "))
+  (define-peg-pattern escaped-association-infix all (and unescaped-backslash ": "))
 
   (define-peg-pattern association all
     (and

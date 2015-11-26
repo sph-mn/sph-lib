@@ -15,6 +15,7 @@
     (sph)
     (sph conditional)
     (sph hashtable)
+    (sph lang itml)
     (sph lang docl)
     (sph lang docl itml)
     (sph lang indent-syntax)
@@ -52,19 +53,16 @@
   (define (descend-expr->text a re-descend nesting-depth docl-state env)
     (expr->text descend-prefix->handler-ht a nesting-depth docl-state env))
 
-  (define (handle-top-level-terminal a . states)
-    (if (eqv? (q line-empty) a) "" a))
-
+  (define (handle-top-level-terminal a . states) (if (eqv? (q line-empty) a) "" a))
   (define (handle-terminal a . states) (pair (apply handle-top-level-terminal a states) states))
 
   (define itml-parsed->text
     (itml-parsed->result-proc
       (l (a nesting-depth docl-state env) (prefix-tree->indent-tree-string a nesting-depth))
-      (itml-descend-proc descend-expr->text) (itml-ascend-proc ascend-expr->text)
-      handle-top-level-terminal handle-terminal))
+      (itml-descend-proc descend-expr->text)
+      (itml-ascend-proc ascend-expr->text itml-adjust-nesting-depth) handle-top-level-terminal
+      handle-terminal))
 
-  (define docl-itml-parsed->text
-    (docl-itml-parsed->result-proc itml-parsed->text))
-
+  (define docl-itml-parsed->text (docl-itml-parsed->result-proc itml-parsed->text))
   (define docl-itml-port->text (docl-itml-port->result-proc itml-parsed->text))
   (define docl-itml-string->text (docl-itml-string->result-proc docl-itml-port->text)))

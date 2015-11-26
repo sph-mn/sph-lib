@@ -1,13 +1,11 @@
-;generic bindings to evaluate itml expressions a and convert from itml to another language
+;generic bindings, building blocks, to evaluate itml expressions a and convert from itml to another language
 
 (library (sph lang docl itml)
   (export
     docl-itml-parsed->result-proc
     docl-itml-port->result-proc
     docl-itml-string->result-proc
-    itml-adjust-level
-    itml-ascend-proc
-    itml-descend-proc
+    itml-adjust-nesting-depth
     itml-eval-ascend-indent-expr
     itml-eval-ascend-inline-expr
     itml-eval-ascend-line-expr
@@ -16,8 +14,7 @@
     itml-eval-descend-inline-expr
     itml-eval-descend-inline-scm-expr
     itml-eval-descend-line-expr
-    itml-eval-descend-line-scm-expr
-    itml-parsed->result-proc)
+    itml-eval-descend-line-scm-expr)
   (import
     (ice-9 threads)
     (rnrs base)
@@ -39,7 +36,7 @@
     (only (sph string) parenthesise)
     (only (sph tree) flatten tree-transform-with-state))
 
-  (define (itml-adjust-level a)
+  (define (itml-adjust-nesting-depth a)
     "integer -> integer
     level 0 and 1 are equivalent because content of nested-lists on the top-level in
     itml-parsed is still considered belonging to the top-level"
@@ -76,17 +73,6 @@
   (define itml-eval-ascend-line-expr itml-eval-1)
   (define itml-eval-ascend-indent-expr itml-eval-1)
 
-  (define (itml-ascend-proc create-result) "environment integer -> procedure"
-    (l (a nesting-depth docl-state env) "list integer vhash environment -> any"
-      (list (create-result a (itml-adjust-level nesting-depth) docl-state env) (- nesting-depth 1)
-        docl-state env)))
-
-  (define (itml-descend-proc create-result)
-    (l (a re-descend nesting-depth docl-state env)
-      (let (r (create-result a re-descend nesting-depth docl-state env))
-        (if r (list r #f nesting-depth docl-state env)
-          (list #f #t (+ 1 nesting-depth) docl-state env)))))
-
   (define (docl-itml-port->result-proc create-result)
     (l (a nesting-depth docl-state env) "read itml from a port, parse it and translate it to text"
       (docl-translate-port a
@@ -102,21 +88,4 @@
       "list [integer vhash environment] -> any
       this can also be used to convert list trees with strings to html"
       (docl-translate-any a (l (a docl-state) (itml-parsed->result a nesting-depth docl-state env))
-        docl-state)))
-
-  (define
-    (itml-parsed->result-proc create-result descend ascend handle-top-level-terminal
-      handle-terminal)
-    (l (a nesting-depth docl-state env)
-      "list [integer vhash environment] -> any
-      a translator for itml-parsed"
-      (create-result
-        (par-map
-          (l (e)
-            (if (list? e)
-              (first
-                (tree-transform-with-state e descend
-                  ascend handle-terminal nesting-depth docl-state env))
-              (handle-top-level-terminal e nesting-depth docl-state env)))
-          a)
-        nesting-depth docl-state env))))
+        docl-state))))
