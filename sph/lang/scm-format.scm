@@ -23,7 +23,7 @@
       string-join)
     (only (sph string)
       any->string
-      any->string-write
+      any->string-write*
       string-multiply)
     (only (sph tree) tree-transform-with-state))
 
@@ -86,7 +86,7 @@
           (- current-indent 1)))
       (l (expr current-indent)
         (list
-          (if (string? expr) (format-string expr config current-indent) (any->string-write expr))
+          (if (string? expr) (format-string expr config current-indent) (any->string-write* expr))
           current-indent))
       nesting-depth))
 

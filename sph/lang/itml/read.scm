@@ -1,4 +1,6 @@
-(library (sph lang parser itml)
+; itml -> syntax-tree
+
+(library (sph lang itml read)
   (export
     path->itml-parsed
     port->itml-parsed
@@ -126,17 +128,21 @@
     (let (e (peg:tree (match-pattern line a)))
       (if (list? e) (if (= 2 (length e)) (first (tail e)) e) (if (symbol? e) (q line-empty) e))))
 
+  (define (read-scm-expr a) (string->datum (any->string-display a) read))
+
   (define-as prefix->handler-ht symbol-hashtable
-    inline-scm-expr
-    (l (a) (pair (q inline-scm-expr) (simplify-list (string->datum (any->string-display a) read))))
-    line-scm-expr (l (a) (pair (q line-scm-expr) (string->datum (any->string-display a) read)))
-    indent-scm-expr (l (a) (pair (q indent-scm-expr) (string->datum (any->string-display a) read)))
+    inline-scm-expr (l (a) (pair (q inline-scm-expr) (simplify-list (read-scm-expr a))))
+    line-scm-expr (l (a) (pair (q line-scm-expr) (read-scm-expr a)))
+    indent-scm-expr
+    (l (a) (let (a (read-scm-expr a)) (pair (q indent-scm-expr) (list (first a) (tail a)))))
     identifier (l (a) (first a))
     inline-expr-inner identity
     ;if the association infix would not be parsed as a list it would be merged with the text or left out by the peg-parser
     association-infix (const #f)
     association (l (a) (pair (q association) (remove not a)))
-    inline-expr (l (a) (pairs (q inline-expr) (string-trim-right (first a)) (tail a))))
+    inline-expr
+    (l (a) (debug-log (q inline-expr) a)
+      (pairs (q inline-expr) (string-trim-right (first a)) (tail a))))
 
   (define finalise-tree
     (let

@@ -234,7 +234,7 @@
   (define (tree-map-leafs proc a)
     "procedure:{any -> any} list -> list
     apply proc only with non-list elements, skipping but keeping list-type elements"
-    (map (l (e) (if (list? e) (tree-map proc e) (proc e))) a))
+    (map (l (e) (if (list? e) (tree-map-leafs proc e) (proc e))) a))
 
   (define (tree-map-with-level->flat-list proc a . start-level)
     "procedure:{integer:nesting-depth any:element -> any:result-element} list [integer] -> (any ...)

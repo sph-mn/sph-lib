@@ -15,8 +15,9 @@
 (library (sph string)
   (export
     any->string
-    any->string-write
     any->string-display
+    any->string-write
+    any->string-write*
     list->string-columns
     list-string-append-each
     parenthesise
@@ -26,15 +27,14 @@
     string-camelcase->dashes
     string-case
     string-contains-any?
+    string-contains-char?
     string-contains-every?
     string-downcase-first
     string-drop-prefix
-    string-drop-suffix
     string-drop-prefix-if-exists
+    string-drop-suffix
     string-drop-suffix-if-exists
     string-each
-    any->string-display
-    string-contains-char?
     string-enclose
     string-equal?
     string-indices
@@ -64,9 +64,15 @@
     (only (sph list) fold-multiple))
 
   (define string-equal? string=)
-(define (string-contains-char? a char) "string character -> boolean"
-  (true? (string-index a char)))
-(define (any->string-write a) (object->string a write))
+
+  (define (string-contains-char? a char) "string character -> boolean"
+    (if (string-index a char) #t #f))
+
+  (define (any->string-write* a)
+    "write converts symbols like \".\" to #{.}, this procedure avoids this"
+    (if (symbol? a) (symbol->string a) (any->string-write a)))
+
+  (define (any->string-write a) (object->string a write))
   (define (any->string-display a) (object->string a display))
 
   (define (string-slice-at-words a slice-length)

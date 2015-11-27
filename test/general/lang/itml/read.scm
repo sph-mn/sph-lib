@@ -1,17 +1,27 @@
-(import (sph) (sph test) (sph lang parser itml))
+(import (sph) (sph test) (sph lang itml read) (sph lang itml write))
 
 ;nested with each other
 ;01 01 010 011
 
+(define test-env-list-1 (q (a (b ("c" d)))))
+(define test-env-list-2 (q ("a" ("b" ("c d")))))
+(define simple-inline-scm-expr (itml-create-inline-scm-expr test-env-list-1))
+(define simple-line-scm-expr (itml-create-line-scm-expr test-env-list-1))
+(define simple-indent-scm-expr (itml-create-indent-scm-expr test-env-list-1))
+(define simple-inline-expr (itml-create-inline-expr test-env-list-2))
+(define simple-line-expr (itml-create-inline-expr test-env-list-2))
+(define simple-indent-expr (itml-create-inline-expr test-env-list-2))
+
 (execute-tests-quasiquote
   (string->itml-parsed
     ;inline-scm
-    "\\.(a (b (\"c\" d)))" ((inline-scm-expr a (b ("c" d))))
+    (unquote simple-inline-scm-expr) ((unquote (pair (q inline-scm-expr) test-env-list-1)))
     ;line-scm
-    "\\.a: \"b\" (c)" ((line-scm-expr a "b" (c)))
+    (unquote simple-line-scm-expr) ((unquote (pair (q line-scm-expr) test-env-list-1)))
     ;indent-scm
-    "\\.a\n  \"b\"\n    c" ((indent-scm-expr a ("b" c)))
+    (unquote simple-indent-scm-expr) ((unquote (pair (q indent-scm-expr) test-env-list-1)))
     ;inline
+    (unquote simple-inline-expr) ((unquote (pair (q inline-expr) test-env-list-2)))
     ;line
     ;indent
     ;association
