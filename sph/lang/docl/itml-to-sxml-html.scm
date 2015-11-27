@@ -19,7 +19,7 @@
     (sph lang itml)
     (sph lang docl env itml-to-sxml-html)
     (sph lang docl itml)
-    (sph lang parser itml)
+    (sph lang itml read)
     (sph list)
     (sph read-write)
     (sph set)

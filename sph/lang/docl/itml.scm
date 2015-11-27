@@ -22,7 +22,7 @@
     (sph)
     (sph conditional)
     (sph lang docl)
-    (sph lang parser itml)
+    (sph lang itml read)
     (only (guile)
       call-with-output-string
       display

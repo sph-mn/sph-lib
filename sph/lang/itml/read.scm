@@ -26,6 +26,7 @@
     (only (sph one) string->datum)
     (only (sph string)
       parenthesise
+      any->string
       any->string-display
       any->string-write)
     (only (srfi srfi-1) remove))
@@ -40,13 +41,14 @@
   (define-peg-pattern ignored-closing-parenthesis none ")")
 
   (define-peg-pattern association-left-char body
-    (or (range #\a #\z) (range #\0 #\9) " " "-" "\"" "?" "*" "!" "#" ">" "<" "." "+" "_" "/"))
+    (or (range #\a #\z) (range #\0 #\9) " " "-" "\"" "?" "*" "!" "#" ">" "<" "." "+" "_" "/" "$"))
 
   (define-peg-pattern identifier all
-    (+ (or (range #\a #\z) (range #\0 #\9) "-" "?" "*" "!" "#" ">" "<" "." "+" "_" "/")))
+    (+ (or (range #\a #\z) (range #\0 #\9) "-" "?" "*" "!" "#" ">" "<" "." "+" "_" "/" "$")))
 
   (define-peg-pattern inline-expr-inner all
-    (and ignored-opening-parenthesis
+    ;the inner expressions are parsed to end the expression at the appropriate closing parenthesis
+    (and (? ignored-space) ignored-opening-parenthesis
       (*
         (or inline-expr-inner double-backslash
           line-scm-expr line-expr
@@ -135,14 +137,15 @@
     line-scm-expr (l (a) (pair (q line-scm-expr) (read-scm-expr a)))
     indent-scm-expr
     (l (a) (let (a (read-scm-expr a)) (pair (q indent-scm-expr) (list (first a) (tail a)))))
+    line-expr (l (a) (pair (q line-expr) a))
+    ;indent-expr (l (a) (debug-log a) (list (q indent-expr) (first a) (tail a)))
     identifier (l (a) (first a))
     inline-expr-inner identity
     ;if the association infix would not be parsed as a list it would be merged with the text or left out by the peg-parser
-    association-infix (const #f)
-    association (l (a) (pair (q association) (remove not a)))
-    inline-expr
-    (l (a) (debug-log (q inline-expr) a)
-      (pairs (q inline-expr) (string-trim-right (first a)) (tail a))))
+    association
+    (l (a)
+      (let* ((content (tail (tail a))) (content-prefix (first content)))
+        (pairs (q association) (first a) (if (list? content-prefix) content-prefix content)))))
 
   (define finalise-tree
     (let
