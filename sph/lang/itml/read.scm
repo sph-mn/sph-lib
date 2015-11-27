@@ -13,20 +13,29 @@
       open-input-string
       call-with-input-file
       string-trim-right
+      string-join
+      identity
+      const
+      read
       string-drop-right)
     (only (sph conditional) pass-if)
+    (only (sph hashtable) hashtable-ref symbol-hashtable)
+    (only (sph list) simplify-list)
+    (only (sph one) string->datum)
+    (only (sph string)
+      parenthesise
+      any->string-display
+      any->string-write)
     (only (srfi srfi-1) remove))
 
-  (define-peg-pattern double-backslash all "\\\\")
-  (define-peg-pattern unescaped-backslash none (and "\\" (not-followed-by "\\")))
+  (define-peg-pattern double-backslash body (and ignored-backslash "\\"))
   (define-peg-pattern association-infix all ": ")
+  (define-peg-pattern ignored-association-infix none ": ")
   (define-peg-pattern ignored-dot none ".")
+  (define-peg-pattern ignored-backslash none "\\")
   (define-peg-pattern ignored-space none " ")
   (define-peg-pattern ignored-opening-parenthesis none "(")
   (define-peg-pattern ignored-closing-parenthesis none ")")
-
-  (define-peg-pattern invalid-association-infix body
-    (and (or unescaped-backslash " ") association-infix))
 
   (define-peg-pattern association-left-char body
     (or (range #\a #\z) (range #\0 #\9) " " "-" "\"" "?" "*" "!" "#" ">" "<" "." "+" "_" "/"))
@@ -43,7 +52,7 @@
       ignored-closing-parenthesis))
 
   (define-peg-pattern inline-expr all
-    (and unescaped-backslash ignored-opening-parenthesis
+    (and ignored-backslash ignored-opening-parenthesis
       (*
         (or inline-expr-inner
           (and (not-followed-by ")") (or (and identifier ignored-space) peg-any))))
@@ -53,35 +62,33 @@
     (and "(" (* (or inline-scm-expr-inner (and (not-followed-by ")") peg-any))) ")"))
 
   (define-peg-pattern inline-scm-expr all
-    (and unescaped-backslash ignored-dot
+    (and ignored-backslash ignored-dot
       "(" (* (or inline-scm-expr-inner (and (not-followed-by ")") peg-any))) ")"))
 
-  (define-peg-pattern ignored-association-infix none ": ")
-
   (define-peg-pattern line-expr all
-    (and unescaped-backslash identifier
+    (and ignored-backslash identifier
       ignored-association-infix (* (or inline-scm-expr line-scm-expr line-expr association peg-any))))
 
   (define-peg-pattern line-scm-expr all
-    (and unescaped-backslash ignored-dot identifier ignored-association-infix (* peg-any)))
+    (and ignored-backslash ignored-dot identifier ignored-association-infix (* peg-any)))
 
   (define-peg-pattern indent-scm-expr all
-    (and unescaped-backslash ignored-dot
-      identifier (not-followed-by association-infix) (? ignored-space) (* peg-any)))
+    (and ignored-backslash ignored-dot
+      identifier (not-followed-by ignored-association-infix) (? ignored-space) (* peg-any)))
 
   (define-peg-pattern indent-expr all
-    (and unescaped-backslash (not-followed-by ".") identifier (? (and ignored-space (* peg-any)))))
+    (and ignored-backslash (not-followed-by ".") identifier (? (and ignored-space (* peg-any)))))
 
   (define-peg-pattern indent-descend-expr all
-    (and unescaped-backslash (ignore "#") identifier (? (and ignored-space (* peg-any)))))
+    (and ignored-backslash (ignore "#") identifier (? (and ignored-space (* peg-any)))))
 
-  (define-peg-pattern escaped-association-infix all (and unescaped-backslash ": "))
+  (define-peg-pattern escaped-association-infix body (and ignored-backslash ": "))
 
   (define-peg-pattern association all
     (and
       (+
-        (and (not-followed-by (or (and " " association-infix) escaped-association-infix))
-          association-left-char))
+        (and (not-followed-by (or (and " " ignored-association-infix) escaped-association-infix))
+          (or double-backslash association-left-char)))
       association-infix
       (*
         (or double-backslash line-scm-expr
@@ -119,38 +126,24 @@
     (let (e (peg:tree (match-pattern line a)))
       (if (list? e) (if (= 2 (length e)) (first (tail e)) e) (if (symbol? e) (q line-empty) e))))
 
-  (define (append-double-backslash a) "list -> list"
-    (fold
-      (l (e r)
-        (if (and (list? e) (not (null? e)) (eqv? (q double-backslash) (first e)))
-          (if (null? r) (pair "\\" r)
-            (if (string? (first r)) (pair (string-append "\\" (first r)) (tail r)) (pair "\\" r)))
-          (pair e r)))
-      (list) (reverse a)))
+  (define-as prefix->handler-ht symbol-hashtable
+    inline-scm-expr
+    (l (a) (pair (q inline-scm-expr) (simplify-list (string->datum (any->string-display a) read))))
+    line-scm-expr (l (a) (pair (q line-scm-expr) (string->datum (any->string-display a) read)))
+    indent-scm-expr (l (a) (pair (q indent-scm-expr) (string->datum (any->string-display a) read)))
+    identifier (l (a) (first a))
+    inline-expr-inner identity
+    ;if the association infix would not be parsed as a list it would be merged with the text or left out by the peg-parser
+    association-infix (const #f)
+    association (l (a) (pair (q association) (remove not a)))
+    inline-expr (l (a) (pairs (q inline-expr) (string-trim-right (first a)) (tail a))))
 
-  (define (splice-non-symbol-prefix-lists a) "list -> list"
-    (if (null? a) a
-      (let (e (first a))
-        ( (if (list? e)
-            (if (null? e) append
-              (if (symbol? (first e)) pair (l (e a) (append (splice-non-symbol-prefix-lists e) a))))
-            pair)
-          e (splice-non-symbol-prefix-lists (tail a))))))
-
-  (define (finalise-tree a) "list -> list"
-    (tree-map-lists
-      (l (e)
-        (let (e (append-double-backslash e))
-          (case (first e) ((identifier) (first (tail e)))
-            ((inline-expr-inner) (tail e)) ((association-infix) #f)
-            ( (association)
-              (pair (q association) (splice-non-symbol-prefix-lists (remove not (tail e)))))
-            ( (inline-expr)
-              (let (e-tail (tail e))
-                (if (null? e-tail) e
-                  (pairs (q inline-expr) (string-trim-right (first e-tail)) (tail e-tail)))))
-            (else e))))
-      a))
+  (define finalise-tree
+    (let
+      (finalise-expression
+        (l (a) "list -> any"
+          (let (p (hashtable-ref prefix->handler-ht (first a))) (if p (p (tail a)) a))))
+      (l (a) "list -> list" (tree-map-lists finalise-expression a))))
 
   (define (port->itml-parsed a)
     "port -> list

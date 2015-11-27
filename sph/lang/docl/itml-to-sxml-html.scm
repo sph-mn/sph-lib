@@ -106,6 +106,12 @@
   (define (ascend-handle-association a nesting-depth docl-state env)
     (pairs (first a) ": " (tail a)))
 
+  ;escaped characters are added as new line
+
+  (define (descend-handle-escaped-association-infix a nesting-depth docl-state env)
+    ": ")
+
+
   (define-as ascend-prefix->handler-ht symbol-hashtable
     line ascend-handle-line
     inline-expr itml-eval-ascend-inline-expr
@@ -117,6 +123,7 @@
     line-scm-expr itml-eval-descend-line-scm-expr
     indent-scm-expr itml-eval-descend-indent-scm-expr
     indent-descend-expr itml-eval-descend-indent-expr
+    escaped-association-infix descend-handle-escaped-association-infix
     double-backslash descend-handle-double-backslash)
 
   (define-syntax-rule (expr->sxml-html prefix->handler a proc-arguments ...)

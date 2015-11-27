@@ -16,6 +16,7 @@
   (export
     any->string
     any->string-write
+    any->string-display
     list->string-columns
     list-string-append-each
     parenthesise
@@ -32,6 +33,8 @@
     string-drop-prefix-if-exists
     string-drop-suffix-if-exists
     string-each
+    any->string-display
+    string-contains-char?
     string-enclose
     string-equal?
     string-indices
@@ -61,6 +64,10 @@
     (only (sph list) fold-multiple))
 
   (define string-equal? string=)
+(define (string-contains-char? a char) "string character -> boolean"
+  (true? (string-index a char)))
+(define (any->string-write a) (object->string a write))
+  (define (any->string-display a) (object->string a display))
 
   (define (string-slice-at-words a slice-length)
     "string integer -> (string ...)
@@ -122,8 +129,6 @@
     "string -> integer
     get the last possible index of a string"
     (if (string-null? a) 0 (- (string-length a) 1)))
-
-  (define (any->string-write a) (if (symbol? a) (symbol->string a) (object->string a write)))
 
   (define* (list->string-columns a #:key (justify (q left)) (separator "") (max-width 78))
     "(string ...) #:justify symbol:left/right #:separator string #:max-width integer -> string
