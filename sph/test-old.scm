@@ -1,6 +1,6 @@
-; (sph test) - automated code testing
+; (sph test-old) - automated code testing
 ; written for the guile scheme interpreter
-; Copyright (C) 2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -12,25 +12,52 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-(library (sph test)
+(library (sph test-old)
   (export
     assert-and
     assert-equal
     assert-true
-    define-test
-    test-execute
-    test-format-get
-    test-formats
-    test-results-display)
+    before-test
+    default-test
+    define-tests-quasiquote
+    execute-tests
+    execute-tests-quasiquote
+    execute-tests-randomise
+    import-unexported
+    sph-test-log-success
+    test-compare
+    test-disable-before-test
+    test-display-formats
+    test-enable-before-test
+    test-fail)
   (import
     (rnrs base)
-    (sph))
-
-  (define-as test-settings-default vhash-quoted
-    randomised? #f parallel? #f asynchronous? #f repeat #f exclude #f only #f)
-
-  (define (test-execute settings test-info))
-
+    (sph)
+    (sph hashtable)
+    (only (guile)
+      symbol-append
+      string-null?
+      defined?
+      module-ref
+      current-module
+      string-join
+      display
+      syntax
+      syntax->datum
+      procedure-name
+      identity
+      procedure-minimum-arity)
+    (only (sph alist) list->alist)
+    (only (sph conditional) boolean-and)
+    (only (sph list) fold-unless n-times-map)
+    (only (sph list one) randomise)
+    (only (sph one) n-times-accumulate in-range?)
+    (only (sph string)
+      any->string
+      any->string-write
+      string-multiply)
+    (only (sph two) list->csv-line)
+    (only (srfi srfi-1) last))
 
   ;defines if successful tests produce a success message
   (define sph-test-log-success #t)
@@ -122,8 +149,7 @@
                 index-data index-data-last)))
           #t)
         (begin
-          (if format
-            (display
+          (if format (display
               (if is-extended-result
                 ( (failure-message-proc format) name (vector-ref r 1)
                   (vector-ref r 2) (or (vector-ref r 3) (first data-test))
@@ -211,7 +237,9 @@
             (n-times-accumulate duplicate-count tests (l (n prev) (append prev tests))) tests)))
       (every identity (n-times-map count (l n (execute-tests tests))))))
 
-
+  (define-syntax-rules define-test
+    (((name arg-name ...) body ...) (define-test name (lambda (arg-name ...) body ...)))
+    ((name proc) (primitive-eval (qq (define (unquote (symbol-append (q test-) (q name))) proc)))))
 
   (define-syntax-rule (test-fail title data) (create-extended-result data title))
 
