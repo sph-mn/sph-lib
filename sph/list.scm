@@ -429,7 +429,7 @@
   (define (fold-until proc init stop? a)
     "procedure any procedure:{any -> boolean} list
     end folding if stop? results in true"
-    (if (or (stop? init) (null? a)) init (fold-until proc (proc (first a) init) stop? (tail a))))
+    (if (or (null? a) (stop? init)) init (fold-until proc (proc (first a) init) stop? (tail a))))
 
   (define (group-successive filter-proc a)
     "{any -> boolean} list -> list
@@ -661,10 +661,10 @@
     {any -> any} {any -> boolean}
     map unless stop? is true for a mapping-result. return an empty list or default if stop? was true"
     (if (any null? a) (list)
-      (let loop ((rest (map tail a)) (cur (apply proc (map first a))) (init (list)))
-        (if (stop? cur) default
-          (if (any null? rest) (reverse (pair cur init))
-            (loop (map tail rest) (apply proc (map first rest)) (pair cur init)))))))
+      (let loop ((rest (map tail a)) (e (apply proc (map first a))) (init (list)))
+        (if (stop? e) default
+          (if (any null? rest) (reverse (pair e init))
+            (loop (map tail rest) (apply proc (map first rest)) (pair e init)))))))
 
   (define (map-with-index proc . a)
     "procedure:{integer:index any:element ... -> any} list ... -> list"

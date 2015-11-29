@@ -3,7 +3,6 @@
     %search-load-path-regexp
     call-if-defined
     current-bindings
-    directory-tree-module-names
     export-modules
     import!
     import-any
@@ -21,6 +20,7 @@
     module-names->interface-binding-names
     module-ref-no-error
     path->module-name
+    path->module-names
     path->symbol-list)
   (import
     (guile)
@@ -75,19 +75,21 @@
   (define (default-before-filter name) (string-suffix? ".scm" name))
 
   (define*
-    (directory-tree-module-names base-path #:optional (max-depth (inf))
+    (path->module-names base-path #:optional (max-depth (inf))
       (before-filter default-before-filter))
     "list probable libraries belonging to directory \"path\" and subdirectories. path must be in the load-path.
     result may include files that contain no library definition, depending on the validations in before-filter.
     the default before-filter allows only files with a \".scm\" suffix."
     (let (load-path (string-longest-prefix base-path %load-path))
       (if load-path
-        (fold-directory-tree
-          (l (e stat-info prev)
-            (if (eq? (q regular) (stat:type stat-info))
-              (pair (path->symbol-list (string-drop e (string-length load-path))) prev) prev))
-          (list) base-path #:max-depth max-depth #:before-filter before-filter)
-        (raise (q path-is-not-in-load-path)))))
+        (let
+          (path->module-name (l (a) (path->symbol-list (string-drop a (string-length load-path)))))
+          (if (eqv? (q reqular) (stat:type base-path)) (path->module-name bash-path)
+            (fold-directory-tree
+              (l (e stat-info r)
+                (if (eqv? (q regular) (stat:type stat-info)) (pair (path->module-name) r) r))
+              (list) base-path #:max-depth max-depth #:before-filter before-filter)))
+        (error-create (q path-is-not-in-load-path)))))
 
   (define (import-any . module-names)
     "(symbol ...) ... ->
@@ -99,6 +101,9 @@
 
   (define (import! . modules) "import modules at run time"
     (each (l (e) (module-use! (current-module) (resolve-interface e))) modules))
+
+  (define-syntax-rule (import-unexported module-name binding-name)
+    (define binding-name (@@ module-name binding-name)))
 
   (define*
     (import-directory-tree path #:optional (max-depth (inf)) (before-filter default-before-filter)
@@ -137,15 +142,15 @@
   (define (load-with-environment path env)
     "load filename and evaluate its contents with the given eval environment which may be a module, a r6rs library or a standard environment."
     (let (port (open-file path "r"))
-      (let loop ((expr (read port)) (prev #f))
-        (if (eof-object? expr) prev (loop (read port) (eval expr env))))
+      (let loop ((expr (read port)) (r #f))
+        (if (eof-object? expr) r (loop (read port) (eval expr env))))
       (close port)))
 
   (define (%search-load-path-regexp a)
     (any
       (l (load-path)
         ( (l (res) (if (null? res) #f (first (list-sort string< res))))
-          (directory-tree-paths load-path (l (e) (not (string-match a e))))))
+          (path->module-names load-path (l (e) (not (string-match a e))))))
       %load-path))
 
   (define* (module-name->path a #:optional (relative #f))
@@ -163,20 +168,24 @@
   (define (call-if-defined module name)
     (pass-if (module-variable module name) (l (a) ((variable-ref a)))))
 
-  (define* (path->module-name a #:optional (load-paths %load-path))
-    "string -> (symbol ...)\false
-    create a module name from a typical path string by searching load-path for path if path is a full path,
-    removing the load-path portion and converting the result to a symbol-list.
-    does not check if the file actually is a regular file or a library. use %search-load-path in combination
-    with path->module-name"
-    (if (string-prefix? "/" a)
-      (let*
-        ( (a (string-trim-right a #\/))
-          (load-path (string-longest-prefix a (map (l (e) (string-trim-right e #\/)) load-paths))))
-        (if load-path (path->symbol-list (string-drop a (string-length load-path))) load-path))
-      (path->symbol-list a)))
+  (define* path->module-name
+    (let
+      (path->symbol-list (l (a) (path->symbol-list (remove-filename-extension a (list ".scm")))))
+      (l* (a #:optional (load-paths %load-path))
+        "string -> (symbol ...)\false
+        create a module name from a typical path string by searching load-path for path if path is a full path,
+        removing the load-path portion and converting the result to a symbol-list.
+        does not check if the file actually is a regular file or a library. use %search-load-path in combination
+        with path->module-name"
+        (if (string-prefix? "/" a)
+          (let*
+            ( (a (string-trim-right a #\/))
+              (load-path
+                (string-longest-prefix a (map (l (e) (string-trim-right e #\/)) load-paths))))
+            (if load-path (path->symbol-list (string-drop a (string-length load-path))) load-path))
+          (path->symbol-list a)))))
 
   (define (path->symbol-list a)
     "create a module name from a typical path string. for example \"/a/b/c\" -> (a b c)"
-    (let (a (string-trim-both (remove-filename-extension a) #\/))
+    (let (a (string-trim-both a #\/))
       (if (string-null? a) (list) (map string->symbol (string-split a #\/))))))
