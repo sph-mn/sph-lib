@@ -85,10 +85,10 @@
     list-sort-by-list-with-accessor
     list-sort-with-accessor
     map-apply
-    map-selected
     map-map
     map-one
     map-segments
+    map-selected
     map-slice
     map-span
     map-successive
@@ -612,6 +612,15 @@
     "((any ...) ...) -> ((any ...) ...)
     apply map for every list in list"
     (apply map (l e (apply map proc e)) lists))
+
+  (define (map-with-continue proc . lists)
+    "procedure:{procedure:{any:result}:continue any ... -> any:last-result} list ... -> list
+    map over list with explicitly continuing the mapping by calling \"continue\" with the result.
+    if \"continue\" is not called, the result will be the tail of the list, which means it must be a list to create a proper list.
+    maps only the length of the shortest list if multiple lists are given"
+    (let loop ((rest lists) (len (apply min (map length lists))))
+      (if (zero? len) (list)
+        (apply proc (l (result) (pair result (loop (map tail rest) (- len 1)))) (map first rest)))))
 
   (define (map-one match? proc a)
     "{any -> any}:predicate {any:element -> any} list -> list

@@ -48,18 +48,13 @@
             ;as far as we know readlink fails for circular symlinks
             (test-execute-path (readlink a)))))))
 
-  (define (test-create-result-module success? index arguments expected-result)
-    "boolean integer list any -> vector
-    result for a module-test"
-    (vector (q test-result) success? index failure-arguments failure-expected-result))
-
-  (define (test-execute-module-create-result format index-data-last name index-data data-test r)
+  (define
+    (old-test-execute-module-create-result format index-data-last name index-data data-test r)
     "symbol integer string integer list any -> boolean"
     (let*
-      ( (is-expected-result (equal? (tail data-test) r))
-        (is-extended-result (and (not is-expected-result) (extended-result? r))))
-      (if
-        (or is-expected-result (and is-extended-result (equal? (tail data-test) (vector-ref r 1))))
+      ( (is-expected (equal? (tail data-test) r))
+        (is-extended-result (and (not is-expected) (extended-result? r))))
+      (if (or is-expected (and is-extended-result (equal? (tail data-test) (vector-ref r 1))))
         (test-create-result-module name (if is-extended-result (vector-ref r 2) #f)
           index-data index-data-last)
         (if is-extended-result
@@ -69,11 +64,11 @@
           (test-create-result-module name r
             (tail data-test) (first data-test) #f index-data index-data-last)))))
 
-  (define test-execute-module-test-spec
+  (define old-test-execute-module-test-spec
     (let
       ( (with-test-data
           (l (test-spec)
- (fold-unless
+            (fold-unless
               (l (data-test index) (if before-test (before-test name/proc index))
                 (if
                   (apply evaluate-result format-display
@@ -98,75 +93,55 @@
   (define (default-test proc-name index inp exp) "apply a procedure proc-name with arguments inp"
     (apply (module-ref* proc-name) (if (list? inp) inp (list inp))))
 
-
-  ;cps iteration
-
-
-  (define (test-execute-spec a next-test)
-    (apply
-      (l (test-proc . test-data)
-        (if (null? test-data) (test-proc (list) #t next-test)
-          (let loop ((d test-data))
-            (if (null? d) d
-              (let (d-tail (tail d))
-                (pair (test-proc (first d) (first d-tail) #f)
-                  (loop (tail d-tail))
-                  )
-
-                )
-              )
-
-            ))
-
-
-          )
-
-        ) a))
-
-  (define (test-execute-module-tests-serial settings tests)
-    "(test-spec ...) -> result-module
-    try to execute all tests in list and stop on any test-failure"
-    (fold-unless
-              (l (data-test index) (if before-test (before-test name/proc index))
-                (if
-                  (apply evaluate-result format-display
-                    (- (/ (- (length test-spec) 1) 2) 1)
-                    (if (procedure? name/proc) (apply-test-proc name/proc #f data-test index)
-                      (apply-test-proc-from-name (first test-spec)
-                        (test-proc-name (first test-spec)) data-test index)))
-                  (+ 1 index) #f))
-              not #f 0 (list->alist (tail test-spec)))
-
-    (let loop ((rest tests))
-      (if (null? rest) rest
- )))
-
-  (define (test-resolve-procedure name)
+  (define (test-resolve-procedure name) "symbol -> procedure/boolean-false"
     (let (test-name (symbol-append (q test-) name))
-      (module-ref (current-module) (if (defined? proc-name) proc-name name))))
+      (module-ref (current-module) (if (defined? test-name) test-name name))))
 
   (define (test-list-normalise a)
     "list -> list
     validate, resolve test-procedures and normalise the list"
     (map
       (l (e)
-        (cond ((symbol? e) (list (test-resolve-procedure)))
-          ((list? e) (pair (test-resolve-procedure (first e)) (tail e))) ((procedure? e) (list e))
-          (else (error-create (q invalid-test-spec)))))
+        (cond ((symbol? e) (list e)) ((list? e) (pair (first e) (tail e)))
+          ((procedure? e) (list e)) (else (error-create (q invalid-test-spec)))))
       a))
 
   (define (test-list-apply-settings settings a)
     (if (alist-ref-quoted? settings randomised?) (randomise a) a))
 
-  (define (test-list-execute-serial settings a) (let loop ((rest a)) (if (null? rest))))
+  (define (old-test-execute-module-tests-serial settings tests)
+    "(test-spec ...) -> result-module
+    try to execute all tests in list and stop on any test-failure"
+    (fold-until
+      (l (data-test index) (if before-test (before-test name/proc index))
+        (if
+          (apply evaluate-result format-display
+            (- (/ (- (length test-spec) 1) 2) 1)
+            (if (procedure? name/proc) (apply-test-proc name/proc #f data-test index)
+              (apply-test-proc-from-name (first test-spec) (test-proc-name (first test-spec))
+                data-test index)))
+          (+ 1 index) #f))
+      not #f 0 (list->alist (tail test-spec))))
 
-  (define (test-list-executor settings)
-    (cond ((alist-quoted-ref settings parallel?) test-list-execute-parallel)
-      ((alist-quoted-ref settings continuation-passing-style?) test-list-execute-cps)
-      (else test-list-execute-cps)))
+  (define (test-list-execute-one name . data)
+    "procedure [arguments expected] ... -> vector:test-result"
+    (let (test-proc (test-resolve-procedure name))
+      (if (null? data) (test-proc (list) #t)
+        (let loop ((d data) (index 0))
+          (if (null? d) index
+            (let* ((d-tail (tail d)) (r (test-proc (first d) (first d-tail))))
+              (loop (tail d-tail) (+ 1 index))))))))
+
+  (define (test-list-execute-serial settings a)
+    (map-with-continue
+      (l (continue e)
+        (let (r (apply test-list-execute-spec e)) (if (vector-first r) (continue r) (list r))))))
+
+  (define (test-list-get-executor settings)
+    (if (alist-quoted-ref settings parallel?) test-list-execute-parallel test-list-execute-serial))
 
   (define (test-execute-list settings a) "list -> list"
-    ((test-list-apply-settings settings (test-list-normalise a))))
+    ((test-list-get-executor settings) (test-list-apply-settings settings (test-list-normalise a))))
 
   (define test-result? vector?)
   (define test-result-group? list?)
@@ -178,8 +153,7 @@
     (if (string? source) (test-execute-path settings source) (test-execute-list settings source)))
 
   (define-syntax-cases test-lambda s
-    ( ( (arguments expected-result done) body ...)
-      (syntax (lambda (arguments expected-result done) body ...)))
+    (((arguments expected) body ...) (syntax (lambda (arguments expected) body ...)))
     ( ( (a ...) body ...)
       (quasisyntax (lambda (a ... . (unsyntax (datum->syntax s (gensym "test-define")))) body ...))))
 
@@ -192,10 +166,9 @@
           (define (unsyntax (datum->syntax (syntax name) (symbol-append (q test-) name-datum)))
             proc)))))
 
-  (define* (assert-create-extended-result #:optional result title (expected-result #t) arguments)
-    "any string any list -> vector:#(symbol:assert-extended-result result expected-result arguments title)
-    assertions and tests can return any value or an extended result that contains more info about the assertions"
-    (vector (q assert-extended-result) result expected-result arguments title))
+  (define-record test-result
+    ;boolean integer list any
+    success? name index result arguments expected)
 
   (define (assert-extended-result? a)
     (and (vector? a) (= (vector-length a) 5) (eqv? (q assert-extended-result) (vector-ref a 0))))
@@ -204,9 +177,10 @@
     (if (extended-result? result)
       (begin
         (if (string? optional-title)
-          (vector-set! result 4 (string-append optional-title " " (vector-ref result 4))))
+          (vector-set! result 2 (string-append optional-title " " (vector-ref result 4))))
         result)
-      (create-extended-result result
+      (test-create-result success? name index result arguments expected)
+      (test-create-result result
         (if (or (not (string? optional-title)) (string-null? optional-title))
           (any->string (q body)) optional-title)
         expected)))
@@ -311,7 +285,7 @@
             (n-times-accumulate duplicate-count tests (l (n prev) (append prev tests))) tests)))
       (every identity (n-times-map count (l n (execute-tests tests))))))
 
-  (define-syntax-rule (test-fail title data) (create-extended-result data title))
+  (define-syntax-rule (test-fail title data) (test-create-result #f title #f #f data #f))
 
   (define-syntax-rule (define-tests-quasiquote name test ...)
     ;defines a list of tests bound to a variable. like execute-tests-quasiquote without executing
