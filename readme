@@ -2,10 +2,10 @@ dependencies
   guile >= 2
   for the installation program: sh
 installation
-  \##
+  \escape
     su root
     ./exec/install
   see
-  \##
+  \escape
     ./exec/install --help
   for more options

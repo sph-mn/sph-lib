@@ -1,4 +1,7 @@
-                    GNU GENERAL PUBLIC LICENSE
+all code except modules/sph/base64.scm is licensed under gpl3 or any later version.
+modules/sph/base64.scm is under a three-clause bsd license.
+----
+                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
