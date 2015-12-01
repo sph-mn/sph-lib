@@ -147,11 +147,7 @@
       (let (r body) (if (eqv? #t r) #t (assert-failure-result r #t optional-title body))))
     ((body) (assert-true #f body)))
 
-  (define-syntax-case (assert-and optional-title body ...)
-    (let (optional-title-datum (syntax->datum (syntax optional-title)))
-      (if (string? optional-title-datum)
-        (syntax (assert-true optional-title (boolean-and body ...)))
-        (syntax (boolean-and optional-title body ...)))))
+
 
   (define-syntax-rules assert-equal
     ( (optional-title expected body)
