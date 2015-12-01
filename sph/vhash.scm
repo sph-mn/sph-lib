@@ -11,14 +11,18 @@
     (ice-9 vlist)
     (rnrs base)
     (sph)
+    (sph list)
     (only (guile) hash)
     (only (sph alist) list->alist)
     (only (sph conditional) identity-if)
     (only (sph one) quote-odd))
 
   (define-syntax-rule (vhash-quoted-ref a key) (vhash-ref a (q key)))
-  (define (vhash-ref a key) (identity-if (vhash-assoc key a) #f))
-  (define (vhash-refq a key) (identity-if (vhash-assq key a) #f))
+
+  (define* (vhash-ref a key #:optional default (vhash-assoc vhash-assoc))
+    (let (r (vhash-assoc key a)) (if r (tail r) default)))
+
+  (define (vhash-refq a key . default) (vhash-ref a key (first-or-false default) vhash-assq))
 
   (define (vhash-set-p a key value vhash-ref vhash-cons)
     (if (vhash-ref a key)

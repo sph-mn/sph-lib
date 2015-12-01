@@ -150,19 +150,19 @@
   (define (alist-map proc a) "procedure:{key value -> any} list -> list"
     (map (l (e) (proc (first e) (tail e))) a))
 
-  (define (alist-merge alist-1 alist-2)
+  (define (alist-merge a b)
     "list list -> list
     create a new alist with the associations of both alists, preferring entries of list-2"
-    (append (filter (l (e) (not (alist-ref alist-2 (first e)))) alist-1) alist-2))
+    (append (filter (l (e) (not (alist-ref b (first e)))) a) b))
 
-  (define (alist-update alist-1 alist-2)
+  (define (alist-update a b)
     "list list -> list
-    update existing entries of alist-1 with corresponding entries of alist-2"
+    update existing entries of a with corresponding entries of b"
     (map
       (l (pair-1)
         ( (l (value) (if value (pair (first pair-1) value) pair-1))
-          (alist-ref alist-2 (first pair-1))))
-      alist-1))
+          (alist-ref b (first pair-1))))
+      a))
 
   (define-syntax-rule (alist-values alist) (map tail alist))
   (define (alist-select alist keys) "list list -> list" (map (l (key) (alist-ref alist key)) keys))

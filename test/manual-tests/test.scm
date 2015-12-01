@@ -1,0 +1,21 @@
+(import (sph common) (sph test))
+(define-test (aa input output) input)
+(define (bb a b) (+ a b))
+
+(define-test (assertions-without-title)
+  (assert-and (assert-equal (list 1 2) (list 1 2)) (assert-true (< 1 3)) (assert-true (> 1 3))))
+
+(define-test (assertions-with-title)
+  (assert-and "a" (assert-equal "b" (list 1 2) (list 1 2))
+    (assert-true "c" (< 1 3)) (assert-true "d" (> 1 3))))
+
+(define-tests tests-1 (aa 1 (1) (3 4) 5))
+(define-tests tests-2 (bb (1 2) 3) assertions-without-title)
+(define-tests tests-3 assertions-with-title)
+;(define settings (alist-merge test-settings-default (alist-quoted parallel? #t)))
+(write (test-execute tests-1))
+(newline)
+(write (test-execute tests-2))
+(newline)
+(write (test-execute tests-3))
+(newline)

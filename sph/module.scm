@@ -3,6 +3,7 @@
     %search-load-path-regexp
     call-if-defined
     current-bindings
+    current-module-ref
     export-modules
     import!
     import-any
@@ -26,6 +27,7 @@
     (guile)
     (rnrs base)
     (sph)
+    (sph error)
     (sph filesystem)
     (only (ice-9 regex) string-match)
     (only (rnrs sorting) list-sort)
@@ -84,7 +86,7 @@
       (if load-path
         (let
           (path->module-name (l (a) (path->symbol-list (string-drop a (string-length load-path)))))
-          (if (eqv? (q reqular) (stat:type base-path)) (path->module-name bash-path)
+          (if (eqv? (q reqular) (stat:type base-path)) (path->module-name base-path)
             (fold-directory-tree
               (l (e stat-info r)
                 (if (eqv? (q regular) (stat:type stat-info)) (pair (path->module-name) r) r))
@@ -109,7 +111,7 @@
     (import-directory-tree path #:optional (max-depth (inf)) (before-filter default-before-filter)
       (resolve-interface-args (list)))
     "string #:key (max-depth integer) (resolve-interface-args list/procedure) -> unspecified
-    imports libraries with directory-tree-module-names."
+    imports libraries with path->module-names"
     (let (current-module* (current-module))
       (each
         (l (e)
@@ -117,7 +119,9 @@
             (apply resolve-interface e
               (if (procedure? resolve-interface-args) (resolve-interface-args e)
                 resolve-interface-args))))
-        (directory-tree-module-names path max-depth before-filter))))
+        (path->module-names path max-depth before-filter))))
+
+  (define (current-module-ref a) "symbol -> any" (module-ref (current-module) a))
 
   (define (import-if-existent . module-names)
     (map (l (e) (module-use! (current-module) (resolve-interface e)))

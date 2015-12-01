@@ -57,6 +57,7 @@
       hashtable-each
       hashtable-merge
       hashtable-merge!)
+    (only (sph one) quote-odd)
     (only (sph list) n-times-map)
     (only (srfi srfi-1) filter-map))
 
