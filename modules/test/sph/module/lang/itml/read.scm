@@ -5,7 +5,7 @@
     (sph)
     (sph lang itml read)
     (sph lang itml write)
-    (sph test))
+    (sph test-old))
 
   ;nested with each other
   ;01 01 010 011

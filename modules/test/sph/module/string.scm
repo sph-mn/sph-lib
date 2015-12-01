@@ -1,4 +1,4 @@
-(import (sph test) (sph) (sph string))
+(import (sph test-old) (sph) (sph string))
 
 (execute-tests-quasiquote
   (string-indices ("/a////b//c/d" "/") (0 2 3 4 5 7 8 10)

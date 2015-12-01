@@ -1,6 +1,6 @@
 (import
   (sph)
-  (sph test)
+  (sph test-old)
   (sph time))
 
 (define (test-current-local-datetime-string)

@@ -1,4 +1,4 @@
-(import (sph common) (sph test) (sph lang itml) (sph lang itml write))
+(import (sph common) (sph test-old) (sph lang itml) (sph lang itml write))
 
 #;(define (test-itml-parsed->itml inp exp)
   (let (r (itml-parsed->itml (string->itml-parsed inp) 0))

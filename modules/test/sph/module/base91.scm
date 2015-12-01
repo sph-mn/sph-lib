@@ -1,7 +1,7 @@
 (import
   (rnrs bytevectors)
   (sph)
-  (sph test)
+  (sph test-old)
   (sph random-data)
   (sph base91))
 

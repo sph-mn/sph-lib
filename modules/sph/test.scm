@@ -21,6 +21,7 @@
     define-tests
     test-create-result
     test-execute
+    test-execute-module
     test-execute-list
     test-execute-path
     test-format-get
@@ -28,9 +29,9 @@
     test-lambda
     test-list-normalise
     test-resolve-procedure
+    test-result-success?
     test-results-display
     test-settings-default
-    test-result-success?
     test-success?)
   (import
     (rnrs base)
@@ -53,26 +54,32 @@
       syntax
       readlink
       quasisyntax)
+    (rnrs eval)
+    (guile)
     (only (sph conditional) boolean-and)
     (only (sph filesystem) path->full-path)
     (only (sph list) any->list map-with-continue)
     (only (sph list one) randomise)
-    (only (sph module) current-module-ref path->module-names)
+    (only (sph module)
+      current-module-ref
+      path->module-names
+      path->module-name)
     (only (sph string) any->string)
     (only (sph vector) vector-first))
 
   (define-as test-settings-default alist-quoted
     random-order? #f parallel? #f exclude (list) only (list) until (list) before #f exceptions? #t)
 
-  (define (test-module-execute settings name)
+  (define (test-module-execute settings name) "alist (symbol ...)"
+    (debug-log (@@ (test sph module test-module) execute))
     ((module-ref (resolve-interface name) (q execute)) settings))
 
   (define (test-project-execute settings path)
-    (map (l (e) (test-execute-module settings e)) (path->module-names path)))
+    (map (l (e) (test-module-execute settings e)) (path->module-names path)))
 
   (define (test-execute-path settings a) "alist string -> test-result/error"
     (let (a (path->full-path a))
-      (case (stat:type a) ((directory) (test-project-execute settings a))
+      (case (stat:type (stat a)) ((directory) (test-project-execute settings a))
         ((regular) (test-module-execute settings a))
         ( (symlink)
           ;as far as we know readlink fails for circular symlinks
@@ -145,6 +152,9 @@
 
   (define test-result-group? list?)
 
+  (define* (test-execute-module name #:optional (settings test-settings-default))
+    (test-module-execute settings name))
+
   (define* (test-execute source #:optional (settings test-settings-default))
     "list:alist string/list/procedure -> test-result
     test-result-group: (group-name test-result/test-result-group ...)
@@ -212,3 +222,10 @@
       (let (r expr)
         (if (equal? expected r) #t (assert-failure-result r expected optional-title (q expr)))))
     ((expected expr) (assert-equal #f expected expr))))
+
+;;; note: source file /home/nonroot/.lib/scm/sph/filesystem.scm
+;;;       newer than compiled /home/nonroot/.cache/guile/ccache/2.2-LE-8-3.6/mnt/sdb1/stor/personal/authored/projects/public/sph-lib/modules/sph/filesystem.scm.go
+;;; note: auto-compilation is enabled, set GUILE_AUTO_COMPILE=0
+;;;       or pass the --no-auto-compile argument to disable.
+;;; compiling /home/nonroot/.lib/scm/sph/filesystem.scm
+;;; compiled /home/nonroot/.cache/guile/ccache/2.2-LE-8-3.6/mnt/sdb1/stor/personal/authored/projects/public/sph-lib/modules/sph/filesystem.scm.go

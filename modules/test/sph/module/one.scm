@@ -1,6 +1,6 @@
 (import
   (sph one)
-  (sph test)
+  (sph test-old)
   (sph number)
   (rnrs bytevectors))
 

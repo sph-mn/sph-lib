@@ -1,6 +1,6 @@
 (import
   (sph)
-  (sph test)
+  (sph test-old)
   (sph tree))
 
 (execute-tests-quasiquote

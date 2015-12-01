@@ -1,4 +1,4 @@
-(import (sph test) (sph) (sph lang parser outline))
+(import (sph test-old) (sph) (sph lang parser outline))
 (define (test-read-outline inp exp) (read-outline (open-input-string inp) #\=))
 
 (execute-tests-quasiquote

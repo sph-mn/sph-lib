@@ -1,4 +1,4 @@
-(import (rnrs eval) (sph) (sph test) (sph lang docl) (sph lang docl itml-to-sxml-html))
+(import (rnrs eval) (sph) (sph test-old) (sph lang docl) (sph lang docl itml-to-sxml-html))
 
 (define docl-itml-env-test
   (apply environment (q (test sph lang docl env test))

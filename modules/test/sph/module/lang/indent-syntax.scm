@@ -2,7 +2,7 @@
 (import
   (sph)
   (sph lang indent-syntax)
-  (sph test)
+  (sph test-old)
   (sph tree))
 
 #;(define (test-prefix-tree-conversion)

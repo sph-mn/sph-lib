@@ -1,7 +1,7 @@
 (import
   (sph)
   (sph vector)
-  (sph test))
+  (sph test-old))
 
 (execute-tests-quasiquote
   (vector-append

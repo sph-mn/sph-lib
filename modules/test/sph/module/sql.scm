@@ -1,4 +1,4 @@
-(import (sph test) (sph sql))
+(import (sph test-old) (sph sql))
 
 (execute-tests-quasiquote
   (sql-value

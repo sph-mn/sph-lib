@@ -174,7 +174,7 @@
 
   (define* path->module-name
     (let
-      (path->symbol-list (l (a) (path->symbol-list (remove-filename-extension a (list ".scm")))))
+      (path->symbol-list (l (a) (path->symbol-list (remove-filename-extension a (list "scm")))))
       (l* (a #:optional (load-paths %load-path))
         "string -> (symbol ...)\false
         create a module name from a typical path string by searching load-path for path if path is a full path,

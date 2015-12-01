@@ -1,6 +1,6 @@
 (import
   (sph)
-  (sph test)
+  (sph test-old)
   (sph list))
 
 (define (test-env-replace-at-once-proc a)

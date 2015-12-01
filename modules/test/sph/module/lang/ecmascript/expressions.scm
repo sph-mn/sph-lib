@@ -2,7 +2,7 @@
   (sph lang ecmascript expressions)
   (sph)
   (sph hashtable)
-  (sph test))
+  (sph test-old))
 
 (execute-tests-quasiquote
   (es-apply

@@ -1,4 +1,4 @@
-(import (sph) (sph cli) (sph test))
+(import (sph) (sph cli) (sph test-old))
 
 (define test-env-cli-config
   (list #:name "test-interface"

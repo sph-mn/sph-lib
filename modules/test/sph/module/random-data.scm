@@ -1,4 +1,4 @@
-(import (sph test) (sph list) (sph) (sph random-data))
+(import (sph test-old) (sph list) (sph) (sph random-data))
 
 (define (test-random-list inp exp)
   (list-bind inp (len max min)

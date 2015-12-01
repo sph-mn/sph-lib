@@ -1,7 +1,7 @@
 (import
   (sph)
   (rnrs bytevectors)
-  (sph test)
+  (sph test-old)
   (sph base64))
 
 (define (test-base64-encode+decode inp exp)
