@@ -81,7 +81,9 @@
                     (l (e) (if (string? e) (string->number directory-mode 8) e)))))
               (alist-quoted-ref
                 ( (cli-create #:help-parameters
-                    "parameters\n  options ... [target-prefix path-lib-scheme symlink? directory-mode]"))
+                    (string-append
+                      "parameters\n  options ... [target-prefix path-lib-scheme symlink? directory-mode]\n  "
+                      "values can be \"-\" to use the default value")))
                 unnamed (list)))))
         (replace-placeholders
           (let*

@@ -12,10 +12,12 @@
 (define-tests tests-1 (aa 1 (1) (3 4) 5))
 (define-tests tests-2 (bb (1 2) 3) assertions-without-title)
 (define-tests tests-3 assertions-with-title)
-;(define settings (alist-merge test-settings-default (alist-quoted parallel? #t)))
-(write (test-execute tests-1))
-(newline)
-(write (test-execute tests-2))
-(newline)
-(write (test-execute tests-3))
-(newline)
+
+(define-tests tests
+  (test-execute ((unquote tests-1)) (#(test-result #f "aa" 1 (3 4) (3 4) 5))
+    ((unquote tests-2))
+    (#(test-result #t "bb" 1 #f #f #f)
+      #(test-result #f "assertions-without-title assertion" #f #f (> 1 3) #t))
+    ((unquote tests-3)) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t))))
+
+(debug-log (every test-result-success? (test-execute tests)))

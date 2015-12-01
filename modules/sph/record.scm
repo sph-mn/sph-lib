@@ -57,8 +57,8 @@
       hashtable-each
       hashtable-merge
       hashtable-merge!)
-    (only (sph one) quote-odd)
     (only (sph list) n-times-map)
+    (only (sph one) quote-odd)
     (only (srfi srfi-1) filter-map))
 
   (define (any->symbol a)
@@ -70,12 +70,13 @@
   (define (record-update-p record-layout a . field-name/value)
     (let (a (vector-copy a))
       (let loop ((b field-name/value))
-        (let (b-tail (tail b))
-          (vector-set! a (hashtable-ref record-layout (first b) #f) (first b-tail))
-          (loop (tail b-tail))))))
+        (if (null? b) a
+          (let (b-tail (tail b))
+            (vector-set! a (hashtable-ref record-layout (first b) #f) (first b-tail))
+            (loop (tail b-tail)))))))
 
   (define-syntax-rule (record-update record-layout a field-name/value ...)
-    (record-update-p record-layout a (quote-odd field-name/value ...)))
+    (apply record-update-p record-layout a (quote-odd field-name/value ...)))
 
   (define* (alist->record a record-layout)
     "alist record-layout -> record

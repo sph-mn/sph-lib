@@ -30,6 +30,7 @@
     test-resolve-procedure
     test-results-display
     test-settings-default
+    test-result-success?
     test-success?)
   (import
     (rnrs base)
@@ -63,16 +64,16 @@
   (define-as test-settings-default alist-quoted
     random-order? #f parallel? #f exclude (list) only (list) until (list) before #f exceptions? #t)
 
-  (define (test-execute-module settings name)
+  (define (test-module-execute settings name)
     ((module-ref (resolve-interface name) (q execute)) settings))
 
-  (define (test-execute-project settings path)
+  (define (test-project-execute settings path)
     (map (l (e) (test-execute-module settings e)) (path->module-names path)))
 
   (define (test-execute-path settings a) "alist string -> test-result/error"
     (let (a (path->full-path a))
-      (case (stat:type a) ((directory) (test-execute-project settings a))
-        ((regular) (test-execute-module settings a))
+      (case (stat:type a) ((directory) (test-project-execute settings a))
+        ((regular) (test-module-execute settings a))
         ( (symlink)
           ;as far as we know readlink fails for circular symlinks
           (test-execute-path settings (readlink a))))))
@@ -105,7 +106,9 @@
     (let ((test-proc (test-resolve-procedure name)) (title (symbol->string name)))
       (if (null? data)
         (let (r (test-proc (list) #t))
-          (if (test-result? r) r (test-create-result (eqv? #t r) title 0 r (list) #t)))
+          (if (test-result? r)
+            (record-update test-result r title (title-extend (test-result-title r) title))
+            (test-create-result (eqv? #t r) title 0 r (list) #t)))
         (let loop ((d data) (index 0))
           (if (null? d) (test-create-result #t title index)
             (let*
@@ -177,11 +180,9 @@
     ;vector/any any false/string any -> vector
     (if (test-result? result)
       (if (string? title)
-        (record-update test-result result
-          title (title-extend (test-result-title result) title))
+        (record-update test-result result title (title-extend (test-result-title result) title))
         result)
-      (if (string? title)
-        (test-create-result #f title #f result arguments expected)
+      (if (string? title) (test-create-result #f title #f result arguments expected)
         (test-create-result #f "assertion" #f result arguments expected))))
 
   (define-syntax-rules assert-true
