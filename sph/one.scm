@@ -358,7 +358,7 @@
   (define-syntax-rule (exception->key expr) (catch #t (l () expr) (l (key . args) key)))
 
   (define-syntax-rules quote-odd
-    ;quote each argument at odd indexes, thereby not quoting each second argument.
+    ;quote each argument at odd indexes starting from one, not quoting each second argument.
     ((a b) (list (quote a) b))
     ((a b c ...) (quasiquote ((unquote-splicing (quote-odd a b) (quote-odd c ...))))))
 
