@@ -70,7 +70,8 @@
     (let (a (vector-copy a))
       (let loop ((b field-name/value))
         (let (b-tail (tail b))
-          (vector-set! a (hashtable-ref record-layout (first b)) (first b-tail)) (loop (tail b-tail))))))
+          (vector-set! a (hashtable-ref record-layout (first b) #f) (first b-tail))
+          (loop (tail b-tail))))))
 
   (define-syntax-rule (record-update record-layout a field-name/value ...)
     (record-update-p record-layout a (quote-odd field-name/value ...)))

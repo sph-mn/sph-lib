@@ -1,14 +1,23 @@
 (library (sph vhash)
   (export
-        vhash-ref
+    list->vhash
+    vhash-quoted
+    vhash-quoted-ref
+    vhash-ref
     vhash-refq
     vhash-set
-    vhash-setq
-    vhash-quoted
-)
-  (import     (ice-9 vlist)
-)
-(define (vhash-ref a key) (identity-if (vhash-assoc key a) #f))
+    vhash-setq)
+  (import
+    (ice-9 vlist)
+    (rnrs base)
+    (sph)
+    (only (guile) hash)
+    (only (sph alist) list->alist)
+    (only (sph conditional) identity-if)
+    (only (sph one) quote-odd))
+
+  (define-syntax-rule (vhash-quoted-ref a key) (vhash-ref a (q key)))
+  (define (vhash-ref a key) (identity-if (vhash-assoc key a) #f))
   (define (vhash-refq a key) (identity-if (vhash-assq key a) #f))
 
   (define (vhash-set-p a key value vhash-ref vhash-cons)
@@ -20,5 +29,8 @@
               (vhash-cons e-key (tail e) (loop (vlist-tail rest)))))))
       (vhash-cons key value a)))
 
-  (define (vhash-setq a key value) (vhash-set-p a key value vhash-refq vhash-consq))
-  )
+  (define* (list->vhash a #:optional (create-hash hash)) "list [procedure] -> vhash"
+    (alist->vhash (list->alist a) create-hash))
+
+  (define-syntax-rule (vhash-quoted key/value ...) (list->vhash (quote-odd key/value ...)))
+  (define (vhash-setq a key value) (vhash-set-p a key value vhash-refq vhash-consq)))

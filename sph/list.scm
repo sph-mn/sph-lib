@@ -93,6 +93,7 @@
     map-span
     map-successive
     map-unless
+    map-with-continue
     map-with-index
     map-with-state
     n-times-fold

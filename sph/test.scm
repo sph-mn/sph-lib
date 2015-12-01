@@ -32,7 +32,28 @@
     test-success?)
   (import
     (rnrs base)
-    (sph))
+    (sph)
+    (sph error)
+    (sph record)
+    (sph vhash)
+    (only (guile)
+      resolve-interface
+      symbol-append
+      defined?
+      current-module
+      stat:type
+      module-ref
+      syntax->datum
+      stat
+      datum->syntax
+      syntax
+      readlink
+      quasisyntax)
+    (only (sph filesystem) path->full-path)
+    (only (sph list) map-with-continue)
+    (only (sph list one) randomise)
+    (only (sph module) path->module-names)
+    (only (sph vector) vector-first))
 
   (define-as test-settings-default vhash-quoted
     random-order? #f parallel? #f exclude (list) only (list) until (list) before #f exceptions? #t)
@@ -47,9 +68,9 @@
     (let (a (path->full-path a))
       (case (stat:type a) ((directory) (test-execute-project settings a))
         ((regular) (test-execute-module settings a))
-        ( (symlink
-            ;as far as we know readlink fails for circular symlinks
-            (test-execute-path (readlink a)))))))
+        ( (symlink)
+          ;as far as we know readlink fails for circular symlinks
+          (test-execute-path settings (readlink a))))))
 
   (define (test-resolve-procedure name) "symbol -> procedure/boolean-false"
     (let (test-name (symbol-append (q test-) name))
@@ -66,7 +87,7 @@
 
   (define (test-list-apply-settings settings a)
     ;todo: other settings
-    (if (alist-ref-quoted? settings random-order?) (randomise a) a))
+    (if (vhash-quoted-ref settings random-order?) (randomise a) a))
 
   (define (test-success? result expected)
     (if (test-result? result) (test-result-success? result) (equal? result expected)))
@@ -77,13 +98,15 @@
       (if (null? data) (test-proc (list) #t)
         (let loop ((d data) (index 0))
           (if (null? d) index
-            (let* ((d-tail (tail d)) (r (test-proc (first d) (first d-tail))))
+            (let* ((d-tail (tail d)) (expected (first d-tail)) (r (test-proc (first d) expected)))
               (if (test-result? r)
                 (if (test-result-success? r) (loop (tail d-tail) (+ 1 index))
                   (record-update test-result r
                     title (title-extend (test-result-title r) title) index index))
                 (if (equal? r expected) (loop (tail d-tail) (+ 1 index))
-                  (test-create-result #f title index r (first d) (first d-tail))))))))))
+                  (test-create-result #f title index r (first d) expected)))))))))
+
+  (define (test-list-execute-parallel settings a) a)
 
   (define (test-list-execute-serial settings a)
     (map-with-continue
@@ -92,7 +115,7 @@
           (if (test-result-success? r) (continue r) (list r))))))
 
   (define (test-list-get-executor settings)
-    (if (alist-quoted-ref settings parallel?) test-list-execute-parallel test-list-execute-serial))
+    (if (vhash-quoted-ref settings parallel?) test-list-execute-parallel test-list-execute-serial))
 
   (define (test-execute-list settings a) "list -> list"
     ((test-list-get-executor settings) (test-list-apply-settings settings (test-list-normalise a))))
@@ -147,7 +170,11 @@
       (let (r body) (if (eqv? #t r) #t (assert-failure-result r #t optional-title body))))
     ((body) (assert-true #f body)))
 
-
+  (define-syntax-case (assert-and optional-title body ...)
+    (let (optional-title-datum (syntax->datum (syntax optional-title)))
+      (if (string? optional-title-datum)
+        (syntax (assert-true optional-title (boolean-and body ...)))
+        (syntax (boolean-and optional-title body ...)))))
 
   (define-syntax-rules assert-equal
     ( (optional-title expected body)
