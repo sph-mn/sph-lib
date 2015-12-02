@@ -1,6 +1,5 @@
 (library (sph module)
   (export
-    %search-load-path-regexp
     call-if-defined
     current-bindings
     current-module-ref
@@ -77,21 +76,20 @@
   (define (default-before-filter name) (string-suffix? ".scm" name))
 
   (define*
-    (path->module-names base-path #:optional (max-depth (inf))
-      (before-filter default-before-filter))
+    (path->module-names base-path #:key (max-depth (inf)) (before-filter default-before-filter)
+      (load-path (string-longest-prefix base-path %load-path)))
     "list probable libraries belonging to directory \"path\" and subdirectories. path must be in the load-path.
     result may include files that contain no library definition, depending on the validations in before-filter.
     the default before-filter allows only files with a \".scm\" suffix."
-    (let (load-path (string-longest-prefix base-path %load-path))
-      (if load-path
-        (let
-          (path->module-name (l (a) (path->symbol-list (string-drop a (string-length load-path)))))
-          (if (eqv? (q reqular) (stat:type base-path)) (path->module-name base-path)
-            (fold-directory-tree
-              (l (e stat-info r)
-                (if (eqv? (q regular) (stat:type stat-info)) (pair (path->module-name) r) r))
-              (list) base-path #:max-depth max-depth #:before-filter before-filter)))
-        (error-create (q path-is-not-in-load-path)))))
+    (if load-path
+      (let
+        (path->module-name (l (a)  (path->symbol-list (remove-filename-extension (string-drop a (string-length load-path)) (list "scm")))))
+        (if (eqv? (q reqular) (stat:type (stat base-path))) (path->module-name base-path)
+          (fold-directory-tree
+            (l (e stat-info r)
+              (if (eqv? (q regular) (stat:type stat-info)) (pair (path->module-name e) r) r))
+            (list) base-path #:max-depth max-depth #:before-filter before-filter)))
+      (error-create (q path-is-not-in-load-path))))
 
   (define (import-any . module-names)
     "(symbol ...) ... ->
@@ -108,8 +106,8 @@
     (define binding-name (@@ module-name binding-name)))
 
   (define*
-    (import-directory-tree path #:optional (max-depth (inf)) (before-filter default-before-filter)
-      (resolve-interface-args (list)))
+    (import-directory-tree path #:key (resolve-interface-args (list)) #:rest
+      path->module-names-args)
     "string #:key (max-depth integer) (resolve-interface-args list/procedure) -> unspecified
     imports libraries with path->module-names"
     (let (current-module* (current-module))
@@ -119,7 +117,7 @@
             (apply resolve-interface e
               (if (procedure? resolve-interface-args) (resolve-interface-args e)
                 resolve-interface-args))))
-        (path->module-names path max-depth before-filter))))
+        (apply path->module-names path path->module-names-args))))
 
   (define (current-module-ref a) "symbol -> any" (module-ref (current-module) a))
 
@@ -150,13 +148,6 @@
         (if (eof-object? expr) r (loop (read port) (eval expr env))))
       (close port)))
 
-  (define (%search-load-path-regexp a)
-    (any
-      (l (load-path)
-        ( (l (res) (if (null? res) #f (first (list-sort string< res))))
-          (path->module-names load-path (l (e) (not (string-match a e))))))
-      %load-path))
-
   (define* (module-name->path a #:optional (relative #f))
     "create a filesystem path string from a module name.t
     if \"relative\" is false, load-path is searched and a full path is returned on success."
@@ -173,8 +164,7 @@
     (pass-if (module-variable module name) (l (a) ((variable-ref a)))))
 
   (define* path->module-name
-    (let
-      (path->symbol-list (l (a) (path->symbol-list (remove-filename-extension a (list "scm")))))
+    (let (path->symbol-list (l (a) (path->symbol-list (remove-filename-extension a (list "scm")))))
       (l* (a #:optional (load-paths %load-path))
         "string -> (symbol ...)\false
         create a module name from a typical path string by searching load-path for path if path is a full path,

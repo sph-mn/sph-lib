@@ -1,25 +1,39 @@
-(import (sph common) (sph test))
-(define-test (aa input output) input)
-(define (bb a b) (+ a b))
+(library (test sph module test)
+  (export
+    execute)
+  (import
+    (rnrs base)
+    (sph)
+    (sph alist)
+    (sph test))
 
-(define-test (assertions-without-title)
-  (assert-and (assert-equal (list 1 2) (list 1 2)) (assert-true (< 1 3)) (assert-true (> 1 3))))
+  (define-test (aa input output) input)
+  (define (bb a b) (+ a b))
 
-(define-test (assertions-with-title)
-  (assert-and "a" (assert-equal "b" (list 1 2) (list 1 2))
-    (assert-true "c" (< 1 3)) (assert-true "d" (> 1 3))))
+  (define-test (assertions-without-title)
+    (assert-and (assert-equal (list 1 2) (list 1 2)) (assert-true (< 1 3)) (assert-true (> 1 3))))
 
-(define-tests tests-1 (aa 1 (1) (3 4) 5))
-(define-tests tests-2 (bb (1 2) 3) assertions-without-title)
-(define-tests tests-3 assertions-with-title)
+  (define-test (assertions-with-title)
+    (assert-and "a" (assert-equal "b" (list 1 2) (list 1 2))
+      (assert-true "c" (< 1 3)) (assert-true "d" (> 1 3))))
 
-#;(define-tests tests
-  (test-execute ((unquote tests-1)) (#(test-result #f "aa" 1 (3 4) (3 4) 5))
-    ((unquote tests-2))
-    (#(test-result #t "bb" 1 #f #f #f)
-      #(test-result #f "assertions-without-title assertion" #f #f (> 1 3) #t))
-    ((unquote tests-3)) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t))))
+  (define-tests tests-1 (aa 1 (1) (3 4) 5))
+  (define-tests tests-2 (bb (1 2) 3) assertions-without-title)
+  (define-tests tests-3 assertions-with-title)
 
-;(debug-log (every test-result-success? (test-execute tests)))
+  (define-test (test-execute-project input)
+    (test-execute-project (first input) (alist-merge test-settings-default (ql (only (test-module)))))
+    )
 
-(test-execute-module (q (test sph module test-module)))
+  (define-tests tests
+    (test-execute-project ((test sph module)) (((test sph module test-module) "execute called")))
+    (test-execute ((unquote tests-1)) (#(test-result #f "aa" 1 (3 4) (3 4) 5))
+      ((unquote tests-2))
+      (#(test-result #t "bb" 1 #f #f #f)
+        #(test-result #f "assertions-without-title assertion" #f #f (> 1 3) #t))
+      ((unquote tests-3)) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t)))
+    (test-execute-module ((test sph module test-module)) ("execute called"))
+ )
+
+  (define (execute) (debug-log (every test-result-success? (test-execute tests))))
+  (execute))

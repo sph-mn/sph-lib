@@ -152,7 +152,7 @@
 
   (define (alist-merge a b)
     "list list -> list
-    create a new alist with the associations of both alists, preferring entries of list-2"
+    create a new alist with the associations of both alists, preferring entries of \"b\""
     (append (filter (l (e) (not (alist-ref b (first e)))) a) b))
 
   (define (alist-update a b)

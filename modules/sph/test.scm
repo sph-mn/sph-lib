@@ -21,9 +21,9 @@
     define-tests
     test-create-result
     test-execute
-    test-execute-module
     test-execute-list
-    test-execute-path
+    test-execute-module
+    test-execute-project
     test-format-get
     test-formats
     test-lambda
@@ -34,7 +34,9 @@
     test-settings-default
     test-success?)
   (import
+    (guile)
     (rnrs base)
+    (rnrs eval)
     (sph)
     (sph alist)
     (sph error)
@@ -54,11 +56,12 @@
       syntax
       readlink
       quasisyntax)
-    (rnrs eval)
-    (guile)
     (only (sph conditional) boolean-and)
     (only (sph filesystem) path->full-path)
-    (only (sph list) any->list map-with-continue)
+    (only (sph list)
+      any->list
+      map-with-continue
+      list-suffix?)
     (only (sph list one) randomise)
     (only (sph module)
       current-module-ref
@@ -71,11 +74,33 @@
     random-order? #f parallel? #f exclude (list) only (list) until (list) before #f exceptions? #t)
 
   (define (test-module-execute settings name) "alist (symbol ...)"
-    (debug-log (@@ (test sph module test-module) execute))
     ((module-ref (resolve-interface name) (q execute)) settings))
 
-  (define (test-project-execute settings path)
-    (map (l (e) (test-module-execute settings e)) (path->module-names path)))
+  (define (call-with-extended-load-path path-additional proc) "string procedure -> any:proc-result"
+    (add-to-load-path path-additional)
+    (let (r (proc)) (set! %load-path (delete path-additional %load-path)) r))
+
+  (define (search-project-directory& a c)
+    (let (path (string-join (map symbol->string a) "/"))
+      (any
+        (l (load-path)
+          (let (full-path (string-append load-path "/" path))
+            (and (file-exists? full-path) (c load-path full-path))))
+        %load-path)))
+
+  (define (test-project-modules-apply-settings settings modules)
+    (alist-quoted-bind settings (only exclude include)
+      (if only
+        (filter (l (module-name) (any (l (only) (apply list-suffix? module-name only)) only))
+          modules)
+        modules)))
+
+  (define (test-project-execute settings name)
+    (search-project-directory& name
+      (l (load-path full-path)
+        (map (l (e) (let (r (test-module-execute settings e)) (if (error? r) r (pair e r))))
+          (test-project-modules-apply-settings settings
+            (path->module-names full-path #:load-path load-path))))))
 
   (define (test-execute-path settings a) "alist string -> test-result/error"
     (let (a (path->full-path a))
@@ -155,11 +180,14 @@
   (define* (test-execute-module name #:optional (settings test-settings-default))
     (test-module-execute settings name))
 
+  (define* (test-execute-project name #:optional (settings test-settings-default))
+    (test-project-execute settings name))
+
   (define* (test-execute source #:optional (settings test-settings-default))
-    "list:alist string/list/procedure -> test-result
+    "list:alist list/procedure -> test-result
     test-result-group: (group-name test-result/test-result-group ...)
     test-result: (test-result-group ...)"
-    (if (string? source) (test-execute-path settings source) (test-execute-list settings source)))
+    (test-execute-list settings source))
 
   (define-syntax-cases test-lambda s
     (((arguments expected) body ...) (syntax (lambda (arguments expected) body ...)))
@@ -222,10 +250,3 @@
       (let (r expr)
         (if (equal? expected r) #t (assert-failure-result r expected optional-title (q expr)))))
     ((expected expr) (assert-equal #f expected expr))))
-
-;;; note: source file /home/nonroot/.lib/scm/sph/filesystem.scm
-;;;       newer than compiled /home/nonroot/.cache/guile/ccache/2.2-LE-8-3.6/mnt/sdb1/stor/personal/authored/projects/public/sph-lib/modules/sph/filesystem.scm.go
-;;; note: auto-compilation is enabled, set GUILE_AUTO_COMPILE=0
-;;;       or pass the --no-auto-compile argument to disable.
-;;; compiling /home/nonroot/.lib/scm/sph/filesystem.scm
-;;; compiled /home/nonroot/.cache/guile/ccache/2.2-LE-8-3.6/mnt/sdb1/stor/personal/authored/projects/public/sph-lib/modules/sph/filesystem.scm.go

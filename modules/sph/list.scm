@@ -74,6 +74,7 @@
     list-index-value
     list-indices
     list-prefix?
+    list-suffix?
     list-replace-last
     list-replace-last-n
     list-select
@@ -141,6 +142,7 @@
       last
       find
       alist-cons
+      take-right
       delete-duplicates
       filter-map
       fold-right
@@ -522,11 +524,17 @@
     (let loop ((rest a) (index 0) (r (list)))
       (if (null? rest) r (loop (tail rest) (+ 1 index) (if (proc (first rest)) (pair index r) r)))))
 
-  (define (list-prefix? a . prefix)
+ (define (list-prefix? a . prefix)
     "list any ... -> boolean
     check if the list of prefixes is a prefix of list"
     (let (length-prefix (length prefix))
       (if (< (length a) length-prefix) #f (equal? (take a length-prefix) prefix))))
+
+  (define (list-suffix? a . suffix)
+    "list any ... -> boolean
+    check if the list of suffixes is a suffix of list"
+    (let (length-suffix (length suffix))
+      (if (< (length a) length-suffix) #f (equal? (take-right a length-suffix) suffix))))
 
   (define (list-replace-last a replacement)
     "list any/{any ... -> any} -> list

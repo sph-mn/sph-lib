@@ -2,8 +2,8 @@
   (export
     execute)
   (import
-    (sph common)
-    ;(rnrs base)
+    (sph)
+    (rnrs base)
     (sph test))
 
-  (define (execute settings) (debug-log "execute called") #t))
+  (define (execute settings) (list "execute called")))
