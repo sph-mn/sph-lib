@@ -99,6 +99,7 @@
     map-with-state
     n-times-fold
     n-times-map
+    n-times
     pair->list
     pair-fold-multiple
     pair-map
@@ -696,6 +697,15 @@
     call proc with each list element and with state variables initialised by init.
     each proc call should return a list of multiple elements, one for the mapped element, and one for each new state value."
     (apply fold-multiple (l (e r . states) (pair (apply proc e states) r)) a (list) init))
+
+  (define (n-times count proc)
+    (let loop ((n 0))
+      (if (< n count)
+        (proc n)
+
+        )
+      )
+    )
 
   (define (n-times-map count proc)
     "integer {integer -> any} -> list

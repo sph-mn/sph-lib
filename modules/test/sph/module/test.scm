@@ -22,8 +22,8 @@
   (define-tests tests-3 assertions-with-title)
 
   (define-test (test-execute-project input)
-    (test-execute-project (first input) (alist-merge test-settings-default (ql (only (test-module)))))
-    )
+    (test-execute-project (first input)
+      (alist-merge test-settings-default (ql (only (test-module))))))
 
   (define-tests tests
     (test-execute-project ((test sph module)) (((test sph module test-module) "execute called")))
@@ -32,8 +32,7 @@
       (#(test-result #t "bb" 1 #f #f #f)
         #(test-result #f "assertions-without-title assertion" #f #f (> 1 3) #t))
       ((unquote tests-3)) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t)))
-    (test-execute-module ((test sph module test-module)) ("execute called"))
- )
+    (test-execute-module ((test sph module test-module)) ("execute called")))
 
-  (define (execute) (debug-log (every test-result-success? (test-execute tests))))
+  (define (execute) (test-result-format (test-execute tests)))
   (execute))

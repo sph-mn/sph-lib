@@ -24,11 +24,11 @@
     test-execute-list
     test-execute-module
     test-execute-project
-    test-format-get
     test-formats
     test-lambda
     test-list-normalise
     test-resolve-procedure
+    test-result-format
     test-result-success?
     test-results-display
     test-settings-default
@@ -40,6 +40,7 @@
     (sph)
     (sph alist)
     (sph error)
+    (sph hashtable)
     (sph record)
     (only (guile)
       resolve-interface
@@ -70,17 +71,31 @@
     (only (sph string) any->string)
     (only (sph vector) vector-first))
 
+  (define (test-format-compact-one a group port)
+    "vector:test-result-record port/any -> [any]"
+    (display (test-result-title a))
+    (n-times (or (test-result-index a) 1) (l (n)
+        (display n)
+        ))
+    )
+
+  (define (test-format-compact result port)
+    (let loop ((rest result) (depth 0) (group (list)))
+      (let (e (first rest)) (if (list? e) (debug-log (q list) e) (test-format-compact-one e group port)))))
+
+  (define-as test-formats symbol-hashtable compact test-format-compact)
+
+  (define* (test-result-format result #:optional (format (q compact)) (port (current-output-port)))
+    ((hashtable-ref test-formats format) result port))
+
   (define-as test-settings-default alist-quoted
     random-order? #f parallel? #f exclude (list) only (list) until (list) before #f exceptions? #t)
 
   (define (test-module-execute settings name) "alist (symbol ...)"
     ((module-ref (resolve-interface name) (q execute)) settings))
 
-  (define (call-with-extended-load-path path-additional proc) "string procedure -> any:proc-result"
-    (add-to-load-path path-additional)
-    (let (r (proc)) (set! %load-path (delete path-additional %load-path)) r))
-
   (define (search-project-directory& a c)
+    "(symbol ...) procedure:{string:load-path string:full-path -> any} -> any"
     (let (path (string-join (map symbol->string a) "/"))
       (any
         (l (load-path)
@@ -89,6 +104,7 @@
         %load-path)))
 
   (define (test-project-modules-apply-settings settings modules)
+    "list:alist ((symbol ...) ...) -> ((symbol ...) ...)"
     (alist-quoted-bind settings (only exclude include)
       (if only
         (filter (l (module-name) (any (l (only) (apply list-suffix? module-name only)) only))
@@ -96,19 +112,12 @@
         modules)))
 
   (define (test-project-execute settings name)
+    "list:alist (symbol ...) -> list:test-result:((module-name test-result ...) ...)"
     (search-project-directory& name
       (l (load-path full-path)
         (map (l (e) (let (r (test-module-execute settings e)) (if (error? r) r (pair e r))))
           (test-project-modules-apply-settings settings
             (path->module-names full-path #:load-path load-path))))))
-
-  (define (test-execute-path settings a) "alist string -> test-result/error"
-    (let (a (path->full-path a))
-      (case (stat:type (stat a)) ((directory) (test-project-execute settings a))
-        ((regular) (test-module-execute settings a))
-        ( (symlink)
-          ;as far as we know readlink fails for circular symlinks
-          (test-execute-path settings (readlink a))))))
 
   (define (test-resolve-procedure name) "symbol -> procedure/boolean-false"
     (let (test-name (symbol-append (q test-) name))
