@@ -21,12 +21,12 @@
   (define-tests tests-2 (bb (1 2) 3) assertions-without-title)
   (define-tests tests-3 assertions-with-title)
 
-  (define-test (test-execute-project input)
-    (test-execute-project (first input)
+  (define-test (test-execute-modules input)
+    (test-execute-modules (first input)
       (alist-merge test-settings-default (ql (only (test-module))))))
 
   (define-tests tests
-    (test-execute-project ((test sph module)) (((test sph module test-module) "execute called")))
+    (test-execute-modules ((test sph module)) (((test sph module test-module) "execute called")))
     (test-execute ((unquote tests-1)) (#(test-result #f "aa" 1 (3 4) (3 4) 5))
       ((unquote tests-2))
       (#(test-result #t "bb" 1 #f #f #f)

@@ -18,12 +18,13 @@
     assert-equal
     assert-true
     define-test
+    define-test-module
     define-tests
     test-create-result
     test-execute
     test-execute-list
     test-execute-module
-    test-execute-project
+    test-execute-modules
     test-formats
     test-lambda
     test-list-normalise
@@ -41,12 +42,12 @@
     (sph alist)
     (sph error)
     (sph hashtable)
+    (sph read-write)
     (sph record)
     (only (guile)
       resolve-interface
       symbol-append
       defined?
-      current-module
       stat:type
       module-ref
       syntax->datum
@@ -61,62 +62,74 @@
     (only (sph filesystem) path->full-path)
     (only (sph list)
       any->list
+      containsv?
       map-with-continue
       list-suffix?)
     (only (sph list one) randomise)
     (only (sph module)
       current-module-ref
+      environment*
       path->module-names
-      path->module-name)
+      module-name->load-path+full-path&)
+    (only (sph one) n-times)
     (only (sph string) any->string)
-    (only (sph vector) vector-first))
+    (only (sph vector) vector-first)
+    (only (srfi srfi-1) take-while remove))
 
-  (define (test-format-compact-one a group port)
-    "vector:test-result-record port/any -> [any]"
-    (display (test-result-title a))
-    (n-times (or (test-result-index a) 1) (l (n)
-        (display n)
-        ))
-    )
+  (define-syntax define-test-module
+    (l (s)
+      (syntax-case s (import)
+        ( (_ (name-part ...) (import spec ...) body ...)
+          (syntax
+            (library (name-part ...) (export execute) (import (rnrs base) (sph) (sph test) spec ...) body ...)))
+        ( (_ (name-part ...) body ...)
+          (syntax (define-test-module (name-part ...) (import) body ...))))))
 
-  (define (test-format-compact result port)
+  (define (test-format-compact-one a group port) "vector:test-result-record port/any -> [any]"
+    (display (test-result-title a) port)
+    (let (index (test-result-index a))
+      (if (and index (< 0 index))
+        (begin (n-times index (l (n) (display " " port) (display (+ 1 n) port))) (newline port)))))
+
+  (define (test-format-compact result port) "list port -> result"
     (let loop ((rest result) (depth 0) (group (list)))
-      (let (e (first rest)) (if (list? e) (debug-log (q list) e) (test-format-compact-one e group port)))))
+      (if (null? rest) result
+        (let (e (first rest))
+          (if (list? e) (debug-log (q list) e)
+            (begin (test-format-compact-one e group port) (loop (tail rest) depth group)))))))
 
   (define-as test-formats symbol-hashtable compact test-format-compact)
 
   (define* (test-result-format result #:optional (format (q compact)) (port (current-output-port)))
-    ((hashtable-ref test-formats format) result port))
+    "result -> result
+    result is returned unmodified"
+    ((hashtable-ref test-formats format) result port) result)
 
   (define-as test-settings-default alist-quoted
-    random-order? #f parallel? #f exclude (list) only (list) until (list) before #f exceptions? #t)
+    random-order? #f parallel? #f exclude #f only #f until #f before #f exceptions? #t)
 
   (define (test-module-execute settings name) "alist (symbol ...)"
-    ((module-ref (resolve-interface name) (q execute)) settings))
+    ;environment* from (sph module) is used to make the define-test-module syntax work
+    ((eval (q execute) (environment* name)) settings))
 
-  (define (search-project-directory& a c)
-    "(symbol ...) procedure:{string:load-path string:full-path -> any} -> any"
-    (let (path (string-join (map symbol->string a) "/"))
-      (any
-        (l (load-path)
-          (let (full-path (string-append load-path "/" path))
-            (and (file-exists? full-path) (c load-path full-path))))
-        %load-path)))
+  (define (test-modules-apply-settings settings modules)
+    "list:alist ((symbol ...) ...) -> ((symbol ...) ...)
+    apply settings to a list of test-module names"
+    (alist-quoted-bind settings (only exclude)
+      ( (if only filter (if exclude remove (l (proc modules) modules)))
+        (l (module-name) (any (l (only) (apply list-suffix? module-name only)) only)) modules)))
 
-  (define (test-project-modules-apply-settings settings modules)
-    "list:alist ((symbol ...) ...) -> ((symbol ...) ...)"
-    (alist-quoted-bind settings (only exclude include)
-      (if only
-        (filter (l (module-name) (any (l (only) (apply list-suffix? module-name only)) only))
-          modules)
-        modules)))
-
-  (define (test-project-execute settings name)
-    "list:alist (symbol ...) -> list:test-result:((module-name test-result ...) ...)"
-    (search-project-directory& name
+  (define (test-modules-execute settings name)
+    "list:alist (symbol ...) -> list:test-result:((module-name test-result ...) ...)
+    modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
+    this procedure is supposed to return a test-result, for example from calling \"test-execute\"
+    the implementation is depends on the following features:
+    - module names are mapped to filesystem paths
+    - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
+    (module-name->load-path+full-path& name #f
       (l (load-path full-path)
         (map (l (e) (let (r (test-module-execute settings e)) (if (error? r) r (pair e r))))
-          (test-project-modules-apply-settings settings
+          (test-modules-apply-settings settings
             (path->module-names full-path #:load-path load-path))))))
 
   (define (test-resolve-procedure name) "symbol -> procedure/boolean-false"
@@ -133,14 +146,20 @@
           ((procedure? e) (list e)) (else (error-create (q invalid-test-spec)))))
       a))
 
+  (define (test-list-until a value) (take-while (l (e) (not (equal? e value))) a))
+  (define (test-list-only a values) (filter (l (spec) (containsv? values (first spec))) a))
+  (define (test-list-exclude a values) (remove (l (spec) (containsv? values (first spec))) a))
+
   (define (test-list-apply-settings settings a)
-    ;todo: other settings
-    (if (alist-quoted-ref settings random-order?) (randomise a) a))
+    (alist-quoted-bind settings (only exclude until random-order?)
+      ( (if random-order? randomise identity)
+        ( (if until test-list-until identity)
+          (if only (test-list-only a only) (if exclude (test-list-exclude a exclude) a))))))
 
   (define (test-success? result expected)
     (if (test-result? result) (test-result-success? result) (equal? result expected)))
 
-  (define (test-list-execute-one name . data)
+  (define (test-list-execute-one before name . data)
     "procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure, ensures that test-procedure results are test-results.
     ;creates only one test-result
@@ -165,12 +184,12 @@
   (define (test-list-execute-parallel settings a)
     "list:alist list -> list
     executes all tests even if some fail"
-    (par-map (l (e) (apply test-list-execute-one e)) a))
+    (par-map (l (e) (apply test-list-execute-one #f e)) a))
 
   (define (test-list-execute-serial settings a)
     (map-with-continue
       (l (continue e)
-        (let (r (apply test-list-execute-one e))
+        (let (r (apply test-list-execute-one #f e))
           (if (test-result-success? r) (continue r) (list r))))
       a))
 
@@ -189,8 +208,13 @@
   (define* (test-execute-module name #:optional (settings test-settings-default))
     (test-module-execute settings name))
 
-  (define* (test-execute-project name #:optional (settings test-settings-default))
-    (test-project-execute settings name))
+  (define* (test-execute-modules name-prefix #:optional (settings test-settings-default))
+    "execute all test-modules whose names begin with name-prefix.
+    for example if there is a module (a b c) and (a d e), (test-execute-modules (a)) will execute both.
+    additional settings are:
+    - exclude: do not execute matching modules. ((symbol ...) ...). a list of module name suffixes. for example (b c) matches the module (a b c)
+    - only: execute no other tests than matching modules. format is the same as for exclude. if both \"only\" and \"exclude\" are specified, \"only\" is used"
+    (test-modules-execute settings name-prefix))
 
   (define* (test-execute source #:optional (settings test-settings-default))
     "list:alist list/procedure -> test-result

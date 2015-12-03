@@ -252,9 +252,10 @@
   (define-syntax-rule (limit-min a min) (max a min))
   (define-syntax-rule (limit-max a max) (min a max))
 
-  (define (n-times n-last proc)
-    "apply a procedure a number of times with a monotonically increasing number with increments of 1. starts from 0"
-    (let loop ((n 0)) (if (<= n n-last) (begin (proc n) (loop (+ 1 n))))))
+  (define (n-times count proc)
+    "integer procedure:{integer ->} ->
+    call proc \"count\" times"
+    (let loop ((n 0)) (if (< n count) (begin (proc n) (loop (+ 1 n))))))
 
   (define (n-times-accumulate n-last init proc)
     (let loop ((n 0) (r init)) (if (< n n-last) (loop (+ 1 n) (proc n r)) r)))

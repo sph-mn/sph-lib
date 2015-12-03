@@ -3,6 +3,7 @@
     call-if-defined
     current-bindings
     current-module-ref
+    environment*
     export-modules
     import!
     import-any
@@ -14,6 +15,7 @@
     load-with-environment
     module-compose
     module-interface-binding-names
+    module-name->load-path+full-path&
     module-name->path
     module-name-interface-fold
     module-name-interface-map
@@ -25,6 +27,7 @@
   (import
     (guile)
     (rnrs base)
+    (rnrs eval)
     (sph)
     (sph error)
     (sph filesystem)
@@ -34,6 +37,18 @@
     (only (sph read-write) file->datums)
     (only (sph string) string-longest-prefix)
     (only (srfi srfi-1) last))
+
+  (define (environment* . name)
+    "(symbol ...) ... -> environment/module
+    this can be used to load modules that use syntax for creating their module definition.
+    the modules contents are first evaluated in the top-level environment before the environment object is created.
+    the syntax used for creating the module definition must be available in the current top-level environment.
+    only the \".scm\" filename-extension is supported"
+    (map
+      (l (e)
+        (load (module-name->load-path+full-path& e ".scm" (l (load-path full-path) full-path))))
+      name)
+    (apply environment name))
 
   (define (module-name-interface-fold proc init module-name)
     "procedure:{name any:value any:init} any (symbol ...) -> any
@@ -83,7 +98,10 @@
     the default before-filter allows only files with a \".scm\" suffix."
     (if load-path
       (let
-        (path->module-name (l (a)  (path->symbol-list (remove-filename-extension (string-drop a (string-length load-path)) (list "scm")))))
+        (path->module-name
+          (l (a)
+            (path->symbol-list
+              (remove-filename-extension (string-drop a (string-length load-path)) (list "scm")))))
         (if (eqv? (q reqular) (stat:type (stat base-path))) (path->module-name base-path)
           (fold-directory-tree
             (l (e stat-info r)
@@ -148,13 +166,23 @@
         (if (eof-object? expr) r (loop (read port) (eval expr env))))
       (close port)))
 
-  (define* (module-name->path a #:optional (relative #f))
-    "create a filesystem path string from a module name.t
-    if \"relative\" is false, load-path is searched and a full path is returned on success."
-    ( (if relative identity %search-load-path)
-      (string-append (string-join (map symbol->string a) "/") ".scm")))
+  (define* (module-name->path a #:optional (filename-extension ".scm"))
+    "(symbol ...) string -> string
+    filename-extension can be false so that also directory paths for example can be created"
+    ( (l (a) (if filename-extension (string-append a filename-extension) a))
+      (string-join (map symbol->string a) "/")))
 
   (define (not-scm-suffix? str) (not (string-suffix? ".scm" str)))
+
+  (define (module-name->load-path+full-path& a filename-extension c)
+    "(symbol ...) procedure:{string:load-path string:full-path -> any} -> any
+    finds the load path under which a possibly partial (prefix) module name is saved"
+    (let (path (module-name->path a filename-extension))
+      (any
+        (l (load-path)
+          (let (full-path (string-append load-path "/" path))
+            (and (file-exists? full-path) (c load-path full-path))))
+        %load-path)))
 
   (define (module-ref-no-error module name)
     "like guiles module-ref but results in false and does not raise an error if variable is unbound"

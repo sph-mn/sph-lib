@@ -74,7 +74,6 @@
     list-index-value
     list-indices
     list-prefix?
-    list-suffix?
     list-replace-last
     list-replace-last-n
     list-select
@@ -85,6 +84,7 @@
     list-sort-by-list
     list-sort-by-list-with-accessor
     list-sort-with-accessor
+    list-suffix?
     map-apply
     map-map
     map-one
@@ -99,7 +99,6 @@
     map-with-state
     n-times-fold
     n-times-map
-    n-times
     pair->list
     pair-fold-multiple
     pair-map
@@ -156,10 +155,11 @@
       split-at
       take))
 
+  ;copied from (sph conditional)
   (define-syntax-rule (identity-if test else ...) ((lambda (r) (if r r (begin else ...))) test))
 
   (define-syntax-rule (list-bind a lambda-formals body ...)
-    ;let-if
+    ;bind elements of list "a" to "lambda-formals"
     (apply (lambda lambda-formals body ...) a))
 
   (define (append-map-unless proc stop? default . a)
@@ -214,7 +214,7 @@
 
   (define* (contains? a value #:optional (member member))
     "list any [member-proc] -> boolean
-    return a boolean indicating if list a contains object value"
+    return a boolean indicating if list a contains \"value\""
     (if (member value a) #t #f))
 
   (define* (containsq? a value) (if (memq value a) #t #f))
@@ -237,7 +237,7 @@
 
   (define* (count-with-limit pred limit . a)
     "procedure integer list ... -> integer
-    like count but allows to specify a count limit at which to stop counting"
+    like count but allows to specify a limit at which to stop counting"
     (let loop ((rest a) (count 0))
       (if (any null? rest) count
         (if (apply pred (map first rest))
@@ -257,7 +257,8 @@
     (apply lset-difference equal? lists))
 
   (define* (delete-duplicates-sorted a #:optional (equal-proc equal?) (preserve-order #t))
-    "delete duplicates from a sorted list. faster algorithm than for unsorted lists."
+    "list [procedure:{any any -> boolean} boolean] -> list
+    delete duplicates from a sorted list using a more efficient algorithm than for unsorted lists"
     (if (or (null? a) (null? (tail a))) a
       ( (if preserve-order reverse (l (i) i))
         (let loop ((e-1 (first a)) (rest (tail a)) (r (list (first a))))
@@ -525,7 +526,7 @@
     (let loop ((rest a) (index 0) (r (list)))
       (if (null? rest) r (loop (tail rest) (+ 1 index) (if (proc (first rest)) (pair index r) r)))))
 
- (define (list-prefix? a . prefix)
+  (define (list-prefix? a . prefix)
     "list any ... -> boolean
     check if the list of prefixes is a prefix of list"
     (let (length-prefix (length prefix))
@@ -698,18 +699,9 @@
     each proc call should return a list of multiple elements, one for the mapped element, and one for each new state value."
     (apply fold-multiple (l (e r . states) (pair (apply proc e states) r)) a (list) init))
 
-  (define (n-times count proc)
-    (let loop ((n 0))
-      (if (< n count)
-        (proc n)
-
-        )
-      )
-    )
-
   (define (n-times-map count proc)
     "integer {integer -> any} -> list
-    map over the numbers 0 to count"
+    map over the integers 0 to \"count\""
     (reverse (let loop ((n 0) (r (list))) (if (< n count) (loop (+ 1 n) (pair (proc n) r)) r))))
 
   (define (n-times-fold count init proc)

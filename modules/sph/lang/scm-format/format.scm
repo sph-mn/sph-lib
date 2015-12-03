@@ -227,25 +227,27 @@
 
   (define (format-library a recurse config current-indent)
     (list
-      (let
-        ( (indent (create-indent config current-indent))
-          (vertical-spacing
-            (create-vertical-spacing (hashtable-ref config (q toplevel-vertical-spacing)))))
-        (match (tail a)
-          ( (name exports imports body ...)
-            (apply string-append "("
-              (symbol->string (first a)) " "
-              (format-list name config current-indent (inf) (inf) (inf)) "\n"
-              indent (format-import exports recurse config (+ 1 current-indent))
-              "\n" indent
-              (format-import imports recurse config (+ 1 current-indent))
-              (if (null? body) (list ")")
-                (list vertical-spacing indent
-                  (string-join-with-vertical-spacing
-                    (map (l (e) (first (recurse e current-indent))) body) indent
-                    vertical-spacing (hashtable-ref config (q toplevel-vertical-spacing-oneline)))
-                  ")"))))
-          (_ a)))
+      (if (= 1 current-indent)
+        (let
+          ( (indent (create-indent config current-indent))
+            (vertical-spacing
+              (create-vertical-spacing (hashtable-ref config (q toplevel-vertical-spacing)))))
+          (match (tail a)
+            ( (name exports imports body ...)
+              (apply string-append "("
+                (symbol->string (first a)) " "
+                (format-list name config current-indent (inf) (inf) (inf)) "\n"
+                indent (format-import exports recurse config (+ 1 current-indent))
+                "\n" indent
+                (format-import imports recurse config (+ 1 current-indent))
+                (if (null? body) (list ")")
+                  (list vertical-spacing indent
+                    (string-join-with-vertical-spacing
+                      (map (l (e) (first (recurse e current-indent))) body) indent
+                      vertical-spacing (hashtable-ref config (q toplevel-vertical-spacing-oneline)))
+                    ")"))))
+            (_ a)))
+        a)
       #f))
 
   (define (format-list a config current-indent start middle end)
