@@ -26,13 +26,13 @@
       (alist-merge test-settings-default (ql (only (test-module))))))
 
   (define-tests tests
-    (test-execute-modules ((test sph module)) (((test sph module test-module) "execute called")))
-    (test-execute ((unquote tests-1)) (#(test-result #f "aa" 1 (3 4) (3 4) 5))
+    (test-execute-modules ((test module sph)) (((test module sph test-module) "execute called")))
+    (test-execute-procedures ((unquote tests-1)) (#(test-result #f "aa" 1 (3 4) (3 4) 5))
       ((unquote tests-2))
       (#(test-result #t "bb" 1 #f #f #f)
         #(test-result #f "assertions-without-title assertion" #f #f (> 1 3) #t))
       ((unquote tests-3)) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t)))
-    (test-execute-module ((test sph module test-module)) ("execute called")))
+    (test-execute-module ((test module sph test-module)) ("execute called")))
 
-  (define (execute) (test-result-format (test-execute tests)))
+  (define (execute) (test-result-format (test-execute-procedures tests)))
   (execute))

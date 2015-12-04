@@ -20,11 +20,12 @@
     define-test
     define-test-module
     define-tests
+    test-cli
     test-create-result
-    test-execute
-    test-execute-list
+    test-execute-cli
     test-execute-module
     test-execute-modules
+    test-execute-procedures
     test-formats
     test-lambda
     test-list-normalise
@@ -66,6 +67,7 @@
       map-with-continue
       list-suffix?)
     (only (sph list one) randomise)
+    (sph cli)
     (only (sph module)
       current-module-ref
       environment*
@@ -76,7 +78,39 @@
     (only (sph vector) vector-first)
     (only (srfi srfi-1) take-while remove))
 
+  (define test-cli
+    (cli-create #:description "execute tests from files or modules"
+      #:options (ql ((source ...)) (modules-prefix) (module) (exclude) (only))))
+
+  (define (test-execute-cli)
+    (let (arguments (test-cli))
+      (alist-quoted-bind arguments (source modules-prefix module)
+        (if source (if modules-prefix source source)))))
+
+  (define-syntax-cases test-lambda s
+    (((arguments expected) body ...) (syntax (lambda (arguments expected) body ...)))
+    ( ( (a ...) body ...)
+      (quasisyntax (lambda (a ... . (unsyntax (datum->syntax s (gensym "define-test")))) body ...))))
+
+  (define-syntax-cases define-test
+    ( ( (name parameter ...) body ...)
+      (syntax (define-test name (test-lambda (parameter ...) body ...))))
+    ( (name proc)
+      (let (name-datum (syntax->datum (syntax name)))
+        (quasisyntax
+          (define (unsyntax (datum->syntax (syntax name) (symbol-append (q test-) name-datum)))
+            proc)))))
+
+  (define-syntax-rule (define-tests name test ...) (define name (qq (test ...))))
+
   (define-syntax define-test-module
+    ;test modules are typical modules that export only an "export" procedure. this syntax simplifies the definition.
+    ;modules are used to give test modules a separated scope in which other modules that the test might need are integrated.
+    ;it is about loading code that usually depends on other code.
+    ;it also gives modules a name. an alternative could to evaluate top-level file content that uses "import" in a custom environment,
+    ;but this might lead to less separation of the module content.
+    ;to use this syntax, the syntax definition must be loaded into the environment in which the module is loaded.
+    ;to archieve this, module file content is first loaded in the top-level environment, then the module object is resolved
     (l (s)
       (syntax-case s (import)
         ( (_ (name-part ...) (import spec ...) body ...)
@@ -196,14 +230,12 @@
   (define (test-list-get-executor settings)
     (if (alist-quoted-ref settings parallel?) test-list-execute-parallel test-list-execute-serial))
 
-  (define (test-execute-list settings a) "list -> list"
+  (define (test-list-execute settings a) "list -> list"
     ( (test-list-get-executor settings) settings
       (test-list-apply-settings settings (test-list-normalise a))))
 
   (define (test-result? a) "any -> boolean"
     (and (vector? a) (= 7 (vector-length a)) (eqv? (q test-result) (vector-first a))))
-
-  (define test-result-group? list?)
 
   (define* (test-execute-module name #:optional (settings test-settings-default))
     (test-module-execute settings name))
@@ -216,28 +248,13 @@
     - only: execute no other tests than matching modules. format is the same as for exclude. if both \"only\" and \"exclude\" are specified, \"only\" is used"
     (test-modules-execute settings name-prefix))
 
-  (define* (test-execute source #:optional (settings test-settings-default))
+  (define* (test-execute-procedures source #:optional (settings test-settings-default))
     "list:alist list/procedure -> test-result
     test-result-group: (group-name test-result/test-result-group ...)
     test-result: (test-result-group ...)"
-    (test-execute-list settings source))
-
-  (define-syntax-cases test-lambda s
-    (((arguments expected) body ...) (syntax (lambda (arguments expected) body ...)))
-    ( ( (a ...) body ...)
-      (quasisyntax (lambda (a ... . (unsyntax (datum->syntax s (gensym "define-test")))) body ...))))
-
-  (define-syntax-cases define-test
-    ( ( (name parameter ...) body ...)
-      (syntax (define-test name (test-lambda (parameter ...) body ...))))
-    ( (name proc)
-      (let (name-datum (syntax->datum (syntax name)))
-        (quasisyntax
-          (define (unsyntax (datum->syntax (syntax name) (symbol-append (q test-) name-datum)))
-            proc)))))
+    (test-list-execute settings source))
 
   (define-record test-result type-name success? title index result arguments expected)
-  (define-syntax-rule (define-tests name test ...) (define name (qq (test ...))))
 
   (define (title-extend title addition) "string/false string -> vector"
     (if title (string-append addition " " title)))
