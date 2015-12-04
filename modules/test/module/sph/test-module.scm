@@ -1,2 +1,2 @@
-(define-test-module (test sph module test-module)
+(define-test-module (test module sph test-module)
   (define (execute settings) (list "execute called")))

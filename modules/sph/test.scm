@@ -28,7 +28,7 @@
     test-execute-procedures
     test-formats
     test-lambda
-    test-list-normalise
+    test-procedures-normalise
     test-resolve-procedure
     test-result-format
     test-result-success?
@@ -41,8 +41,11 @@
     (rnrs eval)
     (sph)
     (sph alist)
+    (sph cli)
+    (sph conditional)
     (sph error)
     (sph hashtable)
+    (sph module)
     (sph read-write)
     (sph record)
     (only (guile)
@@ -67,25 +70,53 @@
       map-with-continue
       list-suffix?)
     (only (sph list one) randomise)
-    (sph cli)
-    (only (sph module)
-      current-module-ref
-      environment*
-      path->module-names
-      module-name->load-path+full-path&)
     (only (sph one) n-times)
     (only (sph string) any->string)
     (only (sph vector) vector-first)
-    (only (srfi srfi-1) take-while remove))
+    (only (srfi srfi-1)
+      append-map
+      take-while
+      remove))
+
+  ;todo: settings for cli
 
   (define test-cli
-    (cli-create #:description "execute tests from files or modules"
-      #:options (ql ((source ...)) (modules-prefix) (module) (exclude) (only))))
+    (cli-create #:parameters "options ... filesystem-path ..."
+      #:description
+      "execute tests modules. takes filesystem paths by default. if path is a directory, all tests under directory are executed"
+      #:options
+      (ql ((source ...)) (display-format #f #f #t)
+        (modules-prefix) (module) (exclude #f #f #t #f #f) (add-to-load-path #f #f #t #f #f) (only #f #f #t #f #f))))
+
+  (define (test-path-execute settings a) "alist string -> test-result/error"
+    (let (load-path (path->load-path a))
+      (if load-path
+        (case (stat:type (stat (string-append load-path "/" a)))
+          ((directory) (test-modules-execute settings (path->module-name a)))
+          ((regular) (test-module-execute settings (path->module-name a)))
+          ( (symlink)
+            ;as far as we know readlink fails for circular symlinks
+            (test-path-execute settings (readlink a))))
+        (error-create (q file-not-found-in-load-path)))))
+
+  (define (test-execule-cli-path-list->module-names a filename-extension) "string string -> list"
+    (map (l (e) (path->module-name e filename-extension)) (string-split a #\,)))
+
+  (define (test-execute-cli-create-settings cli-arguments)
+    (alist-quoted-bind cli-arguments (exclude only display-format module-prefix)
+      (let (filename-extension (false-if module-prefix ".scm"))
+        (pass-if (alist-quoted-ref cli-arguments add-to-load-path)
+          (l (a) (map (l (e) (add-to-load-path e)) (string-split a #\.))))
+        (false-if-not only (test-execule-cli-path-list->module-names only filename-extension))
+        (false-if-not exclude (test-execule-cli-path-list->module-names exclude filename-extension)))
+      test-settings-default))
 
   (define (test-execute-cli)
-    (let (arguments (test-cli))
+    (let* ((arguments (test-cli)) (settings (test-execute-cli-create-settings arguments)))
       (alist-quoted-bind arguments (source modules-prefix module)
-        (if source (if modules-prefix source source)))))
+        (if source
+          (cond (modules-prefix source) (module source)
+            (else (map (l (e) (test-path-execute settings e)) source)))))))
 
   (define-syntax-cases test-lambda s
     (((arguments expected) body ...) (syntax (lambda (arguments expected) body ...)))
@@ -153,25 +184,29 @@
       ( (if only filter (if exclude remove (l (proc modules) modules)))
         (l (module-name) (any (l (only) (apply list-suffix? module-name only)) only)) modules)))
 
-  (define (test-modules-execute settings name)
+  (define (module-prefix->module-names settings name) "alist list -> ((symbol ...) ...)"
+    (module-name->load-path+full-path& name #f
+      (l (load-path full-path)
+        (test-modules-apply-settings settings (path->module-names full-path #:load-path load-path)))))
+
+  (define (module-prefix->modules settings module-prefix) "alist list -> (module ...)"
+    (map (l (e) (pair e (environment* e))) (module-prefix->module-names settings module-prefix)))
+
+  (define (test-modules-execute settings . name)
     "list:alist (symbol ...) -> list:test-result:((module-name test-result ...) ...)
     modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
     this procedure is supposed to return a test-result, for example from calling \"test-execute\"
     the implementation is depends on the following features:
     - module names are mapped to filesystem paths
     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
-    (module-name->load-path+full-path& name #f
-      (l (load-path full-path)
-        (map (l (e) (let (r (test-module-execute settings e)) (if (error? r) r (pair e r))))
-          (test-modules-apply-settings settings
-            (path->module-names full-path #:load-path load-path))))))
+    (append-map (l (e) (module-prefix->modules settings e)) name))
 
   (define (test-resolve-procedure name) "symbol -> procedure/boolean-false"
     (let (test-name (symbol-append (q test-) name))
       (if (defined? test-name) (current-module-ref test-name)
         (let (p (current-module-ref name)) (l (arguments . rest) (apply p arguments))))))
 
-  (define (test-list-normalise a)
+  (define (test-procedures-normalise a)
     "list -> list
     validate, resolve test-procedures and normalise the list"
     (map
@@ -180,20 +215,20 @@
           ((procedure? e) (list e)) (else (error-create (q invalid-test-spec)))))
       a))
 
-  (define (test-list-until a value) (take-while (l (e) (not (equal? e value))) a))
-  (define (test-list-only a values) (filter (l (spec) (containsv? values (first spec))) a))
-  (define (test-list-exclude a values) (remove (l (spec) (containsv? values (first spec))) a))
+  (define (test-procedures-until a value) (take-while (l (e) (not (equal? e value))) a))
+  (define (test-procedures-only a values) (filter (l (spec) (containsv? values (first spec))) a))
+  (define (test-procedures-exclude a values) (remove (l (spec) (containsv? values (first spec))) a))
 
-  (define (test-list-apply-settings settings a)
+  (define (test-procedures-apply-settings settings a)
     (alist-quoted-bind settings (only exclude until random-order?)
       ( (if random-order? randomise identity)
-        ( (if until test-list-until identity)
-          (if only (test-list-only a only) (if exclude (test-list-exclude a exclude) a))))))
+        ( (if until test-procedures-until identity)
+          (if only (test-procedures-only a only) (if exclude (test-procedures-exclude a exclude) a))))))
 
   (define (test-success? result expected)
     (if (test-result? result) (test-result-success? result) (equal? result expected)))
 
-  (define (test-list-execute-one before name . data)
+  (define (test-procedures-execute-one before name . data)
     "procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure, ensures that test-procedure results are test-results.
     ;creates only one test-result
@@ -215,24 +250,25 @@
                 (if (equal? r expected) (loop (tail d-tail) (+ 1 index))
                   (test-create-result #f title index r (first d) expected)))))))))
 
-  (define (test-list-execute-parallel settings a)
+  (define (test-procedures-execute-parallel settings a)
     "list:alist list -> list
     executes all tests even if some fail"
-    (par-map (l (e) (apply test-list-execute-one #f e)) a))
+    (par-map (l (e) (apply test-procedures-execute-one #f e)) a))
 
-  (define (test-list-execute-serial settings a)
+  (define (test-procedures-execute-serial settings a)
     (map-with-continue
       (l (continue e)
-        (let (r (apply test-list-execute-one #f e))
+        (let (r (apply test-procedures-execute-one #f e))
           (if (test-result-success? r) (continue r) (list r))))
       a))
 
-  (define (test-list-get-executor settings)
-    (if (alist-quoted-ref settings parallel?) test-list-execute-parallel test-list-execute-serial))
+  (define (test-procedures-get-executor settings)
+    (if (alist-quoted-ref settings parallel?) test-procedures-execute-parallel
+      test-procedures-execute-serial))
 
-  (define (test-list-execute settings a) "list -> list"
-    ( (test-list-get-executor settings) settings
-      (test-list-apply-settings settings (test-list-normalise a))))
+  (define (test-procedures-execute settings a) "list -> list"
+    ( (test-procedures-get-executor settings) settings
+      (test-procedures-apply-settings settings (test-procedures-normalise a))))
 
   (define (test-result? a) "any -> boolean"
     (and (vector? a) (= 7 (vector-length a)) (eqv? (q test-result) (vector-first a))))
@@ -252,7 +288,7 @@
     "list:alist list/procedure -> test-result
     test-result-group: (group-name test-result/test-result-group ...)
     test-result: (test-result-group ...)"
-    (test-list-execute settings source))
+    (test-procedures-execute settings source))
 
   (define-record test-result type-name success? title index result arguments expected)
 

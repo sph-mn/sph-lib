@@ -1,4 +1,4 @@
-(library (test sph module test)
+(library (test module sph test)
   (export
     execute)
   (import
@@ -34,5 +34,4 @@
       ((unquote tests-3)) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t)))
     (test-execute-module ((test module sph test-module)) ("execute called")))
 
-  (define (execute) (test-result-format (test-execute-procedures tests)))
-  (execute))
+  (define (execute settings) (test-result-format (test-execute-procedures tests settings))))

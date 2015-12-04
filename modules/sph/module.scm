@@ -21,6 +21,7 @@
     module-name-interface-map
     module-names->interface-binding-names
     module-ref-no-error
+    path->load-path
     path->module-name
     path->module-names
     path->symbol-list)
@@ -35,7 +36,7 @@
     (only (rnrs sorting) list-sort)
     (only (sph conditional) pass-if)
     (only (sph read-write) file->datums)
-    (only (sph string) string-longest-prefix)
+    (only (sph string) string-longest-prefix string-drop-prefix)
     (only (srfi srfi-1) last))
 
   (define (environment* . name)
@@ -97,15 +98,11 @@
     result may include files that contain no library definition, depending on the validations in before-filter.
     the default before-filter allows only files with a \".scm\" suffix."
     (if load-path
-      (let
-        (path->module-name
-          (l (a)
-            (path->symbol-list
-              (remove-filename-extension (string-drop a (string-length load-path)) (list "scm")))))
-        (if (eqv? (q reqular) (stat:type (stat base-path))) (path->module-name base-path)
+      (let (path->module-name* (l (e) (path->module-name (string-drop-prefix load-path e))))
+        (if (eqv? (q reqular) (stat:type (stat base-path))) (path->module-name* base-path)
           (fold-directory-tree
             (l (e stat-info r)
-              (if (eqv? (q regular) (stat:type stat-info)) (pair (path->module-name e) r) r))
+              (if (eqv? (q regular) (stat:type stat-info)) (pair (path->module-name* e) r) r))
             (list) base-path #:max-depth max-depth #:before-filter before-filter)))
       (error-create (q path-is-not-in-load-path))))
 
@@ -168,21 +165,34 @@
 
   (define* (module-name->path a #:optional (filename-extension ".scm"))
     "(symbol ...) string -> string
-    filename-extension can be false so that also directory paths for example can be created"
+    creates a filesystem path from a module name. module existence is not checked.
+    filename-extension can be false so that for example directory paths can be created"
     ( (l (a) (if filename-extension (string-append a filename-extension) a))
       (string-join (map symbol->string a) "/")))
+
+  (define* (path->module-name a #:optional (filename-extension "scm"))
+    "string -> (symbol ...)
+    creates a module name from a filesystem path. module existence is not checked, nor are load-paths"
+    (path->symbol-list
+      (if filename-extension (remove-filename-extension a (list filename-extension)) a)))
 
   (define (not-scm-suffix? str) (not (string-suffix? ".scm" str)))
 
   (define (module-name->load-path+full-path& a filename-extension c)
     "(symbol ...) procedure:{string:load-path string:full-path -> any} -> any
     finds the load path under which a possibly partial (prefix) module name is saved"
-    (let (path (module-name->path a filename-extension))
-      (any
-        (l (load-path)
-          (let (full-path (string-append load-path "/" path))
-            (and (file-exists? full-path) (c load-path full-path))))
-        %load-path)))
+    (let*
+      ( (path (module-name->path a filename-extension))
+        (r
+          (any
+            (l (load-path)
+              (let (full-path (string-append load-path "/" path))
+                (if (file-exists? full-path) (list load-path full-path) #f)))
+            %load-path)))
+      (and r (apply c r))))
+
+  (define (path->load-path a) "returns one load-path where a load-path-relative path can be found"
+    (any (l (load-path) (and (file-exists? (string-append load-path "/" a)) load-path)) %load-path))
 
   (define (module-ref-no-error module name)
     "like guiles module-ref but results in false and does not raise an error if variable is unbound"
@@ -190,22 +200,6 @@
 
   (define (call-if-defined module name)
     (pass-if (module-variable module name) (l (a) ((variable-ref a)))))
-
-  (define* path->module-name
-    (let (path->symbol-list (l (a) (path->symbol-list (remove-filename-extension a (list "scm")))))
-      (l* (a #:optional (load-paths %load-path))
-        "string -> (symbol ...)\false
-        create a module name from a typical path string by searching load-path for path if path is a full path,
-        removing the load-path portion and converting the result to a symbol-list.
-        does not check if the file actually is a regular file or a library. use %search-load-path in combination
-        with path->module-name"
-        (if (string-prefix? "/" a)
-          (let*
-            ( (a (string-trim-right a #\/))
-              (load-path
-                (string-longest-prefix a (map (l (e) (string-trim-right e #\/)) load-paths))))
-            (if load-path (path->symbol-list (string-drop a (string-length load-path))) load-path))
-          (path->symbol-list a)))))
 
   (define (path->symbol-list a)
     "create a module name from a typical path string. for example \"/a/b/c\" -> (a b c)"

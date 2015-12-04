@@ -1,0 +1,4 @@
+#!/usr/bin/guile
+!#
+(import (sph test))
+(test-execute-cli)
