@@ -55,12 +55,40 @@
       readlink
       quasisyntax))
 
-  ;todo: stream display, display-format selection, pre-cached modules execution, comment revision
+  ;todo: failure-display, display-format selection, comment revision
+
+  (define test-format-compact-one
+    (let
+      (display-indices
+        (l (count port) (n-times count (l (n) (display " " port) (display (+ 1 n) port)))))
+      (l (a port) "vector:test-result-record port/any ->"
+        (let (index (test-result-index a))
+          (if (test-result-success? a)
+            (begin (display (test-result-title a) port)
+              (if (and index (< 0 index)) (display-indices index port)) (newline port))
+            (begin (display (test-result-title a) port)
+              (if (and index (< 1 index)) (display-indices (- index 1))) (newline port)
+              (display
+                (if index (string-append "  failure at " (number->string index) "\n    ")
+                  "  failure\n    "))
+              (newline port)))))))
+
+  (define (test-format-compact result port) "list/vector port -> result"
+    (if (list? result)
+      (let loop ((rest result) (depth 0) (group (list)))
+        (if (null? rest) result
+          (let (e (first rest))
+            (if (list? e) (debug-log (q list) e)
+              (begin (test-format-compact-one e port) (loop (tail rest) depth group))))))
+      (test-format-compact-one result port))
+    result)
+
   (define (test-format-null a port) a)
 
   (define-as test-settings-default alist-quoted
-    p-display test-format-null
+    p-display test-format-compact
     p-display-port (current-output-port)
+    module (current-module)
     p-before #f
     p-exclude #f
     p-only #f
@@ -86,7 +114,7 @@
       (if load-path
         (case (stat:type (stat (string-append load-path "/" a)))
           ((directory) (test-module-prefix-execute settings (path->module-name a)))
-          ((regular) (test-module-execute settings (path->module-name a)))
+          ((regular) (test-module-execute settings (environment* (path->module-name a))))
           ( (symlink)
             ;as far as we know readlink fails for circular symlinks
             (test-path-execute settings (readlink a))))
@@ -139,7 +167,25 @@
           (define (unsyntax (datum->syntax (syntax name) (symbol-append (q test-) name-datum)))
             proc)))))
 
-  (define-syntax-rule (define-tests name test ...) (define name (qq (test ...))))
+  (define-syntax-cases define-tests-one
+    ( ( (name data ...))
+      (let
+        (test-name
+          (datum->syntax (syntax name) (symbol-append (q test-) (syntax->datum (syntax name)))))
+        (quasisyntax
+          (pairs (quote name)
+            ;eval, to avoid getting possibly undefined variable warnings
+            (eval
+              (quote
+                (if (defined? (q (unsyntax test-name))) (unsyntax test-name)
+                  (l (arguments . rest) (apply name arguments))))
+              (current-module))
+            (quasiquote (data ...))))))
+    ((name) (syntax (define-tests-one (name)))))
+
+  (define-syntax-rule (define-tests name test ...)
+    ;symbol symbol/list -> ((symbol procedure any ...) ...)
+    (define name (list (define-tests-one test) ...)))
 
   (define-syntax define-test-module
     ;test modules are typical modules that export only an "export" procedure. this syntax simplifies the definition.
@@ -157,21 +203,6 @@
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
-  (define (test-format-compact-one a port) "vector:test-result-record port/any -> [any]"
-    (display (test-result-title a) port)
-    (let (index (test-result-index a))
-      (if (and index (< 0 index))
-        (begin (n-times index (l (n) (display " " port) (display (+ 1 n) port))) (newline port)))))
-
-  (define (test-format-compact result port) "list/vector port -> result"
-    (if (list? result)
-      (let loop ((rest result) (depth 0) (group (list)))
-        (if (null? rest) result
-          (let (e (first rest))
-            (if (list? e) (debug-log (q list) e)
-              (begin (test-format-compact-one e port) (loop (tail rest) depth group))))))
-      (test-format-compact-one result port)))
-
   (define-as test-formats symbol-hashtable compact test-format-compact null test-format-null)
 
   (define* (test-result-format result #:optional (format (q compact)) (port (current-output-port)))
@@ -179,23 +210,28 @@
     result is returned unmodified"
     ((hashtable-ref test-formats format) result port) result)
 
-  (define (test-module-execute settings name) "alist (symbol ...)"
+  (define (test-module-execute settings module) "alist (symbol ...)"
     ;environment* from (sph module) is used to make the define-test-module syntax work
-    ((eval (q execute) (environment* name)) settings))
+    ((eval (q execute) module) settings))
+
+  (define (test-modules-until a value) (take-while (l (a) (not (equal? a value))) a))
+  (define (test-modules-only a values) (filter (l (a) (containsv? values a)) a))
+  (define (test-modules-exclude a values) (remove (l (a) (containsv? values a)) a))
 
   (define (test-modules-apply-settings settings modules)
     "list:alist ((symbol ...) ...) -> ((symbol ...) ...)
     apply settings to a list of test-module names"
-    (alist-quoted-bind settings (only exclude)
-      ( (if only filter (if exclude remove (l (proc modules) modules)))
-        (l (module-name) (any (l (only) (apply list-suffix? module-name only)) only)) modules)))
+    (alist-quoted-bind settings (m-only m-exclude m-until)
+      ( (if m-until test-modules-until identity)
+        (if m-only (test-modules-only modules m-only)
+          (if m-exclude (test-modules-exclude modules m-exclude) modules)))))
 
   (define (module-prefix->module-names settings name) "alist list -> ((symbol ...) ...)"
     (module-name->load-path+full-path& name #f
       (l (load-path full-path)
         (test-modules-apply-settings settings (path->module-names full-path #:load-path load-path)))))
 
-  (define (module-prefix->modules settings module-prefix) "alist list -> (module ...)"
+  (define (module-prefix->names+modules settings module-prefix) "alist list -> (module ...)"
     (map (l (e) (pair e (environment* e))) (module-prefix->module-names settings module-prefix)))
 
   (define (test-module-prefix-execute settings . name)
@@ -205,40 +241,40 @@
     the implementation is depends on the following features:
     - module names are mapped to filesystem paths
     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
-    (append-map (l (e) (module-prefix->modules settings e)) name))
-
-  (define (test-resolve-procedure name) "symbol -> procedure/boolean-false"
-    (let (test-name (symbol-append (q test-) name))
-      (if (defined? test-name) (current-module-ref test-name)
-        (let (p (current-module-ref name)) (l (arguments . rest) (apply p arguments))))))
-
-  (define (test-procedures-normalise a)
-    "list -> list
-    validate, resolve test-procedures and normalise the list"
     (map
-      (l (e)
-        (cond ((symbol? e) (list e)) ((list? e) (pair (first e) (tail e)))
-          ((procedure? e) (list e)) (else (error-create (q invalid-test-spec)))))
-      a))
+      (l (name+module) (pair (first name+module) (test-module-execute settings (tail name+module))))
+      (append-map (l (e) (module-prefix->names+modules settings e)) name)))
 
-  (define (test-procedures-until a value) (take-while (l (e) (not (equal? e value))) a))
+  #;(define (test-resolve-procedure name) "symbol -> procedure/boolean-false"
+    (let (test-name (symbol-append (q test-) name))
+
+      (if (defined? test-name) (eval test-name (current-module))
+        (if (defined? name)
+          (let (p (eval name (current-module))) (l (arguments . rest) (apply p arguments)))
+          (error-create (q test-procedure-not-found) (list test-name name)
+            (q test-resolve-procedure))))))
+
+  (define (test-procedures-until a value)
+    (take-while (l (spec) (not (equal? (first spec) value))) a))
+
   (define (test-procedures-only a values) (filter (l (spec) (containsv? values (first spec))) a))
   (define (test-procedures-exclude a values) (remove (l (spec) (containsv? values (first spec))) a))
 
   (define (test-procedures-apply-settings settings a)
-    (alist-quoted-bind settings (only exclude until random-order?)
+    (alist-quoted-bind settings (p-only p-exclude p-until random-order?)
       ( (if random-order? randomise identity)
-        ( (if until test-procedures-until identity)
-          (if only (test-procedures-only a only) (if exclude (test-procedures-exclude a exclude) a))))))
+        ( (if p-until test-procedures-until identity)
+          (if p-only (test-procedures-only a p-only)
+            (if p-exclude (test-procedures-exclude a (p-exclude)) a))))))
 
   (define (test-success? result expected)
     (if (test-result? result) (test-result-success? result) (equal? result expected)))
 
-  (define (test-procedures-execute-one p-display p-before name . data)
+  (define (test-procedures-execute-one p-display p-before name test-proc . data)
     "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure, ensures that test-procedure results are test-results.
     ;creates only one test-result
-    (let ((test-proc (test-resolve-procedure name)) (title (symbol->string name)))
+    (let (title (symbol->string name))
       (if (null? data)
         (let (r (test-proc (list) #t)) (and p-before (p-before name 0))
           (if (test-result? r)
@@ -279,8 +315,7 @@
   (define (p-display->p-display* p-display p-display-port) (l (a) (p-display a p-display-port)))
 
   (define (test-procedures-execute settings a) "list -> list"
-    ( (test-procedures-get-executor settings) settings
-      (test-procedures-apply-settings settings (test-procedures-normalise a))
+    ( (test-procedures-get-executor settings) settings (test-procedures-apply-settings settings a)
       (p-display->p-display* (alist-quoted-ref settings p-display)
         (alist-quoted-ref settings p-display-port))
       (alist-quoted-ref settings p-before)))
@@ -289,7 +324,7 @@
     (and (vector? a) (= 7 (vector-length a)) (eqv? (q test-result) (vector-first a))))
 
   (define* (test-execute-module name #:optional (settings test-settings-default))
-    (test-module-execute settings name))
+    (test-module-execute settings (environment* name)))
 
   (define* (test-execute-modules-prefix name-prefix #:optional (settings test-settings-default))
     "execute all test-modules whose names begin with name-prefix.

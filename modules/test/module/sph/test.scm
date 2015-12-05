@@ -2,6 +2,7 @@
   (export
     execute)
   (import
+    (guile)
     (rnrs base)
     (sph)
     (sph alist)
@@ -23,7 +24,7 @@
 
   (define-test (test-execute-modules-prefix input)
     (test-execute-modules-prefix (first input)
-      (alist-merge test-settings-default (ql (only (test-module))))))
+      (alist-merge test-settings-default (ql (m-only (test-module))))))
 
   (define-tests tests
     ;(test-execute-modules-prefix ((test module sph)) (((test module sph test-module) "execute called")))
@@ -34,4 +35,4 @@
       ((unquote tests-3)) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t)))
     (test-execute-module ((test module sph test-module)) ("execute called")))
 
-  (define (execute settings) (test-result-format (test-execute-procedures tests settings))))
+  (define (execute settings) (test-execute-procedures tests settings)))
