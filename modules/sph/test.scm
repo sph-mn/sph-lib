@@ -24,7 +24,7 @@
     test-create-result
     test-execute-cli
     test-execute-module
-    test-execute-modules
+    test-execute-modules-prefix
     test-execute-procedures
     test-formats
     test-lambda
@@ -36,17 +36,9 @@
     test-settings-default
     test-success?)
   (import
-    (guile)
-    (rnrs base)
     (rnrs eval)
-    (sph)
-    (sph alist)
-    (sph cli)
-    (sph conditional)
-    (sph error)
-    (sph hashtable)
+    (sph common)
     (sph module)
-    (sph read-write)
     (sph record)
     (only (guile)
       resolve-interface
@@ -61,38 +53,39 @@
       gensym
       syntax
       readlink
-      quasisyntax)
-    (only (sph conditional) boolean-and)
-    (only (sph filesystem) path->full-path)
-    (only (sph list)
-      any->list
-      containsv?
-      map-with-continue
-      list-suffix?)
-    (only (sph list one) randomise)
-    (only (sph one) n-times)
-    (only (sph string) any->string)
-    (only (sph vector) vector-first)
-    (only (srfi srfi-1)
-      append-map
-      take-while
-      remove))
+      quasisyntax))
 
-  ;todo: settings for cli
+  ;todo: stream display, display-format selection, pre-cached modules execution, comment revision
+  (define (test-format-null a port) a)
+
+  (define-as test-settings-default alist-quoted
+    p-display test-format-null
+    p-display-port (current-output-port)
+    p-before #f
+    p-exclude #f
+    p-only #f
+    p-until #f random-order? #f parallel? #f m-exclude #f m-only #f m-until #f exceptions? #t)
 
   (define test-cli
-    (cli-create #:parameters "options ... filesystem-path ..."
+    (cli-create #:parameters "options ... path ..."
       #:description
-      "execute tests modules. takes filesystem paths by default. if path is a directory, all tests under directory are executed"
+      (string-join
+        (list
+          "execute tests. paths are relative to a guile load path and are like module names, except that the parts are separated by \"/\"."
+          "when --module-prefix is given, paths can be prefixes to module names,"
+          "all modules that have a name starting with a corresponding module name prefix are used")
+        "\n  ")
       #:options
       (ql ((source ...)) (display-format #f #f #t)
-        (modules-prefix) (module) (exclude #f #f #t #f #f) (add-to-load-path #f #f #t #f #f) (only #f #f #t #f #f))))
+        (add-to-load-path #f #f #t) (p-display #f #f #t #t)
+        (p-exclude #f #f #t) (p-only #f #f #t)
+        (p-until #f #f #t) (m-exclude #f #f #t) (m-only #f #f #t) (m-until #f #f #t))))
 
   (define (test-path-execute settings a) "alist string -> test-result/error"
     (let (load-path (path->load-path a))
       (if load-path
         (case (stat:type (stat (string-append load-path "/" a)))
-          ((directory) (test-modules-execute settings (path->module-name a)))
+          ((directory) (test-module-prefix-execute settings (path->module-name a)))
           ((regular) (test-module-execute settings (path->module-name a)))
           ( (symlink)
             ;as far as we know readlink fails for circular symlinks
@@ -102,21 +95,35 @@
   (define (test-execule-cli-path-list->module-names a filename-extension) "string string -> list"
     (map (l (e) (path->module-name e filename-extension)) (string-split a #\,)))
 
-  (define (test-execute-cli-create-settings cli-arguments)
-    (alist-quoted-bind cli-arguments (exclude only display-format module-prefix)
-      (let (filename-extension (false-if module-prefix ".scm"))
-        (pass-if (alist-quoted-ref cli-arguments add-to-load-path)
-          (l (a) (map (l (e) (add-to-load-path e)) (string-split a #\.))))
-        (false-if-not only (test-execule-cli-path-list->module-names only filename-extension))
-        (false-if-not exclude (test-execule-cli-path-list->module-names exclude filename-extension)))
+  (define (cli-value-modules a module-prefix?)
+    (false-if-not a (test-execule-cli-path-list->module-names a (if module-prefix? "" ".scm"))))
+
+  (define (cli-value-list a) (false-if-not a (string-split a #\,)))
+
+  (define (cli-value-p-display a)
+    (if a (hashtable-ref test-formats (string->symbol a) test-format-null) test-format-null))
+
+  (define (add-to-load-path! cli-arguments)
+    (pass-if (alist-quoted-ref cli-arguments add-to-load-path)
+      (l (a) (map (l (e) (add-to-load-path e)) (string-split a #\,)))))
+
+  (define (test-execute-cli-get-settings cli-arguments)
+    (alist-quoted-bind cli-arguments
+      (display-format p-display p-exclude p-only p-until m-exclude m-only m-until)
+      (add-to-load-path! cli-arguments)
+      (alist-quoted-update test-settings-default p-display
+        (cli-value-p-display p-display) p-exclude
+        (cli-value-list p-exclude) p-only
+        (cli-value-list p-only) p-until
+        (cli-value-list p-until) m-exclude
+        (cli-value-modules m-exclude #t) m-only
+        (cli-value-modules m-only #t) m-until (cli-value-modules m-until #t))
       test-settings-default))
 
   (define (test-execute-cli)
-    (let* ((arguments (test-cli)) (settings (test-execute-cli-create-settings arguments)))
-      (alist-quoted-bind arguments (source modules-prefix module)
-        (if source
-          (cond (modules-prefix source) (module source)
-            (else (map (l (e) (test-path-execute settings e)) source)))))))
+    (let* ((arguments (test-cli)) (settings (test-execute-cli-get-settings arguments)))
+      (alist-quoted-bind arguments (source)
+        (if source (map (l (e) (test-path-execute settings e)) source) (list)))))
 
   (define-syntax-cases test-lambda s
     (((arguments expected) body ...) (syntax (lambda (arguments expected) body ...)))
@@ -150,28 +157,27 @@
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
-  (define (test-format-compact-one a group port) "vector:test-result-record port/any -> [any]"
+  (define (test-format-compact-one a port) "vector:test-result-record port/any -> [any]"
     (display (test-result-title a) port)
     (let (index (test-result-index a))
       (if (and index (< 0 index))
         (begin (n-times index (l (n) (display " " port) (display (+ 1 n) port))) (newline port)))))
 
-  (define (test-format-compact result port) "list port -> result"
-    (let loop ((rest result) (depth 0) (group (list)))
-      (if (null? rest) result
-        (let (e (first rest))
-          (if (list? e) (debug-log (q list) e)
-            (begin (test-format-compact-one e group port) (loop (tail rest) depth group)))))))
+  (define (test-format-compact result port) "list/vector port -> result"
+    (if (list? result)
+      (let loop ((rest result) (depth 0) (group (list)))
+        (if (null? rest) result
+          (let (e (first rest))
+            (if (list? e) (debug-log (q list) e)
+              (begin (test-format-compact-one e port) (loop (tail rest) depth group))))))
+      (test-format-compact-one result port)))
 
-  (define-as test-formats symbol-hashtable compact test-format-compact)
+  (define-as test-formats symbol-hashtable compact test-format-compact null test-format-null)
 
   (define* (test-result-format result #:optional (format (q compact)) (port (current-output-port)))
     "result -> result
     result is returned unmodified"
     ((hashtable-ref test-formats format) result port) result)
-
-  (define-as test-settings-default alist-quoted
-    random-order? #f parallel? #f exclude #f only #f until #f before #f exceptions? #t)
 
   (define (test-module-execute settings name) "alist (symbol ...)"
     ;environment* from (sph module) is used to make the define-test-module syntax work
@@ -192,7 +198,7 @@
   (define (module-prefix->modules settings module-prefix) "alist list -> (module ...)"
     (map (l (e) (pair e (environment* e))) (module-prefix->module-names settings module-prefix)))
 
-  (define (test-modules-execute settings . name)
+  (define (test-module-prefix-execute settings . name)
     "list:alist (symbol ...) -> list:test-result:((module-name test-result ...) ...)
     modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
     this procedure is supposed to return a test-result, for example from calling \"test-execute\"
@@ -228,37 +234,41 @@
   (define (test-success? result expected)
     (if (test-result? result) (test-result-success? result) (equal? result expected)))
 
-  (define (test-procedures-execute-one before name . data)
-    "procedure [arguments expected] ... -> vector:test-result"
+  (define (test-procedures-execute-one p-display p-before name . data)
+    "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure, ensures that test-procedure results are test-results.
     ;creates only one test-result
     (let ((test-proc (test-resolve-procedure name)) (title (symbol->string name)))
       (if (null? data)
-        (let (r (test-proc (list) #t))
+        (let (r (test-proc (list) #t)) (and p-before (p-before name 0))
           (if (test-result? r)
-            (record-update test-result r title (title-extend (test-result-title r) title))
-            (test-create-result (eqv? #t r) title 0 r (list) #t)))
+            (p-display
+              (record-update test-result r title (title-extend (test-result-title r) title)))
+            (p-display (test-create-result (eqv? #t r) title 0 r (list) #t))))
         (let loop ((d data) (index 0))
-          (if (null? d) (test-create-result #t title index)
+          (if (null? d) (p-display (test-create-result #t title index))
             (let*
               ( (d-tail (tail d)) (expected (first d-tail))
-                (r (test-proc (any->list (first d)) expected)))
+                (r
+                  (begin (and p-before (p-before name index))
+                    (test-proc (any->list (first d)) expected))))
               (if (test-result? r)
                 (if (test-result-success? r) (loop (tail d-tail) (+ 1 index))
-                  (record-update test-result r
-                    title (title-extend (test-result-title r) title) index index))
+                  (p-display
+                    (record-update test-result r
+                      title (title-extend (test-result-title r) title) index index)))
                 (if (equal? r expected) (loop (tail d-tail) (+ 1 index))
-                  (test-create-result #f title index r (first d) expected)))))))))
+                  (p-display (test-create-result #f title index r (first d) expected))))))))))
 
-  (define (test-procedures-execute-parallel settings a)
+  (define (test-procedures-execute-parallel settings a p-display p-before)
     "list:alist list -> list
     executes all tests even if some fail"
-    (par-map (l (e) (apply test-procedures-execute-one #f e)) a))
+    (par-map (l (e) (apply test-procedures-execute-one p-display p-before e)) a))
 
-  (define (test-procedures-execute-serial settings a)
+  (define (test-procedures-execute-serial settings a p-display p-before)
     (map-with-continue
       (l (continue e)
-        (let (r (apply test-procedures-execute-one #f e))
+        (let (r (apply test-procedures-execute-one p-display p-before e))
           (if (test-result-success? r) (continue r) (list r))))
       a))
 
@@ -266,9 +276,14 @@
     (if (alist-quoted-ref settings parallel?) test-procedures-execute-parallel
       test-procedures-execute-serial))
 
+  (define (p-display->p-display* p-display p-display-port) (l (a) (p-display a p-display-port)))
+
   (define (test-procedures-execute settings a) "list -> list"
     ( (test-procedures-get-executor settings) settings
-      (test-procedures-apply-settings settings (test-procedures-normalise a))))
+      (test-procedures-apply-settings settings (test-procedures-normalise a))
+      (p-display->p-display* (alist-quoted-ref settings p-display)
+        (alist-quoted-ref settings p-display-port))
+      (alist-quoted-ref settings p-before)))
 
   (define (test-result? a) "any -> boolean"
     (and (vector? a) (= 7 (vector-length a)) (eqv? (q test-result) (vector-first a))))
@@ -276,13 +291,13 @@
   (define* (test-execute-module name #:optional (settings test-settings-default))
     (test-module-execute settings name))
 
-  (define* (test-execute-modules name-prefix #:optional (settings test-settings-default))
+  (define* (test-execute-modules-prefix name-prefix #:optional (settings test-settings-default))
     "execute all test-modules whose names begin with name-prefix.
     for example if there is a module (a b c) and (a d e), (test-execute-modules (a)) will execute both.
     additional settings are:
     - exclude: do not execute matching modules. ((symbol ...) ...). a list of module name suffixes. for example (b c) matches the module (a b c)
     - only: execute no other tests than matching modules. format is the same as for exclude. if both \"only\" and \"exclude\" are specified, \"only\" is used"
-    (test-modules-execute settings name-prefix))
+    (test-module-prefix-execute settings name-prefix))
 
   (define* (test-execute-procedures source #:optional (settings test-settings-default))
     "list:alist list/procedure -> test-result

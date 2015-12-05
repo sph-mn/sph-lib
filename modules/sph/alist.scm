@@ -15,16 +15,24 @@
 (library (sph alist)
   (export
     alist
-    alist-set
     alist-cond
     alist-keys
     alist-map
     alist-merge
+    alist-quoted
+    alist-quoted-bind
+    alist-quoted-bind-and*
+    alist-quoted-ref
+    alist-quoted-select
+    alist-quoted-select-apply
+    alist-quoted-update
     alist-ref
     alist-select
     alist-select-apply
+    alist-set
     alist-set!
     alist-update
+    alist-update-by-alist
     alist-values
     alistq-ref
     alistq-select
@@ -37,13 +45,7 @@
     list->alist
     list->group-alist
     list-alist?
-    set-alist-bindings!
-    alist-quoted
-    alist-quoted-bind
-    alist-quoted-bind-and*
-    alist-quoted-ref
-    alist-quoted-select
-    alist-quoted-select-apply)
+    set-alist-bindings!)
   (import
     (rnrs base)
     (sph)
@@ -155,13 +157,22 @@
     create a new alist with the associations of both alists, preferring entries of \"b\""
     (append (filter (l (e) (not (alist-ref b (first e)))) a) b))
 
-  (define (alist-update a b)
+  (define (alist-update a . key/value)
+    "list [any:key any:value] ...
+    update values in alist for specific keys.
+    key and value are specified alternatingly"
+    (alist-update-by-alist a (list->alist key/value)))
+
+  (define-syntax-rule (alist-quoted-update a key/value ...)
+    ;list [any:unquoted-key any:value] ...
+    (apply alist-update a (quote-odd key/value ...)))
+
+  (define (alist-update-by-alist a b)
     "list list -> list
     update existing entries of a with corresponding entries of b"
     (map
       (l (pair-1)
-        ( (l (value) (if value (pair (first pair-1) value) pair-1))
-          (alist-ref b (first pair-1))))
+        ((l (value) (if value (pair (first pair-1) value) pair-1)) (alist-ref b (first pair-1))))
       a))
 
   (define-syntax-rule (alist-values alist) (map tail alist))
@@ -180,10 +191,10 @@
   (define-syntax-rule (alist-quoted-select-apply a (key ...) proc)
     (alist-select-apply a (quote (key ...)) proc))
 
-  (define-syntax-rule (alist-quoted-select a (key ...))
-    (alist-select a (quote (key ...))))
+  (define-syntax-rule (alist-quoted-select a (key ...)) (alist-select a (quote (key ...))))
 
- (define (alist-set a key value) "list any any -> list
+  (define (alist-set a key value)
+    "list any any -> list
     add or update an entry in an association list"
     (let loop ((rest a))
       (if (null? rest) (list)
