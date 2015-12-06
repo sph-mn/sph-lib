@@ -36,6 +36,7 @@
     test-settings-default
     test-success?)
   (import
+    (ice-9 match)
     (rnrs eval)
     (sph common)
     (sph module)
@@ -55,7 +56,7 @@
       readlink
       quasisyntax))
 
-  ;todo: failure-display, display-format selection, comment revision
+  ;todo: failure-display, nested module results display, exception supression
 
   (define test-format-compact-one
     (let
@@ -73,43 +74,45 @@
                   "  failure\n    "))
               (newline port)))))))
 
-  (define (test-format-compact result port) "list/vector port -> result"
+  (define (test-format-compact result port) "list/vector port -> list/vector:result/input"
     (if (list? result)
       (let loop ((rest result) (depth 0) (group (list)))
         (if (null? rest) result
           (let (e (first rest))
-            (if (list? e) (debug-log (q list) e)
+            (if (list? e)
+              (match e
+                ( ( (? symbol? group-name) rest ...)
+                  (loop (tail rest) (+ 1 depth) (pair group-name group)))
+                (_ (loop e (+ 1 depth) group)))
               (begin (test-format-compact-one e port) (loop (tail rest) depth group))))))
       (test-format-compact-one result port))
     result)
 
-  (define (test-format-null a port) a)
+  (define (test-format-null a port)
+    "list/vector port -> list/vector
+    does not display anything"
+    a)
 
   (define-as test-settings-default alist-quoted
+    ;p: procedure, for procedure tests
     p-display test-format-compact
     p-display-port (current-output-port)
-    module (current-module)
-    p-before #f
-    p-exclude #f
-    p-only #f
-    p-until #f random-order? #f parallel? #f m-exclude #f m-only #f m-until #f exceptions? #t)
+    p-before #f random-order? #f parallel? #f exceptions? #t exclude #f only #f until #f)
 
   (define test-cli
-    (cli-create #:parameters "options ... path ..."
+    (cli-create #:parameters "options ... source ..."
       #:description
       (string-join
         (list
-          "execute tests. paths are relative to a guile load path and are like module names, except that the parts are separated by \"/\"."
-          "when --module-prefix is given, paths can be prefixes to module names,"
-          "all modules that have a name starting with a corresponding module name prefix are used")
+          "execute tests. source is filesystem paths to files containing modules relative to any guile load-path."
+          "if a source path points to a directory, a module with a name corresponding to that path and all modules under that directory are used."
+          "exclude/only/until take a list of comma separated module name suffixes or full module names in the format \"a//b//c\" as well as procedure names")
         "\n  ")
       #:options
       (ql ((source ...)) (display-format #f #f #t)
-        (add-to-load-path #f #f #t) (p-display #f #f #t #t)
-        (p-exclude #f #f #t) (p-only #f #f #t)
-        (p-until #f #f #t) (m-exclude #f #f #t) (m-only #f #f #t) (m-until #f #f #t))))
+        (add-to-load-path #f #f #t) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
 
-  (define (test-path-execute settings a) "alist string -> test-result/error"
+  (define (test-path-execute settings a) "alist string -> vector/list/error:test-result"
     (let (load-path (path->load-path a))
       (if load-path
         (case (stat:type (stat (string-append load-path "/" a)))
@@ -120,35 +123,37 @@
             (test-path-execute settings (readlink a))))
         (error-create (q file-not-found-in-load-path)))))
 
-  (define (test-execule-cli-path-list->module-names a filename-extension) "string string -> list"
-    (map (l (e) (path->module-name e filename-extension)) (string-split a #\,)))
+  (define (cli-value-path/module-list a)
+    "false/string -> false/list
+    parsed a list of comma separated filesystem or module paths, \"/\" or \"//\" separated respectively, without filename suffixes"
+    (false-if-not a
+      (map
+        (l (e) (if (string-contains e "//") (map string->symbol (string-split-regexp e "//")) e))
+        (string-split a #\,))))
 
-  (define (cli-value-modules a module-prefix?)
-    (false-if-not a (test-execule-cli-path-list->module-names a (if module-prefix? "" ".scm"))))
-
-  (define (cli-value-list a) (false-if-not a (string-split a #\,)))
-
-  (define (cli-value-p-display a)
-    (if a (hashtable-ref test-formats (string->symbol a) test-format-null) test-format-null))
+  (define (cli-value-display-format a) "false/string -> false/procedure"
+    (if a (hashtable-ref test-formats (string->symbol a) test-format-compact) test-format-compact))
 
   (define (add-to-load-path! cli-arguments)
+    "list:alist ->
+    if the --add-to-load-path option has been specified, add the comma separated list of paths given
+    as a value to the option to the beginning of the module load-path"
     (pass-if (alist-quoted-ref cli-arguments add-to-load-path)
       (l (a) (map (l (e) (add-to-load-path e)) (string-split a #\,)))))
 
   (define (test-execute-cli-get-settings cli-arguments)
-    (alist-quoted-bind cli-arguments
-      (display-format p-display p-exclude p-only p-until m-exclude m-only m-until)
+    "list -> list
+    create the test settings object from program arguments"
+    (alist-quoted-bind cli-arguments (display-format exclude only until)
       (add-to-load-path! cli-arguments)
       (alist-quoted-update test-settings-default p-display
-        (cli-value-p-display p-display) p-exclude
-        (cli-value-list p-exclude) p-only
-        (cli-value-list p-only) p-until
-        (cli-value-list p-until) m-exclude
-        (cli-value-modules m-exclude #t) m-only
-        (cli-value-modules m-only #t) m-until (cli-value-modules m-until #t))
+        (cli-value-display-format display-format) exclude
+        (cli-value-path/module-list exclude) only
+        (cli-value-path/module-list only) until (cli-value-path/module-list until))
       test-settings-default))
 
   (define (test-execute-cli)
+    "parse program arguments and run the rest of the program depending on the given arguments"
     (let* ((arguments (test-cli)) (settings (test-execute-cli-get-settings arguments)))
       (alist-quoted-bind arguments (source)
         (if source (map (l (e) (test-path-execute settings e)) source) (list)))))
@@ -159,6 +164,7 @@
       (quasisyntax (lambda (a ... . (unsyntax (datum->syntax s (gensym "define-test")))) body ...))))
 
   (define-syntax-cases define-test
+    ;define a new test procedure
     ( ( (name parameter ...) body ...)
       (syntax (define-test name (test-lambda (parameter ...) body ...))))
     ( (name proc)
@@ -185,16 +191,16 @@
 
   (define-syntax-rule (define-tests name test ...)
     ;symbol symbol/list -> ((symbol procedure any ...) ...)
+    ;resolves procedures from name and normalises the test specification
     (define name (list (define-tests-one test) ...)))
 
   (define-syntax define-test-module
-    ;test modules are typical modules that export only an "export" procedure. this syntax simplifies the definition.
-    ;modules are used to give test modules a separated scope in which other modules that the test might need are integrated.
-    ;it is about loading code that usually depends on other code.
-    ;it also gives modules a name. an alternative could to evaluate top-level file content that uses "import" in a custom environment,
-    ;but this might lead to less separation of the module content.
-    ;to use this syntax, the syntax definition must be loaded into the environment in which the module is loaded.
-    ;to archieve this, module file content is first loaded in the top-level environment, then the module object is resolved
+    ;test modules are typical modules/libraries that export only one "export" procedure. this syntax simplifies the definition.
+    ;modules are used to give test modules a separated scope, in which other modules that the test might need are integrated.
+    ;it is about loading several code files that usually depend on other code without conflicts.
+    ;there might be alternatives to using modules, for example evaluating files that use the import statement in custom environments.
+    ;this syntax definition must be available in the environment in which the module is loaded.
+    ;to archieve this, the module definition is first evaluated in the top-level environment, then the module object is resolved (environment*)
     (l (s)
       (syntax-case s (import)
         ( (_ (name-part ...) (import spec ...) body ...)
@@ -221,10 +227,11 @@
   (define (test-modules-apply-settings settings modules)
     "list:alist ((symbol ...) ...) -> ((symbol ...) ...)
     apply settings to a list of test-module names"
-    (alist-quoted-bind settings (m-only m-exclude m-until)
-      ( (if m-until test-modules-until identity)
-        (if m-only (test-modules-only modules m-only)
-          (if m-exclude (test-modules-exclude modules m-exclude) modules)))))
+    (alist-quoted-bind settings (only exclude until)
+      ( (if until test-modules-until (l (a b) a))
+        (if only (test-modules-only modules only)
+          (if exclude (test-modules-exclude modules exclude) modules))
+        until)))
 
   (define (module-prefix->module-names settings name) "alist list -> ((symbol ...) ...)"
     (module-name->load-path+full-path& name #f
@@ -254,27 +261,39 @@
           (error-create (q test-procedure-not-found) (list test-name name)
             (q test-resolve-procedure))))))
 
-  (define (test-procedures-until a value)
+  (define (filter-module-names a) "list -> list" (filter list? a))
+  (define (filter-procedure-names a) "list -> list" (filter symbol? a))
+
+  (define (test-procedures-until a value) "list symbol -> list"
     (take-while (l (spec) (not (equal? (first spec) value))) a))
 
-  (define (test-procedures-only a values) (filter (l (spec) (containsv? values (first spec))) a))
-  (define (test-procedures-exclude a values) (remove (l (spec) (containsv? values (first spec))) a))
+  (define (test-procedures-only a values) "list list -> list"
+    (let (values (filter-procedure-names values))
+      (filter (l (spec) (containsv? values (first spec))) a)))
 
-  (define (test-procedures-apply-settings settings a)
-    (alist-quoted-bind settings (p-only p-exclude p-until random-order?)
+  (define (test-procedures-exclude a values) "list list -> list"
+    (let (values (filter-procedure-names values))
+      (remove (l (spec) (containsv? values (first spec))) a)))
+
+  (define (test-procedures-apply-settings settings a) "list list -> list"
+    (alist-quoted-bind settings (only exclude until random-order?)
       ( (if random-order? randomise identity)
-        ( (if p-until test-procedures-until identity)
-          (if p-only (test-procedures-only a p-only)
-            (if p-exclude (test-procedures-exclude a (p-exclude)) a))))))
+        ( (if until test-procedures-until (l (a b) a))
+          (if only (test-procedures-only a only)
+            (if exclude (test-procedures-exclude a (exclude)) a))
+          until))))
 
-  (define (test-success? result expected)
+  (define (test-success? result expected) "vector/any any -> boolean"
     (if (test-result? result) (test-result-success? result) (equal? result expected)))
 
-  (define (test-procedures-execute-one p-display p-before name test-proc . data)
+  (define (test-procedures-execute-one p-display p-before exceptions? name test-proc . data)
     "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
-    ;stops on failure, ensures that test-procedure results are test-results.
+    ;stops on failure. ensures that test-procedure results are test-results.
     ;creates only one test-result
-    (let (title (symbol->string name))
+    (let
+      ( (title (symbol->string name))
+        (test-proc
+          (if exceptions? test-proc (l a (catch #t (thunk (apply test-proc a)) exception->string)))))
       (if (null? data)
         (let (r (test-proc (list) #t)) (and p-before (p-before name 0))
           (if (test-result? r)
@@ -296,62 +315,64 @@
                 (if (equal? r expected) (loop (tail d-tail) (+ 1 index))
                   (p-display (test-create-result #f title index r (first d) expected))))))))))
 
-  (define (test-procedures-execute-parallel settings a p-display p-before)
-    "list:alist list -> list
+  (define (test-procedures-execute-parallel settings a p-display p-before exceptions?)
+    "list:alist list procedure procedure -> list
     executes all tests even if some fail"
-    (par-map (l (e) (apply test-procedures-execute-one p-display p-before e)) a))
+    (par-map (l (e) (apply test-procedures-execute-one p-display p-before exceptions? e)) a))
 
-  (define (test-procedures-execute-serial settings a p-display p-before)
+  (define (test-procedures-execute-serial settings a p-display p-before exceptions?)
+    "list:alist list procedure procedure -> list
+    executes tests one after another and stops if one fails"
     (map-with-continue
       (l (continue e)
-        (let (r (apply test-procedures-execute-one p-display p-before e))
+        (let (r (apply test-procedures-execute-one p-display p-before exceptions? e))
           (if (test-result-success? r) (continue r) (list r))))
       a))
 
-  (define (test-procedures-get-executor settings)
+  (define (test-procedures-get-executor settings) "list -> procedure"
     (if (alist-quoted-ref settings parallel?) test-procedures-execute-parallel
       test-procedures-execute-serial))
 
-  (define (p-display->p-display* p-display p-display-port) (l (a) (p-display a p-display-port)))
+  (define (p-display->p-display* p-display p-display-port) "procedure port -> procedure"
+    (l (a) (p-display a p-display-port)))
 
   (define (test-procedures-execute settings a) "list -> list"
     ( (test-procedures-get-executor settings) settings (test-procedures-apply-settings settings a)
       (p-display->p-display* (alist-quoted-ref settings p-display)
         (alist-quoted-ref settings p-display-port))
-      (alist-quoted-ref settings p-before)))
+      (alist-quoted-ref settings p-before) (alist-quoted-ref settings exceptions?)))
 
   (define (test-result? a) "any -> boolean"
     (and (vector? a) (= 7 (vector-length a)) (eqv? (q test-result) (vector-first a))))
 
   (define* (test-execute-module name #:optional (settings test-settings-default))
-    (test-module-execute settings (environment* name)))
+    "(symbol ...) list -> test-result" (test-module-execute settings (environment* name)))
 
   (define* (test-execute-modules-prefix name-prefix #:optional (settings test-settings-default))
     "execute all test-modules whose names begin with name-prefix.
-    for example if there is a module (a b c) and (a d e), (test-execute-modules (a)) will execute both.
-    additional settings are:
-    - exclude: do not execute matching modules. ((symbol ...) ...). a list of module name suffixes. for example (b c) matches the module (a b c)
-    - only: execute no other tests than matching modules. format is the same as for exclude. if both \"only\" and \"exclude\" are specified, \"only\" is used"
+    for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both"
     (test-module-prefix-execute settings name-prefix))
 
   (define* (test-execute-procedures source #:optional (settings test-settings-default))
-    "list:alist list/procedure -> test-result
-    test-result-group: (group-name test-result/test-result-group ...)
+    "list:((symbol procedure any ...)) list -> test-result
+    test-result-group: ([group-name] test-result/test-result-group ...)
     test-result: (test-result-group ...)"
     (test-procedures-execute settings source))
 
   (define-record test-result type-name success? title index result arguments expected)
 
-  (define (title-extend title addition) "string/false string -> vector"
+  (define (title-extend title addition)
+    "string/false string -> string
+    prepend adition to title if title is true"
     (if title (string-append addition " " title)))
 
   (define (test-create-result . values)
     "boolean string integer any list any -> vector
-    success? name index result arguments expected -> test-result"
+    success? title index result arguments expected -> test-result"
     (apply record test-result (q test-result) values))
 
   (define (assert-failure-result result expected title arguments)
-    ;vector/any any false/string any -> vector
+    "vector/any any false/string any -> vector:test-result"
     (if (test-result? result)
       (if (string? title)
         (record-update test-result result title (title-extend (test-result-title result) title))
@@ -376,6 +397,7 @@
       (assert-test-result title a (assert-and-with-explicit-title title a-rest ...))))
 
   (define-syntax-case (assert-and optional-title expr ...)
+    ;creates a successul test result if all given expressions or assertions are true test results or true
     (let (optional-title-datum (syntax->datum (syntax optional-title)))
       (if (string? optional-title-datum)
         (syntax (assert-and-with-explicit-title optional-title expr ...))
