@@ -16,9 +16,9 @@
     (rnrs eval)
     (sph)
     (sph lang docl)
-    (sph lang itml)
     (sph lang docl env itml-to-sxml-html)
     (sph lang docl itml)
+    (sph lang itml)
     (sph lang itml read)
     (sph list)
     (sph read-write)
@@ -107,10 +107,7 @@
     (pairs (first a) ": " (tail a)))
 
   ;escaped characters are added as new line
-
-  (define (descend-handle-escaped-association-infix a nesting-depth docl-state env)
-    ": ")
-
+  (define (descend-handle-escaped-association-infix a nesting-depth docl-state env) ": ")
 
   (define-as ascend-prefix->handler-ht symbol-hashtable
     line ascend-handle-line

@@ -26,13 +26,17 @@
     (test-execute-modules-prefix (first input)
       (alist-merge test-settings-default (ql (m-only (test-module))))))
 
+  (define-test (test-execute-procedures arguments)
+    (test-execute-procedures test-settings-default arguments))
+
   (define-tests tests
     ;(test-execute-modules-prefix ((test module sph)) (((test module sph test-module) "execute called")))
-    (test-execute-procedures ((unquote tests-1)) (#(test-result #f "aa" 1 (3 4) (3 4) 5))
-      ((unquote tests-2))
+    (test-execute-procedures (unquote tests-1) (#(test-result #f "aa" 1 (3 4) (3 4) 5))
+      (unquote tests-2)
       (#(test-result #t "bb" 1 #f #f #f)
         #(test-result #f "assertions-without-title assertion" #f #f (> 1 3) #t))
-      ((unquote tests-3)) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t)))
-    (test-execute-module ((test module sph test-module)) ("execute called")))
+      (unquote tests-3) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t)))
+    (test-execute-module ((unquote test-settings-default) (test module sph test-module))
+      ("execute called")))
 
-  (define (execute settings) (test-execute-procedures tests settings)))
+  (define (execute settings) (test-execute-procedures settings tests)))

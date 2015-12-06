@@ -170,11 +170,12 @@
     ( (l (a) (if filename-extension (string-append a filename-extension) a))
       (string-join (map symbol->string a) "/")))
 
-  (define* (path->module-name a #:optional (filename-extension "scm"))
+  (define* (path->module-name a #:optional drop-load-path? (drop-filename-extension "scm"))
     "string -> (symbol ...)
-    creates a module name from a filesystem path. module existence is not checked, nor are load-paths"
+    creates a module name from a filesystem path. module existence is not checked, neither are load-paths"
     (path->symbol-list
-      (if filename-extension (remove-filename-extension a (list filename-extension)) a)))
+      ( (if drop-load-path? path-drop-load-path identity)
+        (if filename-extension (remove-filename-extension a (list drop-filename-extension)) a))))
 
   (define (not-scm-suffix? str) (not (string-suffix? ".scm" str)))
 
@@ -190,6 +191,9 @@
                 (if (file-exists? full-path) (list load-path full-path) #f)))
             %load-path)))
       (and r (apply c r))))
+
+  (define* (path-drop-load-path a #:optional (load-path %load-path))
+    (string-drop-prefix (string-longest-prefix a load-path) a))
 
   (define (path->load-path a) "returns one load-path where a load-path-relative path can be found"
     (any (l (load-path) (and (file-exists? (string-append load-path "/" a)) load-path)) %load-path))

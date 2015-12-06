@@ -1,7 +1,6 @@
 (define-test-module (test module sph vector)
   (import
     (sph vector))
-
   (define-tests tests
     (vector-append
       (#(1 2 3) #(4 5 6))
@@ -21,4 +20,4 @@
       #(2 4 5)))
 
   (define (execute settings)
-    (test-procedures-execute settings tests)))
+    (test-execute-procedures settings tests)))

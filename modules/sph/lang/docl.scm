@@ -7,7 +7,6 @@
     docl-translate-any
     docl-translate-port)
   (import
-    (ice-9 vlist)
     (rnrs base)
     (rnrs io ports)
     (sph)
@@ -18,14 +17,13 @@
       catch)
     (only (rnrs hashtables) equal-hash)
     (only (sph list) contains?)
-    (only (sph one) first-as-result)
-    (only (sph two) vhash-refq vhash-setq))
+    (only (sph one) first-as-result))
 
   (define docl-default-env-module-names (ql (sph lang docl env default)))
   (define docl-state-empty (list))
 
   (define (call-with-docl get-source-identifier get-source-position input proc docl-state)
-    "{any:input -> any} {input -> any} any {input -> any} vhash -> any/string
+    "{any:input -> any} {input -> any} any {input -> any} list -> any/string
     installs a handler that amends exceptions with source information so that an exception-handler
     receives the arguments (key source-name source-position other-exception-arguments ...) for exceptions matching exception-keys.
     sets up the circular inclusion protection and bindings which are accessible with
@@ -46,7 +44,7 @@
     (call-with-docl equal-hash #f input proc docl-state))
 
   (define (docl-translate-port input proc docl-state)
-    "port procedure:{port -> any} vhash -> any
+    "port procedure:{port -> any} list -> any
     calls proc with input and enables docl features as with call-with-docl.
     input must be a port, and the source-identifier and source-position arguments for exceptions are set using port-filename and port-position"
     (call-with-docl port-filename port-position input proc docl-state)))

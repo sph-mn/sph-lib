@@ -18,6 +18,7 @@
     assert-equal
     assert-true
     define-test
+    define-test-execute-procedures
     define-test-module
     define-tests
     test-cli
@@ -26,13 +27,13 @@
     test-execute-module
     test-execute-modules-prefix
     test-execute-procedures
-    test-formats
     test-lambda
-    test-procedures-normalise
-    test-resolve-procedure
+    test-list
+    test-path->module-names
+    test-result
     test-result-format
+    test-result-formatters
     test-result-success?
-    test-results-display
     test-settings-default
     test-success?)
   (import
@@ -148,9 +149,10 @@
         (string-split a #\,))))
 
   (define (cli-value-display-format a) "false/string -> false/procedure"
-    (if a (hashtable-ref test-formats (string->symbol a) test-format-compact) test-format-compact))
+    (if a (hashtable-ref test-result-formatters (string->symbol a) test-format-compact)
+      test-format-compact))
 
-  (define (add-to-load-path! cli-arguments)
+  (define (cli-add-to-load-path! cli-arguments)
     "list:alist ->
     if the --add-to-load-path option has been specified, add the comma separated list of paths given
     as a value to the option to the beginning of the module load-path"
@@ -161,7 +163,7 @@
     "list -> list
     create the test settings object from program arguments"
     (alist-quoted-bind cli-arguments (display-format exclude only until)
-      (add-to-load-path! cli-arguments)
+      (cli-add-to-load-path! cli-arguments)
       (alist-quoted-update test-settings-default p-display
         (cli-value-display-format display-format) exclude
         (cli-value-path/module-list exclude) only
@@ -190,7 +192,7 @@
           (define (unsyntax (datum->syntax (syntax name) (symbol-append (q test-) name-datum)))
             proc)))))
 
-  (define-syntax-cases define-tests-one
+  (define-syntax-cases test-list-one
     ( ( (name data ...))
       (let
         (test-name
@@ -200,16 +202,26 @@
             ;eval, to avoid getting possibly undefined variable warnings
             (eval
               (quote
-                (if (defined? (q (unsyntax test-name))) (unsyntax test-name)
-                  (l (arguments . rest) (apply name arguments))))
+                (if (defined? (quote (unsyntax test-name))) (unsyntax test-name)
+                  (lambda (arguments . rest) (apply name arguments))))
               (current-module))
             (quasiquote (data ...))))))
-    ((name) (syntax (define-tests-one (name)))))
+    ((name) (syntax (test-list-one (name)))))
 
-  (define-syntax-rule (define-tests name test ...)
+  (define-syntax-rule (test-list test-spec ...) (list (test-list-one test-spec) ...))
+
+  (define-syntax-rule (define-tests name test-spec ...)
     ;symbol symbol/list -> ((symbol procedure any ...) ...)
     ;resolves procedures from name and normalises the test specification
-    (define name (list (define-tests-one test) ...)))
+    (define name (test-list test-spec ...)))
+
+  ;does not work, unbound variable error
+
+  #;(define-syntax-case (define-test-execute-procedures test-spec ...) s
+    (quasisyntax
+      (define execute
+        (let ((unsyntax (datum->syntax s (gensym "test"))) (test-list test-spec ...))
+          (l (settings) (test-execute-procedures settings tests))))))
 
   (define-syntax define-test-module
     ;test modules are typical modules/libraries that export only one "export" procedure. this syntax simplifies the definition.
@@ -226,12 +238,13 @@
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
-  (define-as test-formats symbol-hashtable compact test-format-compact null test-format-null)
+  (define-as test-result-formatters symbol-hashtable
+    compact test-format-compact null test-format-null)
 
   (define* (test-result-format result #:optional (format (q compact)) (port (current-output-port)))
     "result -> result
     result is returned unmodified"
-    ((hashtable-ref test-formats format) result port) result)
+    ((hashtable-ref test-result-formatters format) result port) result)
 
   (define (test-module-execute settings module) "alist (symbol ...)"
     ;environment* from (sph module) is used to make the define-test-module syntax work
@@ -260,6 +273,8 @@
 
   (define (test-module-prefix-execute settings . name)
     "list:alist (symbol ...) -> list:test-result:((module-name test-result ...) ...)
+    execute all test-modules whose names begin with name-prefix.
+    for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both
     modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
     this procedure is supposed to return a test-result, for example from calling \"test-execute\"
     the implementation is depends on the following features:
@@ -291,7 +306,9 @@
             (if exclude (test-procedures-exclude a (exclude)) a))
           until))))
 
-  (define (test-success? result expected) "vector/any any -> boolean"
+  (define (test-success? result expected)
+    "vector/any any -> boolean
+    if result is a test-result, check if it is a successful result. otherwise compare result and expected for equality"
     (if (test-result? result) (test-result-success? result) (equal? result expected)))
 
   (define (test-procedures-execute-one p-display p-before exceptions? name test-proc . data)
@@ -340,8 +357,12 @@
   (define (p-display->p-display* p-display p-display-port) "procedure port -> procedure"
     (l (a) (p-display a p-display-port)))
 
-  (define (test-procedures-execute settings a) "list -> list"
-    ( (test-procedures-get-executor settings) settings (test-procedures-apply-settings settings a)
+  (define (test-procedures-execute settings source)
+    "list:((symbol procedure any ...)) list -> test-result
+    test-result-group: ([group-name] test-result/test-result-group ...)
+    test-result: (test-result-group ...)"
+    ( (test-procedures-get-executor settings) settings
+      (test-procedures-apply-settings settings source)
       (p-display->p-display* (alist-quoted-ref settings p-display)
         (alist-quoted-ref settings p-display-port))
       (alist-quoted-ref settings p-before) (alist-quoted-ref settings exceptions?)))
@@ -349,21 +370,11 @@
   (define (test-result? a) "any -> boolean"
     (and (vector? a) (= 7 (vector-length a)) (eqv? (q test-result) (vector-first a))))
 
-  (define* (test-execute-module name #:optional (settings test-settings-default))
-    "(symbol ...) list -> test-result" (test-module-execute settings (environment* name)))
+  (define (test-execute-module settings name) "(symbol ...) list -> test-result"
+    (test-module-execute settings (environment* name)))
 
-  (define* (test-execute-modules-prefix name-prefix #:optional (settings test-settings-default))
-    "((symbol ...) ...) [list] -> list:test-result
-    execute all test-modules whose names begin with name-prefix.
-    for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both"
-    (test-module-prefix-execute settings name-prefix))
-
-  (define* (test-execute-procedures source #:optional (settings test-settings-default))
-    "list:((symbol procedure any ...)) list -> test-result
-    test-result-group: ([group-name] test-result/test-result-group ...)
-    test-result: (test-result-group ...)"
-    (test-procedures-execute settings source))
-
+  (define test-execute-procedures test-procedures-execute)
+  (define test-execute-module-prefix test-procedures-execute)
   (define-record test-result type-name success? title assert-title index result arguments expected)
 
   (define (test-create-result . values)

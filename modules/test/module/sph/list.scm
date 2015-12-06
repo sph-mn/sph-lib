@@ -157,4 +157,4 @@
       ((1 2 3)) (1 2 3)))
 
   (define (execute settings)
-    (test-execute-procedures tests settings)))
+    (test-execute-procedures settings tests)))

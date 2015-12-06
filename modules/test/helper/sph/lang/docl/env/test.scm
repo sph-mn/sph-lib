@@ -1,4 +1,4 @@
-(library (test sph lang docl env test)
+(library (test helper sph lang docl env test)
   (export
     docl-list
     docl-text-reverse
