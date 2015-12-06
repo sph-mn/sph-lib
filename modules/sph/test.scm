@@ -353,7 +353,8 @@
     "(symbol ...) list -> test-result" (test-module-execute settings (environment* name)))
 
   (define* (test-execute-modules-prefix name-prefix #:optional (settings test-settings-default))
-    "execute all test-modules whose names begin with name-prefix.
+    "((symbol ...) ...) [list] -> list:test-result
+    execute all test-modules whose names begin with name-prefix.
     for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both"
     (test-module-prefix-execute settings name-prefix))
 
