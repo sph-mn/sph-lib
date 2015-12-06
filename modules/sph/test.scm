@@ -56,36 +56,52 @@
       readlink
       quasisyntax))
 
-  ;todo: failure-display, nested module results display, exception supression
+  ;todo: failure-display, nested results display, assertion title display
 
-  (define test-format-compact-one
-    (let
-      (display-indices
-        (l (count port) (n-times count (l (n) (display " " port) (display (+ 1 n) port)))))
-      (l (a port) "vector:test-result-record port/any ->"
-        (let (index (test-result-index a))
-          (if (test-result-success? a)
-            (begin (display (test-result-title a) port)
-              (if (and index (< 0 index)) (display-indices index port)) (newline port))
-            (begin (display (test-result-title a) port)
-              (if (and index (< 1 index)) (display-indices (- index 1))) (newline port)
-              (display
-                (if index (string-append "  failure at " (number->string index) "\n    ")
-                  "  failure\n    "))
-              (newline port)))))))
+  (define (test-format-compact-display-indices count display)
+    (n-times count (l (n) (display " ") (display (+ 1 n)))))
+
+  (define (create-indent depth) (string-multiply "  " depth))
+
+  (define (test-format-compact-failure a depth display) "vector integer procedure ->"
+    (let ((indent (create-indent depth)) (index (test-result-index a))) (display indent)
+      (display (test-result-title a))
+      (if (and index (< 1 index)) (test-format-compact-display-indices index display))
+      (display
+        (string-append "\n" (create-indent (+ 1 depth))
+          "failure" (if index (string-append " at " (number->string index)) "") "\n"))
+      (each
+        (let (indent (create-indent (+ 2 depth)))
+          (l (e)
+            (let (value (tail e))
+              (if value (display (string-append indent (first e) ": " (any->string value) "\n"))))))
+        (list (pair "i" (test-result-arguments a)) (pair "e" (test-result-expected a))
+          (pair "o" (test-result-result a))))))
+
+  (define (test-format-compact-success a depth display) "vector integer procedure ->"
+    (let ((indent (create-indent depth)) (index (test-result-index a))) (display indent)
+      (display (test-result-title a))
+      (if (and index (< 0 index)) (test-format-compact-display-indices index display)))
+    (display "\n"))
+
+  (define (test-format-compact-one a depth display)
+    "vector:test-result-record integer procedure ->"
+    (if (test-result-success? a) (test-format-compact-success a depth display)
+      (test-format-compact-failure a depth display)))
 
   (define (test-format-compact result port) "list/vector port -> list/vector:result/input"
-    (if (list? result)
-      (let loop ((rest result) (depth 0) (group (list)))
-        (if (null? rest) result
-          (let (e (first rest))
-            (if (list? e)
-              (match e
-                ( ( (? symbol? group-name) rest ...)
-                  (loop (tail rest) (+ 1 depth) (pair group-name group)))
-                (_ (loop e (+ 1 depth) group)))
-              (begin (test-format-compact-one e port) (loop (tail rest) depth group))))))
-      (test-format-compact-one result port))
+    (let (display (l (a) (display a port)))
+      (if (list? result)
+        (let loop ((rest result) (depth 0) (group (list)))
+          (if (null? rest) result
+            (let (e (first rest))
+              (if (list? e)
+                (match e
+                  ( ( (? symbol? group-name) rest ...)
+                    (loop (tail rest) (+ 1 depth) (pair group-name group)))
+                  (_ (loop e (+ 1 depth) group)))
+                (begin (test-format-compact-one e depth display) (loop (tail rest) depth group))))))
+        (test-format-compact-one result 0 display)))
     result)
 
   (define (test-format-null a port)
@@ -112,15 +128,15 @@
       (ql ((source ...)) (display-format #f #f #t)
         (add-to-load-path #f #f #t) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
 
-  (define (test-path-execute settings a) "alist string -> vector/list/error:test-result"
+  (define (test-path->module-names a) "alist string -> vector/list/error:test-result"
     (let (load-path (path->load-path a))
       (if load-path
         (case (stat:type (stat (string-append load-path "/" a)))
-          ((directory) (test-module-prefix-execute settings (path->module-name a)))
-          ((regular) (test-module-execute settings (environment* (path->module-name a))))
+          ((directory) (module-prefix->module-names (path->module-name a)))
+          ((regular) (list (path->module-name a)))
           ( (symlink)
             ;as far as we know readlink fails for circular symlinks
-            (test-path-execute settings (readlink a))))
+            (test-path->module-names (readlink a))))
         (error-create (q file-not-found-in-load-path)))))
 
   (define (cli-value-path/module-list a)
@@ -156,7 +172,8 @@
     "parse program arguments and run the rest of the program depending on the given arguments"
     (let* ((arguments (test-cli)) (settings (test-execute-cli-get-settings arguments)))
       (alist-quoted-bind arguments (source)
-        (if source (map (l (e) (test-path-execute settings e)) source) (list)))))
+        (if source (test-modules-execute settings (append-map test-path->module-names source))
+          (list)))))
 
   (define-syntax-cases test-lambda s
     (((arguments expected) body ...) (syntax (lambda (arguments expected) body ...)))
@@ -205,7 +222,7 @@
       (syntax-case s (import)
         ( (_ (name-part ...) (import spec ...) body ...)
           (syntax
-            (library (name-part ...) (export execute) (import (rnrs base) (sph) (sph test) spec ...) body ...)))
+            (library (name-part ...) (export execute) (import (guile) (rnrs base) (sph) (sph test) spec ...) body ...)))
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
@@ -233,13 +250,13 @@
           (if exclude (test-modules-exclude modules exclude) modules))
         until)))
 
-  (define (module-prefix->module-names settings name) "alist list -> ((symbol ...) ...)"
+  (define (module-prefix->module-names name) "alist list -> ((symbol ...) ...)"
     (module-name->load-path+full-path& name #f
-      (l (load-path full-path)
-        (test-modules-apply-settings settings (path->module-names full-path #:load-path load-path)))))
+      (l (load-path full-path) (path->module-names full-path #:load-path load-path))))
 
-  (define (module-prefix->names+modules settings module-prefix) "alist list -> (module ...)"
-    (map (l (e) (pair e (environment* e))) (module-prefix->module-names settings module-prefix)))
+  (define (test-modules-execute settings module-names) "list list -> list:test-result"
+    (map (l (name module) (pair name (test-module-execute settings module))) module-names
+      (map environment* module-names)))
 
   (define (test-module-prefix-execute settings . name)
     "list:alist (symbol ...) -> list:test-result:((module-name test-result ...) ...)
@@ -248,18 +265,9 @@
     the implementation is depends on the following features:
     - module names are mapped to filesystem paths
     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
-    (map
-      (l (name+module) (pair (first name+module) (test-module-execute settings (tail name+module))))
-      (append-map (l (e) (module-prefix->names+modules settings e)) name)))
-
-  #;(define (test-resolve-procedure name) "symbol -> procedure/boolean-false"
-    (let (test-name (symbol-append (q test-) name))
-
-      (if (defined? test-name) (eval test-name (current-module))
-        (if (defined? name)
-          (let (p (eval name (current-module))) (l (arguments . rest) (apply p arguments)))
-          (error-create (q test-procedure-not-found) (list test-name name)
-            (q test-resolve-procedure))))))
+    (test-modules-execute settings
+      (test-modules-apply-settings settings
+        (append-map (l (e) (module-prefix->module-names e)) name))))
 
   (define (filter-module-names a) "list -> list" (filter list? a))
   (define (filter-procedure-names a) "list -> list" (filter symbol? a))
@@ -296,12 +304,10 @@
           (if exceptions? test-proc (l a (catch #t (thunk (apply test-proc a)) exception->string)))))
       (if (null? data)
         (let (r (test-proc (list) #t)) (and p-before (p-before name 0))
-          (if (test-result? r)
-            (p-display
-              (record-update test-result r title (title-extend (test-result-title r) title)))
-            (p-display (test-create-result (eqv? #t r) title 0 r (list) #t))))
+          (if (test-result? r) (p-display (record-update test-result r title title))
+            (p-display (test-create-result (eqv? #t r) title #f 0 r (list) #t))))
         (let loop ((d data) (index 0))
-          (if (null? d) (p-display (test-create-result #t title index))
+          (if (null? d) (p-display (test-create-result #t title #f index))
             (let*
               ( (d-tail (tail d)) (expected (first d-tail))
                 (r
@@ -309,11 +315,9 @@
                     (test-proc (any->list (first d)) expected))))
               (if (test-result? r)
                 (if (test-result-success? r) (loop (tail d-tail) (+ 1 index))
-                  (p-display
-                    (record-update test-result r
-                      title (title-extend (test-result-title r) title) index index)))
+                  (p-display (record-update test-result r title title index index)))
                 (if (equal? r expected) (loop (tail d-tail) (+ 1 index))
-                  (p-display (test-create-result #f title index r (first d) expected))))))))))
+                  (p-display (test-create-result #f title #f index r (first d) expected))))))))))
 
   (define (test-procedures-execute-parallel settings a p-display p-before exceptions?)
     "list:alist list procedure procedure -> list
@@ -359,12 +363,7 @@
     test-result: (test-result-group ...)"
     (test-procedures-execute settings source))
 
-  (define-record test-result type-name success? title index result arguments expected)
-
-  (define (title-extend title addition)
-    "string/false string -> string
-    prepend adition to title if title is true"
-    (if title (string-append addition " " title)))
+  (define-record test-result type-name success? title assert-title index result arguments expected)
 
   (define (test-create-result . values)
     "boolean string integer any list any -> vector
@@ -374,11 +373,9 @@
   (define (assert-failure-result result expected title arguments)
     "vector/any any false/string any -> vector:test-result"
     (if (test-result? result)
-      (if (string? title)
-        (record-update test-result result title (title-extend (test-result-title result) title))
-        result)
-      (if (string? title) (test-create-result #f title #f result arguments expected)
-        (test-create-result #f "assertion" #f result arguments expected))))
+      (if (string? title) (record-update test-result result assert-title title) result)
+      (if (string? title) (test-create-result #f title #f #f result arguments expected)
+        (test-create-result #f #f "assertion" #f result arguments expected))))
 
   (define-syntax-rules assert-true
     ( (optional-title expr)

@@ -21,4 +21,4 @@
       #(2 4 5)))
 
   (define (execute settings)
-    (test-execute tests settings)))
+    (test-execute-procedures tests settings)))
