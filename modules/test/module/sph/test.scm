@@ -1,10 +1,5 @@
-(library (test module sph test)
-  (export
-    execute)
+(define-test-library (test module sph test)
   (import
-    (guile)
-    (rnrs base)
-    (sph)
     (sph alist)
     (sph test))
 
@@ -29,14 +24,11 @@
   (define-test (test-execute-procedures arguments)
     (test-execute-procedures test-settings-default arguments))
 
-  (define-tests tests
-    ;(test-execute-modules-prefix ((test module sph)) (((test module sph test-module) "execute called")))
+  (test-execute-procedures-lambda settings (test-execute-modules-prefix ((test module sph)) (((test module sph test-module) "execute called")))   ;
     (test-execute-procedures (unquote tests-1) (#(test-result #f "aa" 1 (3 4) (3 4) 5))
       (unquote tests-2)
       (#(test-result #t "bb" 1 #f #f #f)
         #(test-result #f "assertions-without-title assertion" #f #f (> 1 3) #t))
       (unquote tests-3) (#(test-result #f "assertions-with-title a d" #f #f (> 1 3) #t)))
     (test-execute-module ((unquote test-settings-default) (test module sph test-module))
-      ("execute called")))
-
-  (define (execute settings) (test-execute-procedures settings tests)))
+      ("execute called"))))

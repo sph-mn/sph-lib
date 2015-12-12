@@ -17,16 +17,15 @@
     assert-and
     assert-equal
     assert-true
-    define-test
-    define-test-execute-procedures
+    define-procedure-tests
     define-test-module
-    define-tests
     test-cli
     test-create-result
     test-execute-cli
     test-execute-module
     test-execute-modules-prefix
     test-execute-procedures
+    test-execute-procedures-lambda
     test-lambda
     test-list
     test-path->module-names
@@ -210,18 +209,15 @@
 
   (define-syntax-rule (test-list test-spec ...) (list (test-list-one test-spec) ...))
 
-  (define-syntax-rule (define-tests name test-spec ...)
+  (define-syntax-rule (define-procedure-tests name test-spec ...)
     ;symbol symbol/list -> ((symbol procedure any ...) ...)
-    ;resolves procedures from name and normalises the test specification
+    ;define procedure tests that can be executed with "test-execute-procedures".
+    ;resolves procedures by name in test-specs and normalises the test specification
     (define name (test-list test-spec ...)))
 
-  ;does not work, unbound variable error
-
-  #;(define-syntax-case (define-test-execute-procedures test-spec ...) s
-    (quasisyntax
-      (define execute
-        (let ((unsyntax (datum->syntax s (gensym "test"))) (test-list test-spec ...))
-          (l (settings) (test-execute-procedures settings tests))))))
+  (define-syntax-rule (test-execute-procedures-lambda test-spec ...)
+    ;define and execute procedure tests
+    (l (settings) (test-execute-procedures settings (test-list test-spec ...))))
 
   (define-syntax define-test-module
     ;test modules are typical modules/libraries that export only one "export" procedure. this syntax simplifies the definition.
@@ -232,9 +228,13 @@
     ;to archieve this, the module definition is first evaluated in the top-level environment, then the module object is resolved (environment*)
     (l (s)
       (syntax-case s (import)
-        ( (_ (name-part ...) (import spec ...) body ...)
+        ( (_ (name-part ...) (import spec ...) body ... proc)
+          ;using eval because exporting bindings created with define created by syntax was not working
           (syntax
-            (library (name-part ...) (export execute) (import (guile) (rnrs base) (sph) (sph test) spec ...) body ...)))
+            (eval
+              (quote
+                (library (name-part ...) (export execute) (import (guile) (rnrs base) (sph) (sph test) spec ...) body ... (define test-execute proc)))
+              (current-module))))
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
@@ -248,7 +248,7 @@
 
   (define (test-module-execute settings module) "alist (symbol ...)"
     ;environment* from (sph module) is used to make the define-test-module syntax work
-    ((eval (q execute) module) settings))
+    ((eval (q test-execute) module) settings))
 
   (define (test-modules-until a value) (take-while (l (a) (not (equal? a value))) a))
   (define (test-modules-only a values) (filter (l (a) (containsv? values a)) a))
