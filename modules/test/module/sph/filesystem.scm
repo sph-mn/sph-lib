@@ -6,9 +6,9 @@
   (define cwd (string-append (getcwd) "/"))
 
   (define (test-path->full-path inp exp)
-    (string-replace-string (path->full-path inp) cwd ""))
+    (string-replace-string (apply path->full-path inp) cwd ""))
 
-  (define-tests tests
+  (test-execute-procedures-lambda
     (path->full-path
       ".abc." ".abc."
       "..abc.." "..abc.."
@@ -71,7 +71,4 @@
       ("/" "/") "/"
       ("/" "/a") "/a"
       ("" "") "/"
-      "" ""))
-
-  (define (execute settings)
-    (test-execute-procedures settings tests)))
+      "" "")))

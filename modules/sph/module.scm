@@ -92,18 +92,18 @@
   (define (default-before-filter name) (string-suffix? ".scm" name))
 
   (define*
-    (path->module-names base-path #:key (max-depth (inf)) (before-filter default-before-filter)
+    (path->module-names base-path #:key (max-depth (inf))
       (load-path (string-longest-prefix base-path %load-path)))
     "list probable libraries belonging to directory \"path\" and subdirectories. path must be in the load-path.
     result may include files that contain no library definition, depending on the validations in before-filter.
     the default before-filter allows only files with a \".scm\" suffix."
     (if load-path
       (let (path->module-name* (l (e) (path->module-name (string-drop-prefix load-path e))))
-        (if (eqv? (q reqular) (stat:type (stat base-path))) (path->module-name* base-path)
+        (if (eqv? (q regular) (stat:type (stat base-path))) (path->module-name* base-path)
           (fold-directory-tree
             (l (e stat-info r)
               (if (eqv? (q regular) (stat:type stat-info)) (pair (path->module-name* e) r) r))
-            (list) base-path #:max-depth max-depth #:before-filter before-filter)))
+            (list) base-path max-depth)))
       (error-create (q path-is-not-in-load-path))))
 
   (define (import-any . module-names)

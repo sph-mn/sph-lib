@@ -18,6 +18,7 @@
     assert-equal
     assert-true
     define-procedure-tests
+    define-test
     define-test-module
     test-cli
     test-create-result
@@ -56,7 +57,7 @@
       readlink
       quasisyntax))
 
-  ;todo: failure-display, nested results display, assertion title display
+  ;todo: nested results display, assertion title display
 
   (define (test-format-compact-display-indices count display)
     (n-times count (l (n) (display " ") (display (+ 1 n)))))
@@ -128,16 +129,21 @@
       (ql ((source ...)) (display-format #f #f #t)
         (add-to-load-path #f #f #t) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
 
-  (define (test-path->module-names a) "alist string -> vector/list/error:test-result"
+  (define (path->load-path+path& a c)
     (let (load-path (path->load-path a))
-      (if load-path
-        (case (stat:type (stat (string-append load-path "/" a)))
-          ((directory) (module-prefix->module-names (path->module-name a)))
-          ((regular) (list (path->module-name a)))
-          ( (symlink)
-            ;as far as we know readlink fails for circular symlinks
-            (test-path->module-names (readlink a))))
-        (error-create (q file-not-found-in-load-path)))))
+      (if load-path (c load-path a) (let (a (string-append a ".scm")) (c (path->load-path a) a)))))
+
+  (define (test-path->module-names a) "alist string -> vector/list/error:test-result"
+    (path->load-path+path& a
+      (l (load-path a)
+        (if load-path
+          (case (stat:type (stat (string-append load-path "/" a)))
+            ((directory) (module-prefix->module-names (path->module-name a)))
+            ((regular) (list (path->module-name a)))
+            ( (symlink)
+              ;as far as we know readlink fails for circular symlinks
+              (test-path->module-names (readlink a))))
+          (error-create (q file-not-found-in-load-path))))))
 
   (define (cli-value-path/module-list a)
     "false/string -> false/list
@@ -191,18 +197,23 @@
           (define (unsyntax (datum->syntax (syntax name) (symbol-append (q test-) name-datum)))
             proc)))))
 
+  (define (macro?* a) (false-if-exception (macro? (module-ref (current-module) a))))
+
   (define-syntax-cases test-list-one
     ( ( (name data ...))
-      (let
-        (test-name
-          (datum->syntax (syntax name) (symbol-append (q test-) (syntax->datum (syntax name)))))
+      (let*
+        ( (name-datum (syntax->datum (syntax name)))
+          (test-name (datum->syntax (syntax name) (symbol-append (q test-) name-datum))))
         (quasisyntax
           (pairs (quote name)
-            ;eval, to avoid getting possibly undefined variable warnings
+            ;eval, to avoid "possibly undefined variable" warnings
             (eval
               (quote
                 (if (defined? (quote (unsyntax test-name))) (unsyntax test-name)
-                  (lambda (arguments . rest) (apply name arguments))))
+                  (unsyntax
+                    (if (macro?* name-datum)
+                      (syntax (error-create (q macro-instead-of-test-procedure) (quote name)))
+                      (syntax (lambda (arguments . rest) (apply name arguments)))))))
               (current-module))
             (quasiquote (data ...))))))
     ((name) (syntax (test-list-one (name)))))
@@ -216,8 +227,8 @@
     (define name (test-list test-spec ...)))
 
   (define-syntax-rule (test-execute-procedures-lambda test-spec ...)
-    ;define and execute procedure tests
-    (l (settings) (test-execute-procedures settings (test-list test-spec ...))))
+    ;create a procedure that executes procedure tests corresponding to test-spec
+    ((l (tests) (l (settings) (test-execute-procedures settings tests))) (test-list test-spec ...)))
 
   (define-syntax define-test-module
     ;test modules are typical modules/libraries that export only one "export" procedure. this syntax simplifies the definition.
@@ -233,7 +244,7 @@
           (syntax
             (eval
               (quote
-                (library (name-part ...) (export execute) (import (guile) (rnrs base) (sph) (sph test) spec ...) body ... (define test-execute proc)))
+                (library (name-part ...) (export test-execute) (import (guile) (rnrs base) (sph) (sph test) spec ...) body ... (define test-execute proc)))
               (current-module))))
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))

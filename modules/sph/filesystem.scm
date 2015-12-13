@@ -10,27 +10,27 @@
     directory-tree-paths
     dotfile?
     ensure-directory-structure
+    ensure-directory-structure-and-mode
     ensure-trailing-slash
     file->string
     filename-extension
     find-file-any
     find-files-any
-    path-directories
     fold-directory-tree
     get-unique-target-path
     is-directory?
     last
-    remove-trailing-slash
     merge-files
     move-and-link
-    ensure-directory-structure-and-mode
     mtime-difference
     path->full-path
     path->list
     path-append
     path-append*
+    path-directories
     poll-watch
     remove-filename-extension
+    remove-trailing-slash
     search-load-path
     spath->path
     spath?
@@ -53,7 +53,10 @@
     (sph string)
     (sph time)
     (srfi srfi-41)
-    (only (sph hashtable) hashtable hashtable-ref symbol-hashtable)
+    (only (sph hashtable)
+      hashtable
+      hashtable-ref
+      symbol-hashtable)
     (only (sph list)
       any->list
       length-greater-one?
@@ -157,7 +160,8 @@
     "string -> boolean
     like ensure-directory-structure but also sets the file mode/permissions.
     the mode is influenced by the umask"
-    (or (file-exists? path) (begin (ensure-directory-structure-and-mode (dirname path) mode) (mkdir path mode))))
+    (or (file-exists? path)
+      (begin (ensure-directory-structure-and-mode (dirname path) mode) (mkdir path mode))))
 
   (define (ensure-trailing-slash str) "string -> string"
     (if (or (string-null? str) (not (eqv? #\/ (string-ref str (- (string-length str) 1)))))
@@ -166,10 +170,9 @@
   (define (path-directories a)
     "string -> (string ...)
     creates a list of the full paths of all directories above the given path"
-    (unfold (l (e) (or (string-equal? "/" e) (string-equal? "." e)))
-      identity dirname a))
+    (unfold (l (e) (or (string-equal? "/" e) (string-equal? "." e))) identity dirname a))
 
- (define stat-field-name->stat-accessor-ht
+  (define stat-field-name->stat-accessor-ht
     (symbol-hashtable mtime stat:mtime
       atime stat:atime
       size stat:size mode stat:mode uid stat:uid gid stat:gid nlink stat:nlink ctime stat:ctime))
@@ -183,7 +186,8 @@
   (define stat-accessor->stat-field-name-ht
     (hashtable stat:mtime (q mtime)
       stat:atime (q atime)
-      stat:size (q size)  stat:mode (q mode)  stat:uid (q uid)  stat:gid (q gid)  stat:nlink (q nlink)  stat:ctime (q ctime) ))
+      stat:size (q size)
+      stat:mode (q mode) stat:uid (q uid) stat:gid (q gid) stat:nlink (q nlink) stat:ctime (q ctime)))
 
   (define (stat-accessor->stat-field-name a)
     "utility for functions working with file change events and stat-records"
@@ -222,7 +226,7 @@
         (l (e) (find-file-any e search-path fn-extensions)))
       relative-paths))
 
-  (define* (fold-directory-tree proc init path #:key (max-depth (inf)) (before-filter (list)))
+  (define* (fold-directory-tree proc init path #:optional (max-depth (inf)))
     "::
     procedure:{string:current-path guile-stat-object:stat-info any:previous-result -> any} -
     any string integer {string/path -> boolean} ...
@@ -232,17 +236,14 @@
     fold over directory-tree under path, possibly limited by max-depth and with filenames filtered by \"before-filter.\"
     the directory-references \".\" and \"..\" are ignored"
     (let (path (ensure-trailing-slash path))
-      (stream-fold
-        (l (r e)
+      (fold
+        (l (e r)
           (let* ((full-path (string-append path e)) (stat-info (stat full-path)))
             (if (and (eqv? (q directory) (stat:type stat-info)) (< 1 max-depth))
               (fold-directory-tree proc (proc full-path stat-info r)
-                (string-append full-path "/") #:max-depth
-                (- max-depth 1) #:before-filter before-filter)
+                (string-append full-path "/") (- max-depth 1))
               (proc full-path stat-info r))))
-        init
-        (directory-stream path
-          (l (name) (and (not (directory-reference? name)) (before-filter name)))))))
+        init (directory-list path (negate directory-reference?)))))
 
   (define (filename-extension a)
     "string -> string
@@ -275,14 +276,14 @@
     "string string ... ->
     creates or truncates \"target-path\" and appends the contents of all source-paths in order"
     (call-with-output-file target-path
-        (l (target-file)
-          (each
-            (l (source-path)
-              (call-with-input-file source-path
-                (l (source-file)
-                  (stream-each (l (block) (put-bytevector target-file block))
-                    (port->buffered-octet-stream source-file 200000)))))
-            source-paths))))
+      (l (target-file)
+        (each
+          (l (source-path)
+            (call-with-input-file source-path
+              (l (source-file)
+                (stream-each (l (block) (put-bytevector target-file block))
+                  (port->buffered-octet-stream source-file 200000)))))
+          source-paths))))
 
   (define (mtime-difference . paths)
     "string ... -> integer
@@ -290,8 +291,7 @@
     at least one file has changed if the number is not zero"
     (apply - (par-map (compose stat:mtime stat) paths)))
 
-  (define (remove-trailing-slash a)
-    "remove trailing slashes if existant, otherwise result in a"
+  (define (remove-trailing-slash a) "remove trailing slashes if existant, otherwise result in a"
     (string-trim-right a #\/))
 
   (define-syntax-rule (path-append-internal tail-map-proc first-arg args)
@@ -343,12 +343,10 @@
       (l* (name #:optional fn-extensions all?)
         "string [(string)] [boolean]-> string
         remove specific, all or the last filename-extension from a string"
-        (if fn-extensions
-          (fold remove-filename-extension-one name fn-extensions)
+        (if fn-extensions (fold remove-filename-extension-one name fn-extensions)
           (let (name-split (string-split name #\.))
             (if (null? (tail name-split)) name
-              (if all?
-                (first name-split)
+              (if all? (first name-split)
                 (string-drop-right name (+ 1 (string-length (last name-split)))))))))))
 
   (define* (search-load-path path #:optional (load-paths %load-path))

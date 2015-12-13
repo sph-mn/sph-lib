@@ -20,7 +20,7 @@
   (define extended-association-3
     (itml-create-association "a" simple-inline-scm-expr simple-inline-scm-expr))
 
-  (define-tests tests
+  (test-execute-procedures-lambda
     (string->itml-parsed
       ;inline-scm
       (unquote simple-inline-scm-expr) ((unquote (pair (q inline-scm-expr) test-env-list-1)))
@@ -61,7 +61,4 @@
       "keyword:content" ("keyword:content")
       "keyword: content" ((association "keyword" "content"))
       "key\\.(+ 3 4)word: con\\.(+ 1 2)tent" ((line "key" (inline-scm-expr "(+ 3 4)") (association "word" "con" (inline-scm-expr "(+ 1 2)") "tent")))
-      )))
-
-  (define (execute settings)
-    (test-execute-procedures settings tests)))
+      ))))

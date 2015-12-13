@@ -2,10 +2,10 @@
   (import
     (sph list))
 
-  (define (test-env-replace-at-once-proc a)
+  (define-test (env-replace-at-once-proc a)
     (map (l (e) (* 3 e)) a))
 
-  (define-tests tests
+  (test-execute-procedures-lambda
     (intersection
       ((1 2 3) (5 6 2 8)) (2)
       ((1 2 3) (4 5 6)) ()
@@ -154,7 +154,4 @@
     (simplify
       ((1)) 1
       ((1 2)) (1 2)
-      ((1 2 3)) (1 2 3)))
-
-  (define (execute settings)
-    (test-execute-procedures settings tests)))
+      ((1 2 3)) (1 2 3))))
