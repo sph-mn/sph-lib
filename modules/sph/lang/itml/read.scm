@@ -31,7 +31,8 @@
       any->string-write)
     (only (srfi srfi-1) remove))
 
-  (define-peg-pattern double-backslash body (and ignored-backslash "\\"))
+  (define-peg-pattern double-backslash-body body (and ignored-backslash "\\"))
+  (define-peg-pattern double-backslash all "\\\\")
   (define-peg-pattern association-infix all ": ")
   (define-peg-pattern ignored-association-infix none ": ")
   (define-peg-pattern ignored-dot none ".")
@@ -50,7 +51,7 @@
     ;the inner expressions are parsed to end the expression at the appropriate closing parenthesis
     (and (? ignored-space) ignored-opening-parenthesis
       (*
-        (or inline-expr-inner double-backslash
+        (or inline-expr-inner double-backslash-body
           line-scm-expr line-expr
           association inline-scm-expr inline-expr (and (not-followed-by ")") peg-any)))
       ignored-closing-parenthesis))
@@ -92,10 +93,10 @@
     (and
       (+
         (and (not-followed-by (or (and " " ignored-association-infix) escaped-association-infix))
-          (or double-backslash association-left-char)))
+          (or double-backslash-body association-left-char)))
       association-infix
       (*
-        (or double-backslash line-scm-expr
+        (or double-backslash-body line-scm-expr
           inline-scm-expr line-expr escaped-association-infix peg-any))))
 
   (define-peg-pattern line all
@@ -138,10 +139,10 @@
     indent-scm-expr
     (l (a) (let (a (read-scm-expr a)) (pair (q indent-scm-expr) (list (first a) (tail a)))))
     line-expr (l (a) (pair (q line-expr) a))
-    ;indent-expr (l (a) (debug-log a) (list (q indent-expr) (first a) (tail a)))
     identifier (l (a) (first a))
     inline-expr-inner identity
-    ;if the association infix would not be parsed as a list it would be merged with the text or left out by the peg-parser
+    double-backslash (const "\\")
+    ;if the association infix would not be parsed as a list it would be merged with the text or alternatively left out by the peg-parser
     association
     (l (a)
       (let* ((content (tail (tail a))) (content-prefix (first content)))

@@ -67,15 +67,15 @@
   (define (test-format-compact-failure a depth display) "vector integer procedure ->"
     (let ((indent (create-indent depth)) (index (test-result-index a))) (display indent)
       (display (test-result-title a))
-      (if (and index (< 1 index)) (test-format-compact-display-indices index display))
+      (if (and index (< 1 index)) (test-format-compact-display-indices (- index 1) display))
       (display
         (string-append "\n" (create-indent (+ 1 depth))
-          "failure" (if index (string-append " at " (number->string index)) "") "\n"))
+          "failure" (if index (string-append " at " (number->string (+ 1 index))) "") "\n"))
       (each
         (let (indent (create-indent (+ 2 depth)))
           (l (e)
             (let (value (tail e))
-              (if value (display (string-append indent (first e) ": " (any->string value) "\n"))))))
+              (if value (display (string-append indent (first e) ": " (any->string-write value) "\n"))))))
         (list (pair "i" (test-result-arguments a)) (pair "e" (test-result-expected a))
           (pair "o" (test-result-result a))))))
 

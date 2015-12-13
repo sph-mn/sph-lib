@@ -100,7 +100,7 @@
     (pair (q (sph lang docl env itml-to-sxml-html)) docl-default-env-module-names))
 
   (define docl-itml-env-sxml-html (apply environment docl-itml-env-sxml-html-module-names))
-  (define (ascend-handle-line a nesting-depth docl-state env) (if (null? a) "" (add-spaces a)))
+  (define (ascend-handle-line a nesting-depth docl-state env) (if (null? a) "" a))
   (define (descend-handle-double-backslash a nesting-depth docl-state env) "\\")
 
   (define (ascend-handle-association a nesting-depth docl-state env)

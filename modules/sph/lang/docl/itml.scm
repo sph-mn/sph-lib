@@ -61,8 +61,7 @@
     (itml-list-string-eval a env nesting-depth docl-state))
 
   (define (itml-eval-2 a nesting-depth docl-state env)
-    (let (a (simplify-list (string->datum (parenthesise (string-join (flatten a) " ")) read)))
-      (itml-list-eval a env nesting-depth docl-state)))
+    (itml-list-eval a env nesting-depth docl-state))
 
   (define itml-eval-descend-line-scm-expr itml-eval-2)
   (define itml-eval-descend-inline-scm-expr itml-eval-2)
@@ -80,6 +79,7 @@
         docl-state)))
 
   (define (docl-itml-string->result-proc port->result)
+    "procedure:{port any ... ->} -> procedure:{string any ... ->}"
     (l (a . port->result-arguments) "string _ ... -> text"
       (apply port->result (open-input-string a) port->result-arguments)))
 
