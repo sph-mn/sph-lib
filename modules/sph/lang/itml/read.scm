@@ -92,17 +92,18 @@
   (define-peg-pattern association all
     (and
       (+
-        (and (not-followed-by (or (and " " ignored-association-infix) escaped-association-infix))
-          (or double-backslash-body association-left-char)))
+        (and (not-followed-by (and " " ignored-association-infix))
+          (or double-backslash-body inline-scm-expr
+            inline-expr escaped-association-infix association-left-char)))
       association-infix
       (*
         (or double-backslash-body line-scm-expr
-          inline-scm-expr line-expr escaped-association-infix peg-any))))
+          inline-scm-expr line-expr inline-expr escaped-association-infix peg-any))))
 
   (define-peg-pattern line all
     (*
-      (or double-backslash inline-scm-expr
-        line-scm-expr line-expr escaped-association-infix association inline-expr peg-any)))
+      (or double-backslash line-scm-expr
+        line-expr association inline-scm-expr escaped-association-infix inline-expr peg-any)))
 
   (define-peg-pattern ascend-prefix-expr body (or indent-expr (* peg-any)))
   (define-peg-pattern descend-expr body (or indent-scm-expr indent-descend-expr))
@@ -145,6 +146,8 @@
     ;if the association infix would not be parsed as a list it would be merged with the text or alternatively left out by the peg-parser
     association
     (l (a)
+      ;-> (symbol keyword content ...)
+      ;remove association infix. note: association keyword can be a list
       (let* ((content (tail (tail a))) (content-prefix (first content)))
         (pairs (q association) (first a) (if (list? content-prefix) content-prefix content)))))
 

@@ -57,20 +57,21 @@
     (itml-list-eval (pair (string->symbol (first a)) (map (l (a) (list (q quote) a)) (tail a))) env
       proc-arguments ...))
 
-  (define (itml-eval-1 a nesting-depth docl-state env)
+  (define (itml-eval-1 a re-descend nesting-depth docl-state env)
     (itml-list-string-eval a env nesting-depth docl-state))
 
-  (define (itml-eval-2 a nesting-depth docl-state env)
+  (define (itml-eval-2 a re-descend nesting-depth docl-state env)
     (itml-list-eval a env nesting-depth docl-state))
 
+  (define (descend->ascend-proc proc) (l (a . rest) (apply proc a #f rest)))
   (define itml-eval-descend-line-scm-expr itml-eval-2)
   (define itml-eval-descend-inline-scm-expr itml-eval-2)
   (define itml-eval-descend-indent-scm-expr itml-eval-2)
   (define itml-eval-descend-line-expr itml-eval-1)
   (define itml-eval-descend-indent-expr itml-eval-1)
-  (define itml-eval-ascend-inline-expr itml-eval-1)
-  (define itml-eval-ascend-line-expr itml-eval-1)
-  (define itml-eval-ascend-indent-expr itml-eval-1)
+  (define itml-eval-ascend-inline-expr (descend->ascend-proc itml-eval-1))
+  (define itml-eval-ascend-line-expr (descend->ascend-proc itml-eval-1))
+  (define itml-eval-ascend-indent-expr (descend->ascend-proc itml-eval-1))
 
   (define (docl-itml-port->result-proc create-result)
     (l (a nesting-depth docl-state env) "read itml from a port, parse it and translate it to text"

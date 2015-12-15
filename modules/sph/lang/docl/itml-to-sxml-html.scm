@@ -101,23 +101,25 @@
 
   (define docl-itml-env-sxml-html (apply environment docl-itml-env-sxml-html-module-names))
   (define (ascend-handle-line a nesting-depth docl-state env) (if (null? a) "" a))
-  (define (descend-handle-double-backslash a nesting-depth docl-state env) "\\")
+  (define (descend-handle-double-backslash a re-descend nesting-depth docl-state env) "\\")
 
-  (define (ascend-handle-association a nesting-depth docl-state env)
-    (pairs (first a) ": " (tail a)))
+  (define (descend-handle-association a re-descend nesting-depth docl-state env)
+    (debug-log (first a) (re-descend (first a)))
+    (let (keyword (first a))
+      (pairs (if (string? keyword) keyword (re-descend keyword)) ": " (tail a))))
 
   ;escaped characters are added as new line
-  (define (descend-handle-escaped-association-infix a nesting-depth docl-state env) ": ")
+  (define (descend-handle-escaped-association-infix a re-descend nesting-depth docl-state env) ": ")
 
   (define-as ascend-prefix->handler-ht symbol-hashtable
     line ascend-handle-line
     inline-expr itml-eval-ascend-inline-expr
-    line-expr itml-eval-ascend-line-expr
-    indent-expr itml-eval-ascend-indent-expr association ascend-handle-association)
+    line-expr itml-eval-ascend-line-expr indent-expr itml-eval-ascend-indent-expr)
 
   (define-as descend-prefix->handler-ht symbol-hashtable
     inline-scm-expr itml-eval-descend-inline-scm-expr
     line-scm-expr itml-eval-descend-line-scm-expr
+    association descend-handle-association
     indent-scm-expr itml-eval-descend-indent-scm-expr
     indent-descend-expr itml-eval-descend-indent-expr
     escaped-association-infix descend-handle-escaped-association-infix
@@ -131,7 +133,7 @@
       (list->sxml a nesting-depth)))
 
   (define (descend-expr->sxml-html a re-descend nesting-depth docl-state env)
-    (expr->sxml-html descend-prefix->handler-ht a nesting-depth docl-state env))
+    (expr->sxml-html descend-prefix->handler-ht a re-descend nesting-depth docl-state env))
 
   (define (handle-top-level-terminal a . states) (if (eqv? (q line-empty) a) (ql br) a))
   (define (handle-terminal a . states) (pair (handle-top-level-terminal a) states))
