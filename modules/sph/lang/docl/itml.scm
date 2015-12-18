@@ -43,6 +43,7 @@
     (max 0 (- a 1)))
 
   (define (itml-list-eval a env . proc-arguments)
+    (debug-log a proc-arguments)
     (let
       ( (docl-call (l (proc . arguments) (apply proc arguments proc-arguments)))
         (docl-proc
@@ -58,12 +59,18 @@
       proc-arguments ...))
 
   (define (itml-eval-1 a re-descend nesting-depth docl-state env)
+    "list procedure integer list environment -> any
+    evaluate an inline-code expression when the arguments are strings"
     (itml-list-string-eval a env nesting-depth docl-state))
 
   (define (itml-eval-2 a re-descend nesting-depth docl-state env)
-    (itml-list-eval a env nesting-depth docl-state))
+    "evaluate an inline-code expression" (itml-list-eval a env nesting-depth docl-state))
 
-  (define (descend->ascend-proc proc) (l (a . rest) (apply proc a #f rest)))
+  (define (descend->ascend-proc proc)
+    "procedure -> procedure
+    change the type-signature of a descend procedure to be like an ascend procedure (without the re-descend parameter)"
+    (l (a . rest) (apply proc a #f rest)))
+
   (define itml-eval-descend-line-scm-expr itml-eval-2)
   (define itml-eval-descend-inline-scm-expr itml-eval-2)
   (define itml-eval-descend-indent-scm-expr itml-eval-2)
@@ -74,19 +81,27 @@
   (define itml-eval-ascend-indent-expr (descend->ascend-proc itml-eval-1))
 
   (define (docl-itml-port->result-proc create-result)
-    (l (a nesting-depth docl-state env) "read itml from a port, parse it and translate it to text"
+    "procedure:{list:itml-parsed integer:nesting-depth list:docl-state environment:eval-environment} -> any
+    create a procedure that reads itml from a port, reads itml expressions from it and parses it to \"create-result\""
+    (l (a nesting-depth docl-state env)
+      "any integer list environment -> any
+      read itml from a port, parse it and create a result"
       (docl-translate-port a
         (l (a docl-state) (create-result (port->itml-parsed a) nesting-depth docl-state env))
         docl-state)))
 
   (define (docl-itml-string->result-proc port->result)
-    "procedure:{port any ... ->} -> procedure:{string any ... ->}"
-    (l (a . port->result-arguments) "string _ ... -> text"
+    "procedure:{port any ... ->} -> procedure:{string any ... ->}
+    creates a procedure that accepts an itml string to transform with \"port->result\""
+    (l (a . port->result-arguments)
+      "string _ ... -> text
+      accepts an itml string to transform"
       (apply port->result (open-input-string a) port->result-arguments)))
 
   (define (docl-itml-parsed->result-proc itml-parsed->result)
+    "create a procedure that accepts itml-parsed and pass it to \"itml-parsed->result\""
     (l (a nesting-depth docl-state env)
-      "list [integer vhash environment] -> any
+      "list [integer list environment] -> any
       this can also be used to convert list trees with strings to html"
       (docl-translate-any a (l (a docl-state) (itml-parsed->result a nesting-depth docl-state env))
         docl-state))))

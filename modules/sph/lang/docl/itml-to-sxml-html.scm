@@ -104,11 +104,15 @@
   (define (descend-handle-double-backslash a re-descend nesting-depth docl-state env) "\\")
 
   (define (descend-handle-association a re-descend nesting-depth docl-state env)
-    (debug-log (first a) (re-descend (first a)))
-    (let (keyword (first a))
-      (pairs (if (string? keyword) keyword (re-descend keyword)) ": " (tail a))))
+    (let
+      ( (keyword (first a))
+        (re-descend*
+          (l (keyword)
+            (map (compose first (l (e) (re-descend e nesting-depth docl-state env)))
+              (any->list keyword)))))
+      (append (if (string? keyword) (list keyword) (re-descend* keyword))
+        (pair ": " (re-descend* (tail a))))))
 
-  ;escaped characters are added as new line
   (define (descend-handle-escaped-association-infix a re-descend nesting-depth docl-state env) ": ")
 
   (define-as ascend-prefix->handler-ht symbol-hashtable

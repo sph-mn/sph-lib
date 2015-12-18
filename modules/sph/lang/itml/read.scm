@@ -138,11 +138,12 @@
     inline-scm-expr (l (a) (pair (q inline-scm-expr) (simplify-list (read-scm-expr a))))
     line-scm-expr (l (a) (pair (q line-scm-expr) (read-scm-expr a)))
     indent-scm-expr
-    (l (a) (let (a (read-scm-expr a)) (pair (q indent-scm-expr) (list (first a) (tail a)))))
-    line-expr (l (a) (pair (q line-expr) a))
-    identifier (l (a) (first a))
-    inline-expr-inner identity
-    double-backslash (const "\\")
+    (l (a)
+      (let (a (read-scm-expr a)) (pairs (q indent-scm-expr) (first a) (tail a)))) line-expr
+    (l (a) (pair (q line-expr) a)) identifier
+    (l (a) (first a)) inline-expr-inner
+    identity double-backslash
+    (const "\\")
     ;if the association infix would not be parsed as a list it would be merged with the text or alternatively left out by the peg-parser
     association
     (l (a)

@@ -6,13 +6,16 @@
   ;nested with each other
   ;01 01 010 011
   (define test-env-list-1 (q (a (b ("c" d)))))
-  (define test-env-list-2 (q ("a" ("b" ("c d")))))
+  (define test-env-list-2 (q ("a" "e" ("b" ("c d")))))
   (define simple-inline-scm-expr (itml-create-inline-scm-expr test-env-list-1))
   (define simple-line-scm-expr (itml-create-line-scm-expr test-env-list-1))
+
+
   (define simple-indent-scm-expr (itml-create-indent-scm-expr test-env-list-1))
   (define simple-inline-expr (itml-create-inline-expr test-env-list-2))
   (define simple-line-expr (itml-create-line-expr test-env-list-2))
   (define simple-indent-expr (itml-create-indent-expr test-env-list-2))
+
   (define simple-association (itml-create-association "a b" "c d"))
   (define extended-association (itml-create-association "a b" "c " simple-inline-scm-expr))
   (define extended-association-2 (itml-create-association "a" simple-inline-scm-expr))
@@ -23,11 +26,12 @@
   (test-execute-procedures-lambda
     (string->itml-parsed
       ;inline-scm
+      "\\.scm (+ 1 2\n  (- 3 1))\n" ((indent-scm-expr scm (+ 1 2 (- 3 1))))
       (unquote simple-inline-scm-expr) ((unquote (pair (q inline-scm-expr) test-env-list-1)))
       ;line-scm
       (unquote simple-line-scm-expr) ((unquote (pair (q line-scm-expr) test-env-list-1)))
       ;indent-scm
-      (unquote simple-indent-scm-expr) ((unquote (pair (q indent-scm-expr) test-env-list-1)))
+      (unquote simple-indent-scm-expr) ((unquote (debug-log (pair (q indent-scm-expr) test-env-list-1))))
       ;inline
       (unquote simple-inline-expr) ((unquote (pair (q inline-expr) test-env-list-2)))
       ;line

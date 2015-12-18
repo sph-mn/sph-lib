@@ -1,9 +1,9 @@
 (library (sph lang itml write)
   (export
+    itml-create-association
     itml-create-indent-expr
     itml-create-indent-scm-expr
     itml-create-inline-expr
-    itml-create-association
     itml-create-inline-scm-expr
     itml-create-line-expr
     itml-create-line-scm-expr
@@ -43,15 +43,13 @@
 
   (define (itml-create-indent-expr a)
     (let (a (tree-map-leafs any->string-display a))
-      (string-append prefix-expr (first a) " " (prefix-tree->indent-tree-string (first (tail a))))))
+      (string-append prefix-expr (first a) " " (prefix-tree->indent-tree-string (tail a)))))
 
   (define (itml-create-line-expr a)
     (let (a (map any->string-display a))
       (string-append prefix-expr (first a) ": " (string-join (tail a) " "))))
 
-  (define (itml-create-association a . b)
-    (apply string-append a ": " b))
-
+  (define (itml-create-association a . b) (apply string-append a ": " b))
   (define (ascend-handle-line a nesting-depth) (apply string-append a))
   (define (descend-handle-double-backslash a nesting-depth) "\\\\")
   (define (ascend-handle-association a nesting-depth) (apply string-append (first a) ": " (tail a)))
