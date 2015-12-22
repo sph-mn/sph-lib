@@ -46,9 +46,7 @@
     (sph one)
     (sph read-write)
     (srfi srfi-31)
-    (only (sph conditional) false-if)
-    (only (sph list) tail-ref)
-    (only (srfi srfi-1) drop-right))
+    (only (sph conditional) false-if))
 
   (define execute system*)
   (define shell-eval system)

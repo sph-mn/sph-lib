@@ -119,7 +119,7 @@
     true->list
     true->list-s
     (rename (lset-adjoin list-set-add)
-      (list-tail tail-ref)
+      (list-tail list-tail-ref)
       (lset-difference complement-p)
       (lset<= list-set-subset?)))
   (import

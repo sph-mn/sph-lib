@@ -22,14 +22,19 @@
       string-drop-right)
     (only (sph conditional) pass-if)
     (only (sph hashtable) hashtable-ref symbol-hashtable)
-    (only (sph list) simplify-list)
+    (only (sph list)
+      first-or-false
+      any->list
+      simplify-list
+      splice-last-list
+      list-tail-ref)
     (only (sph one) string->datum)
     (only (sph string)
       parenthesise
       any->string
       any->string-display
       any->string-write)
-    (only (srfi srfi-1) remove))
+    (only (srfi srfi-1) remove split-at))
 
   (define-peg-pattern double-backslash-body body (and ignored-backslash "\\"))
   (define-peg-pattern double-backslash all "\\\\")
@@ -124,7 +129,8 @@
         (let (match (search-for-pattern ascend-prefix-expr prefix))
           (if match
             (let (match (peg:tree match))
-              (if (list? match) (append match (tail a)) (pair match (tail a))))
+              ;extra list wrap for consistency with descend-expr
+              (if (list? match) (list (append match (tail a))) (pair match (tail a))))
             a))
         a)))
 
@@ -133,17 +139,17 @@
       (if (list? e) (if (= 2 (length e)) (first (tail e)) e) (if (symbol? e) (q line-empty) e))))
 
   (define (read-scm-expr a) (string->datum (any->string-display a) read))
+  (define (string->datums a) "string -> list" (string->datum (parenthesise a) read))
+  (define (split-at& a index c) (call-with-values (thunk (split-at a index)) c))
 
   (define-as prefix->handler-ht symbol-hashtable
     inline-scm-expr (l (a) (pair (q inline-scm-expr) (simplify-list (read-scm-expr a))))
     line-scm-expr (l (a) (pair (q line-scm-expr) (read-scm-expr a)))
-    indent-scm-expr
-    (l (a)
-      (let (a (read-scm-expr a)) (pairs (q indent-scm-expr) (first a) (tail a)))) line-expr
-    (l (a) (pair (q line-expr) a)) identifier
-    (l (a) (first a)) inline-expr-inner
-    identity double-backslash
-    (const "\\")
+    indent-scm-expr (l (a) (pair (q indent-scm-expr) (read-scm-expr a)))
+    line-expr (l (a) (pair (q line-expr) a))
+    identifier first
+    inline-expr-inner identity
+    double-backslash (const "\\")
     ;if the association infix would not be parsed as a list it would be merged with the text or alternatively left out by the peg-parser
     association
     (l (a)
@@ -157,14 +163,20 @@
       (finalise-expression
         (l (a) "list -> any"
           (let (p (hashtable-ref prefix->handler-ht (first a))) (if p (p (tail a)) a))))
-      (l (a) "list -> list" (tree-map-lists finalise-expression a))))
+      (l (a) "list -> list" (finalise-expression (tree-map-lists finalise-expression a)))))
+
+  (define (top-level-map a) #t)
 
   (define (port->itml-parsed a)
     "port -> list
     reads an itml string from port, parses it and returns the abstract syntax tree"
-    (let (tree (read-space-indent-tree->denoted-tree a 2))
-      (if (null? tree) tree
-        (finalise-tree (tree-transform (denoted-tree->prefix-tree tree) descend ascend terminal)))))
+    (let (a (denoted-tree->prefix-tree (read-space-indent-tree->denoted-tree a 2)))
+      ;the top-level is not an itml-expression but a list of itml-expressions
+      (map
+        (l (e)
+          (let (r (finalise-tree (tree-transform (any->list e) descend ascend terminal)))
+            (debug-log r) (if (null? (tail r)) (first r) r)))
+        a)))
 
   (define (path->itml-parsed a)
     "string -> list

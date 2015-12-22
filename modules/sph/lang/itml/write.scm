@@ -37,7 +37,7 @@
 
   (define (itml-create-indent-scm-expr a)
     (let (a (tree-map-leafs any->string-write a))
-      (string-append prefix-expr-scm (first a) " " (prefix-tree->indent-tree-string (tail a)))))
+      (string-append prefix-expr-scm (prefix-tree->indent-tree-string (list a)))))
 
   (define (itml-create-inline-expr a) (string-append prefix-expr (any->string-display a)))
 

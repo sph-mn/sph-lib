@@ -2,7 +2,12 @@
   (import
     (sph tree))
   (test-execute-procedures-lambda
+    (prefix-tree->denoted-tree
+      ((a (b (c d))))
+      ((0 a) (0 b) (1 c) (2 d))
+      )
     (denoted-tree->prefix-tree
+      (((0 a) (1 b) (2 c))) ((a (b c)))
       (((3 b) (3 c) (0 d)))
       ((((b c))) d)
       (((1 a) (3 b) (3 c) (0 d)))
