@@ -43,7 +43,7 @@
 
   (define (itml-create-indent-expr a)
     (let (a (tree-map-leafs any->string-display a))
-      (string-append prefix-expr (first a) " " (prefix-tree->indent-tree-string (tail a)))))
+      (string-append prefix-expr (prefix-tree->indent-tree-string (list a)))))
 
   (define (itml-create-line-expr a)
     (let (a (map any->string-display a))

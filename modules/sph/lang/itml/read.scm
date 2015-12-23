@@ -175,7 +175,7 @@
       (map
         (l (e)
           (let (r (finalise-tree (tree-transform (any->list e) descend ascend terminal)))
-            (debug-log r) (if (null? (tail r)) (first r) r)))
+            (if (null? (tail r)) (first r) r)))
         a)))
 
   (define (path->itml-parsed a)

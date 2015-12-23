@@ -43,7 +43,6 @@
     (max 0 (- a 1)))
 
   (define (itml-list-eval a env . proc-arguments)
-    (debug-log a proc-arguments)
     (let
       ( (docl-call (l (proc . arguments) (apply proc arguments proc-arguments)))
         (docl-proc
