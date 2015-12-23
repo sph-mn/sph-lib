@@ -156,7 +156,11 @@
       ;-> (symbol keyword content ...)
       ;remove association infix. note: association keyword can be a list
       (let* ((content (tail (tail a))) (content-prefix (first content)))
-        (pairs (q association) (first a) (if (list? content-prefix) content-prefix content)))))
+        (pairs (q association) (first a)
+          (if
+            (and (list? content-prefix)
+              (not (or (null? content-prefix) (symbol? (first content-prefix)))))
+            content-prefix content)))))
 
   (define finalise-tree
     (let

@@ -22,6 +22,7 @@
     (itml-parsed->result-proc create-result descend ascend handle-top-level-terminal
       handle-terminal)
     (l (a nesting-depth . states)
+      (debug-log a)
       "list [integer vhash environment] -> any
       a translator for itml-parsed. pass nesting depth and custom states to descend, ascend and terminal procedures"
       (apply create-result

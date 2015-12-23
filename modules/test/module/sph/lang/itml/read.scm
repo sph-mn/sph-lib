@@ -20,6 +20,7 @@
 
   (test-execute-procedures-lambda
     (string->itml-parsed
+      "a: \\.(+ 1 2)" ((association "a" (inline-scm-expr + 1 2)))
       (unquote simple-indent-scm-expr) ((unquote (pair (q indent-scm-expr) test-env-list-1)))
       "\\.a b\nc\nd" ((indent-scm-expr a b) "c" "d")
       "a\n  \\.b\n  c" (("a" "\\.b" "c"))
@@ -51,7 +52,7 @@
       ;association
       (unquote simple-association) ((association "a b" "c d"))
       (unquote extended-association) ((association "a b" "c " (inline-scm-expr a (b ("c" d)))))
-      (unquote extended-association-2) ((association "a" inline-scm-expr a (b ("c" d))))
+      (unquote extended-association-2) ((association "a" (inline-scm-expr a  (b ("c" d)))))
       (unquote extended-association-3)
       ((association "a" (inline-scm-expr a (b ("c" d))) (inline-scm-expr a (b ("c" d)))))
       "aa: \\\\.(+ 1 2)" ((association "aa" "\\.(+ 1 2)"))
