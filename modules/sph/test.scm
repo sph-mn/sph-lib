@@ -58,6 +58,8 @@
       quasisyntax))
 
   ;todo: nested results display, assertion title display
+  ;test-result-group: ([group-name] test-result/test-result-group ...)
+  ;test-result: (test-result-group ...)
 
   (define (test-format-compact-display-indices count display)
     (n-times count (l (n) (display " ") (display (+ 1 n)))))
@@ -70,7 +72,7 @@
       (if (and index (> index 0)) (test-format-compact-display-indices index display))
       (display
         (string-append "\n" (create-indent (+ 1 depth))
-          "failure" (if index (string-append " at " (number->string (+ 1 index))) "") "\n"))
+          "failure" (if index (string-append " " (number->string (+ 1 index))) "") "\n"))
       (each
         (let (indent (create-indent (+ 2 depth)))
           (l (e)
@@ -176,7 +178,8 @@
       test-settings-default))
 
   (define (test-execute-cli)
-    "parse program arguments and run the rest of the program depending on the given arguments"
+    "parse program arguments and run the rest of the program depending on the given arguments.
+    creates a command-line interface for executing tests in test module files"
     (let* ((arguments (test-cli)) (settings (test-execute-cli-get-settings arguments)))
       (alist-quoted-bind arguments (source)
         (if source (test-modules-execute settings (append-map test-path->module-names source))
@@ -276,14 +279,15 @@
 
   (define (module-prefix->module-names name) "alist list -> ((symbol ...) ...)"
     (module-name->load-path+full-path& name #f
-      (l (load-path full-path) (path->module-names full-path #:load-path load-path))))
+      (l (load-path full-path)
+        (path->module-names full-path #:load-path load-path))))
 
   (define (test-modules-execute settings module-names) "list list -> list:test-result"
     (map (l (name module) (pair name (test-module-execute settings module))) module-names
       (map environment* module-names)))
 
   (define (test-module-prefix-execute settings . name)
-    "list:alist (symbol ...) -> list:test-result:((module-name test-result ...) ...)
+    "list:alist (symbol ...) ... -> list:test-result:((module-name test-result ...) ...)
     execute all test-modules whose names begin with name-prefix.
     for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both
     modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
@@ -291,9 +295,12 @@
     the implementation is depends on the following features:
     - module names are mapped to filesystem paths
     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
-    (test-modules-execute settings
-      (test-modules-apply-settings settings
-        (append-map (l (e) (module-prefix->module-names e)) name))))
+    (let (module-names (every-map (l (e) (module-prefix->module-names e)) name))
+      (if module-names
+        (test-modules-execute settings
+          (test-modules-apply-settings settings
+            (apply append module-names)))
+        (error-create (q module-not-found) name))))
 
   (define (filter-module-names a) "list -> list" (filter list? a))
   (define (filter-procedure-names a) "list -> list" (filter symbol? a))
@@ -369,9 +376,7 @@
     (l (a) (p-display a p-display-port)))
 
   (define (test-procedures-execute settings source)
-    "list:((symbol procedure any ...)) list -> test-result
-    test-result-group: ([group-name] test-result/test-result-group ...)
-    test-result: (test-result-group ...)"
+    "list:alist (symbol:name procedure:test-proc any:data-in/out ...) -> test-result"
     ( (test-procedures-get-executor settings) settings
       (test-procedures-apply-settings settings source)
       (p-display->p-display* (alist-quoted-ref settings p-display)
@@ -385,7 +390,7 @@
     (test-module-execute settings (environment* name)))
 
   (define test-execute-procedures test-procedures-execute)
-  (define test-execute-module-prefix test-procedures-execute)
+  (define test-execute-modules-prefix test-module-prefix-execute)
   (define-record test-result type-name success? title assert-title index result arguments expected)
 
   (define (test-create-result . values)

@@ -26,7 +26,6 @@
     call-at-interval
     call-at-interval-w-state
     call-with-pipe
-    call-with-working-directory
     cli-option
     create-temp-fifo
     define-string
@@ -328,11 +327,6 @@
       eqv-any? 4 (3 1 2) -> false"
       (if (list? a) (if (list? b) (list-pred (l (e) (member-pred e b)) a) (member-pred b a))
         (if (list? b) (member-pred a b) (equality-pred a b)))))
-
-  (define (call-with-working-directory path proc)
-    "string procedure:{} -> any:proc-result
-    apply proc with path as the current working directory"
-    (let (prev-cwd (getcwd)) (chdir path) (proc) (chdir prev-cwd)))
 
   (define (define-string name value)
     "string any ->

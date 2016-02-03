@@ -187,6 +187,8 @@
         (r
           (any
             (l (load-path)
+              ;todo
+              (debug-log load-path path)
               (let (full-path (string-append load-path "/" path))
                 (if (file-exists? full-path) (list load-path full-path) #f)))
             %load-path)))

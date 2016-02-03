@@ -52,7 +52,7 @@
   (define shell-eval system)
 
   (define (call-with-working-directory path p)
-    (let ((cwd (getcwd)) (r (begin (chdir path) (p)))) (chdir cwd) r))
+    (let* ((cwd (getcwd)) (r (begin (chdir path) (p)))) (chdir cwd) r))
 
   (define (process-replace-without-search program-path . args)
     "replaces the current process image with the execution of the program at program-path.
