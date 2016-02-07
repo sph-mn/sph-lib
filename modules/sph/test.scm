@@ -279,13 +279,12 @@
         until)))
 
   (define (get-module-name-path module-name filename-extension) "list -> list"
-    (or
-      (module-name->load-path+full-path& module-name filename-extension
-        (l (load-path full-path) (path->module-names full-path #:load-path load-path)))
-      (list)))
+    (or  (module-name->load-path+full-path& module-name filename-extension
+        (l (load-path full-path) (path->module-names full-path #:load-path load-path))) (list)))
 
   (define (module-prefix->module-names name) "alist list -> ((symbol ...) ...)"
-    (append (get-module-name-path name #f) (get-module-name-path name ".scm")))
+    (let (r (append (get-module-name-path name #f) (get-module-name-path name ".scm")))
+      (if (null? r) #f r)))
 
   (define (test-modules-execute settings module-names) "list list -> list:test-result"
     (map (l (name module) (pair name (test-module-execute settings module))) module-names
