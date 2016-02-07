@@ -77,7 +77,8 @@
         (let (indent (create-indent (+ 2 depth)))
           (l (e)
             (let (value (tail e))
-              (if value (display (string-append indent (first e) ": " (any->string-write value) "\n"))))))
+              (if value
+                (display (string-append indent (first e) ": " (any->string-write value) "\n"))))))
         (list (pair "i" (test-result-arguments a)) (pair "e" (test-result-expected a))
           (pair "o" (test-result-result a))))))
 
@@ -277,10 +278,14 @@
           (if exclude (test-modules-exclude modules exclude) modules))
         until)))
 
+  (define (get-module-name-path module-name filename-extension) "list -> list"
+    (or
+      (module-name->load-path+full-path& module-name filename-extension
+        (l (load-path full-path) (path->module-names full-path #:load-path load-path)))
+      (list)))
+
   (define (module-prefix->module-names name) "alist list -> ((symbol ...) ...)"
-    (module-name->load-path+full-path& name #f
-      (l (load-path full-path)
-        (path->module-names full-path #:load-path load-path))))
+    (append (get-module-name-path name #f) (get-module-name-path name ".scm")))
 
   (define (test-modules-execute settings module-names) "list list -> list:test-result"
     (map (l (name module) (pair name (test-module-execute settings module))) module-names
@@ -298,8 +303,7 @@
     (let (module-names (every-map (l (e) (module-prefix->module-names e)) name))
       (if module-names
         (test-modules-execute settings
-          (test-modules-apply-settings settings
-            (apply append module-names)))
+          (test-modules-apply-settings settings (apply append module-names)))
         (error-create (q module-not-found) name))))
 
   (define (filter-module-names a) "list -> list" (filter list? a))
@@ -376,7 +380,7 @@
     (l (a) (p-display a p-display-port)))
 
   (define (test-procedures-execute settings source)
-    "list:alist (symbol:name procedure:test-proc any:data-in/out ...) -> test-result"
+    "list:alist ((symbol:name procedure:test-proc any:data-in/out ...) ...) -> test-result"
     ( (test-procedures-get-executor settings) settings
       (test-procedures-apply-settings settings source)
       (p-display->p-display* (alist-quoted-ref settings p-display)

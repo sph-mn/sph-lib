@@ -99,7 +99,7 @@
     the default before-filter allows only files with a \".scm\" suffix."
     (if load-path
       (let (path->module-name* (l (e) (path->module-name (string-drop-prefix load-path e))))
-        (if (eqv? (q regular) (stat:type (stat base-path))) (path->module-name* base-path)
+        (if (eqv? (q regular) (stat:type (stat base-path))) (list (path->module-name* base-path))
           (fold-directory-tree
             (l (e stat-info r)
               (if (eqv? (q regular) (stat:type stat-info)) (pair (path->module-name* e) r) r))
@@ -172,7 +172,7 @@
 
   (define* (path->module-name a #:optional drop-load-path? (drop-filename-extension "scm"))
     "string -> (symbol ...)
-    creates a module name from a filesystem path. module existence is not checked, neither are load-paths"
+    creates a module name from a filesystem path. module existence is not checked, neither are load-paths (except for droping load-path from path)"
     (path->symbol-list
       ( (if drop-load-path? path-drop-load-path identity)
         (if filename-extension (remove-filename-extension a (list drop-filename-extension)) a))))
@@ -181,14 +181,13 @@
 
   (define (module-name->load-path+full-path& a filename-extension c)
     "(symbol ...) procedure:{string:load-path string:full-path -> any} -> any
-    finds the load path under which a possibly partial (prefix) module name is saved"
+    finds the load path under which a possibly partial (prefix) module name is saved.
+    if no filename-extension is given will usually find only directories"
     (let*
       ( (path (module-name->path a filename-extension))
         (r
           (any
             (l (load-path)
-              ;todo
-              (debug-log load-path path)
               (let (full-path (string-append load-path "/" path))
                 (if (file-exists? full-path) (list load-path full-path) #f)))
             %load-path)))
