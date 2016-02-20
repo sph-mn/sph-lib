@@ -47,7 +47,7 @@
     only the \".scm\" filename-extension is supported"
     (map
       (l (e)
-        (load (module-name->load-path+full-path& e ".scm" (l (load-path full-path) full-path))))
+        (load (module-name->load-path+full-path& e ".scm" %load-path (l (load-path full-path) full-path))))
       name)
     (apply environment name))
 
@@ -179,8 +179,8 @@
 
   (define (not-scm-suffix? str) (not (string-suffix? ".scm" str)))
 
-  (define (module-name->load-path+full-path& a filename-extension c)
-    "(symbol ...) procedure:{string:load-path string:full-path -> any} -> any
+  (define (module-name->load-path+full-path& a filename-extension load-paths c)
+    "(symbol ...) string (string ...) procedure:{string:load-path string:full-path -> any} -> any
     finds the load path under which a possibly partial (prefix) module name is saved.
     if no filename-extension is given will usually find only directories"
     (let*
@@ -190,7 +190,7 @@
             (l (load-path)
               (let (full-path (string-append load-path "/" path))
                 (if (file-exists? full-path) (list load-path full-path) #f)))
-            %load-path)))
+            load-paths)))
       (and r (apply c r))))
 
   (define* (path-drop-load-path a #:optional (load-path %load-path))

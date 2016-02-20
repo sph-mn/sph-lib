@@ -74,6 +74,7 @@
     string-remove-leading-zeros
     sxml->xml-string
     system-cat-merge-files
+    remove-keyword-associations
     tail-symbols->string
     tree-replace-from-hashtable
     variable-type
@@ -114,6 +115,12 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
+
+  (define (remove-keyword-associations a) "list -> list"
+    (let loop ((rest a))
+      (if (null? rest) rest
+        (let (element (first rest))
+          (if (keyword? element) (loop (list-tail rest 2)) (pair element (loop (tail rest))))))))
 
   (define (any-hashtable-keys->values ht a)
     "r6rs-hashtable any -> any

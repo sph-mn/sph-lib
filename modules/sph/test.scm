@@ -42,6 +42,7 @@
     (sph common)
     (sph module)
     (sph record)
+    (only (sph two) remove-keyword-associations)
     (only (guile)
       resolve-interface
       symbol-append
@@ -141,7 +142,7 @@
       (l (load-path a)
         (if load-path
           (case (stat:type (stat (string-append load-path "/" a)))
-            ((directory) (module-prefix->module-names (path->module-name a)))
+            ((directory) (module-prefix->module-names (path->module-name a) #f %load-path))
             ((regular) (list (path->module-name a)))
             ( (symlink)
               ;as far as we know readlink fails for circular symlinks
@@ -278,20 +279,20 @@
           (if exclude (test-modules-exclude modules exclude) modules))
         until)))
 
-  (define (get-module-name-path module-name filename-extension) "list -> list"
-    (or  (module-name->load-path+full-path& module-name filename-extension
+  (define (get-module-name-path module-name filename-extension load-paths) "list string list -> list"
+    (or (module-name->load-path+full-path& module-name filename-extension load-paths
         (l (load-path full-path) (path->module-names full-path #:load-path load-path))) (list)))
 
-  (define (module-prefix->module-names name) "alist list -> ((symbol ...) ...)"
-    (let (r (append (get-module-name-path name #f) (get-module-name-path name ".scm")))
+  (define (module-prefix->module-names name only-submodules? load-paths) "alist list -> ((symbol ...) ...)"
+    (let (r (append (get-module-name-path name #f load-paths) (get-module-name-path name ".scm" load-paths)))
       (if (null? r) #f r)))
 
   (define (test-modules-execute settings module-names) "list list -> list:test-result"
     (map (l (name module) (pair name (test-module-execute settings module))) module-names
       (map environment* module-names)))
 
-  (define (test-module-prefix-execute settings . name)
-    "list:alist (symbol ...) ... -> list:test-result:((module-name test-result ...) ...)
+  (define (test-module-prefix-execute only-submodules? load-paths settings . name)
+    "list:alist boolean (string ...) (symbol ...) ... -> list:test-result:((module-name test-result ...) ...)
     execute all test-modules whose names begin with name-prefix.
     for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both
     modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
@@ -299,7 +300,7 @@
     the implementation is depends on the following features:
     - module names are mapped to filesystem paths
     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
-    (let (module-names (every-map (l (e) (module-prefix->module-names e)) name))
+    (let (module-names (every-map (l (e) (module-prefix->module-names e only-submodules? load-paths)) name))
       (if module-names
         (test-modules-execute settings
           (test-modules-apply-settings settings (apply append module-names)))
@@ -394,7 +395,11 @@
     (test-module-execute settings (environment* name)))
 
   (define test-execute-procedures test-procedures-execute)
-  (define test-execute-modules-prefix test-module-prefix-execute)
+
+  (define* (test-execute-modules-prefix #:key (only-submodules? #t) (settings test-settings-default) path-prefix #:rest module-names)
+    (let (path-search (if path-prefix (let (path (path->full-path path-prefix)) (add-to-load-path path) (list path)) %load-path))
+      (apply test-module-prefix-execute only-submodules? path-search settings (remove-keyword-associations module-names))))
+
   (define-record test-result type-name success? title assert-title index result arguments expected)
 
   (define (test-create-result . values)
