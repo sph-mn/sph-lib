@@ -1,3 +1,5 @@
+;deprecated
+
 (library (sph test env)
   (export
     define-w-env-names->values

@@ -66,6 +66,7 @@
     read-line-crlf
     read-line-crlf-trim
     read-mime.types
+    hashtable-resolve
     search-env-path-variable
     seconds->short-kiloseconds-string
     set-multiple-from-list!
@@ -113,6 +114,17 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
+
+  (define (any-hashtable-keys->values ht a)
+    "r6rs-hashtable any -> any
+    replace the given value or values in a list with values in hashtable for the given value as key"
+    (if (list? a) (map (l (b) (hashtable-resolve ht b)) a)
+      (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
+
+  (define (any-hashtable-values->keys ht a)
+    "r6rs-hashtable any -> any"
+    (if (list? a) (map (l (b) (hashtable-resolve ht b)) a)
+      (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
 
   (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
   (define (os-seconds-at-boot) (- (current-day-seconds) (os-seconds-since-boot)))

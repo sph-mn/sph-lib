@@ -1,2 +1,2 @@
 #!/bin/sh
-exec guile -L "$PWD/modules" exec/install.scm $*
+exec guile -L "$PWD/modules" exe/install.scm $*

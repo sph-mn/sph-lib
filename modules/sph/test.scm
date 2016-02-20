@@ -340,8 +340,9 @@
       ( (title (symbol->string name))
         (test-proc
           (if exceptions? test-proc (l a (catch #t (thunk (apply test-proc a)) exception->string)))))
+      (and p-before (p-before name 0))
       (if (null? data)
-        (let (r (test-proc (list) #t)) (and p-before (p-before name 0))
+        (let (r (test-proc (list) #t))
           (if (test-result? r) (p-display (record-update test-result r title title))
             (p-display (test-create-result (eqv? #t r) title #f 0 r (list) #t))))
         (let loop ((d data) (index 0))
