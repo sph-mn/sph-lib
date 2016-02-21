@@ -41,6 +41,7 @@
     exception->string
     first-as-result
     if-exception
+    ignore
     in-between?
     in-range?
     integer->bytevector
@@ -97,6 +98,10 @@
 
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
   (define-syntax-rule (apply* arguments proc) (apply proc arguments))
+
+  (define (ignore . a)
+    "any ... ->"
+    (if #f #t))
 
   (eval-when (expand load eval)
     (define (prefix-join a) "symbol -> symbol"

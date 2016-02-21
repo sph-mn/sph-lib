@@ -41,10 +41,10 @@
 
   (define (environment* . name)
     "(symbol ...) ... -> environment/module
-    this can be used to load modules that use syntax for creating their module definition.
-    the modules contents are first evaluated in the top-level environment before the environment object is created.
+    this can be used to load modules that use syntax to create their module definition.
+    the modules contents are first evaluated in the top-level environment - before the environment object is created.
     the syntax used for creating the module definition must be available in the current top-level environment.
-    only the \".scm\" filename-extension is supported"
+    only the \".scm\" filename-extension is supported when resolving file paths from module names for loading"
     (map
       (l (e)
         (load (module-name->load-path+full-path& e ".scm" %load-path (l (load-path full-path) full-path))))

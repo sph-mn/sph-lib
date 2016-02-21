@@ -20,6 +20,7 @@
     alist-map
     alist-merge
     alist-quoted
+    alists-quoted-ref
     alist-quoted-bind
     alist-quoted-bind-and*
     alist-quoted-ref
@@ -106,6 +107,9 @@
     ;a:alist k:unquoted-key d:default-if-not-found
     ((a k d) (alist-ref a (quote k) d)) ((a k) (alist-ref a (quote k))))
 
+  (define-syntax-rules alists-quoted-ref ((a k) (alist-ref a k))
+    ((a k ... k-last) (alist-quoted-ref (alists-quoted-ref a k ...) k-last)))
+
   (define-syntax-rules alists-ref ((a k) (alist-ref a k))
     ((a k ... k-last) (alist-ref (alists-ref a k ...) k-last)))
 
@@ -124,6 +128,7 @@
     (list->alist (quote-odd key/value ...)))
 
   (define-syntax-rule (alist-quoted-bind alist (key ...) body ...)
+    ;could allow for custom variable names for key values as an extension
     ((lambda (key ...) body ...) (alist-ref alist (quote key)) ...))
 
   (define-syntax-rule (alist-quoted-bind-and* alist (key ...) body ...)
