@@ -35,24 +35,23 @@
     test-settings-default
     test-success?)
   (import
+    (guile)
     (rnrs eval)
-    (sph module)
-    (sph record)
-    (sph test report)
-    (sph test base)
     (sph)
     (sph alist)
-    (sph list)
-    (sph error)
-    (sph string)
-    (sph list one)
-    (srfi srfi-1)
     (sph cli)
-    (only (sph one) ignore exception->string)
-    (only (sph filesystem) path->full-path)
     (sph conditional)
-    (guile)
-
+    (sph error)
+    (sph list)
+    (sph list one)
+    (sph module)
+    (sph record)
+    (sph string)
+    (sph test base)
+    (sph test report)
+    (srfi srfi-1)
+    (only (sph filesystem) path->full-path)
+    (only (sph one) ignore exception->string)
     (only (sph two) remove-keyword-associations))
 
   ;data-structures:
@@ -60,7 +59,7 @@
   ;  test-result: (test-result-group ...)
 
   (define-as test-settings-default alist-quoted
-    reporters test-reporters
+    reporters test-reporters-default
     reporter-name (q compact)
     hook
     (alist-quoted procedure-before ignore
@@ -274,47 +273,48 @@
             (if exclude (test-procedures-exclude a (exclude)) a))
           until))))
 
+  (define (test-any->result result title index)
+    (test-create-result (eqv? #t result) title #f index result (list) #t))
+
+  (define
+    (test-procedures-execute-one-data data name title test-proc hook-before hook-after
+      report-before
+      report-after
+      report-data-before
+      report-data-after)
+    (let loop ((d data) (index 0))
+      (if (null? d) (let (r (test-create-result #t title #f index)) (hook-after r) r)
+        (let (data (first d)) (report-data-before name index data)
+          (let*
+            ( (d-tail (tail d)) (expected (first d-tail)) (r (test-proc (any->list data) expected))
+              (r
+                (if (test-result? r) (record-update test-result r title title index index)
+                  (test-create-result (equal? r expected) title #f index r data expected))))
+            (report-data-after r)
+            (if (test-result-success? r) (loop (tail d-tail) (+ 1 index))
+              (begin (hook-after r) (report-after r) r)))))))
+
   (define (test-procedures-execute-one exceptions? hooks name test-proc . data)
     "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure. ensures that test-procedure results are test-results.
     ;creates only one test-result
-
-    (list-bind hooks (hook-before hook-after report-before report-after)
+    (list-bind hooks
+      (hook-before hook-after report-before report-after report-data-before report-data-after)
       (let
         ( (title (symbol->string name))
           (test-proc
             (if exceptions? test-proc
               (l a (catch #t (thunk (apply test-proc a)) exception->string)))))
+        (hook-before name 0) (report-before name 0)
         (if (null? data)
-          (begin
-            ;(hook-before name 0)
-            (let (r (test-proc (list) #t))
-              (if (test-result? r) (begin
-                  ;(report-after )
-                  (record-update test-result r title title))
-                (begin
-                  ;(report-after )
-                  (test-create-result (eqv? #t r) title #f 0 r (list) #t)))))
-          (let loop ((d data) (index 0))
-            (if (null? d) (begin
-                ;(report-after)
-                (test-create-result #t title #f index))
-              (let*
-                ( (d-tail (tail d)) (expected (first d-tail))
-                  (r (begin
-                      ;(hook-before name index)
-                      ;(report-before name index)
-                      (test-proc (any->list (first d)) expected))))
-                (if (test-result? r)
-                  (if (test-result-success? r) (loop (tail d-tail) (+ 1 index))
-                    (begin
-                      ;(report-after )
-                      (record-update test-result r title title index index)))
-                  (if (equal? r expected) (loop (tail d-tail) (+ 1 index))
-                    (begin
-                      ;(report-after )
-                      (test-create-result #f title #f index r (first d) expected)))))))))
- ))
+          (begin (report-data-before name 0 data)
+            (let*
+              ( (r (test-proc (list) #t))
+                (r
+                  (if (test-result? r) (record-update test-result r title title)
+                    (test-any->result r title 0))))
+              (hook-after r) (report-data-after r) (report-after r) r))
+          (apply test-procedures-execute-one-data data name title test-proc hooks)))))
 
   (define (settings->reporter a) "hashtable -> (report-write . report-hooks)"
     (test-reporter-get (alist-quoted-ref a reporters) (alist-quoted-ref a reporter-name)))
@@ -345,12 +345,11 @@
             (append
               (alist-select (alist-quoted-ref settings hook) (ql procedure-before procedure-after))
               (alist-select (tail (settings->reporter settings))
-                (ql procedure-before procedure-after))))))
+                (ql procedure-before procedure-after procedure-data-before procedure-data-after))))))
       (l (settings source)
         "list:alist ((symbol:name procedure:test-proc any:data-in/out ...) ...) -> test-result"
         ( (get-executor settings) settings (test-procedures-apply-settings settings source)
           (alist-quoted-ref settings exceptions?) (settings->procedure-hooks settings)))))
-
 
   (define (test-execute-module settings name) "(symbol ...) list -> test-result"
     (test-module-execute settings (environment* name)))

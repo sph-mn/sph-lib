@@ -3,7 +3,7 @@
     test-report
     test-reporter-get
     test-reporter-names
-    test-reporters)
+    test-reporters-default)
   (import
     (sph common)
     (sph test base)
@@ -67,16 +67,21 @@
   (define-as test-report-hooks-null alist-quoted
     procedure-before ignore
     procedure-after ignore
+    procedure-data-before ignore
+    procedure-data-after ignore
     module-before ignore module-after ignore modules-before ignore modules-after ignore)
 
   (define-as test-report-hooks-compact alist-quoted
+    ;called before and after each procedure data test
     procedure-before ignore
     procedure-after ignore
+    procedure-data-before ignore
+    procedure-data-after ignore
     module-before ignore module-after ignore modules-before ignore modules-after ignore)
 
   (define test-report-null identity)
 
-  (define-as test-reporters symbol-hashtable
+  (define-as test-reporters-default symbol-hashtable
     ; name -> (report-result . hooks)
     compact (pair test-report-compact test-report-hooks-compact)
     null (pair test-report-null test-report-hooks-null)

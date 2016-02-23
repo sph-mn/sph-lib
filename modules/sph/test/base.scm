@@ -16,12 +16,12 @@
     (sph record)
     (sph vector))
 
+  (define-record test-result type-name success? title assert-title index result arguments expected)
+
   (define (test-create-result . values)
     "boolean string integer any list any -> vector
     success? title index result arguments expected -> test-result"
     (apply record test-result (q test-result) values))
-
-  (define-record test-result type-name success? title assert-title index result arguments expected)
 
   (define (test-success? result expected)
     "vector/any any -> boolean
