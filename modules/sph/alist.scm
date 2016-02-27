@@ -26,14 +26,15 @@
     alist-quoted-ref
     alist-quoted-select
     alist-quoted-select-apply
-    alist-quoted-update
+    alist-quoted-update-key/value
+    alist-quoted-merge-key/value
     alist-ref
     alist-select
     alist-select-apply
     alist-set
     alist-set!
+    alist-update-key/value
     alist-update
-    alist-update-by-alist
     alist-values
     alistq-ref
     alistq-select
@@ -107,7 +108,7 @@
     ;a:alist k:unquoted-key d:default-if-not-found
     ((a k d) (alist-ref a (quote k) d)) ((a k) (alist-ref a (quote k))))
 
-  (define-syntax-rules alists-quoted-ref ((a k) (alist-ref a k))
+  (define-syntax-rules alists-quoted-ref ((a k) (alist-quoted-ref a k))
     ((a k ... k-last) (alist-quoted-ref (alists-quoted-ref a k ...) k-last)))
 
   (define-syntax-rules alists-ref ((a k) (alist-ref a k))
@@ -162,17 +163,27 @@
     create a new alist with the associations of both alists, preferring entries of \"b\""
     (append (filter (l (e) (not (alist-ref b (first e)))) a) b))
 
-  (define (alist-update a . key/value)
+  (define (alist-merge-key/value a . key/value)
+    "list [any:key any:value] ...
+    update or add values in alist for specific keys.
+    key and value are specified alternatingly"
+    (alist-merge a (list->alist key/value)))
+
+  (define-syntax-rule (alist-quoted-merge-key/value a key/value ...)
+    ;list [any:unquoted-key any:value] ...
+    (apply alist-merge-key/value a (quote-odd key/value ...)))
+
+  (define (alist-update-key/value a . key/value)
     "list [any:key any:value] ...
     update values in alist for specific keys.
     key and value are specified alternatingly"
-    (alist-update-by-alist a (list->alist key/value)))
+    (alist-update a (list->alist key/value)))
 
-  (define-syntax-rule (alist-quoted-update a key/value ...)
+ (define-syntax-rule (alist-quoted-update-key/value a key/value ...)
     ;list [any:unquoted-key any:value] ...
-    (apply alist-update a (quote-odd key/value ...)))
+    (apply alist-update-key/value a (quote-odd key/value ...)))
 
-  (define (alist-update-by-alist a b)
+  (define (alist-update a b)
     "list list -> list
     update existing entries of a with corresponding entries of b"
     (map

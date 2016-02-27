@@ -12,7 +12,7 @@
   (define-test (required)
     (assert-and
       (assert-true "named"
-        (catch (q missing-arguments) (thunk (test-env-cli))
+        (catch (q missing-arguments) (thunk (test-env-cli (list)))
           (l (key count missing) (equal? (ql input) missing)))))
     (assert-true "unnamed"
       (catch (q missing-arguments) (thunk (test-env-cli (list "-i" "1")))

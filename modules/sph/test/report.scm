@@ -5,17 +5,13 @@
     test-reporter-names
     test-reporters-default)
   (import
+    (ice-9 match)
     (sph common)
     (sph test base)
-    (ice-9 match)
-    (except (rnrs hashtables) hashtable-ref)
-
-    )
+    (except (rnrs hashtables) hashtable-ref))
 
   (define (create-indent depth) (string-multiply "  " depth))
-
   ;todo: nested results display, assertion title display
-
   ; test reporters can create output while tests are running and after tests have run.
   ; test reporters for creating output while tests are running are implemented as a special hook configuration with hook procedures to be called by the test execution procedures.
 
@@ -65,16 +61,26 @@
     result)
 
   (define-as test-report-hooks-null alist-quoted
+    ;settings name ->
     procedure-before ignore
+    ;settings result ->
     procedure-after ignore
+    ;settings name index data ->
     procedure-data-before ignore
+    ;settings result ->
     procedure-data-after ignore
-    module-before ignore module-after ignore modules-before ignore modules-after ignore)
+    ;settings module-name ->
+    module-before ignore
+    ;settings module-name result ->
+    module-after ignore
+    ;settings module-names ->
+    modules-before ignore
+    ;settings module-names result ->
+    modules-after ignore)
 
   (define-as test-report-hooks-compact alist-quoted
-    ;called before and after each procedure data test
-    procedure-before ignore
-    procedure-after ignore
+    procedure-before (l (s name) (display name))
+    procedure-after (l (s name) (newline))
     procedure-data-before ignore
     procedure-data-after ignore
     module-before ignore module-after ignore modules-before ignore modules-after ignore)
@@ -90,8 +96,7 @@
   (define (test-reporter-get test-reporters name) "hashtable symbol -> procedure"
     (hashtable-ref test-reporters name (hashtable-ref test-reporters (q default) test-report-null)))
 
-  (define (test-reporter-names test-reporters)
-    "hashtable -> (symbol ...)"
+  (define (test-reporter-names test-reporters) "hashtable -> (symbol ...)"
     (hashtable-keys test-reporters))
 
   (define*

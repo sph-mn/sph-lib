@@ -24,7 +24,7 @@
     test-create-result
     test-execute-cli
     test-execute-module
-    test-execute-modules-prefix
+    test-execute-modules-by-prefix
     test-execute-procedures
     test-execute-procedures-lambda
     test-lambda
@@ -60,25 +60,43 @@
 
   (define-as test-settings-default alist-quoted
     reporters test-reporters-default
-    reporter-name (q compact)
+    reporter-name (q default)
     hook
     (alist-quoted procedure-before ignore
       procedure-after ignore
       module-before ignore module-after ignore modules-before ignore modules-after ignore)
     random-order? #f parallel? #f exceptions? #t exclude #f only #f until #f)
 
+  (define (settings->hook a name) "hashtable -> procedure" (alists-ref a (q hook) name))
+
+  (define (settings->reporter a)
+    (test-reporter-get (alist-quoted-ref a reporters) (alist-quoted-ref a reporter-name)))
+
+  (define (settings->reporter-hook a name) "hashtable -> (report-write . report-hooks)"
+    (alist-ref (tail (settings->reporter a)) name))
+
+  (define (apply-settings-reporter+hook settings name . a)
+    (apply (settings->reporter-hook settings name) settings a)
+    (apply (settings->hook settings name) settings a))
+
+  (define (apply-settings-hook+reporter settings name . a)
+    (apply (settings->hook settings name) settings a)
+    (apply (settings->reporter-hook settings name) settings a))
+
   (define test-cli
     (cli-create #:parameters "options ... source ..."
       #:description
       (string-join
         (list
-          "execute tests. source is filesystem paths to files containing modules relative to any guile load-path."
+          "execute tests via a command-line interface. \"source\" is filesystem paths to files containing modules relative to any guile load-path."
           "if a source path points to a directory, a module with a name corresponding to that path and all modules under that directory are used."
-          "exclude/only/until take a list of comma separated module name suffixes or full module names in the format \"a//b//c\" as well as procedure names")
+          "exclude/only/until take a list of comma separated module name suffixes or full module names in the format \"a//b//c\" as well as individual (test) procedure names (without the internal \"test-\" prefix).
+          usage: (test-cli) in a scheme file makes the code parse command-line arguments (arguments to \"exec\")")
         "\n  ")
       #:options
       (ql ((source ...)) (display-format #f #f #t)
-        (add-to-load-path #f #f #t) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
+        (add-to-load-path #f #f #t) (path-prefix #f #f #t)
+        (only-submodules) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
 
   (define (path->load-path+path& a c)
     (let (load-path (path->load-path a))
@@ -119,7 +137,7 @@
     create the test settings object from program arguments"
     (alist-quoted-bind cli-arguments (reporter exclude only until)
       (cli-add-to-load-path! cli-arguments)
-      (alist-quoted-update test-settings-default p-display
+      (alist-quoted-merge-key/value test-settings-default reporter-name
         (cli-value-reporter (alist-quoted-ref test-settings-default reporters) reporter) exclude
         (cli-value-path/module-list exclude) only
         (cli-value-path/module-list only) until (cli-value-path/module-list until))
@@ -199,8 +217,10 @@
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
-  (define (test-module-execute settings module) "alist (symbol ...)"
-    ((eval (q test-execute) module) settings))
+  (define (test-module-execute settings module name) "alist (symbol ...)"
+    (apply-settings-reporter+hook settings (q module-before) settings name)
+    (let (r ((eval (q test-execute) module) settings))
+      (apply-settings-hook+reporter settings (q module-after) settings name r) r))
 
   (define (test-modules-until a value) (take-while (l (a) (not (equal? a value))) a))
   (define (test-modules-only a values) (filter (l (a) (containsv? values a)) a))
@@ -231,10 +251,22 @@
       (if (null? r) #f r)))
 
   (define (test-modules-execute settings module-names) "list list -> list:test-result"
-    (map (l (name module) (pair name (test-module-execute settings module))) module-names
-      (map environment* module-names)))
+    (apply-settings-reporter+hook settings (q modules-before) settings module-names)
+    (let
+      (r
+        (map (l (name module) (pair name (test-module-execute settings module name))) module-names
+          (map environment* module-names)))
+      (apply-settings-hook+reporter settings (q modules-after) settings module-names r) r))
 
-  (define (test-module-prefix-execute only-submodules? load-paths settings . name)
+  (define (settings->load-path! a)
+    "list -> (string ...)
+    adds the value for the \"path-prefix\" setting to the global load-path and returns the value in a list to be used as a load-path variable, if the path-prefix value is not false.
+    otherwise returns %load-path"
+    (let (path-prefix (alist-quoted-ref a path-prefix))
+      (if path-prefix
+        (let (path (path->full-path path-prefix)) (add-to-load-path path) (list path)) %load-path)))
+
+  (define (test-modules-by-prefix-execute settings . name)
     "list:alist boolean (string ...) (symbol ...) ... -> list:test-result:((module-name test-result ...) ...)
     execute all test-modules whose names begin with name-prefix.
     for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both
@@ -244,12 +276,15 @@
     - module names are mapped to filesystem paths
     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
     (let
-      (module-names
-        (every-map (l (e) (module-prefix->module-names e only-submodules? load-paths)) name))
-      (if module-names
-        (test-modules-execute settings
-          (test-modules-apply-settings settings (apply append module-names)))
-        (error-create (q module-not-found) name))))
+      ( (load-path (settings->load-path! settings))
+        (only-submodules? (alist-quoted-ref settings only-submodules?)))
+      (let
+        (module-names
+          (every-map (l (e) (module-prefix->module-names e only-submodules? load-path)) name))
+        (if module-names
+          (test-modules-execute settings
+            (test-modules-apply-settings settings (apply append module-names)))
+          (error-create (q module-not-found) name)))))
 
   (define (filter-module-names a) "list -> list" (filter list? a))
   (define (filter-procedure-names a) "list -> list" (filter symbol? a))
@@ -277,24 +312,26 @@
     (test-create-result (eqv? #t result) title #f index result (list) #t))
 
   (define
-    (test-procedures-execute-one-data data name title test-proc hook-before hook-after
+    (test-procedures-execute-one-data settings data name title test-proc hook-before hook-after
       report-before
       report-after
       report-data-before
       report-data-after)
     (let loop ((d data) (index 0))
-      (if (null? d) (let (r (test-create-result #t title #f index)) (hook-after r) r)
-        (let (data (first d)) (report-data-before name index data)
+      (if (null? d)
+        (let (r (test-create-result #t title #f index)) (hook-after settings r)
+          (report-after settings r) r)
+        (let (data (first d)) (report-data-before settings name index data)
           (let*
             ( (d-tail (tail d)) (expected (first d-tail)) (r (test-proc (any->list data) expected))
               (r
                 (if (test-result? r) (record-update test-result r title title index index)
                   (test-create-result (equal? r expected) title #f index r data expected))))
-            (report-data-after r)
+            (report-data-after settings r)
             (if (test-result-success? r) (loop (tail d-tail) (+ 1 index))
-              (begin (hook-after r) (report-after r) r)))))))
+              (begin (hook-after settings r) (report-after settings r) r)))))))
 
-  (define (test-procedures-execute-one exceptions? hooks name test-proc . data)
+  (define (test-procedures-execute-one settings exceptions? hooks name test-proc . data)
     "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure. ensures that test-procedure results are test-results.
     ;creates only one test-result
@@ -305,31 +342,28 @@
           (test-proc
             (if exceptions? test-proc
               (l a (catch #t (thunk (apply test-proc a)) exception->string)))))
-        (hook-before name 0) (report-before name 0)
+        (report-before settings name) (hook-before settings name)
         (if (null? data)
-          (begin (report-data-before name 0 data)
+          (begin (report-data-before settings name 0 data)
             (let*
               ( (r (test-proc (list) #t))
                 (r
                   (if (test-result? r) (record-update test-result r title title)
                     (test-any->result r title 0))))
-              (hook-after r) (report-data-after r) (report-after r) r))
-          (apply test-procedures-execute-one-data data name title test-proc hooks)))))
-
-  (define (settings->reporter a) "hashtable -> (report-write . report-hooks)"
-    (test-reporter-get (alist-quoted-ref a reporters) (alist-quoted-ref a reporter-name)))
+              (hook-after settings r) (report-data-after settings r) (report-after settings r) r))
+          (apply test-procedures-execute-one-data settings data name title test-proc hooks)))))
 
   (define (test-procedures-execute-parallel settings a exceptions? hooks)
     "list:alist list -> list
     executes all tests even if some fail"
-    (par-map (l (e) (apply test-procedures-execute-one exceptions? hooks e)) a))
+    (par-map (l (e) (apply test-procedures-execute-one settings exceptions? hooks e)) a))
 
   (define (test-procedures-execute-serial settings a exceptions? hooks)
     "list:alist list -> list
     executes tests one after another and stops if one fails"
     (map-with-continue
       (l (continue e)
-        (let (r (apply test-procedures-execute-one exceptions? hooks e))
+        (let (r (apply test-procedures-execute-one settings exceptions? hooks e))
           (if (test-result-success? r) (continue r) (list r))))
       a))
 
@@ -352,24 +386,16 @@
           (alist-quoted-ref settings exceptions?) (settings->procedure-hooks settings)))))
 
   (define (test-execute-module settings name) "(symbol ...) list -> test-result"
-    (test-module-execute settings (environment* name)))
+    (test-module-execute settings (environment* name) name))
 
   (define test-execute-procedures test-procedures-execute)
 
   (define*
-    (test-execute-modules-prefix #:key (only-submodules? #t) (settings test-settings-default)
-      path-prefix
-      #:rest
-      module-names)
+    (test-execute-modules-by-prefix #:key (settings test-settings-default) #:rest module-names)
     "execute all test modules whose module name has the one of the given module name prefixes.
     \"path-prefix\" restricts the path where to search for test-modules.
     \"only-submodules?\" does not execute modules that exactly match the module name prefix (where the module name prefix resolves to a regular file)"
-    (let
-      (path-search
-        (if path-prefix
-          (let (path (path->full-path path-prefix)) (add-to-load-path path) (list path)) %load-path))
-      (apply test-module-prefix-execute only-submodules?
-        path-search settings (remove-keyword-associations module-names))))
+    (apply test-modules-by-prefix-execute settings (remove-keyword-associations module-names)))
 
   (define (assert-failure-result result expected title arguments)
     "vector/any any false/string any -> vector:test-result"

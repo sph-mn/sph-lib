@@ -1,5 +1,10 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph test))
-(test-execute-modules-prefix #:path-prefix "modules" (q (test module sph)))
+(import (sph) (sph test) (sph alist))
+
+(define settings
+  (alist-quoted-merge-key/value test-settings-default reporter-name
+    (q compact) path-prefix "modules"))
+
+(test-execute-modules-by-prefix #:settings settings (q (test module sph)))
