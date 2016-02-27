@@ -79,11 +79,14 @@
     modules-after ignore)
 
   (define-as test-report-hooks-compact alist-quoted
-    procedure-before (l (s name) (display name))
+    procedure-before (l (s name)
+      (display (create-indent (boolean->integer (alist-quoted-ref s module?))))
+      (display name))
     procedure-after (l (s name) (newline))
-    procedure-data-before ignore
+    procedure-data-before (l (s name index data) (display " ") (display (+ 1 index)))
     procedure-data-after ignore
-    module-before ignore module-after ignore modules-before ignore modules-after ignore)
+    module-before (l (s name) (display (string-join (map symbol->string name) " ")) (newline))
+    module-after ignore modules-before ignore modules-after ignore)
 
   (define test-report-null identity)
 

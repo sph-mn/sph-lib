@@ -15,6 +15,7 @@
 (library (sph alist)
   (export
     alist
+    alist?
     alist-cond
     alist-keys
     alist-map
@@ -197,7 +198,12 @@
   (define (alistv-select alist keys) (map (l (key) (alistv-ref alist key)) keys))
 
   (define (list-alist? a)
-    "return #t if list is an association list, false otherwise. works only on lists" (every pair? a))
+    "list -> boolean
+    return #t if list is an association list, #f otherwise. works only on lists" (every pair? a))
+
+  (define (alist? a)
+    "any -> boolean"
+    (and (list? a) (list-alist? a)))
 
   (define (alist-select-apply a keys proc)
     "list list procedure:{any:key-value ...} -> any

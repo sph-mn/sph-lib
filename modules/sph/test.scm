@@ -218,9 +218,10 @@
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
   (define (test-module-execute settings module name) "alist (symbol ...)"
-    (apply-settings-reporter+hook settings (q module-before) settings name)
-    (let (r ((eval (q test-execute) module) settings))
-      (apply-settings-hook+reporter settings (q module-after) settings name r) r))
+    (let (settings (alist-quoted-merge-key/value settings module? #t))
+      (apply-settings-reporter+hook settings (q module-before) name)
+      (let (r ((eval (q test-execute) module) settings))
+        (apply-settings-hook+reporter settings (q module-after) name r) r)))
 
   (define (test-modules-until a value) (take-while (l (a) (not (equal? a value))) a))
   (define (test-modules-only a values) (filter (l (a) (containsv? values a)) a))
@@ -251,12 +252,12 @@
       (if (null? r) #f r)))
 
   (define (test-modules-execute settings module-names) "list list -> list:test-result"
-    (apply-settings-reporter+hook settings (q modules-before) settings module-names)
+    (apply-settings-reporter+hook settings (q modules-before) module-names)
     (let
       (r
         (map (l (name module) (pair name (test-module-execute settings module name))) module-names
           (map environment* module-names)))
-      (apply-settings-hook+reporter settings (q modules-after) settings module-names r) r))
+      (apply-settings-hook+reporter settings (q modules-after) module-names r) r))
 
   (define (settings->load-path! a)
     "list -> (string ...)

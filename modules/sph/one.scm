@@ -31,6 +31,8 @@
     define-string
     each-u8
     eq-any?
+    with-values
+    boolean->integer
     eq-every?
     equal-any?
     equal-every?
@@ -151,8 +153,15 @@
     create at fifo in the system-dependent temp-directory using an unique file-name (using tmpnam)"
     (let (path (tmpnam)) (mknod path (q fifo) permissions 0) path))
 
-  (define (call proc . a) (apply proc a))
+  (define (call proc . a)
+    "procedure any ... -> any
+    apply procedure \"proc\" with arguments \"a\""
+    (apply proc a))
   (define-syntax-rule (apply-values proc producer) (call-with-values (l () producer) proc))
+  (define-syntax-rule (with-values producer proc) (call-with-values (l () producer) proc))
+
+  (define (boolean->integer a)
+    (if a 1 0))
 
   (define (call-with-pipe proc) "procedure:{port:in port:out -> any} -> any"
     (apply (l (in out) (let (r (proc in out)) (close in) (close out) r))
