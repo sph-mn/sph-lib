@@ -20,6 +20,7 @@
     alist-keys
     alist-map
     alist-merge
+    alist-merge-key/value
     alist-quoted
     alists-quoted-ref
     alist-quoted-bind
