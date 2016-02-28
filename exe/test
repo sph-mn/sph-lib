@@ -1,9 +1,6 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph test) (sph test report) (sph alist))
-
-(define settings
-  (alist-quoted-merge-key/value test-settings-default path-prefix "modules"))
-
-(test-report-compact (test-execute-modules-by-prefix #:settings settings (q (test module sph))))
+(import (sph) (sph test))
+(define settings (test-settings-default-custom path-search "modules" reporter-name (q compact)))
+(test-execute-modules-by-prefix #:settings settings (q (test module sph)))

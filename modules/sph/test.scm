@@ -20,6 +20,8 @@
     define-procedure-tests
     define-test
     define-test-module
+    test-settings-default-custom
+    test-settings-default-custom-by-list
     test-cli
     test-create-result
     test-execute-cli
@@ -51,7 +53,7 @@
     (sph test report)
     (srfi srfi-1)
     (only (sph filesystem) path->full-path)
-    (only (sph one) ignore exception->string)
+    (only (sph one) quote-odd ignore exception->string)
     (only (sph two) remove-keyword-associations))
 
   ;data-structures:
@@ -66,6 +68,15 @@
       procedure-after ignore
       module-before ignore module-after ignore modules-before ignore modules-after ignore)
     random-order? #f parallel? #f exceptions? #t exclude #f only #f until #f)
+
+  (define-syntax-rule (test-settings-default-custom key/value ...)
+    ;[any:unquoted-key any:value] ... -> list
+    (test-settings-default-custom-by-list (quote-odd key/value ...)))
+
+  (define (test-settings-default-custom-by-list key/value)
+    "[key value] ... -> list
+    get the default test settings, with values possibly set to the values given with \"key/value\""
+    (alist-merge test-settings-default (list->alist key/value)))
 
   (define (settings->hook a name) "hashtable -> procedure" (alists-ref a (q hook) name))
 
@@ -95,7 +106,7 @@
         "\n  ")
       #:options
       (ql ((source ...)) (display-format #f #f #t)
-        (add-to-load-path #f #f #t) (path-prefix #f #f #t)
+        (add-to-load-path #f #f #t) (path-search #f #f #t)
         (only-submodules) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
 
   (define (path->load-path+path& a c)
@@ -261,11 +272,11 @@
 
   (define (settings->load-path! a)
     "list -> (string ...)
-    adds the value for the \"path-prefix\" setting to the global load-path and returns the value in a list to be used as a load-path variable, if the path-prefix value is not false.
+    adds the value for the \"path-search\" setting to the global load-path and returns the value in a list to be used as a load-path variable, if the path-search value is not false.
     otherwise returns %load-path"
-    (let (path-prefix (alist-quoted-ref a path-prefix))
-      (if path-prefix
-        (let (path (path->full-path path-prefix)) (add-to-load-path path) (list path)) %load-path)))
+    (let (path-search (alist-quoted-ref a path-search))
+      (if path-search
+        (let (path (path->full-path path-search)) (add-to-load-path path) (list path)) %load-path)))
 
   (define (test-modules-by-prefix-execute settings . name)
     "list:alist boolean (string ...) (symbol ...) ... -> list:test-result:((module-name test-result ...) ...)
@@ -394,7 +405,7 @@
   (define*
     (test-execute-modules-by-prefix #:key (settings test-settings-default) #:rest module-names)
     "execute all test modules whose module name has the one of the given module name prefixes.
-    \"path-prefix\" restricts the path where to search for test-modules.
+    \"path-search\" restricts the path where to search for test-modules.
     \"only-submodules?\" does not execute modules that exactly match the module name prefix (where the module name prefix resolves to a regular file)"
     (apply test-modules-by-prefix-execute settings (remove-keyword-associations module-names)))
 

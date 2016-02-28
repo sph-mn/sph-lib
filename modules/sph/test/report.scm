@@ -108,7 +108,7 @@
     module-before (l (s name) (display (string-join (map symbol->string name) " ")) (newline))
     module-after ignore modules-before ignore modules-after ignore)
 
-  (define test-report-null identity)
+  (define test-report-null ignore)
 
   (define-as test-reporters-default symbol-hashtable
     ; name -> (report-result . hooks)
@@ -117,7 +117,7 @@
     default (pair test-report-null test-report-hooks-null))
 
   (define (test-reporter-get test-reporters name) "hashtable symbol -> procedure"
-    (hashtable-ref test-reporters name (hashtable-ref test-reporters (q default) test-report-null)))
+    (hashtable-ref test-reporters name (hashtable-ref test-reporters (q default))))
 
   (define (test-reporter-names test-reporters) "hashtable -> (symbol ...)"
     (hashtable-keys test-reporters))
