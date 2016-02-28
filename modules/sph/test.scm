@@ -56,7 +56,7 @@
 
   ;data-structures:
   ;  test-result-group: ([group-name] test-result/test-result-group ...)
-  ;  test-result: (test-result-group ...)
+  ;  test-result: (test-result-group/test-result ...)
 
   (define-as test-settings-default alist-quoted
     reporters test-reporters-default
@@ -255,7 +255,7 @@
     (apply-settings-reporter+hook settings (q modules-before) module-names)
     (let
       (r
-        (map (l (name module) (pair name (test-module-execute settings module name))) module-names
+        (map (l (name module) (pair (any->string name) (test-module-execute settings module name))) module-names
           (map environment* module-names)))
       (apply-settings-hook+reporter settings (q modules-after) module-names r) r))
 

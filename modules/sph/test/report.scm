@@ -1,6 +1,8 @@
 (library (sph test report)
   (export
     test-report
+    test-report-compact
+    test-report-null
     test-reporter-get
     test-reporter-names
     test-reporters-default)
@@ -45,19 +47,37 @@
     (if (test-result-success? a) (test-report-compact-success a depth display)
       (test-report-compact-failure a depth display)))
 
-  (define (test-report-compact result port) "list/vector port -> list/vector:result/input"
+  (define test-result-tree-fold
+    (let*
+      ( (default-if-not-list (l (a default) (if (list? a) a default)))(with-group
+          (l (a group state proc-group-extended c)
+            ;when no group-name is given, the nesting is basically ignored.
+            (match a
+              (((? string? group-name) rest ...)
+                (let (group (pair group-name group))
+                  (c group rest (default-if-not-list (apply proc-group-extended group state) state)
+                    ))
+                )
+              (_ (c group a state)))))
+ )
+      (l (result proc proc-group-extended . custom-state)
+        "test-result procedure ->
+        calls proc for each test-result record, memoizing nested group-names"
+        (let loop ((e result) (group (list)) (state custom-state))
+          (if (list? e)
+            (with-group e group state proc-group-extended (l (group rest state) (fold (l (e state) (loop e group state)) state rest)))
+            (if (test-result? e) (default-if-not-list (apply proc e group state) state) state))))))
+
+  (define* (test-report-compact result #:optional (port (current-output-port)))
+    "list/vector port -> list/vector:result/input"
     (let (display (l (a) (display a port)))
-      (if (list? result)
-        (let loop ((rest result) (depth 0) (group (list)))
-          (if (null? rest) result
-            (let (e (first rest))
-              (if (list? e)
-                (match e
-                  ( ( (? symbol? group-name) rest ...)
-                    (loop (tail rest) (+ 1 depth) (pair group-name group)))
-                  (_ (loop e (+ 1 depth) group)))
-                (begin (test-report-compact-one e depth display) (loop (tail rest) depth group))))))
-        (test-report-compact-one result 0 display)))
+      (test-result-tree-fold result
+        (l (result-record group)
+          (test-report-compact-one result-record (length group) display)
+          )
+        (l (group)
+          (display (create-indent (max 0 (- (length group) 1))))
+          (display (string-join group " ")) (display "\n"))))
     result)
 
   (define-as test-report-hooks-null alist-quoted
@@ -79,8 +99,8 @@
     modules-after ignore)
 
   (define-as test-report-hooks-compact alist-quoted
-    procedure-before (l (s name)
-      (display (create-indent (boolean->integer (alist-quoted-ref s module?))))
+    procedure-before
+    (l (s name) (display (create-indent (boolean->integer (alist-quoted-ref s module?))))
       (display name))
     procedure-after (l (s name) (newline))
     procedure-data-before (l (s name index data) (display " ") (display (+ 1 index)))

@@ -1,6 +1,6 @@
 ; (sph record) - a record implementation based on vectors.
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -25,6 +25,7 @@
     record-accessor
     record-accessors
     record-append
+    record-layout->predicate
     record-field-names
     record-field-names-unordered
     record-layout-extend!
@@ -60,6 +61,11 @@
     (only (sph list) n-times-map)
     (only (sph one) quote-odd)
     (only (srfi srfi-1) filter-map))
+
+  ;records as an indistinct type based on vectors and hashtables.
+  ;the main goal this library tries to archieve is to offer a dictionary data-structure where field values can be accessed by name, but where the access happens indexed as for vectors, and not using a hash function for example. benefits are supposedly memory usage and access speed.
+  ;this library is supposed to be simpler in definition and use than existing record libraries (rnrs, srfi) and more flexible through the unrestricted interobability with vectors (for records) and hashtables (for layouts). vectors can become (are) records and vice versa.
+  ;if type information is desired, it has to be added manually, storing it in the first record field for example.
 
   (define (any->symbol a)
     "any -> symbol/false
@@ -150,6 +156,15 @@
   (define record-layout-merge! hashtable-merge!)
   (define record-layout? hashtable?)
   (define record-length vector-length)
+
+  (define* (record-layout->predicate a #:optional type-prefix)
+    "record-layout [symbol:type-name] -> procedure:{vector -> boolean}
+    if type-prefix is given, the first field of the record is required to contain the type-prefix"
+    (let (record-length (record-layout-length a))
+      (if type-prefix
+        (l (a)
+          (and (vector? a) (= record-length (vector-length a)) (eqv? type-prefix (vector-first a))))
+        (l (a) (and (vector? a) (= record-length (vector-length a)))))))
 
   (define (record-ref record record-layout field-name)
     "record record-layout symbol -> any

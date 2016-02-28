@@ -28,5 +28,4 @@
     if result is a test-result, check if it is a successful result. otherwise compare result and expected for equality"
     (if (test-result? result) (test-result-success? result) (equal? result expected)))
 
-  (define (test-result? a) "any -> boolean"
-    (and (vector? a) (= 7 (vector-length a)) (eqv? (q test-result) (vector-first a)))))
+  (define test-result? (record-layout->predicate test-result (q test-result))))
