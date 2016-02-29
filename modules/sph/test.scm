@@ -57,8 +57,7 @@
     (only (sph two) remove-keyword-associations))
 
   ;data-structures:
-  ;  test-result-group: ([group-name] test-result/test-result-group ...)
-  ;  test-result: (test-result-group/test-result ...)
+  ;  test-result: ([group-name] test-result ...)/test-result-record
 
   (define-as test-settings-default alist-quoted
     reporters test-reporters-default
@@ -78,19 +77,22 @@
     get the default test settings, with values possibly set to the values given with \"key/value\""
     (alist-merge test-settings-default (list->alist key/value)))
 
-  (define (settings->hook a name) "hashtable -> procedure" (alists-ref a (q hook) name))
+  (define (settings->hook a name) "list symbol -> procedure" (alists-ref a (q hook) name))
 
   (define (settings->reporter a)
+    "list -> (procedure . alist:hooks)"
     (test-reporter-get (alist-quoted-ref a reporters) (alist-quoted-ref a reporter-name)))
 
   (define (settings->reporter-hook a name) "hashtable -> (report-write . report-hooks)"
     (alist-ref (tail (settings->reporter a)) name))
 
   (define (apply-settings-reporter+hook settings name . a)
+    "list symbol any ... ->"
     (apply (settings->reporter-hook settings name) settings a)
     (apply (settings->hook settings name) settings a))
 
   (define (apply-settings-hook+reporter settings name . a)
+    "list symbol any ... ->"
     (apply (settings->hook settings name) settings a)
     (apply (settings->reporter-hook settings name) settings a))
 
@@ -110,10 +112,11 @@
         (only-submodules) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
 
   (define (path->load-path+path& a c)
+    "string procedure:{? string -> any} -> any"
     (let (load-path (path->load-path a))
       (if load-path (c load-path a) (let (a (string-append a ".scm")) (c (path->load-path a) a)))))
 
-  (define (test-path->module-names a) "alist string -> vector/list/error:test-result"
+  (define (test-path->module-names a) "string -> list/error"
     (path->load-path+path& a
       (l (load-path a)
         (if load-path
@@ -137,7 +140,7 @@
     (test-reporter-get reporters (string->symbol a)))
 
   (define (cli-add-to-load-path! cli-arguments)
-    "list:alist ->
+    "list ->
     if the --add-to-load-path option has been specified, add the comma separated list of paths given
     as a value to the option to the beginning of the module load-path"
     (pass-if (alist-quoted-ref cli-arguments add-to-load-path)
@@ -211,11 +214,12 @@
     ((l (tests) (l (settings) (test-execute-procedures settings tests))) (test-list test-spec ...)))
 
   (define-syntax define-test-module
-    ;test modules are typical modules/libraries that export only one "export" procedure. the syntax defined here abstracts the definition.
-    ;modules are used to give test modules a separated scope, in which test module dependencies are integrated.
-    ;there might be alternatives to using modules - for example evaluating files that use the import statement in custom environments.
-    ;the syntax defined here must be available in the environment in which the module is loaded.
-    ;to archieve this, the abstracted module/library definition is initially evaluated in the top-level environment. later the module object is resolved using environment*
+    ;test modules are typical modules/libraries that export only one procedure named "execute". the syntax defined here abstracts the definition.
+    ;modules are used to give test modules a separated scope in which test module dependencies are integrated.
+    ;there might be alternatives to using modules - for example evaluating files in custom environments that use the import statement. but modules seem, because of their
+    ;possible composition, like the best solution at this point.
+    ;the syntax defined here must be available in the environment in which the test module is loaded.
+    ;to archieve this, the definition is initially evaluated in the top-level environment (loading/definition) and the module object is later resolved using environment* (resolving)
     (l (s)
       (syntax-case s (import)
         ( (_ (name-part ...) (import spec ...) body ... proc)
@@ -228,7 +232,7 @@
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
-  (define (test-module-execute settings module name) "alist (symbol ...)"
+  (define (test-module-execute settings module name) "alist module/environment (symbol ...) -> test-result"
     (let (settings (alist-quoted-merge-key/value settings module? #t))
       (apply-settings-reporter+hook settings (q module-before) name)
       (let (r ((eval (q test-execute) module) settings))
@@ -239,7 +243,7 @@
   (define (test-modules-exclude a values) (remove (l (a) (containsv? values a)) a))
 
   (define (test-modules-apply-settings settings modules)
-    "list:alist ((symbol ...) ...) -> ((symbol ...) ...)
+    "list ((symbol ...) ...) -> ((symbol ...) ...)
     apply settings to a list of test-module names"
     (alist-quoted-bind settings (only exclude until)
       ( (if until test-modules-until (l (a b) a))
@@ -248,21 +252,21 @@
         until)))
 
   (define (get-module-name-path module-name filename-extension load-paths)
-    "list string list -> list"
+    "list string (string ...) -> list"
     (or
       (module-name->load-path+full-path& module-name filename-extension
         load-paths (l (load-path full-path) (path->module-names full-path #:load-path load-path)))
       (list)))
 
   (define (module-prefix->module-names name only-submodules? load-paths)
-    "alist list -> ((symbol ...) ...)"
+    "(symbol ...) boolean (string ...) -> ((symbol ...) ...)"
     (let
       (r
         (append (get-module-name-path name #f load-paths)
           (get-module-name-path name ".scm" load-paths)))
       (if (null? r) #f r)))
 
-  (define (test-modules-execute settings module-names) "list list -> list:test-result"
+  (define (test-modules-execute settings module-names) "list list -> test-result"
     (apply-settings-reporter+hook settings (q modules-before) module-names)
     (let
       (r
@@ -279,7 +283,7 @@
         (let (path (path->full-path path-search)) (add-to-load-path path) (list path)) %load-path)))
 
   (define (test-modules-by-prefix-execute settings . name)
-    "list:alist boolean (string ...) (symbol ...) ... -> list:test-result:((module-name test-result ...) ...)
+    "list (symbol ...) ... -> test-result
     execute all test-modules whose names begin with name-prefix.
     for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both
     modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
@@ -383,21 +387,22 @@
     (let
       ( (get-executor
           (l (settings)
+            "list -> procedure"
             (if (alist-quoted-ref settings parallel?) test-procedures-execute-parallel
               test-procedures-execute-serial)))
         (settings->procedure-hooks
           (l (settings)
-            "hashtable procedure:{procedure:hook-before hook-after report-before report-after -> any} -> any"
+            "list -> (procedure:hook-before hook-after report-before report-after)"
             (append
               (alist-select (alist-quoted-ref settings hook) (ql procedure-before procedure-after))
               (alist-select (tail (settings->reporter settings))
                 (ql procedure-before procedure-after procedure-data-before procedure-data-after))))))
       (l (settings source)
-        "list:alist ((symbol:name procedure:test-proc any:data-in/out ...) ...) -> test-result"
+        "list ((symbol:name procedure:test-proc any:data-in/out ...) ...) -> test-result"
         ( (get-executor settings) settings (test-procedures-apply-settings settings source)
           (alist-quoted-ref settings exceptions?) (settings->procedure-hooks settings)))))
 
-  (define (test-execute-module settings name) "(symbol ...) list -> test-result"
+  (define (test-execute-module settings name) "list (symbol ...) -> test-result"
     (test-module-execute settings (environment* name) name))
 
   (define test-execute-procedures test-procedures-execute)
