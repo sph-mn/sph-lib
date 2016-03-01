@@ -20,8 +20,6 @@
     define-procedure-tests
     define-test
     define-test-module
-    test-settings-default-custom
-    test-settings-default-custom-by-list
     test-cli
     test-create-result
     test-execute-cli
@@ -35,6 +33,8 @@
     test-result
     test-result-success?
     test-settings-default
+    test-settings-default-custom
+    test-settings-default-custom-by-list
     test-success?)
   (import
     (guile)
@@ -53,7 +53,10 @@
     (sph test report)
     (srfi srfi-1)
     (only (sph filesystem) path->full-path)
-    (only (sph one) quote-odd ignore exception->string)
+    (only (sph one)
+      quote-odd
+      ignore
+      exception->string)
     (only (sph two) remove-keyword-associations))
 
   ;data-structures:
@@ -62,6 +65,7 @@
   (define-as test-settings-default alist-quoted
     reporters test-reporters-default
     reporter-name (q default)
+    search-type (q prefix)
     hook
     (alist-quoted procedure-before ignore
       procedure-after ignore
@@ -109,7 +113,7 @@
       #:options
       (ql ((source ...)) (display-format #f #f #t)
         (add-to-load-path #f #f #t) (path-search #f #f #t)
-        (only-submodules) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
+        (search-type) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
 
   (define (path->load-path+path& a c)
     "string procedure:{? string -> any} -> any"
@@ -121,7 +125,7 @@
       (l (load-path a)
         (if load-path
           (case (stat:type (stat (string-append load-path "/" a)))
-            ((directory) (module-prefix->module-names (path->module-name a) #f %load-path))
+            ((directory) (find-modules (path->module-name a) (q prefix) %load-path))
             ((regular) (list (path->module-name a)))
             ( (symlink)
               ;as far as we know readlink fails for circular symlinks
@@ -251,27 +255,30 @@
           (if exclude (test-modules-exclude modules exclude) modules))
         until)))
 
-  (define (get-module-name-path module-name filename-extension load-paths)
-    "list string (string ...) -> list"
-    (or
-      (module-name->load-path+full-path& module-name filename-extension
-        load-paths (l (load-path full-path) (path->module-names full-path #:load-path load-path)))
-      (list)))
-
-  (define (module-prefix->module-names name only-submodules? load-paths)
-    "(symbol ...) boolean (string ...) -> ((symbol ...) ...)"
+  (define (find-modules name search-type load-paths)
+    "(symbol ...) symbol:exact/prefix/prefix-not-exact (string ...) -> ((symbol ...) ...)"
     (let
-      (r
-        (append (get-module-name-path name #f load-paths)
-          (get-module-name-path name ".scm" load-paths)))
-      (if (null? r) #f r)))
+      ( (search
+          (l (name filename-extension) "list string/boolean -> list"
+            (or
+              (module-name->load-path+full-path& name filename-extension
+                load-paths
+                (l (load-path full-path) "(string ...) string -> list"
+                  (path->module-names full-path #:load-path load-path)))
+              (list))))
+        (filename-extensions
+          (append
+            (if (or (eqv? (q prefix) search-type) (eqv? (q prefix-not-exact) search-type)) (list #f)
+              (list))
+            (if (or (eqv? (q prefix) search-type) (eqv? (q exact) search-type)) (list ".scm") (list)))))
+      (append-map (l (e) (search name e load-paths)) filename-extensions)))
 
   (define (test-modules-execute settings module-names) "list list -> test-result"
     (apply-settings-reporter+hook settings (q modules-before) module-names)
     (let
       (r
-        (map (l (name module) (pair (any->string name) (test-module-execute settings module name))) module-names
-          (map environment* module-names)))
+        (map (l (name module) (pair (any->string name) (test-module-execute settings module name)))
+          module-names (map environment* module-names)))
       (apply-settings-hook+reporter settings (q modules-after) module-names r) r))
 
   (define (settings->load-path! a)
@@ -293,10 +300,10 @@
     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
     (let
       ( (load-path (settings->load-path! settings))
-        (only-submodules? (alist-quoted-ref settings only-submodules?)))
+        (search-type (alist-quoted-ref settings search-type)))
       (let
         (module-names
-          (every-map (l (e) (module-prefix->module-names e only-submodules? load-path)) name))
+          (every-map (l (e) (false-if-null (find-modules e search-type load-path))) name))
         (if module-names
           (test-modules-execute settings
             (test-modules-apply-settings settings (apply append module-names)))
@@ -411,7 +418,7 @@
     (test-execute-modules-by-prefix #:key (settings test-settings-default) #:rest module-names)
     "execute all test modules whose module name has the one of the given module name prefixes.
     \"path-search\" restricts the path where to search for test-modules.
-    \"only-submodules?\" does not execute modules that exactly match the module name prefix (where the module name prefix resolves to a regular file)"
+    \"search-type\" does not execute modules that exactly match the module name prefix (where the module name prefix resolves to a regular file)"
     (apply test-modules-by-prefix-execute settings (remove-keyword-associations module-names)))
 
   (define (assert-failure-result result expected title arguments)

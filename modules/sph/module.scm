@@ -94,7 +94,8 @@
   (define*
     (path->module-names base-path #:key (max-depth (inf))
       (load-path (string-longest-prefix base-path %load-path)))
-    "list probable libraries belonging to directory \"path\" and subdirectories. path must be in the load-path.
+    "get module-names corresponding to existing files that may contain libraries in directory \"path\" and subdirectories.
+    path must be in the load-path.
     result may include files that contain no library definition, depending on the validations in before-filter.
     the default before-filter allows only files with a \".scm\" suffix."
     (if load-path
@@ -182,7 +183,7 @@
   (define (module-name->load-path+full-path& a filename-extension load-paths c)
     "(symbol ...) string (string ...) procedure:{string:load-path string:full-path -> any} -> any
     finds the load path under which a possibly partial (prefix) module name is saved.
-    if no filename-extension is given will usually find only directories"
+    if no filename-extension is given it will usually only match directories"
     (let*
       ( (path (module-name->path a filename-extension))
         (r
