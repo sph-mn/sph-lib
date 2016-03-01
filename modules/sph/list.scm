@@ -382,7 +382,7 @@
     results in the first element of a list if it is not null, otherwise false"
     (if (null? a) #f (first a)))
 
-  (define false-if-null (negate null?))
+  (define (false-if-null a) (if (null? a) #f a))
 
   (define (first-or-null a)
     "results in the first element of a list if it is not null, otherwise null"

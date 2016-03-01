@@ -66,7 +66,8 @@
     read-line-crlf
     read-line-crlf-trim
     read-mime.types
-    hashtable-resolve
+    any-hashtable-values->keys
+    any-hashtable-keys->values
     search-env-path-variable
     seconds->short-kiloseconds-string
     set-multiple-from-list!
@@ -125,12 +126,12 @@
   (define (any-hashtable-keys->values ht a)
     "r6rs-hashtable any -> any
     replace the given value or values in a list with values in hashtable for the given value as key"
-    (if (list? a) (map (l (b) (hashtable-resolve ht b)) a)
+    (if (list? a) (map (l (b) (any-hashtable-keys->values ht b)) a)
       (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
 
   (define (any-hashtable-values->keys ht a)
     "r6rs-hashtable any -> any"
-    (if (list? a) (map (l (b) (hashtable-resolve ht b)) a)
+    (if (list? a) (map (l (b) (any-hashtable-values->keys ht b)) a)
       (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
 
   (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
