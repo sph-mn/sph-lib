@@ -49,34 +49,31 @@
 
   (define test-result-tree-fold
     (let*
-      ( (default-if-not-list (l (a default) (if (list? a) a default)))(with-group
+      ( (default-if-not-list (l (a default) (if (list? a) a default)))
+        (with-group
           (l (a group state proc-group-extended c)
             ;when no group-name is given, the nesting is basically ignored.
             (match a
-              (((? string? group-name) rest ...)
+              ( ( (? string? group-name) rest ...)
                 (let (group (pair group-name group))
-                  (c group rest (default-if-not-list (apply proc-group-extended group state) state)
-                    ))
-                )
-              (_ (c group a state)))))
- )
+                  (c group rest (default-if-not-list (apply proc-group-extended group state) state))))
+              (_ (c group a state))))))
       (l (result proc proc-group-extended . custom-state)
         "test-result procedure ->
         calls proc for each test-result record, memoizing nested group-names"
         (let loop ((e result) (group (list)) (state custom-state))
           (if (list? e)
-            (with-group e group state proc-group-extended (l (group rest state) (fold (l (e state) (loop e group state)) state rest)))
+            (with-group e group
+              state proc-group-extended
+              (l (group rest state) (fold (l (e state) (loop e group state)) state rest)))
             (if (test-result? e) (default-if-not-list (apply proc e group state) state) state))))))
 
   (define* (test-report-compact result #:optional (port (current-output-port)))
     "list/vector port -> list/vector:result/input"
     (let (display (l (a) (display a port)))
       (test-result-tree-fold result
-        (l (result-record group)
-          (test-report-compact-one result-record (length group) display)
-          )
-        (l (group)
-          (display (create-indent (max 0 (- (length group) 1))))
+        (l (result-record group) (test-report-compact-one result-record (length group) display))
+        (l (group) (display (create-indent (max 0 (- (length group) 1))))
           (display (string-join group " ")) (display "\n"))))
     result)
 
@@ -100,9 +97,10 @@
 
   (define-as test-report-hooks-compact alist-quoted
     procedure-before
-    (l (s name) (display (create-indent (boolean->integer (alist-quoted-ref s module?))))
+    (l (s name)
+      (display (create-indent (boolean->integer (alist-quoted-ref s current-module-name))))
       (display name))
-    procedure-after (l (s name) (newline))
+    procedure-after (l (s result) (newline))
     procedure-data-before (l (s name index data) (display " ") (display (+ 1 index)))
     procedure-data-after ignore
     module-before (l (s name) (display (string-join (map symbol->string name) " ")) (newline))

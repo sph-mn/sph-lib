@@ -150,7 +150,7 @@
   (define-syntax-rule (l arg ...) (lambda arg ...))
   (define-syntax-rule (l* arg ...) (lambda* arg ...))
 
-  (define-syntax-rules let
+(define-syntax-rules let
     ;let and named-let plus a simplified syntax for binding just one variable
     ((((variable-name expr) ...) body ...) ((lambda (variable-name ...) body ...) expr ...))
     (((variable-name expr) body ...) (let ((variable-name expr)) body ...))

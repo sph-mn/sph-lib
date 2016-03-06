@@ -69,6 +69,8 @@
     hook
     (alist-quoted procedure-before ignore
       procedure-after ignore
+      procedure-data-before ignore
+      procedure-data-after ignore
       module-before ignore module-after ignore modules-before ignore modules-after ignore)
     random-order? #f parallel? #f exceptions? #t exclude #f only #f until #f)
 
@@ -83,20 +85,23 @@
 
   (define (settings->hook a name) "list symbol -> procedure" (alists-ref a (q hook) name))
 
-  (define (settings->reporter a)
-    "list -> (procedure . alist:hooks)"
+  (define (settings->reporter a) "list -> (procedure . alist:hooks)"
     (test-reporter-get (alist-quoted-ref a reporters) (alist-quoted-ref a reporter-name)))
 
   (define (settings->reporter-hook a name) "hashtable -> (report-write . report-hooks)"
     (alist-ref (tail (settings->reporter a)) name))
 
-  (define (apply-settings-reporter+hook settings name . a)
-    "list symbol any ... ->"
-    (apply (settings->reporter-hook settings name) settings a)
-    (apply (settings->hook settings name) settings a))
+  (define (identity-if-list settings maybe-new-settings)
+    (if (list? maybe-new-settings) maybe-new-settings settings))
 
-  (define (apply-settings-hook+reporter settings name . a)
-    "list symbol any ... ->"
+  (define (call-settings-update-hook proc settings . a)
+    (identity-if-list settings (apply proc settings a)))
+
+  (define (apply-settings-reporter+hook settings name . a) "list symbol any ... -> list"
+    (apply (settings->reporter-hook settings name) settings a)
+    (identity-if-list (apply (settings->hook settings name) settings a) settings))
+
+  (define (apply-settings-hook+reporter settings name . a) "list symbol any ... ->"
     (apply (settings->hook settings name) settings a)
     (apply (settings->reporter-hook settings name) settings a))
 
@@ -115,8 +120,7 @@
         (add-to-load-path #f #f #t) (path-search #f #f #t)
         (search-type) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
 
-  (define (path->load-path+path& a c)
-    "string procedure:{? string -> any} -> any"
+  (define (path->load-path+path& a c) "string procedure:{? string -> any} -> any"
     (let (load-path (path->load-path a))
       (if load-path (c load-path a) (let (a (string-append a ".scm")) (c (path->load-path a) a)))))
 
@@ -170,7 +174,7 @@
           (list)))))
 
   (define-syntax-cases test-lambda s
-    (((arguments expected) body ...) (syntax (lambda (arguments expected) body ...)))
+    (((arguments expected settings) body ...) (syntax (lambda (arguments expected) body ...)))
     ( ( (a ...) body ...)
       (quasisyntax (lambda (a ... . (unsyntax (datum->syntax s (gensym "define-test")))) body ...))))
 
@@ -236,11 +240,13 @@
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
-  (define (test-module-execute settings module name) "alist module/environment (symbol ...) -> test-result"
-    (let (settings (alist-quoted-merge-key/value settings module? #t))
-      (apply-settings-reporter+hook settings (q module-before) name)
-      (let (r ((eval (q test-execute) module) settings))
-        (apply-settings-hook+reporter settings (q module-after) name r) r)))
+  (define (test-module-execute settings module name)
+    "alist module/environment (symbol ...) -> test-result"
+    (let*
+      ( (settings (alist-quoted-merge-key/value settings current-module-name name))
+        (settings (apply-settings-reporter+hook settings (q module-before) name))
+        (r ((eval (q test-execute) module) settings)))
+      (apply-settings-hook+reporter settings (q module-after) name r) r))
 
   (define (test-modules-until a value) (take-while (l (a) (not (equal? a value))) a))
   (define (test-modules-only a values) (filter (l (a) (containsv? values a)) a))
@@ -268,17 +274,19 @@
               (list))))
         (filename-extensions
           (append
-            (if (or (eqv? (q prefix) search-type) (eqv? (q prefix-not-exact) search-type)) (list #f)
-              (list))
-            (if (or (eqv? (q prefix) search-type) (eqv? (q exact) search-type)) (list ".scm") (list)))))
+            (if (or (eqv? (q prefix) search-type) (eqv? (q prefix-not-exact) search-type))
+              (list #f) (list))
+            (if (or (eqv? (q prefix) search-type) (eqv? (q exact) search-type)) (list ".scm")
+              (list)))))
       (append-map (l (e) (search name e load-paths)) filename-extensions)))
 
   (define (test-modules-execute settings module-names) "list list -> test-result"
-    (apply-settings-reporter+hook settings (q modules-before) module-names)
-    (let
-      (r
-        (map (l (name module) (pair (any->string name) (test-module-execute settings module name)))
-          module-names (map environment* module-names)))
+    (let*
+      ( (settings (apply-settings-reporter+hook settings (q modules-before) module-names))
+        (r
+          (map
+            (l (name module) (pair (any->string name) (test-module-execute settings module name)))
+            module-names (map environment* module-names))))
       (apply-settings-hook+reporter settings (q modules-after) module-names r) r))
 
   (define (settings->load-path! a)
@@ -336,45 +344,65 @@
 
   (define
     (test-procedures-execute-one-data settings data name title test-proc hook-before hook-after
+      hook-data-before
+      hook-data-after
       report-before
       report-after
       report-data-before
       report-data-after)
+    "list (input output [input output] ...) string string procedure ... -> test-result"
     (let loop ((d data) (index 0))
-      (if (null? d)
-        (let (r (test-create-result #t title #f index)) (hook-after settings r)
-          (report-after settings r) r)
-        (let (data (first d)) (report-data-before settings name index data)
-          (let*
-            ( (d-tail (tail d)) (expected (first d-tail)) (r (test-proc (any->list data) expected))
-              (r
-                (if (test-result? r) (record-update test-result r title title index index)
-                  (test-create-result (equal? r expected) title #f index r data expected))))
-            (report-data-after settings r)
-            (if (test-result-success? r) (loop (tail d-tail) (+ 1 index))
-              (begin (hook-after settings r) (report-after settings r) r)))))))
+      (if (null? d) (test-create-result #t title #f index)
+        (let*
+          ( (arguments (any->list (first d)))
+            (settings
+              (begin (report-data-before settings name index arguments)
+                (call-settings-update-hook hook-data-before settings name index arguments)))
+            (d-tail (tail d)) (expected (first d-tail))
+            (r (test-proc arguments expected settings))
+            (r
+              (if (test-result? r) (record-update test-result r title title index index)
+                (test-create-result (equal? r expected) title #f index r data expected))))
+          (hook-data-after settings r) (report-data-after settings r)
+          (if (test-result-success? r) (loop (tail d-tail) (+ 1 index)) (begin r))))))
+
+  (define
+    (test-procedures-execute-without-data settings name title test-proc hook-before hook-after
+      hook-data-before
+      hook-data-after
+      report-before
+      report-after
+      report-data-before
+      report-data-after)
+    (report-data-before settings name 0 (list))
+    (let*
+      ( (settings (call-settings-update-hook hook-data-before settings name 0 (list)))
+        (r (test-proc (list) #t settings))
+        (r
+          (if (test-result? r) (record-update test-result r title title)
+            (test-any->result r title 0))))
+      (hook-data-after settings r) (report-data-after settings r) r))
 
   (define (test-procedures-execute-one settings exceptions? hooks name test-proc . data)
     "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure. ensures that test-procedure results are test-results.
     ;creates only one test-result
     (list-bind hooks
-      (hook-before hook-after report-before report-after report-data-before report-data-after)
+      (hook-before hook-after hook-data-before
+        hook-data-after report-before report-after report-data-before report-data-after)
       (let
         ( (title (symbol->string name))
           (test-proc
             (if exceptions? test-proc
               (l a (catch #t (thunk (apply test-proc a)) exception->string)))))
-        (report-before settings name) (hook-before settings name)
-        (if (null? data)
-          (begin (report-data-before settings name 0 data)
-            (let*
-              ( (r (test-proc (list) #t))
-                (r
-                  (if (test-result? r) (record-update test-result r title title)
-                    (test-any->result r title 0))))
-              (hook-after settings r) (report-data-after settings r) (report-after settings r) r))
-          (apply test-procedures-execute-one-data settings data name title test-proc hooks)))))
+        (report-before settings name)
+        (let*
+          ( (settings (call-settings-update-hook hook-before settings name))
+            (r
+              (if (null? data)
+                (apply test-procedures-execute-without-data settings name title test-proc hooks)
+                (apply test-procedures-execute-one-data settings data name title test-proc hooks))))
+          (hook-after settings r) (report-after settings r) r))))
 
   (define (test-procedures-execute-parallel settings a exceptions? hooks)
     "list:alist list -> list
@@ -393,15 +421,14 @@
   (define test-procedures-execute
     (let
       ( (get-executor
-          (l (settings)
-            "list -> procedure"
+          (l (settings) "list -> procedure"
             (if (alist-quoted-ref settings parallel?) test-procedures-execute-parallel
               test-procedures-execute-serial)))
         (settings->procedure-hooks
-          (l (settings)
-            "list -> (procedure:hook-before hook-after report-before report-after)"
+          (l (settings) "list -> (procedure:hook-before hook-after report-before report-after)"
             (append
-              (alist-select (alist-quoted-ref settings hook) (ql procedure-before procedure-after))
+              (alist-select (alist-quoted-ref settings hook)
+                (ql procedure-before procedure-after procedure-data-before procedure-data-after))
               (alist-select (tail (settings->reporter settings))
                 (ql procedure-before procedure-after procedure-data-before procedure-data-after))))))
       (l (settings source)

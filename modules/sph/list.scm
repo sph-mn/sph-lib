@@ -103,6 +103,7 @@
     pair-fold-multiple
     pair-map
     pair-reverse
+    pair-bind
     pattern-match-min-length
     produce
     produce-controlled
@@ -155,6 +156,8 @@
       span
       split-at
       take))
+
+  ;this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
 
   ;copied from (sph conditional)
   (define-syntax-rule (identity-if test else ...) ((lambda (r) (if r r (begin else ...))) test))
@@ -863,4 +866,8 @@
   (define (insert-second e a)
     "any list -> list
     insert as the second element into a list"
-    (pair (first a) (pair e (tail a)))))
+    (pair (first a) (pair e (tail a))))
+
+  (define-syntax-rule (pair-bind a (b c) body ...)
+    ;binds the first and second value of "a" to "b" and "c" respectively. ideally, lambda/apply would support (apply (lambda (a . b)) (pair 1 2))
+    ((lambda (b c) body ...) (first a) (tail a))))

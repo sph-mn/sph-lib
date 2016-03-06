@@ -1,7 +1,7 @@
 (define-test-module (test module sph number) (import (sph number) (sph list))
-  (define (test-container-length->number-max inp exp)
-    ;inp: (range base)
-    (n-times-map (first inp) (l (n) (container-length->number-max n (second inp)))))
+  (define-test (container-length->number-max arguments)
+    ;arguments: (range base)
+    (n-times-map (first arguments) (l (n) (container-length->number-max n (second arguments)))))
   (test-execute-procedures-lambda
     (number-container-length (1383213160 2) 31
       (1 2) 1 (0 2) 0 (8 2) 4 (255 2) 8 (256 2) 9 (9 10) 1 (11 10) 2 (16 16) 2 (15 16) 1)

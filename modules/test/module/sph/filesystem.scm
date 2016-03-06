@@ -5,8 +5,8 @@
 
   (define cwd (string-append (getcwd) "/"))
 
-  (define (test-path->full-path inp exp)
-    (string-replace-string (apply path->full-path inp) cwd ""))
+  (define-test (path->full-path arguments)
+    (string-replace-string (apply path->full-path arguments) cwd ""))
 
   (test-execute-procedures-lambda
     (path->full-path
