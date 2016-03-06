@@ -13,9 +13,10 @@
     (except (rnrs hashtables) hashtable-ref))
 
   (define (create-indent depth) (string-multiply "  " depth))
-  ;todo: nested results display, assertion title display
-  ; test reporters can create output while tests are running and after tests have run.
-  ; test reporters for creating output while tests are running are implemented as a special hook configuration with hook procedures to be called by the test execution procedures.
+  ;todo: test nested results display, assertion title display.
+  ;notes:
+  ; test reporters for writing to standard output for example while tests are running are implemented as a special hook
+  ; configuration with hook procedures to be called by the test execution procedures.
 
   (define (test-report-compact-display-indices count display)
     (n-times count (l (n) (display " ") (display (+ 1 n)))))
