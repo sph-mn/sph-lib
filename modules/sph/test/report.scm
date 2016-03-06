@@ -31,10 +31,12 @@
         (let (indent (create-indent (+ 2 depth)))
           (l (e)
             (let (value (tail e))
-              (if value
-                (display (string-append indent (first e) ": " (any->string-write value) "\n"))))))
-        (list (pair "i" (test-result-arguments a)) (pair "e" (test-result-expected a))
-          (pair "o" (test-result-result a))))))
+              (if value (display (string-append indent (first e) ": " value "\n"))))))
+        (list
+          (pair "i"
+            (string-drop (string-drop-right (any->string-write (test-result-arguments a)) 1) 1))
+          (pair "e" (any->string-write (test-result-expected a)))
+          (pair "o" (any->string-write (test-result-result a)))))))
 
   (define (test-report-compact-success a depth display) "vector integer procedure ->"
     (let ((indent (create-indent depth)) (index (test-result-index a))) (display indent)
@@ -100,7 +102,9 @@
     (l (s name)
       (display (create-indent (boolean->integer (alist-quoted-ref s current-module-name))))
       (display name))
-    procedure-after (l (s result) (newline))
+    procedure-after
+    (l (s result)
+      (if (test-result-success? result) (newline) (test-report-compact-failure result 0 display)))
     procedure-data-before (l (s name index data) (display " ") (display (+ 1 index)))
     procedure-data-after ignore
     module-before (l (s name) (display (string-join (map symbol->string name) " ")) (newline))

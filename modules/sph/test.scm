@@ -191,6 +191,7 @@
   (define (macro?* a) (false-if-exception (macro? (module-ref (current-module) a))))
 
   (define-syntax-cases test-list-one
+    ;-> (symbol procedure [arguments expected] ...)/error
     ( ( (name data ...))
       (let*
         ( (name-datum (syntax->datum (syntax name)))
@@ -362,9 +363,9 @@
             (r (test-proc arguments expected settings))
             (r
               (if (test-result? r) (record-update test-result r title title index index)
-                (test-create-result (equal? r expected) title #f index r data expected))))
+                (test-create-result (equal? r expected) title #f index r arguments expected))))
           (hook-data-after settings r) (report-data-after settings r)
-          (if (test-result-success? r) (loop (tail d-tail) (+ 1 index)) (begin r))))))
+          (if (test-result-success? r) (loop (tail d-tail) (+ 1 index)) r)))))
 
   (define
     (test-procedures-execute-without-data settings name title test-proc hook-before hook-after
@@ -413,10 +414,11 @@
     "list:alist list -> list
     executes tests one after another and stops if one fails"
     (map-with-continue
-      (l (continue e)
-        (let (r (apply test-procedures-execute-one settings exceptions? hooks e))
-          (if (test-result-success? r) (continue r) (list r))))
-      a))
+        (l (continue e)
+          (let (r (apply test-procedures-execute-one settings exceptions? hooks e))
+
+            (if (test-result-success? r) (continue r) (list r))))
+        a))
 
   (define test-procedures-execute
     (let
