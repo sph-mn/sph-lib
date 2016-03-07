@@ -617,8 +617,11 @@
 
   (define (map-selected select? proc . a)
     "procedure procedure list ... -> list
-    apply proc only to elements for which \"select?\" is true. non-matched items are included in the result list"
-    (apply map (l e (if (apply select? e) (apply proc e) e)) a))
+    apply proc only to elements for which \"select?\" is true. non-matched items are included in the result list.
+    if multiple lists are given, it works like \"map\" except that the elements from the multiple lists for one call that are not selected are saved as a list.
+    map-some/map-only"
+    ;as a possible enhancement, a second procedure for non-matches could be used
+    (apply map (l e (if (apply select? e) (apply proc e) (if (null? (tail e)) (first e) e))) a))
 
   (define (map-apply proc . a)
     "procedure:{any ...} list:(list ...)

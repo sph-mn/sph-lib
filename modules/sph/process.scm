@@ -1,6 +1,6 @@
 ; (sph process) - process creation, management and inter-process communication.
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -25,6 +25,7 @@
     primitive-process-create-chain-with-pipes
     process-chain-finished-successfully?
     process-create
+    process-and
     process-create-chain-with-paths/pipes
     process-create-chain-with-pipes
     process-create-chain-with-pipes->string
@@ -278,4 +279,10 @@
      if one call returns with a non-zero exit value the processing stops and returns the result of system*"
     (let loop ((rest rest) (result (apply system* a)))
       (if (null? rest) result
-        (if (= 0 (status:exit-val result)) (loop (tail rest) (apply system* (first rest))))))))
+        (if (= 0 (status:exit-val result)) (loop (tail rest) (apply system* (first rest)))))))
+
+  (define-syntax-rule (process-and create-exit-status ...)
+    (and
+      ( (lambda (status) (and (integer? status) (zero? status)))
+        (status:exit-val create-exit-status))
+      ...)))

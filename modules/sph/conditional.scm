@@ -2,23 +2,26 @@
   (export
     apply-pass-if
     boolean-and
+    call-pass-if
+    call-pass-if-proc
     check
     check-not
     false-if
     false-if-not
     identity-if
     pass-and
-    pass-if)
+    pass-if
+    pass-if-apply)
   (import
     (rnrs base)
     (sph))
 
-  (define (apply-pass-if a proc)
+  (define (pass-if-apply a proc)
     "list procedure:{any ... -> any} -> any
-    like pass-if but uses apply to use the contents of \"a\" as arguments to proc"
+    like pass-if but uses apply to use the contents of \"a\", which should be a list in the true case, as arguments to proc"
     (if a (apply proc a) #f))
 
- (define-syntax-rules pass-if
+  (define-syntax-rules pass-if
     ;"any procedure:{any -> any} -> any
     ;apply proc with "a" if "a" is a true value, otherwise return false or evaluate else"
     ((a proc) ((lambda (b) (if b (proc b) #f)) a))
@@ -54,4 +57,20 @@
   (define-syntax-rules boolean-and
     ;like "and" but returns false if any value is not a boolean
     ((expr) ((l (r) (if (eqv? #t r) #t r)) expr))
-    ((expr rest ...) ((l (r) (if (eq? #t r) (boolean-and rest ...) r)) expr))))
+    ((expr rest ...) ((l (r) (if (eq? #t r) (boolean-and rest ...) r)) expr)))
+
+  (define (apply-pass-if test consequent alternative a)
+    (if (apply test a) (apply consequent a) (apply alternative a)))
+
+  (define (call-pass-if test consequent alternative . a)
+    "procedure procedure procedure any ... -> any
+    call \"test\" with \"a\", if true then call \"consequent\" with \"a\" otherwise call \"alternative\" with \"a\".
+    this can be used for example to make a test on the input for choosing the continuation"
+    ;as a possible enhancement this could take multiple tests with and/or (for example nested-lists alternatingly and/or) and multiple consequents,
+    ;with optional alternative
+    (apply-pass-if test consequent alternative a))
+
+  (define (call-pass-if-proc test consequent alternative)
+    "procedure procedure procedure -> any
+    results in a predicate that applies consequent to its input when test applied to the input succeeded, or alternative applied to the input otherwise"
+    (l a (apply-pass-if test consequent alternative a))))

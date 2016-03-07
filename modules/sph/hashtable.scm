@@ -61,7 +61,7 @@
     (rename (rnrs hashtables) (hashtable-ref rnrs-hashtable-ref)))
 
   (define* (alist->hashtable a #:optional (equal-proc equal?) (hash-proc equal-hash))
-    "convert assoc-list\\alist \"a\" to an r6rs standard-library hashtable"
+    "convert assoc-list/alist \"a\" to an r6rs hashtable"
     (let ((ht (make-hashtable hash-proc equal-proc)))
       (each (l (alist-part) (hashtable-set! ht (first alist-part) (tail alist-part))) a) ht))
 
