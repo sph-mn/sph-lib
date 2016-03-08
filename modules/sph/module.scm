@@ -5,6 +5,7 @@
     current-module-ref
     environment*
     export-modules
+    find-modules
     import!
     import-any
     import-directory-tree
@@ -37,7 +38,7 @@
     (only (sph conditional) pass-if)
     (only (sph read-write) file->datums)
     (only (sph string) string-longest-prefix string-drop-prefix)
-    (only (srfi srfi-1) last))
+    (only (srfi srfi-1) append-map last))
 
   (define (environment* . name)
     "(symbol ...) ... -> environment/module
@@ -47,7 +48,9 @@
     only the \".scm\" filename-extension is supported when resolving file paths from module names for loading"
     (map
       (l (e)
-        (load (module-name->load-path+full-path& e ".scm" %load-path (l (load-path full-path) full-path))))
+        (load
+          (module-name->load-path+full-path& e ".scm"
+            %load-path (l (load-path full-path) full-path))))
       name)
     (apply environment name))
 
@@ -210,4 +213,23 @@
   (define (path->symbol-list a)
     "create a module name from a typical path string. for example \"/a/b/c\" -> (a b c)"
     (let (a (string-trim-both a #\/))
-      (if (string-null? a) (list) (map string->symbol (string-split a #\/))))))
+      (if (string-null? a) (list) (map string->symbol (string-split a #\/)))))
+
+  (define (find-modules name search-type load-paths)
+    "(symbol ...) symbol:exact/prefix/prefix-not-exact (string ...) -> ((symbol ...) ...)"
+    (let
+      ( (search
+          (l (name filename-extension) "list string/boolean -> list"
+            (or
+              (module-name->load-path+full-path& name filename-extension
+                load-paths
+                (l (load-path full-path) "(string ...) string -> list"
+                  (path->module-names full-path #:load-path load-path)))
+              (list))))
+        (filename-extensions
+          (append
+            (if (or (eqv? (q prefix) search-type) (eqv? (q prefix-not-exact) search-type))
+              (list #f) (list))
+            (if (or (eqv? (q prefix) search-type) (eqv? (q exact) search-type)) (list ".scm")
+              (list)))))
+      (append-map (l (e) (search name e load-paths)) filename-extensions))))

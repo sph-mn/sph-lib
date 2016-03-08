@@ -1,6 +1,6 @@
 ; (sph list) - list processing
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -195,8 +195,7 @@
   (define (replace-at-once match? proc a)
     "procedure:{any -> boolean} procedure:{list:matched-elements -> list:replacements} list:source -> list
     all elements matching \"match?\" are collected in a list and passed to \"proc\".
-    the result of \"proc\" is then used to replaces the matched elements in source in order.
-    in the case that the result list is shorter than the matched elements,"
+    the result of \"proc\" is then used to replace the matched elements in source in order"
     (reverse
       (first
         (let (a-extended (map (l (e) (pair (match? e) e)) a))

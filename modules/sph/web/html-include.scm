@@ -67,7 +67,7 @@
         #f)))
 
   (define (content-type->sxml-html-include-tag arg)
-    (if (equal? (q stylesheet) arg) sxml-html-stylesheet-tag sxml-html-javascript-tag))
+    (if (equal? (q stylesheet) arg) sxml-html-include-style sxml-html-include-script))
 
   (define (html-include-proc include-config content-type->search-paths)
       #;(include-config (symbol-hashtable content-type (vector (alist suffix single-action ...) action target-path)))
@@ -77,7 +77,7 @@
           (prepare-include
             (hashtable-ref include-config content-type)
             (content-type->search-paths content-type)
-            (map symbol-path->string paths)))
+            (string-join (map symbol->string paths) "/")))
         (if path
           ((content-type->sxml-html-include-tag content-type) path)
           "")))))

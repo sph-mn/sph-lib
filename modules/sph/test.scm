@@ -208,25 +208,6 @@
           (if exclude (test-modules-exclude modules exclude) modules))
         until)))
 
-  (define (find-modules name search-type load-paths)
-    "(symbol ...) symbol:exact/prefix/prefix-not-exact (string ...) -> ((symbol ...) ...)"
-    (let
-      ( (search
-          (l (name filename-extension) "list string/boolean -> list"
-            (or
-              (module-name->load-path+full-path& name filename-extension
-                load-paths
-                (l (load-path full-path) "(string ...) string -> list"
-                  (path->module-names full-path #:load-path load-path)))
-              (list))))
-        (filename-extensions
-          (append
-            (if (or (eqv? (q prefix) search-type) (eqv? (q prefix-not-exact) search-type))
-              (list #f) (list))
-            (if (or (eqv? (q prefix) search-type) (eqv? (q exact) search-type)) (list ".scm")
-              (list)))))
-      (append-map (l (e) (search name e load-paths)) filename-extensions)))
-
   (define (test-modules-execute settings module-names) "list list -> test-result"
     (let*
       ( (settings (apply-settings-reporter+hook settings (q modules-before) module-names))

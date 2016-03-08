@@ -1,6 +1,6 @@
 ; (sph documentation) - retrieve or display documentation for guile scheme libraries
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -64,7 +64,7 @@
           (string-append (substring res 1 (- (string-length res) 1))))
         (if (equal? (q variable) type)
           (if arguments (call-with-output-string (l (port) (display arguments port))) "")
-          (raise (q unknown-binding-type))))))
+          ""))))
 
   (define (docstring->lines a)
     "string -> (string ...)"
@@ -125,7 +125,7 @@
     (let
       ( (format-handler
           (or (assoc-ref documentation-display-formats format-handler-name)
-            (throw (q no-such-display-format))))
+            (throw (q no-such-display-format) format-handler-name)))
         (module-names (if (list? (first module-names)) module-names (list module-names))))
       (alist-quoted-bind format-handler
         (format-arguments format-binding-info format-module-documentation

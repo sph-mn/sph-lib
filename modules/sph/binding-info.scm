@@ -40,8 +40,8 @@
     (case type
       ( (syntax-rules)
         (let (patterns (procedure-property transformer (q patterns)))
-          (if (pair? patterns) (car patterns) (list))))
-      ((identifier-syntax) (list)) (else (list))))
+          (if (pair? patterns) (first patterns) (list))))
+      ((identifier-syntax) (list)) (else #f)))
 
   (define* (procedure->binding-info proc #:optional (name (procedure-name proc)))
     "procedure [string] -> vector"
@@ -51,8 +51,9 @@
   (define (macro->binding-info macro name) "macro-variable -> vector"
     (let (transformer (macro-transformer macro))
       (record binding-info-layout name
-        (q syntax) (procedure-documentation transformer)
-        (macro-arguments name (procedure-property transformer (q macro-type)) transformer))))
+        (q syntax) (and transformer (procedure-documentation transformer))
+        (and transformer
+          (macro-arguments name (procedure-property transformer (q macro-type)) transformer)))))
 
   (define (variable->binding-info value name) "string any -> vector"
     (record binding-info-layout name (q variable) #f (and bi-include-variable-values value)))

@@ -20,5 +20,5 @@
   (define (trace-in . procs)
     (each (l (ele) (trace-calls-in-procedure ele #:width 200 #:prefix "")) procs))
 
-  (set-vm-trace-level! (the-vm) 1)
-  (debug-set! show-file-name (quote base)))
+  (set-vm-trace-level! 1)
+  (debug-set! show-file-name (q base)))
