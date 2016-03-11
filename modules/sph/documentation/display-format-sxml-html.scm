@@ -1,6 +1,6 @@
 (library (sph documentation display-format-sxml-html)
   (export
-    display-format-sxml-html)
+    library-documentation-sxml-html)
   (import
     (guile)
     (rnrs base)
@@ -17,7 +17,7 @@
     (except (srfi srfi-1) map))
 
   ;wip
-  ;todo: module name for each binding
+  ;different display for multiple-modules and single-module
 
   (define (create-binding-name-anchor-target title)
     (qq (span (@ (id "b-" (unquote title))) (unquote title))))
@@ -37,21 +37,34 @@
           (tail binding))
         (q (class "doc-bi")))))
 
-  (define (library-documentation-sxml-html module indent-level) "((symbol ...) ...) -> list"
-    ;this feature does not really belong into sph-cms though
-    (let (module (list-sort-with-accessor string<? first module))
-      (list
-        (if (> (length module) 2)
-          (pair (q ul)
-            (map (compose (l (e) (list (q li) e)) create-binding-name-anchor first) module))
-          (list))
-        (pair (q div)
-          (map (l (binding) (library-documentation-sxml-html-section indent-level binding)) module)))))
+  (define (library-binding-info-plist module-name)
+    (alist-quoted-bind display-format-plist (format-binding-info format-arguments)
+      (map
+        (l (binding-info)
+          (append
+            (format-binding-info binding-info
+              (format-arguments (bi-arguments binding-info) (bi-type binding-info)))
+            (list (pair (q module) module-name))))
+        (module-binding-info module-name))))
 
-  (define display-format-sxml-html
-    (alist-quoted-merge-key/value display-format-plist format-module-documentation
-      (l (name md) md) format-modules-documentation
-      (l (mds) (library-documentation-sxml-html (apply append mds) 0))))
+  (define (documentation-library- module-names nesting-level)
+    "((symbol ...) ...) integer -> list"
+    (fold-multiple
+      (l (module-name)
+        (let (module-bi (library-binding-info-plist module-name)) (map first module-bi)
+          (list
+            (if (> (length module) 2)
+              (pair (q ul)
+                (map (compose (l (e) (list (q li) e)) create-binding-name-anchor first) module))
+              (list))
+            (pair (q div)
+              (map (l (binding) (library-documentation-sxml-html-section nesting-level binding))
+                module)))))
+      module-names))
 
-  (set! documentation-display-formats
-    (pair (pair (q sxml-html) display-format-sxml-html) documentation-display-formats)))
+  (define (documentation-library-index library-names)
+    #t
+
+    )
+
+  )

@@ -106,6 +106,9 @@
     (list-set-match-condition?
       ((some 3 4)) #t
       ((somex 3 4)) #f)
+    (list-sort-by-list
+      ((3 2 4) (4 2 3)) (3 2 4)
+      ((3 2 4) (4 5 2 3)) (3 2 4 5))
     (map-successive
       ((unquote even?) (unquote (l args (map 1+ args))) (1 2 2 3 4 4 6 5 6 7))
       (1 (3 3) 3 (5 5 7) 5 6 7)

@@ -7,6 +7,7 @@
     directory-read-all
     directory-reference?
     directory-stream
+    directory-tree-each
     directory-tree-paths
     dotfile?
     ensure-directory-structure
@@ -14,8 +15,6 @@
     ensure-trailing-slash
     file->string
     filename-extension
-    find-file-any
-    find-files-any
     fold-directory-tree
     get-unique-target-path
     is-directory?
@@ -116,7 +115,7 @@
             (if (eof-object? e) r
               (loop (readdir d) (if (every (l (p) (p e)) include?) (pair e r) r))))))))
 
-  (define (directory-list-full-path path . filter-proc)
+  (define (directory-list-full-path path . filter-proc) "string procedure ... -> (string ...)"
     (let (path (ensure-trailing-slash path))
       (map (l (e) (path->full-path (string-append path e))) (apply directory-list path filter-proc))))
 
@@ -131,9 +130,9 @@
             (loop (readdir port)))))))
 
   (define* (directory-tree-paths path #:optional (select? identity))
-    "-> (full-path ...)
-    string procedure ... -> (string ...)
-    results in a list of all paths under path, excluding path and directory references . and .."
+    "string [procedure:{any -> boolean}] -> (full-path ...)
+    string procedure -> (string ...)
+    results in a list of all paths under path, excluding path and the directory references \".\" and \"..\""
     ;breadth-first search
     (let (entries (directory-read-all path (negate directory-reference?)))
       (fold-right
@@ -193,48 +192,20 @@
     "utility for functions working with file change events and stat-records"
     (hashtable-ref stat-accessor->stat-field-name-ht a))
 
-  (define (find-file-any relative-path search-path filter-proc)
-    "-> (full-path . filename-extension)
-    string\\symbol-path string (string ...) -> (string . string)
-    find the first file corresponding to relative-path with a extension of fn-extensions."
-    (let ((base-path (symbol-path->string relative-path search-path)))
-      (let
-        ( (construct-path (l (fn-extension) (string-append base-path "." fn-extension)))
-          (filename (basename base-path)))
-        (any
-          (l (fn-extension)
-            (let ((path (construct-path fn-extension)))
-              (if (file-exists? path) (pair path fn-extension) #f)))
-          filter-proc))))
-
   (define (file->string path\file)
     "string/file -> string
     open or use an opened file, read until end-of-file is reached and return a string of file contents"
     (if (string? path\file) (call-with-input-file path\file port->string) (port->string path\file)))
 
-  (define (find-files-any search-path fn-extensions relative-paths)
-    "string/(string/{relative-path -> search-path} ...) (string ...) symbol-path -> ((path . filename-extension) ...)
-    supports multiple search-paths and procedures as search-path."
-    (filter-map
-      (if (list? search-path)
-        (l (e)
-          (any
-            (l (search-path)
-              (find-file-any e (if (procedure? search-path) (search-path e) search-path)
-                fn-extensions))
-            search-path))
-        (l (e) (find-file-any e search-path fn-extensions)))
-      relative-paths))
-
   (define* (fold-directory-tree proc init path #:optional (max-depth (inf)))
     "::
-    procedure:{string:current-path guile-stat-object:stat-info any:previous-result -> any} -
-    any string integer {string/path -> boolean} ...
+    procedure:{string:current-path guile-stat-object:stat-info any:previous-result -> any} any string [integer] {string/path -> boolean} ...
     ->
     any:last-procedure-result
 
-    fold over directory-tree under path, possibly limited by max-depth and with filenames filtered by \"before-filter.\"
-    the directory-references \".\" and \"..\" are ignored"
+    fold over directory-tree under path, possibly limited by max-depth.
+    the directory-references \".\" and \"..\" are ignored.
+    call to proc is (proc full-path stat-info previous-result/init)"
     (let (path (ensure-trailing-slash path))
       (fold
         (l (e r)
@@ -244,6 +215,9 @@
                 (string-append full-path "/") (- max-depth 1))
               (proc full-path stat-info r))))
         init (directory-list path (negate directory-reference?)))))
+
+  (define* (directory-tree-each proc path #:optional (max-depth (inf)))
+    (fold-directory-tree (l (path stat-info r) (proc path stat-info)) #f path max-depth))
 
   (define (filename-extension a)
     "string -> string
@@ -386,8 +360,8 @@
               (if (string? symbol-path) symbol-path #f)))))
       (if base-path (string-append (ensure-trailing-slash base-path) path) path)))
 
-  (define (spath? a) (and (list? a) (not (null? a)) (symbol? (first a))))
-  (define* (spath->path a) (string-join (map symbol->string a) "/"))
+  (define (symbol-path? a) (and (list? a) (not (null? a)) (symbol? (first a))))
+  (define* (symbol-path->path a) (string-join (map symbol->string a) "/"))
 
   (define* (poll-watch paths events proc min-interval #:optional (max-interval min-interval))
     "(string ...) (symbol ...) {diff file-descriptors stat-info ->} milliseconds [milliseconds] ->

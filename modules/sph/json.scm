@@ -1,4 +1,4 @@
-;convert scheme-data to json. particularly fast
+;a json writer. converts scheme-data to json. particularly fast
 
 (library (sph json)
   (export

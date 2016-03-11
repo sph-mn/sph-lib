@@ -22,6 +22,7 @@
     execute->string
     execute-and
     execute-with-pipe
+    exit-value-zero?
     primitive-process-create-chain-with-pipes
     process-chain-finished-successfully?
     process-create
@@ -164,6 +165,9 @@
     (call-with-pipe
       (l (in out) (apply process-create-chain-with-pipes input out args)
         (close out) (port->string in))))
+
+  (define (exit-value-zero? system-result)
+    (zero? (status:exit-val system-result)))
 
   (define (execute+check-result name . options)
     "string (string ...) -> boolean

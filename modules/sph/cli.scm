@@ -11,6 +11,7 @@
 ; GNU General Public License for more details.
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
+
 (library (sph cli)
   (export
     cli-command-match
@@ -68,10 +69,11 @@
 
   (define help-text-line-description-delimiter (string-multiply " " 2))
 
-  (define (format-argument-name input-type required?) "false/symbol boolean -> string"
-    (string-append " "
-      (let (name (if input-type (symbol->string input-type) "value"))
-        (if required? name (string-append "[" name "]")))))
+  (define (format-argument-name input-type required? name-prepend) "false/symbol boolean -> string"
+    (let (name (if input-type (symbol->string input-type) "value"))
+      (if required? (string-append name-prepend name)
+        (if (string-null? (string-trim name-prepend)) (string-append name-prepend "[" name "]")
+          (string-append "[" name-prepend name "]")))))
 
   (define*
     (named-option->help-text-line name/pattern #:optional names required? value-required
@@ -79,15 +81,21 @@
       input-type
       description
       custom-processor)
-    (string-append
-      (string-join
-        (map (l (e) (if (string? e) (string-append "--" e) (string #\- e)))
-          (if names (pair (symbol->string name/pattern) (if (list? names) names (list names)))
-            (list (symbol->string name/pattern))))
-        "|")
-      (if value-required (format-argument-name input-type value-required)
-        (if value-optional (format-argument-name input-type #f) ""))
-      (if description (string-append help-text-line-description-delimiter description) "")))
+    (let
+      (format-argument-name*
+        (l (string-prepend)
+          (if value-required (format-argument-name input-type value-required string-prepend)
+            (if value-optional (format-argument-name input-type #f string-prepend) ""))))
+      (string-append
+        (string-join
+          (map
+            (l (e)
+              (if (string? e) (string-append "--" e (format-argument-name* "="))
+                (string-append (string #\- e) (format-argument-name* " "))))
+            (if names (pair (symbol->string name/pattern) (any->list names))
+              (list (symbol->string name/pattern))))
+          " | ")
+        (if description (string-append help-text-line-description-delimiter description) ""))))
 
   (define*
     (unnamed-option->help-text-line name/pattern #:optional names value-required value-optional
@@ -168,15 +176,21 @@
       (string-append "parameters\n" indent
         (if (null? arguments) options-parameter (string-join arguments (string-append "\n" indent))))))
 
-  (define (display-help-proc text commands config spec)
+  (define (display-help-proc text commands command-options config options)
     (l (opt name a r)
       (display
         (string-append
-          (identity-if (alist-ref config (q help-parameters)) (config->parameters-text config spec))
+          (identity-if (alist-ref config (q help-parameters))
+            (config->parameters-text config options))
           (if (and text (not (string-null? text))) (string-append "\ndescription\n" indent text) "")
+          ;"options" can not be empty since it at least includes the "--help" option leading to this message
           "\noptions"
-          (string-join-lines-with-indent (options->help-text-lines (remove unnamed-option? spec))
-            indent)
+          (string-join-lines-with-indent
+            (options->help-text-lines (remove unnamed-option? options)) indent)
+          (if (null? command-options) ""
+            (string-append "\noptions shared by all commands"
+              (string-join-lines-with-indent
+                (options->help-text-lines (remove unnamed-option? command-options)) indent)))
           (if commands
             (string-append "\ncommands"
               (string-join-lines-with-indent (commands->help-text-lines commands) indent))
@@ -219,16 +233,13 @@
                 (pair (pair name (if a a #t)) r))))))
       a))
 
-  (define (config->options-default-options a commands)
+  (define (config->options-default-options a commands command-options-config)
     "alist:config -> (procedure:{options -> list:extended-options/false})"
     (list
       (l (options)
         (pass-if (alist-ref a (q version))
           (l (version-spec)
-            (pair
-              (list (q version) (q (#\v "version"))
-                #f #f #f #f #f (display-version-proc version-spec))
-              options))))
+            (pair (list (q version) #\v #f #f #f #f #f (display-version-proc version-spec)) options))))
       (l (options)
         (pass-if (alist-quoted-ref a about)
           (l (text) (pair (list (q about) #\a #f #f #f #f #f (display-about-proc text a)) options))))
@@ -241,15 +252,18 @@
               (options
                 (pair
                   (append help-option
-                    (list (display-help-proc (alist-quoted-ref a description) commands a options-temp)))
+                    (list
+                      (display-help-proc (alist-quoted-ref a description) commands
+                        command-options-config a options-temp)))
                   options)))
             (pair (append cli-option (list (display-command-line-interface-proc a options-temp)))
               options))))))
 
-  (define (config->options a options-config commands) "config list -> list"
+  (define (config->options a options-config commands command-options-config) "config list -> list"
     (remove unnamed-option?
       (fold (l (default-option-proc options) (or (default-option-proc options) options))
-        (if options-config options-config (list)) (config->options-default-options a commands))))
+        (if options-config options-config (list))
+        (config->options-default-options a commands command-options-config))))
 
   (define (match-unnamed-options spec unnamed parsed)
     "list list list:matches -> (list:rest list:matches)"
@@ -322,7 +336,8 @@
     (false-if-exception
       (map
         (l (e)
-          (if (string? e) (list (list e)) (if (string? (first e)) (pair (list (first e)) (tail e)) e)))
+          (if (string? e) (list (list e))
+            (if (string? (first e)) (pair (list (first e)) (tail e)) e)))
         (alist-ref a (q commands)))))
 
   (define (config->missing-arguments-handler a) "list -> procedure/false"
@@ -368,15 +383,15 @@
         (options-config
           (pass-if (alist-ref config (q options)) (l (a) (append a (tail config+keyless)))
             (tail config+keyless)))
+        (command-options (alist-ref config (q command-options) (list)))
         (commands (config->commands config))
-        (options (config->options config options-config commands)))
+        (options (config->options config options-config commands command-options)))
       (let
         ( (missing-arguments-handler (config->missing-arguments-handler config))
           (unsupported-option-handler (config->unsupported-option-handler config))
           (unnamed-options (if options-config (filter unnamed-option? options-config) (list)))
           (options-spec (map option->args-fold-option options))
-          (command-handler (alist-ref config (q command-handler)))
-          (command-options (alist-ref config (q command-options))))
+          (command-handler (alist-ref config (q command-handler))))
         (l arguments
           (let*
             ( (arguments (if (null? arguments) (tail (program-arguments)) (first arguments)))

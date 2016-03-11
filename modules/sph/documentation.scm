@@ -63,11 +63,9 @@
         (let ((res (simple-format #f "~S" arguments)))
           (string-append (substring res 1 (- (string-length res) 1))))
         (if (equal? (q variable) type)
-          (if arguments (call-with-output-string (l (port) (display arguments port))) "")
-          ""))))
+          (if arguments (call-with-output-string (l (port) (display arguments port))) "") ""))))
 
-  (define (docstring->lines a)
-    "string -> (string ...)"
+  (define (docstring->lines a) "string -> (string ...)"
     (let (a (regexp-substitute/global #f " +" a (q pre) " " (q post)))
       (map (l (a) (string-trim a)) (string-split a #\newline))))
 
@@ -86,8 +84,7 @@
           (continue #f (docstring->lines a))))
       (continue #f (list))))
 
-  (define (lines->docstring a indent)
-    "list (string ...) -> string"
+  (define (lines->docstring a indent) "list (string ...) -> string"
     (let (a (remove string-null? a))
       (if (null? a) ""
         (string-append indent "description"
