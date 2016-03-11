@@ -67,7 +67,7 @@
   (define (module-interface-binding-names module)
     (module-map (l (name variable) name) (module-public-interface module)))
 
-  (define (module-names->interface-binding-names a) "list -> _"
+  (define (module-names->interface-binding-names a) "((symbol ...) ...) -> (list:module-bindings ...)"
     (map (compose module-interface-binding-names resolve-module) a))
 
   (define-syntax-rule (current-bindings)
