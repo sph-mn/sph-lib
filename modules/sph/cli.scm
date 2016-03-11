@@ -32,7 +32,6 @@
       list-prefix?
       pattern-match-min-length
       first-or-null
-      iterate-with-continue
       containsv?
       fold-multiple
       split-by-pattern)

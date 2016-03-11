@@ -79,16 +79,16 @@
     (group-successive
       ((unquote even?) (1 2 2 3 4 4 6 5 6 7))
       (1 (2 2) 3 (4 4 6) 5 6 7))
-    (iterate-with-continue
+    (fold-multiple-with-continue
       ((unquote
-          (lambda (ele rest next a b)
-            (next rest (cons ele a) (+ b 1))))
+          (lambda (e continue a b)
+            (continue (pair e a) (+ b 1))))
         (5 4 3 2 1) () 0)
       ((1 2 3 4 5) 5)
       ((unquote
-          (lambda (ele rest next a b)
-            (if (< b ele)
-              (next rest (cons ele a) (+ b 1))
+          (lambda (e continue a b)
+            (if (< b e)
+              (continue (pair e a) (+ b 1))
               a)))
         (5 4 3 2 1) () 0)
       (3 4 5))

@@ -38,6 +38,7 @@
     each-with-index
     every-map
     every-or-index
+    false-if-null
     filter-append-map
     filter-not
     filter-produce
@@ -65,7 +66,7 @@
     intersection-p
     iterate-three
     iterate-three-with-stop+end
-    iterate-with-continue
+    fold-multiple-with-continue
     length-eq-one?
     length-greater-one?
     list-bind
@@ -100,10 +101,10 @@
     n-times-fold
     n-times-map
     pair->list
+    pair-bind
     pair-fold-multiple
     pair-map
     pair-reverse
-    pair-bind
     pattern-match-min-length
     produce
     produce-controlled
@@ -111,7 +112,6 @@
     replace
     replace-at-once
     simplify
-    false-if-null
     simplify-list
     splice
     splice-last-list
@@ -158,7 +158,6 @@
       take))
 
   ;this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
-
   ;copied from (sph conditional)
   (define-syntax-rule (identity-if test else ...) ((lambda (r) (if r r (begin else ...))) test))
 
@@ -190,16 +189,23 @@
     like fold, but every result must be a \"true\" value, otherwise the result is false"
     (if init (if (null? a) init (fold-every proc (proc (map first a) init) (map tail a))) init))
 
-  (define (any->list a) "any -> list
-    wraps a non-list argument in a list" (any->list-s a))
+  (define (any->list a)
+    "any -> list
+    wraps a non-list argument in a list"
+    (any->list-s a))
+
   (define-syntax-rule (any->list-s a)
     ;"like \"any->list\" but as syntax"
     (if (list? a) a (list a)))
+
   (define-syntax-rule (true->list-s a)
     ;"like \"any->list-s\" but results in \"a\" if \"a\" is not true"
     (if a (any->list-s a) a))
-  (define (true->list a) "any -> list/false
-    wraps a true non-list argument in a list" (true->list-s a))
+
+  (define (true->list a)
+    "any -> list/false
+    wraps a true non-list argument in a list"
+    (true->list-s a))
 
   (define (replace-at-once match? proc a)
     "procedure:{any -> boolean} procedure:{list:matched-elements -> list:replacements} list:source -> list
@@ -294,14 +300,16 @@
       (if (not (any null? rest))
         (begin (apply proc index (map first rest)) (loop (map tail rest) (+ index 1))))))
 
-  (define (each-in-index-range proc start end . a) "procedure integer integer list ... ->
+  (define (each-in-index-range proc start end . a)
+    "procedure integer integer list ... ->
     untested.
     call proc only for elements in index range between \"start\" and \"end\" inclusively"
     (let loop ((rest a) (index (if (< end 0) (+ end (length (first a))) 0)))
       (if (<= index end)
         (begin (if (>= index start) (apply proc (map first rest))) (loop (map tail rest))))))
 
-  (define (each-first-middle-last first-proc middle-proc last-proc . a) "procedure procedure procedure list ... ->
+  (define (each-first-middle-last first-proc middle-proc last-proc . a)
+    "procedure procedure procedure list ... ->
     untested.
     call \"first-proc\" for the first element,
     call \"last-proc\" for the last element,
@@ -385,22 +393,20 @@
           ( (if (null? tail-rest) filter-map filter-append-map)
             (l e (loop tail-rest (append args e))) (first rest))))))
 
-
-
-(define (first-intersection-p equal-proc a b)
+  (define (first-intersection-p equal-proc a b)
     "{any any -> boolean} list list -> any
     like first-intersection but the procedure for comparing elements can be specified"
     (find (l (b) (any (l (a) (equal-proc a b)) a)) b))
 
-(define (first-intersection a b)
+  (define (first-intersection a b)
     "list list -> any
     give the first found element that is included in both lists"
-  (first-intersection-p equal? a b))
+    (first-intersection-p equal? a b))
 
-(define (first-if-single a)
-  "list -> any/list
-  give the first element of a list if the list has only one element, otherwise give the list"
-  (if (or (null? a) (not (null? (tail a)))) a (first a)))
+  (define (first-if-single a)
+    "list -> any/list
+    give the first element of a list if the list has only one element, otherwise give the list"
+    (if (or (null? a) (not (null? (tail a)))) a (first a)))
 
   (define (first-or-false a)
     "list -> any/false
@@ -427,25 +433,35 @@
           (if (null? successive) (loop (tail rest) (pair (first rest) r))
             (loop rest (proc successive r)))))))
 
-  (define (fold-multiple proc a . r)
+  (define (fold-multiple proc a . custom-state-values)
     "procedure:{any:state-value ... -> list} list any:state-value ... -> list:state-values
     {previous-result ... -> list}
     like fold but with multiple state values. the state values are updated by returning a list from a call to \"proc\".
     apply \"proc\" to each element of \"a\" and the state-value elements that were given to
     fold-multiple or subsequently the updated state-values from the previous call to \"proc\""
-    (if (null? a) r (apply fold-multiple proc (tail a) (apply proc (first a) r))))
+    (if (null? a) custom-state-values
+      (apply fold-multiple proc (tail a) (apply proc (first a) custom-state-values))))
 
-  (define (fold-multiple-right proc a . r) "procedure list any ... -> any
-  like fold-multiple but works through the list elements from last to first"
+  (define (fold-multiple-with-continue proc a . custom-state-values)
+    "procedure:{any:element procedure:continue:{list:next-pair any:state-value ...} any:state-value ... -> any} list any:state-value ... -> list"
+    (if (null? a) custom-state-values
+      (apply proc (first a)
+        (l custom-state-values
+          (apply fold-multiple-with-continue proc (tail a) custom-state-values))
+        custom-state-values)))
+
+  (define (fold-multiple-right proc a . r)
+    "procedure list any ... -> any
+    like fold-multiple but works through the list elements from last to first"
     (if (null? a) r (apply proc (first a) (apply fold-multiple-right proc (tail a) r))))
 
   (define (fold-segments proc size init a)
     "{any:state element ... -> any:state} integer any:state list -> any
     fold over each overlapping segment with length \"size\".
-  example:
-  (fold-segments proc 2 #t (list 4 5 6 7))
-  is equivalent to
-  (proc 4 5) (proc 5 6) (proc 6 7)"
+    example:
+    (fold-segments proc 2 #t (list 4 5 6 7))
+    is equivalent to
+    (proc 4 5) (proc 5 6) (proc 6 7)"
     (let loop ((rest a) (buf (list)) (r init) (count size))
       (if (null? rest) (if (null? buf) r (apply proc r buf))
         (if (< count 1)
@@ -483,12 +499,13 @@
 
   (define (integer->list a)
     "any -> any/list
-  wrap the argument in a list, but only if it is an integer. otherwise give the argument"
+    wrap the argument in a list, but only if it is an integer. otherwise give the argument"
     (if (integer? a) (list a) a))
 
   (define (interleave a value)
     "list any -> list
-    inserts value in front of each element in \"a\" except the first element"
+    inserts value in front of each element in \"a\" except the first element.
+    example: (interleave (list 1 2 3) 4) -> (1 4 2 4 3)"
     (if (null? a) a (reverse (fold (l (e r) (pairs e value r)) (list (first a)) (tail a)))))
 
   (define iterate-three
@@ -499,9 +516,9 @@
               (apply loop proc
                 (pair current prev) (first next) (tail next) (apply proc prev current next states))))))
       (l (proc a . states)
-        "procedure:{list:prev any:current list:next any:state ... -> any:state ...} list any:state-init ...
-        calls proc for each list element, a list of unmodified previous list elements, a list of the next list elements
-        and an arbitrary count of custom values that are updated from the list-result of each call to proc"
+        "procedure:{list:prev any:current list:next any:state ... -> any:state ...} list any:state-init ... -> list:state
+        calls \"proc\" for each list element, a list of unmodified previous list elements, a list of the following list elements
+        and an arbitrary count of custom values that are updated to the result of the call to \"proc\""
         (apply loop proc (list) (first a) (tail a) states))))
 
   (define iterate-three-with-stop+end
@@ -515,15 +532,8 @@
                 (pair current r) (first next) (tail next) (apply map-proc r current next states))))))
       (l (stop? end map-proc a . states)
         "{list any list any ... -> boolean} {list any list any ... -> list:state-values}:after-stop? {list any list any ... -> list:state-values} list any ... -> any
-        like iterate-three but takes two additional procedures - one for stopping the iteration with the current result, and one that is called for the last element or when stop? is true"
+        like \"iterate-three\" but takes two additional procedures - one for stopping the iteration after a \"map-proc\" result, and one that is called for the last element or when \"stop?\" is true"
         (loop stop? end map-proc (list) (first a) (tail a)))))
-
-  (define (iterate-with-continue proc a . states)
-    "procedure:{any:element list:rest procedure:continue:{list:next-pair any:state-value ...} any:state-value ... -> any} list any:state-value ..."
-    (apply
-      (rec (loop rest . states)
-        (if (null? rest) states (apply proc (first rest) (tail rest) loop states)))
-      a states))
 
   (define (list-distribute-sorted a indices default)
     "like list-distribute but faster. works only correctly for indices lists that are sorted ascending"
@@ -599,12 +609,14 @@
     return a new list consisting of values at indices"
     (map (l (e) (list-ref a e)) indices))
 
-  (define (list-set-equal? . a) "list ... -> boolean
+  (define (list-set-equal? . a)
+    "list ... -> boolean
     true if all elements of the given lists appear in all others.
     uses \"equal?\" for element equality comparison"
     (apply lset= equal? a))
 
-  (define (list-set-eqv? . a) "list ... -> boolean
+  (define (list-set-eqv? . a)
+    "list ... -> boolean
     like \"list-set-equal?\" but uses \"eqv?\" for element equality comparison"
     (apply lset= eqv? a))
 
@@ -626,7 +638,8 @@
       ( (list-set-match-iterate-internal
           (let
             (match-one?
-              (l (a) ((if (list-set-match-condition? a) list-set-match-iterate-internal match-one?) a)))
+              (l (a)
+                ((if (list-set-match-condition? a) list-set-match-iterate-internal match-one?) a)))
             (l (a)
               (if (null? a) #f
                 (case (first a) ((some) (any match-one? (tail a)))
