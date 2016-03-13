@@ -1,5 +1,3 @@
-;formatters for expressions
-
 (library (sph lang scm-format format)
   (export
     format-application
@@ -22,10 +20,13 @@
     (sph)
     (sph hashtable)
     (sph list)
+    (sph lang scm-format base)
     (sph string)
     (sph tree)
     (only (sph one) round-even)
-    (only (srfi srfi-1) reverse!))
+    (only (srfi srfi-1) last))
+
+  ;formatters for expressions
 
   (define (add-multiple-leading-parenthesis-spacing config lines) "( (content ..."
     (if
@@ -76,10 +77,6 @@
 
   (define (format-import-map proc a)
     (map (l (a) (if (symbol? a) (symbol->string a) (if (null? a) "()" (proc a)))) a))
-
-  (define (comment? a)
-    (and (list? a) (not (null? a))
-      (or (eqv? (q semicolon-comment) (first a)) (eqv? (q range-comment) (first a)))))
 
   (define (format-import-set a recurse config current-indent)
     (case (first a)
@@ -164,7 +161,8 @@
           (list) (list) 1 0))))
 
   (define (format-docstring a config current-indent)
-    "parse a string, separate syntax-required indent from custom string indent and add current-indent"
+    "string hashtable integer -> string
+    parse a string and separate syntax required indent from custom string indent and add current indent"
     (let*
       ( (indent-string (hashtable-ref config (q indent-string)))
         (indent (string-multiply indent-string current-indent))
@@ -178,7 +176,7 @@
                 (string-trim-string e indent-string)))
             (string-split a #\newline)))
         (min-indent (if (null? (tail lines)) 0 (apply min (map first (tail lines)))))
-        ;remove syntax-indent
+        ;remove syntax indent
         (lines
           (pair (tail (first lines))
             (map
@@ -209,7 +207,7 @@
                     (map-recurse recurse body current-indent))
                   body)))
             (_
-              ;probably not an effective lambda but data instead
+              ;probably not an evaluated lambda but data
               (tail a))))
         config current-indent
         3 (hashtable-ref config (q max-exprs-per-line-middle))
@@ -292,24 +290,46 @@
 
   (define (format-string a . rest) (string-append "\"" a "\""))
 
-  (define (string-join-with-vertical-spacing a indent vertical-spacing vertical-spacing-oneline)
-    "(string ...) string string string -> string"
-    (if (null? a) ""
-      (if (length-eq-one? a) (first a)
-        (string-join
-          (let (vertical-spacing-oneline (create-vertical-spacing* vertical-spacing-oneline))
-            (map (l (e) (if (string-suffix? "\n" e) (string-drop-right e 1) e))
-              ;join one-line expressions
-              (flatten
-                (map-successive
-                  (l (e)
-                    ;consider newlines, they designate a required newline for an expression
-                    (not
-                      (or (string-null? e)
-                        (let (a (string-contains e "\n")) (and a (< a (- (string-length e) 1)))))))
-                  (l matches
-                    (string-join
-                      (map (l (e) (if (string-suffix? "\n" e) (string-drop-right e 1) e)) matches)
-                      (string-append vertical-spacing-oneline indent)))
-                  a))))
-          (string-append (create-vertical-spacing* vertical-spacing) indent))))))
+  (define (multiline-expression? a) "string -> boolean"
+    (let (index-newline (string-contains a "\n"))
+      (and index-newline (< index-newline (- (string-length a) 1)))))
+
+  (define (string-remove-trailing-newline a) (if (string-suffix? "\n" a) (string-drop-right a 1) a))
+
+  (define string-join-with-vertical-spacing
+    (let
+      ( (join-oneline
+          (l (a indent vertical-spacing-oneline)
+            (let*
+              ( (vertical-spacing
+                  (string-append (create-vertical-spacing* vertical-spacing-oneline) indent))
+                (leading
+                  (map-successive (l (e) (not (or (string-null? e) (multiline-expression? e))))
+                    (l matches
+                      (interleave (map string-remove-trailing-newline matches) vertical-spacing))
+                    a))
+                (index-last (- (length leading) 1)))
+              (map-with-index
+                (l (index e)
+                  (if (= index-last index)
+                    (if (list? e)
+                      (apply string-append
+                        (if (string-prefix? ";" (last e)) (append e (list "\n")) e))
+                      (if (string-prefix? ";" e) (string-append e "\n") e))
+                    e))
+                leading))))
+        (join-multiline
+          (l (a indent vertical-spacing)
+            ;expressions like comments that modify the rest of the line need a newline at the end or they may affect following parentheses
+            (let (index-last (- (length a) 1))
+              (string-join
+                (map-with-index
+                  (l (index e) (if (= index index-last) e (string-remove-trailing-newline e))) a)
+                (string-append (create-vertical-spacing* vertical-spacing) indent))))))
+      (l (a indent vertical-spacing vertical-spacing-oneline)
+        "(string ...) string string string -> string
+        join expressions eventually with empty lines inbetween them"
+        (if (null? a) ""
+          (if (length-eq-one? a) (first a)
+            (join-multiline (join-oneline a indent vertical-spacing-oneline) indent
+              vertical-spacing)))))))

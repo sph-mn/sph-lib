@@ -19,8 +19,6 @@
     (sph web sxml-html)
     (except (srfi srfi-1) map))
 
-  ;work in progress
-
   (define (create-binding-name-anchor-target title)
     (qq (span (@ (id "b-" (unquote title))) (unquote title))))
 
@@ -68,8 +66,8 @@
     (documentation-sxml-html-libraries library-names #:optional
       (map-binding-name (l (name library-name) (symbol->string name)))
       (map-library-name any->string))
-    "((symbol ...) ...) [{symbol list -> sxml} {list -> sxml}] -> list
-    all bindings listed with a reference to the containing module for each"
+    "((symbol ...) ...) [{symbol list:library-name -> sxml} {list:library-name -> sxml}] -> list
+    a table of all bindings from all specified libraries with the binding name in the first column and the library name in the second"
     (let
       (binding-info
         (list-sort-with-accessor string<? first

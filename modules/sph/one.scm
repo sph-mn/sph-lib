@@ -16,9 +16,11 @@
   (export
     alist->regexp-match-replacements
     and-p
+    list->values
     apply*
     apply-values
     apply-without-arguments
+    boolean->integer
     bytevector-append
     bytevector-contains?
     call
@@ -31,8 +33,6 @@
     define-string
     each-u8
     eq-any?
-    with-values
-    boolean->integer
     eq-every?
     equal-any?
     equal-every?
@@ -70,7 +70,8 @@
     string-if-exception
     true?
     true?-s
-    values->list)
+    values->list
+    with-values)
   (import
     (guile)
     (ice-9 popen)
@@ -100,17 +101,14 @@
 
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
   (define-syntax-rule (apply* arguments proc) (apply proc arguments))
-
-  (define (ignore . a)
-    "any ... ->"
-    (if #f #t))
+  (define (ignore . a) "any ... ->" (if #f #t))
 
   (eval-when (expand load eval)
     (define (prefix-join a) "symbol -> symbol"
       (string->symbol (string-join (map symbol->string a) "-")))
     (define (symbol-prepend-prefix-proc prefix)
       (if (list? prefix) (l (a) (prefix-join (append prefix (list a))))
-        (l (a) (prefix-join (pair prefix (list a)))))))
+        (l (a) (symbol-append prefix a)))))
 
   (define-syntax-case (prefix-definition-names prefix body ...) s
     ;symbol/(symbol ...) any ...
@@ -157,11 +155,11 @@
     "procedure any ... -> any
     apply procedure \"proc\" with arguments \"a\""
     (apply proc a))
+
+  (define (list->values a) (apply values a))
   (define-syntax-rule (apply-values proc producer) (call-with-values (l () producer) proc))
   (define-syntax-rule (with-values producer proc) (call-with-values (l () producer) proc))
-
-  (define (boolean->integer a)
-    (if a 1 0))
+  (define (boolean->integer a) (if a 1 0))
 
   (define (call-with-pipe proc) "procedure:{port:in port:out -> any} -> any"
     (apply (l (in out) (let (r (proc in out)) (close in) (close out) r))

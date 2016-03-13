@@ -12,8 +12,10 @@
     (rnrs sorting)
     (sph)
     (sph hashtable)
+    (sph lang scm-format base)
     (sph list)
     (sph string)
+    (only (sph one) apply-values)
     (only (srfi srfi-1) delete-duplicates))
 
   (define (definition? a)
@@ -21,7 +23,8 @@
       (symbol? (first a)) (string-prefix? "define" (symbol->string (first a)))))
 
   (define (export-ele->string a)
-    (string-join (map (l (e) (if (list? e) (export-ele->string e) (symbol->string e))) a) ""))
+    (if (comment? a) "a"
+      (string-join (map (l (e) (if (list? e) (export-ele->string e) (symbol->string e))) a) "")))
 
   (define-syntax-rule (export-ele<? a b) (string< (export-ele->string a) (export-ele->string b)))
 
@@ -55,7 +58,10 @@
           (if (symbol? b) #f (export-name< a b))))
       a))
 
-  (define (delete-duplicate-import-exports a) "list -> list" (delete-duplicates a))
+  (define (delete-duplicate-import-exports a) "list -> list"
+    (apply-values (l (comments other) (append (delete-duplicates other) comments))
+      (partition comment? a)))
+
   (define (split-definitions a proc) (call-with-values (l () (partition definition? a)) proc))
 
   (define (transform-library a config) "any hashtable -> list/any"
