@@ -12,6 +12,7 @@
     format-scsh-block-comment
     format-semicolon-comment
     format-string
+    format-test-module
     string-join-with-vertical-spacing)
   (import
     (guile)
@@ -19,8 +20,8 @@
     (rnrs base)
     (sph)
     (sph hashtable)
-    (sph list)
     (sph lang scm-format base)
+    (sph list)
     (sph string)
     (sph tree)
     (only (sph one) round-even)
@@ -223,6 +224,9 @@
         current-indent)
       #f))
 
+  (define (format-test-module a recurse config current-indent)
+    (list #f #t))
+
   (define (format-library a recurse config current-indent)
     (list
       (if (= 1 current-indent)
@@ -316,7 +320,7 @@
                       (apply string-append
                         (if (string-prefix? ";" (last e)) (append e (list "\n")) e))
                       (if (string-prefix? ";" e) (string-append e "\n") e))
-                    e))
+                    (if (list? e) (apply string-append e) e)))
                 leading))))
         (join-multiline
           (l (a indent vertical-spacing)
