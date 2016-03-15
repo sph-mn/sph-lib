@@ -25,16 +25,15 @@
   (define (create-binding-name-anchor title)
     (qq (a (@ (href "#b-" (unquote title))) (unquote title))))
 
-  (define (library-documentation-sxml-html-binding-documentation binding nesting-level)
-    (section nesting-level (create-binding-name-anchor-target (first binding))
+  (define (library-documentation-sxml-html-binding-documentation binding nesting-depth)
+    (section nesting-depth (create-binding-name-anchor-target (first binding))
       (filter-map
         (l (e)
           (let (content (remove string-null? (tail e)))
             (if (null? content) #f
               (let (lines (append-map (l (e) (string-split e #\newline)) content))
-                (section (+ 1 nesting-level) (first e) (process-lines lines))))))
-        (tail binding))
-      (q (class "doc-bi"))))
+                (section (+ 1 nesting-depth) (first e) (process-lines lines))))))
+        (tail binding))))
 
   (define (get-binding-documentation module-name) "list -> ((symbol:name . list:alist) ...)"
     (list-sort-with-accessor string<? first
@@ -45,20 +44,22 @@
               (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
           (module-binding-info module-name)))))
 
-  (define (documentation-sxml-html-library library-name nesting-level)
+  (define (documentation-sxml-html-library library-name nesting-depth)
     "((symbol ...) ...) integer -> list
     a navigatable index of all bindings in a module and a listing of the available binding documentation"
     (let (bindings (get-binding-documentation library-name))
       (par-let
         ( (index
-            (pair (q ul)
+            (pairs (q ul)
+              (q (@ (class "doc-n")))
               (map (compose (l (e) (list (q li) e)) create-binding-name-anchor first) bindings)))
           (content
-            (pair (q div)
+            (pairs (q div)
+              (q (@ (class "doc-b")))
               (map
                 (l (e)
                   (library-documentation-sxml-html-binding-documentation
-                    (pair (first e) (alist-delete "module" (tail e))) nesting-level))
+                    (pair (first e) (alist-delete "module" (tail e))) nesting-depth))
                 bindings))))
         (list index content))))
 
