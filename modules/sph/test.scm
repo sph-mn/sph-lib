@@ -112,7 +112,7 @@
       (l (load-path a)
         (if load-path
           (case (stat:type (stat (string-append load-path "/" a)))
-            ((directory) (find-modules (path->module-name a) (q prefix) %load-path))
+            ((directory) (find-modules-by-name (path->module-name a) (q prefix) %load-path))
             ((regular) (list (path->module-name a)))
             ( (symlink)
               ;as far as we know readlink fails for circular symlinks
@@ -239,7 +239,7 @@
         (search-type (alist-quoted-ref settings search-type)))
       (let
         (module-names
-          (every-map (l (e) (false-if-null (find-modules e search-type load-path))) name))
+          (every-map (l (e) (false-if-null (find-modules-by-name e search-type load-path))) name))
         (if module-names
           (test-modules-execute settings
             (test-modules-apply-settings settings (apply append module-names)))

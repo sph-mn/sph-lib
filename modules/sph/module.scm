@@ -6,6 +6,7 @@
     environment*
     export-modules
     find-modules
+    find-modules-by-name
     import!
     import-any
     import-directory-tree
@@ -14,6 +15,7 @@
     include-file-from-load-path
     library-exists?
     load-with-environment
+    collect-library-names
     module-compose
     module-interface-binding-names
     module-name->load-path+full-path&
@@ -24,7 +26,6 @@
     module-ref-no-error
     path->load-path
     path->module-name
-    path->module-names
     path->symbol-list)
   (import
     (guile)
@@ -33,6 +34,7 @@
     (sph)
     (sph error)
     (sph filesystem)
+    (ice-9 match)
     (only (ice-9 regex) string-match)
     (only (rnrs sorting) list-sort)
     (only (sph conditional) pass-if)
@@ -67,7 +69,8 @@
   (define (module-interface-binding-names module)
     (module-map (l (name variable) name) (module-public-interface module)))
 
-  (define (module-names->interface-binding-names a) "((symbol ...) ...) -> (list:module-bindings ...)"
+  (define (module-names->interface-binding-names a)
+    "((symbol ...) ...) -> (list:module-bindings ...)"
     (map (compose module-interface-binding-names resolve-module) a))
 
   (define-syntax-rule (current-bindings)
@@ -94,10 +97,19 @@
 
   (define (default-before-filter name) (string-suffix? ".scm" name))
 
+  (define (collect-library-names path)
+    "string -> list
+    extracts library names from \"*.scm\" files under path"
+    (fold-directory-tree
+      (l (e stat-info r)
+        (if (and (string-suffix? ".scm" e) (eqv? (q regular) (stat:type stat-info)))
+          (match (call-with-input-file e read) (((quote library) name _ ...) (pair name r)) (_ r)) r))
+      (list) path (inf)))
+
   (define*
-    (path->module-names base-path #:key (max-depth (inf))
+    (find-modules base-path #:key (max-depth (inf))
       (load-path (string-longest-prefix base-path %load-path)))
-    "get module-names corresponding to existing files that may contain libraries in directory \"path\" and subdirectories.
+    "get module-names corresponding to existing files that may contain libraries in directory \"base-path\" and subdirectories.
     path must be in the load-path.
     result may include files that contain no library definition, depending on the validations in before-filter.
     the default before-filter allows only files with a \".scm\" suffix."
@@ -106,7 +118,8 @@
         (if (eqv? (q regular) (stat:type (stat base-path))) (list (path->module-name* base-path))
           (fold-directory-tree
             (l (e stat-info r)
-              (if (eqv? (q regular) (stat:type stat-info)) (pair (path->module-name* e) r) r))
+              (if (and (string-suffix? ".scm" e) (eqv? (q regular) (stat:type stat-info)))
+                (pair (path->module-name* e) r) r))
             (list) base-path max-depth)))
       (error-create (q path-is-not-in-load-path))))
 
@@ -125,10 +138,9 @@
     (define binding-name (@@ module-name binding-name)))
 
   (define*
-    (import-directory-tree path #:key (resolve-interface-args (list)) #:rest
-      path->module-names-args)
+    (import-directory-tree path #:key (resolve-interface-args (list)) #:rest find-modules-args)
     "string #:key (max-depth integer) (resolve-interface-args list/procedure) -> unspecified
-    imports libraries with path->module-names"
+    imports libraries with find-modules"
     (let (current-module* (current-module))
       (each
         (l (e)
@@ -136,7 +148,7 @@
             (apply resolve-interface e
               (if (procedure? resolve-interface-args) (resolve-interface-args e)
                 resolve-interface-args))))
-        (apply path->module-names path path->module-names-args))))
+        (apply find-modules path find-modules-args))))
 
   (define (current-module-ref a) "symbol -> any" (module-ref (current-module) a))
 
@@ -176,7 +188,7 @@
 
   (define* (path->module-name a #:optional drop-load-path? (drop-filename-extension "scm"))
     "string -> (symbol ...)
-    creates a module name from a filesystem path. module existence is not checked, neither are load-paths (except for droping load-path from path)"
+    creates a module name from a filesystem path. module existence is not checked, neither are load-paths (except when dropping load-path from path)"
     (path->symbol-list
       ( (if drop-load-path? path-drop-load-path identity)
         (if filename-extension (remove-filename-extension a (list drop-filename-extension)) a))))
@@ -215,8 +227,9 @@
     (let (a (string-trim-both a #\/))
       (if (string-null? a) (list) (map string->symbol (string-split a #\/)))))
 
-  (define (find-modules name search-type load-paths)
-    "(symbol ...) symbol:exact/prefix/prefix-not-exact (string ...) -> ((symbol ...) ...)"
+  (define (find-modules-by-name name search-type load-paths)
+    "(symbol ...) symbol:exact/prefix/prefix-not-exact (string ...) -> ((symbol ...):module-name ...)
+    find module names by module name part"
     (let
       ( (search
           (l (name filename-extension) "list string/boolean -> list"
@@ -224,7 +237,7 @@
               (module-name->load-path+full-path& name filename-extension
                 load-paths
                 (l (load-path full-path) "(string ...) string -> list"
-                  (path->module-names full-path #:load-path load-path)))
+                  (find-modules full-path #:load-path load-path)))
               (list))))
         (filename-extensions
           (append
