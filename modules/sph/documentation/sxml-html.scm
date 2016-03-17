@@ -32,7 +32,8 @@
           (let (content (remove string-null? (tail e)))
             (if (null? content) #f
               (let (lines (append-map (l (e) (string-split e #\newline)) content))
-                (section (+ 1 nesting-depth) (first e) (process-lines lines))))))
+                (section (+ 1 nesting-depth) (first e)
+                  (process-lines lines) (list (q class) (first e)))))))
         (tail binding))))
 
   (define (get-binding-documentation module-name) "list -> ((symbol:name . list:alist) ...)"
@@ -50,12 +51,10 @@
     (let (bindings (get-binding-documentation library-name))
       (par-let
         ( (index
-            (pairs (q ul)
-              (q (@ (class "doc-n")))
+            (pairs (q ul) (q (@ (class "doc-n")))
               (map (compose (l (e) (list (q li) e)) create-binding-name-anchor first) bindings)))
           (content
-            (pairs (q div)
-              (q (@ (class "doc-b")))
+            (pairs (q div) (q (@ (class "doc-b")))
               (map
                 (l (e)
                   (library-documentation-sxml-html-binding-documentation
@@ -71,12 +70,14 @@
     a table of all bindings from all specified libraries with the binding name in the first column and the library name in the second"
     (let
       (binding-info
-        (list-sort-with-accessor string<? first
-          (append-map
-            (l (names library-name)
-              (map
-                (l (name)
-                  (list (map-binding-name name library-name) (map-library-name library-name)))
-                names))
-            (module-names->interface-binding-names library-names) library-names)))
+        (map tail
+          (list-sort-with-accessor string<? first
+            (append-map
+              (l (names library-name)
+                (map
+                  (l (name)
+                    (list (symbol->string name) (map-binding-name name library-name)
+                      (map-library-name library-name)))
+                  names))
+              (module-names->interface-binding-names library-names) library-names))))
       (pair (q table) (map (l (e) (pair (q tr) (map (l (e) (list (q td) e)) e))) binding-info)))))

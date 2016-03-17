@@ -114,13 +114,17 @@
     result may include files that contain no library definition, depending on the validations in before-filter.
     the default before-filter allows only files with a \".scm\" suffix."
     (if load-path
-      (let (path->module-name* (l (e) (path->module-name (string-drop-prefix load-path e))))
-        (if (eqv? (q regular) (stat:type (stat base-path))) (list (path->module-name* base-path))
-          (fold-directory-tree
-            (l (e stat-info r)
-              (if (and (string-suffix? ".scm" e) (eqv? (q regular) (stat:type stat-info)))
-                (pair (path->module-name* e) r) r))
-            (list) base-path max-depth)))
+      (let
+        ( (base-path-stat (false-if-exception (stat base-path)))
+          (path->module-name* (l (e) (path->module-name (string-drop-prefix load-path e)))))
+        (if base-path-stat
+          (if (eqv? (q regular) (stat:type base-path-stat)) (list (path->module-name* base-path))
+            (fold-directory-tree
+              (l (e stat-info r)
+                (if (and (string-suffix? ".scm" e) (eqv? (q regular) (stat:type stat-info)))
+                  (pair (path->module-name* e) r) r))
+              (list) base-path max-depth))
+          (list)))
       (error-create (q path-is-not-in-load-path))))
 
   (define (import-any . module-names)

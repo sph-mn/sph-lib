@@ -35,6 +35,7 @@
     (pair (vector-ref html-headings (min 5 nesting-depth)) content))
 
   (define (section nesting-depth title content . attributes)
+    "integer sxml sxml (string/symbol string/symbol) ... -> sxml"
     (pair (q section)
       (append (if (null? attributes) attributes (list (pair (q @) attributes)))
         (pair (sxml-html-heading nesting-depth title)
