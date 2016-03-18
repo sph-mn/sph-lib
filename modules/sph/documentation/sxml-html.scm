@@ -45,10 +45,10 @@
               (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
           (module-binding-info module-name)))))
 
-  (define (documentation-sxml-html-library library-name nesting-depth)
+  (define (documentation-sxml-html-library nesting-depth . library-names)
     "((symbol ...) ...) integer -> list
     a navigatable index of all bindings in a module and a listing of the available binding documentation"
-    (let (bindings (get-binding-documentation library-name))
+    (let (bindings (append-map get-binding-documentation library-names))
       (par-let
         ( (index
             (pairs (q ul) (q (@ (class "doc-n")))

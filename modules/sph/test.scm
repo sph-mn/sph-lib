@@ -22,12 +22,12 @@
     define-test-module
     test-create-result
     test-execute-module
+    test-execute-modules
     test-execute-modules-by-prefix
     test-execute-procedures
     test-execute-procedures-lambda
     test-lambda
     test-list
-    test-modules-execute
     test-path->module-names
     test-result
     test-result-success?
@@ -369,6 +369,7 @@
     (test-module-execute settings (environment* name) name))
 
   (define test-execute-procedures test-procedures-execute)
+  (define test-execute-modules test-modules-execute)
 
   (define*
     (test-execute-modules-by-prefix #:key (settings test-settings-default) #:rest module-names)
