@@ -47,8 +47,4 @@
         arg)))
 
   (define (sxml-html-list->table a) "((sxml ...) ...) -> sxml"
-    (pair (q table)
-      (map
-        (l (e)
-          (pair (q tr) (map (l (e) (list (q td) e)) e)))
-        a))))
+    (pair (q table) (map (l (e) (pair (q tr) (map (l (e) (list (q td) e)) e))) a))))

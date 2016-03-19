@@ -1,5 +1,6 @@
-all code except modules/sph/base64.scm is licensed under gpl3 or any later version.
+all code under modules/sph/ and modules/test/ except modules/sph/base64.scm is licensed under gpl3 or any later version written out below.
 modules/sph/base64.scm is under a three-clause bsd license.
+other code under modules/ but not under modules/sph/ or modules/sph/test/ may be subject to other free software licenses noted in the respective files.
 ----
                      GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
