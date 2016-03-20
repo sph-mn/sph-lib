@@ -34,17 +34,16 @@
   (define* (sxml-html-hyperlink name #:optional (value name))
     (qq (a (@ (href (unquote value))) (unquote name))))
 
-  (define (sxml-html-alist->options arg) "((content . value/false) ...) -> list"
+  (define (sxml-html-alist->options a) "((content . value/false) ...) -> list"
     (map
-      (l (ele)
-        (if (pair? ele) (qq (option (@ (value (unquote (tail ele)))) (unquote (first ele))))
-          (list (q option) ele)))
-      arg))
+      (l (e)
+        (if (pair? e) (qq (option (@ (value (unquote (tail e)))) (unquote (first e))))
+          (list (q option) e)))
+      a))
 
-  (define* (sxml-html-list->list arg #:optional ordered?) "list boolean -> sxml"
+  (define* (sxml-html-list->list a #:optional ordered?) "list boolean -> sxml"
     (pair (if ordered? (q ol) (q ul))
-      (map (l (ele) (list (q li) (if (list? ele) (sxml-html-list->list ele) (any->string ele))))
-        arg)))
+      (map (l (e) (list (q li) (if (list? e) (sxml-html-list->list e) (any->string e)))) a)))
 
   (define (sxml-html-list->table a) "((sxml ...) ...) -> sxml"
     (pair (q table) (map (l (e) (pair (q tr) (map (l (e) (list (q td) e)) e))) a))))

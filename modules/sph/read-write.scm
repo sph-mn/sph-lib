@@ -1,6 +1,7 @@
 (library (sph read-write)
   (export
     file->datums
+    file->port
     port->file
     port->lines
     port->string
@@ -108,6 +109,9 @@
     read all available data from port and write it to a file specified by path"
     (call-with-output-file path (l (port) (port-copy-all a port))))
 
+  (define (file->port path port)
+    (call-with-input-file path (l (port-file) (port-copy-all port-file port))))
+
   (define (port-copy-some port port-2 count)
     "port port integer ->
     copy \"count\" number of bytes from \"port\" to \"port-2\""
@@ -175,7 +179,9 @@
 
   (define*
     (port-lines-map->port proc #:optional (port-input (current-input-port))
-      (port-output (current-output-port)) #:key (handle-delim (q concat)))
+      (port-output (current-output-port))
+      #:key
+      (handle-delim (q concat)))
     "procedure [port port symbol:concat/trim/peek/split] ->
     map lines from port to port. the trailing newline is included by default but this behaviour can be set like for read-line.
     the default ports are the current input and output ports"
