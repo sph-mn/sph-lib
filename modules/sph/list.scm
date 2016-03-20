@@ -31,7 +31,6 @@
     difference
     difference+intersection
     difference+intersection-p
-    split-at-last
     difference-p
     each-first-middle-last
     each-in-index-range
@@ -51,6 +50,7 @@
     flat?
     fold-multiple
     fold-multiple-right
+    fold-multiple-with-continue
     fold-segments
     fold-slice
     fold-span
@@ -67,7 +67,6 @@
     intersection-p
     iterate-three
     iterate-three-with-stop+end
-    fold-multiple-with-continue
     length-eq-one?
     length-greater-one?
     list-bind
@@ -116,6 +115,7 @@
     simplify-list
     splice
     splice-last-list
+    split-at-last
     split-at-value
     split-by-pattern
     successive
@@ -588,12 +588,9 @@
     (let (length-suffix (length suffix))
       (if (< (length a) length-suffix) #f (equal? (take-right a length-suffix) suffix))))
 
-  (define (split-at-last a)
-    "list -> (list list)"
-    (if (> 2 (length a))
-      (list a (list))
-      (let (a-reverse (reverse a))
-        (list (reverse (tail a-reverse)) (list (first a-reverse))))))
+  (define (split-at-last a) "list -> (list list)"
+    (if (> 2 (length a)) (list a (list))
+      (let (a-reverse (reverse a)) (list (reverse (tail a-reverse)) (list (first a-reverse))))))
 
   (define (list-replace-last a replacement)
     "list any/procedure:{any -> any} -> list
