@@ -10,6 +10,7 @@
     (rnrs base)
     (rnrs sorting)
     (sph)
+    (sph alist)
     (sph hashtable)
     (sph list)
     (sph random-data)
@@ -24,13 +25,10 @@
 
   (define (group-with-accessor accessor a)
     "procedure list -> ((any:group-key any:group-value ...):group ...)"
-    (let (groups (hashtable))
-      (each
-        (l (e)
-          (let* ((key (accessor e)) (group (hashtable-ref groups key)))
-            (hashtable-set! groups key (if group (pair e group) (list e)))))
-        a)
-      (hashtable-fold (l (k v r) (pair (pair k (reverse v)) r)) (list) groups)))
+    (let loop ((rest a) (groups (alist)))
+      (if (null? rest) groups
+        (let* ((e (first rest)) (key (accessor e)) (group (alist-ref groups key)))
+          (loop (tail rest) (alist-set groups key (if group (pair e group) (list e))))))))
 
   (define (list-ref-random a)
     "list -> any

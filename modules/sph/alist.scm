@@ -220,7 +220,7 @@
     "list any any -> list
     add or update an entry in an association list"
     (let loop ((rest a))
-      (if (null? rest) (list)
+      (if (null? rest) (pair (pair key value) rest)
         (let (e (first rest))
           (if (equal? key (first e)) (pair (pair key value) (tail rest))
             (pair e (loop (tail rest)))))))))
