@@ -54,7 +54,7 @@
     not-scm-file?
     os-seconds-at-boot
     os-seconds-since-boot
-    path->mime-type
+    ;path->mime-type
     paths-find-file-size-sum
     plaintext->sxml-html
     port-column-subtract!
@@ -534,7 +534,7 @@
     tests if a string has a .scm suffix"
     (not (string-suffix? ".scm" file-path)))
 
-  (define (path->mime-type path)
+  #;(define (path->mime-type path)
     "string -> string
     get the mime-type of a file by using the \"file\" program.
     see also (sph libmagic) for a more efficient variant"
