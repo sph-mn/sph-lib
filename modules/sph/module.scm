@@ -111,8 +111,8 @@
       (load-path (string-longest-prefix base-path %load-path)))
     "get module-names corresponding to existing files that may contain libraries in directory \"base-path\" and subdirectories.
     path must be in the load-path.
-    result may include files that contain no library definition, depending on the validations in before-filter.
-    the default before-filter allows only files with a \".scm\" suffix."
+    files must have a \".scm\" suffix.
+    file contents are not checked, the result may include files that contain no library definition"
     (if load-path
       (let
         ( (base-path-stat (false-if-exception (stat base-path)))
@@ -220,7 +220,7 @@
     (any (l (load-path) (and (file-exists? (string-append load-path "/" a)) load-path)) %load-path))
 
   (define (module-ref-no-error module name)
-    "like guiles module-ref but results in false and does not raise an error if variable is unbound"
+    "like guiles module-ref but results in false and does not raise an error if the variable is unbound"
     (pass-if (module-variable module name) (l (a) (variable-ref a))))
 
   (define (call-if-defined module name)
