@@ -11,7 +11,7 @@
     directory-tree-paths
     dotfile?
     ensure-directory-structure
-    ensure-directory-structure-and-mode
+    ensure-directory-structure-and-new-mode
     ensure-trailing-slash
     file->string
     filename-extension
@@ -155,12 +155,12 @@
     every path part is considered a directory"
     (or (file-exists? path) (begin (ensure-directory-structure (dirname path)) (mkdir path))))
 
-  (define (ensure-directory-structure-and-mode path mode)
+  (define (ensure-directory-structure-and-new-mode path mode)
     "string -> boolean
-    like ensure-directory-structure but also sets the file mode/permissions.
+    like ensure-directory-structure but also sets the file mode/permissions for new directories.
     the mode is influenced by the umask"
     (or (file-exists? path)
-      (begin (ensure-directory-structure-and-mode (dirname path) mode) (mkdir path mode))))
+      (begin (ensure-directory-structure-and-new-mode (dirname path) mode) (mkdir path mode))))
 
   (define (ensure-trailing-slash str) "string -> string"
     (if (or (string-null? str) (not (eqv? #\/ (string-ref str (- (string-length str) 1)))))

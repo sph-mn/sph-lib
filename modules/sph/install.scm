@@ -1,6 +1,6 @@
 ; (sph install) - file installation/copy helpers
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2015-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -29,7 +29,7 @@
     (only (sph filesystem)
       path-append
       path->full-path
-      ensure-directory-structure-and-mode)
+      ensure-directory-structure-and-new-mode)
     (only (sph process) execute+check-result))
 
   (define (install target target-prefix symlink? directory-mode . source)
@@ -48,7 +48,8 @@
               (unquote (string-append "--target-directory=" target))
               (unquote-splicing (map path->full-path source))))))
       ;without the umask the mode settings might not apply as specified
-      (umask 0) (ensure-directory-structure-and-mode target directory-mode)
+      (umask 0)
+      (ensure-directory-structure-and-new-mode target directory-mode)
       (apply execute+check-result "cp" cp-arguments)))
 
   (define (install-multiple-p target-prefix symlink? directory-mode . target+source)
