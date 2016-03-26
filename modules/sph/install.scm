@@ -48,7 +48,8 @@
     (l (paths-source)
       (apply (if dry-run? dry-run-log execute+check-result) "cp"
         (qq
-          ("--recursive" "--force" (unquote-splicing (if symlink? (list "--symbolic-link") (list)))
+          ("--recursive" "--remove-destination"
+            (unquote-splicing (if symlink? (list "--symbolic-link") (list)))
             (unquote-splicing paths-source) (unquote path-destination))))))
 
   (define*
@@ -58,7 +59,7 @@
       dry-run?)
     "automatically creates missing directories in target and sets permissions to mode-directory.
     copies source files to target and sets permissions corresponding to mode-directory and mode-regular unless overridden in sources.
-    prepends target-prefix to all target paths.
+    prepends path-destination-prefix to all target paths.
     symlink source files to the destination instead of copying if \"symlink?\" is true.
     currently depends on the \"cp\" utility"
     (let*
@@ -69,6 +70,8 @@
         (begin (umask 0) (ensure-directory-structure-and-new-mode destination mode-directory)))
       (every-mode-and-full-paths
         (l (mode-explicit paths)
+          ;"cp" is not that helpful here. it can not set permissions for files or directories,
+          ;and force fails on symlinks on tmpfs
           (and (system-cp paths)
             (every
               (l (path-destination path-source)
@@ -84,9 +87,7 @@
                             (if (eqv? (q directory) (stat:type stat-info))
                               (false-if-exception
                                 ( (if dry-run? (l a (apply dry-run-log "chmod" a)) chmod) path
-                                  (or mode-explicit mode-directory)))
-                              (if (file-exists? path)
-                                ((if dry-run? (l a (apply dry-run-log "unlink" a)) unlink) path))))))
+                                  (or mode-explicit mode-directory)))))))
                       #t path-source)
                     #t)
                   ( (if dry-run? (l a (apply dry-run-log "chmod" a)) chmod) path-destination
@@ -96,12 +97,9 @@
         sources)))
 
   (define (install-p install-one-arguments install-specs)
-    "string boolean integer (string:target string:source ...) ... -> boolean
+    "list list -> boolean
     install multiple files or directory trees with files.
-    automatically creates missing directories in target and sets new directory permissions to directory-mode.
-    copies source files to target while preserving permissions.
-    prepends target-prefix to all target paths.
-    symlinks source files to the destination instead of copying if \"symlink?\" is true.
+    automatically creates missing directories in target and sets new directory permissions to default or custom specified values.
     currently depends on the \"cp\" utility"
     (every (l (e) (apply install-one (first e) (tail e) install-one-arguments)) install-specs))
 
@@ -125,29 +123,39 @@
     (let
       ( (command-line-interface
           (cli-create #:options
-            (ql (path-destination-prefix #f #f #t #f string "")
-              (path-lib-scheme #f #f #t #f string "") (symlink)
-              (dry-run) (default-mode-directory #f #f #t #f integer "octal notation")
-              (default-mode-regular #f #f #t #f integer "octal notation")))))
+            (qq
+              ( (prefix #f #f #t #f string "prepended to each destination path")
+                (path-lib-scheme #f #f
+                  #t #f
+                  string
+                  (unquote
+                    (string-append "path for installed guile modules. default is "
+                      (string-quote default-path-lib-scheme))))
+                (symlink #f #f #f #f #f "create symlinks instead of file copies")
+                (dry-run #f #f
+                  #f #f #f "make no changes and only show the commands that would be executed")
+                (mode-directory #f #f #t #f integer "default permissions in octal notation")
+                (mode-regular #f #f #t #f integer "default permissions in octal notation"))))))
       (l (program-arguments install-specs)
         "((list/string string ...) ...) -> boolean:success-status
-        a cli for installation scripts for guile based projects. currently depends on the \"cp\" command-line utility.
-        parses command-line arguments and installs source files to destinations given in \"target+source\" using \"install-multiple\".
-        \"path-lib-scheme\" is the path where scheme libraries should be installed, it is /usr/share/guile/site if nothing else is specified.
+        a command-line interface for installation scripts for guile based projects. currently depends on the \"cp\" command-line utility.
+        parses command-line arguments and installs source files to destinations given via \"install-specs\".
+        can install multiple files and directories with default or custom filesystem permissions.
+        the symbol \"path-lib-scheme\" can be used as a placeholder in \"install-specs\".
+        see also \"install\"
         usage example:
         (install-cli-guile (\"/usr/lib\" \"temp/libguile-dg.so\")
-        ((path-lib-scheme \"test\") \"test/sph\"))"
+          ((path-lib-scheme \"test\") \"test/sph\"))"
         (let (arguments (command-line-interface program-arguments))
           (alist-quoted-bind arguments
-            (path-destination-prefix path-lib-scheme symlink
-              default-mode-directory default-mode-regular dry-run)
+            (prefix path-lib-scheme symlink mode-directory mode-regular dry-run)
             (install-p
               (append (list #:symlink? symlink #:dry-run? dry-run)
-                (optional-keyword-argument #:path-destination-prefix path-destination-prefix)
+                (optional-keyword-argument #:path-destination-prefix prefix)
                 (optional-keyword-argument #:mode-directory
-                  (pass-if default-mode-directory octal-integer->decimal))
+                  (pass-if mode-directory octal-integer->decimal))
                 (optional-keyword-argument #:mode-regular
-                  (pass-if default-mode-regular octal-integer->decimal)))
+                  (pass-if mode-regular octal-integer->decimal)))
               (install-specs-translate-guile-placeholders install-specs
                 (or path-lib-scheme default-path-lib-scheme))))))))
 
