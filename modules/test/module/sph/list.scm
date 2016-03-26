@@ -5,7 +5,18 @@
   (define-test (env-replace-at-once-proc a)
     (map (l (e) (* 3 e)) a))
 
+  (define-test (group-split-at-matches arguments)
+    (group-split-at-matches integer? arguments))
+
   (test-execute-procedures-lambda
+    (group-split-at-matches
+      ("a" "b" 1 "c" "d" 2 "e")
+      (("a" "b") (1 "c" "d") (2 "e"))
+      () ()
+      (1 2)
+      ((1) (2))
+      (1 "c" "d" 2)
+      ((1 "c" "d") (2)))
     (intersection
       ((1 2 3) (5 6 2 8)) (2)
       ((1 2 3) (4 5 6)) ()
@@ -76,7 +87,7 @@
       (1 2 3 4 5)
       ((1 2 3 3 4 5 5 5) ,eq? #f)
       (5 4 3 2 1))
-    (group-successive
+    (group-consecutive
       ((unquote even?) (1 2 2 3 4 4 6 5 6 7))
       (1 (2 2) 3 (4 4 6) 5 6 7))
     (fold-multiple-with-continue
@@ -109,7 +120,7 @@
     (list-sort-by-list
       ((3 2 4) (4 2 3)) (3 2 4)
       ((3 2 4) (4 5 2 3)) (3 2 4 5))
-    (map-successive
+    (map-consecutive
       ((unquote even?) (unquote (l args (map 1+ args))) (1 2 2 3 4 4 6 5 6 7))
       (1 (3 3) 3 (5 5 7) 5 6 7)
       ((unquote even?) (unquote (l args (map 1+ args))) (2 2 3 4 4 6 5 6 6))

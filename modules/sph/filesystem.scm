@@ -129,7 +129,7 @@
           (if (every (l (proc) (proc e)) filter-proc) (stream-cons e (loop (readdir port)))
             (loop (readdir port)))))))
 
-  (define* (directory-tree-paths path #:optional (select? identity))
+  (define* (directory-tree-paths path #:optional (select? (const #t)))
     "string [procedure:{any -> boolean}] -> (full-path ...)
     string procedure -> (string ...)
     results in a list of all paths under path, excluding path and the directory references \".\" and \"..\""
@@ -141,7 +141,7 @@
             (let (stat-info (stat e))
               ( (if (eqv? (q directory) (stat:type stat-info))
                   (l (r) (append (directory-tree-paths e select?) r)) identity)
-                (if (select? e) (pair e r) r)))))
+                (if (select? e stat-info) (pair e r) r)))))
         (list) entries)))
 
   (define (dotfile? name)

@@ -18,6 +18,7 @@
     any->list-s
     complement
     complement-both
+    consecutive
     contains-all?
     contains-some?
     contains?
@@ -58,7 +59,8 @@
     fold-unless-check-init
     fold-until
     fold-with-buffer
-    group-successive
+    group-consecutive
+    group-split-at-matches
     improper-list-split-at-last
     insert-second
     integer->list
@@ -87,13 +89,13 @@
     list-sort-with-accessor
     list-suffix?
     map-apply
+    map-consecutive
     map-map
     map-one
     map-segments
     map-selected
     map-slice
     map-span
-    map-successive
     map-unless
     map-with-continue
     map-with-index
@@ -111,6 +113,7 @@
     produce-unless
     replace
     replace-at-once
+    replace-value
     simplify
     simplify-list
     splice
@@ -118,7 +121,6 @@
     split-at-last
     split-at-value
     split-by-pattern
-    successive
     true->list
     true->list-s
     (rename (lset-adjoin list-set-add)
@@ -427,12 +429,12 @@
 
   (define (fold-span filter-proc proc a)
     "procedure:{any -> any/false} procedure:{list -> any} list -> any
-    fold over each list of elements that successively matched filter-proc (using the \"span\" procedure)"
+    fold over each list of elements that consecutively matched filter-proc (utilising the \"span\" procedure)"
     (let loop ((rest a) (r (list)))
       (if (null? rest) (reverse r)
-        (let-values (((successive rest) (span filter-proc rest)))
-          (if (null? successive) (loop (tail rest) (pair (first rest) r))
-            (loop rest (proc successive r)))))))
+        (let-values (((consecutive rest) (span filter-proc rest)))
+          (if (null? consecutive) (loop (tail rest) (pair (first rest) r))
+            (loop rest (proc consecutive r)))))))
 
   (define (fold-multiple proc a . custom-state-values)
     "procedure:{any:state-value ... -> list} list any:state-value ... -> list:state-values
@@ -487,10 +489,10 @@
     end folding if \"stop?\" is true"
     (if (or (null? a) (stop? init)) init (fold-until proc (proc (first a) init) stop? (tail a))))
 
-  (define (group-successive filter-proc a)
+  (define (group-consecutive filter-proc a)
     "{any -> boolean} list -> list
-    wrap multiple elements that successively match \"filter-proc\" in a list"
-    (map-successive filter-proc (l args args) a))
+    wrap multiple elements that consecutively match \"filter-proc\" in a list"
+    (map-consecutive filter-proc (l args args) a))
 
   (define (improper-list-split-at-last a)
     "pair:improper-list -> (list . any:non-pair)
@@ -735,7 +737,7 @@
 
   (define (map-slice slice-length proc a)
     "integer procedure:{any ... -> any} list -> list
-    call \"proc\" with each \"slice-length\" number of successive elements of \"a\""
+    call \"proc\" with each \"slice-length\" number of consecutive elements of \"a\""
     (let loop ((rest a) (slice (list)) (slice-ele-length 0) (r (list)))
       (if (null? rest) (reverse (if (null? slice) r (pair (apply proc (reverse slice)) r)))
         (if (= slice-length slice-ele-length)
@@ -744,22 +746,22 @@
 
   (define (fold-slice slice-length proc init a)
     "integer procedure:{any:state any:element ... -> any} any list -> any:state
-    call proc with each slice-length number of successive elements of a"
+    call proc with each slice-length number of consecutive elements of a"
     (let loop ((rest a) (slice (list)) (slice-ele-length 0) (r init))
       (if (null? rest) (reverse (if (null? slice) r (apply proc r (reverse slice))))
         (if (= slice-length slice-ele-length)
           (loop (tail rest) (list (first rest)) 1 (apply proc r (reverse slice)))
           (loop (tail rest) (pair (first rest) slice) (+ 1 slice-ele-length) r)))))
 
-  (define (map-successive filter-proc proc a)
+  (define (map-consecutive filter-proc proc a)
     "{any -> boolean} {any any ... -> any} list -> list
-    call \"proc\" with with a list of elements that successively matched \"filter-proc\". at least two elements at a time"
+    \"proc\" is called for and with every list of elements that consecutively matched \"filter-proc\". at least two elements at a time"
     (fold-span filter-proc
       (l (e r) (if (length-greater-one? e) (pair (apply proc e) r) (append e r))) a))
 
   (define (map-span filter-proc proc a)
     "procedure:{any -> any/false} procedure:{any any ... -> any} list -> list
-    apply \"proc\" to each list of elements that successively matched \"filter-proc\". may be only one element at a time"
+    apply \"proc\" to each list of elements that consecutively matched \"filter-proc\". may be only one element at a time"
     (fold-span filter-proc (l (e r) (pair (apply proc e) r)) a))
 
   (define (map-unless proc stop? default . a)
@@ -848,9 +850,12 @@
     produce unless \"stop?\" is true for a production-result. result in false otherwise"
     (append-map-unless (l (e-1) (map-unless (l (e-2) (proc e-1 e-2)) stop? #f b)) not default a))
 
-  (define* (replace a search-value replacement #:optional (equal-proc equal?))
+  (define* (replace-value a search-value replacement #:optional (equal-proc equal?))
     "list any any [procedure:{any any -> boolean}] -> list"
-    (map (l (e) (if (equal-proc e search-value) replacement e)) a))
+    (replace a (l (e) (equal-proc e search-value)) replacement))
+
+  (define* (replace a select? replacement) "list procedure any -> list"
+    (map (l (e) (if (select? e) replacement e)) a))
 
   (define (simplify a)
     "any/list -> list/pair/any
@@ -941,12 +946,25 @@
               (+ count 1) count)))
         a 0)))
 
-  (define (successive proc a)
+  (define (consecutive proc a)
     "procedure:{any -> any/boolean} list -> (list:matches list:rest)
-    splits the list into two lists, the first being a list of all beginning elements of \"a\" that successively matched
+    splits the list into two lists, the first being a list of all beginning elements of \"a\" that consecutively matched
     \"proc\", the second being the rest.
     like srfi-1 span but the result is a list and not multiple return values"
     (call-with-values (thunk (span proc a)) (l r r)))
+
+  (define (group-split-at-matches start-group? a)
+    "procedure:{any -> boolean} list -> (list ...)
+    wrap consecutive elements in lists with \"start-group?\" starting new lists.
+    example
+    (group-inline-prefixed integer? (list \"a\" \"b\" 1 \"c\" \"d\" 2 \"e\"))
+    ->
+    ((\"a\" \"b\") (1 \"c\" \"d\") (2 \"e\"))"
+    (let (not-start-group? (negate start-group?))
+      (let loop ((rest a))
+        (if (null? rest) rest
+          (apply (l (matches rest-2) (pair (pair (first rest) matches) (loop rest-2)))
+            (consecutive not-start-group? (tail rest)))))))
 
   (define (insert-second e a)
     "any list -> list

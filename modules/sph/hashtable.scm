@@ -1,6 +1,6 @@
 ; (sph hashtable) - rnrs-hashtable processing
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -49,7 +49,7 @@
   (import
     (rnrs base)
     (sph)
-    (only (guile) string-join)
+    (only (guile) hashv hashq string-join)
     (only (rnrs hashtables) make-hashtable)
     (only (sph list) map-slice list-index-value)
     (only (sph one) quote-odd)
@@ -84,10 +84,12 @@
   (define-syntax-rules eq-hashtable
     ;like hashtable, but create a hashtable that uses eq? as a comparison function
     (() (make-eq-hashtable))
-    ((associations ...) (list->hashtable (quote-odd associations ...) eq? hashq)))
+    ((associations ...) (list->hashtable (quote-odd associations ...) eq? symbol-hash)))
 
-  (define-syntax-rules eqv-hashtable (() (make-eqv-hashtable))
-    ((associations ...) (list->hashtable (quote-odd associations ...) eqv? hashv)))
+  (define-syntax-rules eqv-hashtable
+    (() (make-eqv-hashtable))
+    ;not the best hash function
+    ((associations ...) (list->hashtable (quote-odd associations ...) eqv? equal-hash)))
 
   (define-syntax-rule (hashtable-quoted-bind ht (key ...) body ...)
     ;selectively bind keys of hashtable to variables

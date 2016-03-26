@@ -196,7 +196,7 @@
       (apply-settings-hook+reporter settings (q module-after) name r) r))
 
   (define (test-modules-until a value) (take-while (l (a) (not (equal? a value))) a))
-  (define (test-modules-only a values) (filter (l (a) (containsv? values a)) a))
+  (define (test-modules-only a value) (intersection a value))
   (define (test-modules-exclude a values) (remove (l (a) (containsv? values a)) a))
 
   (define (test-modules-apply-settings settings modules)
@@ -253,7 +253,7 @@
 
   (define (test-procedures-only a values) "list list -> list"
     (let (values (filter-procedure-names values))
-      (filter (l (spec) (containsv? values (first spec))) a)))
+      (if (null? values) a (filter (l (spec) (containsv? values (first spec))) a))))
 
   (define (test-procedures-exclude a values) "list list -> list"
     (let (values (filter-procedure-names values))
@@ -341,11 +341,10 @@
     "list:alist list -> list
     executes tests one after another and stops if one fails"
     (map-with-continue
-        (l (continue e)
-          (let (r (apply test-procedures-execute-one settings exceptions? hooks e))
-
-            (if (test-result-success? r) (continue r) (list r))))
-        a))
+      (l (continue e)
+        (let (r (apply test-procedures-execute-one settings exceptions? hooks e))
+          (if (test-result-success? r) (continue r) (list r))))
+      a))
 
   (define test-procedures-execute
     (let

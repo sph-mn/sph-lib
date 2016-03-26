@@ -36,7 +36,7 @@
       (map
         (l (e)
           (if (string-contains e "\n")
-            (successive-parentheses-indentation e (hashtable-ref config (q indent-string))) e))
+            (consecutive-parentheses-indentation e (hashtable-ref config (q indent-string))) e))
         lines)
       lines))
 
@@ -132,7 +132,7 @@
   (define (parenthesise-indented-list indent a)
     (string-append "(" a (if (string-suffix? "\n" a) (string-append indent ")") ")")))
 
-  (define (successive-parentheses-indentation a indent-string)
+  (define (consecutive-parentheses-indentation a indent-string)
     "string string -> string
     offsets leading parentheses on one line by the level of idendation. example: ( ("
     (let (index (string-skip a #\())
@@ -331,7 +331,7 @@
               ( (vertical-spacing
                   (string-append (create-vertical-spacing* vertical-spacing-oneline) indent))
                 (leading
-                  (map-successive (l (e) (not (or (string-null? e) (multiline-expression? e))))
+                  (map-consecutive (l (e) (not (or (string-null? e) (multiline-expression? e))))
                     (l matches
                       (interleave (map string-remove-trailing-newline matches) vertical-spacing))
                     a))

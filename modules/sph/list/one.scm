@@ -1,7 +1,7 @@
 (library (sph list one)
   (export
-    group
-    group-with-accessor
+    group-equal
+    index-with-accessor
     list-ref-cycle-randomise-proc
     list-ref-random
     list-replace-by-table
@@ -18,13 +18,16 @@
     (only (rnrs hashtables) hashtable-set!)
     (only (srfi srfi-1) delete-duplicates))
 
-  ; additional list processing procedures which depend on libraries that depend on (sph list) to avoid a circular dependency
+  ; additional list processing procedures which depend on libraries that depend on (sph list). to avoid circular dependencies
 
-  (define (group a) "list -> ((any:group-key any:group-value ...):group ...)"
-    (group-with-accessor identity a))
+  (define (group-equal a)
+    "list -> ((any:group-value ...):group ...)
+    create a list with lists of equal elements"
+    (index-with-accessor identity a))
 
-  (define (group-with-accessor accessor a)
-    "procedure list -> ((any:group-key any:group-value ...):group ...)"
+  (define (index-with-accessor accessor a)
+    "procedure list -> ((any:group-key any:group-value ...):group ...)
+    create an association list entry with accessor result and element for every unique result of accessor"
     (let loop ((rest a) (groups (alist)))
       (if (null? rest) groups
         (let* ((e (first rest)) (key (accessor e)) (group (alist-ref groups key)))

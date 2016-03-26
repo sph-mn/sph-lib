@@ -134,7 +134,7 @@
 
   (define (execute-with-pipe proc mode command . arguments)
     "procedure integer string list ->
-    execute a program like with a pipe connected to its standard-output or standard-input and pass it as a port to \"proc\".
+    execute a program with a pipe connected to its standard-output or standard-input and pass it as a port to \"proc\".
     mode can be one of the guile variables OPEN_READ OPEN_WRITE OPEN_BOTH"
     (let* ((port (apply open-pipe* mode command arguments)) (r (proc port))) (close-pipe port) r))
 
@@ -161,9 +161,9 @@
     (let* ((port (open-pipe command-str OPEN_READ)) (result-str (port->string port)))
       (close-pipe port) result-str))
 
-  (define (process-create-chain-with-pipes->string input . args)
+  (define (process-create-chain-with-pipes->string input . arguments)
     (call-with-pipe
-      (l (in out) (apply process-create-chain-with-pipes input out args)
+      (l (in out) (apply process-create-chain-with-pipes input out arguments)
         (close out) (port->string in))))
 
   (define (exit-value-zero? system-result)

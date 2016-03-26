@@ -17,42 +17,85 @@
     install
     install-cli-guile
     install-cli-guile-p
-    install-multiple
-    install-multiple-p)
+    install-one
+    install-p)
   (import
-    (guile)
-    (rnrs base)
-    (sph)
-    (sph cli)
-    (only (sph alist) alist-quoted-ref)
-    (only (sph conditional) pass-if)
-    (only (sph filesystem)
-      path-append
-      path->full-path
-      ensure-directory-structure-and-new-mode)
-    (only (sph process) execute+check-result))
+    (sph common))
 
-  (define (install target target-prefix symlink? directory-mode . source)
-    "string string boolean integer string ... -> boolean
-    automatically creates missing directories in target and sets permissions to directory-mode.
-    copies source files to target and preserve permissions.
+  (define default-mode-directory 493)
+  (define default-mode-regular 420)
+  (define default-path-lib-scheme "/usr/share/guile/site")
+  ;data-structure
+  ;  destination: string:path/symbol:placeholder/(string/symbol ...):concatenated-path
+  ;  source: string:path/symbol:placeholder/integer:mode-for-following/(string:path/symbol:placeholder ...):concatenated-path
+  ;  install-spec: (destination source ...)
+
+  (define (select-mode-by-file-type a mode-regular mode-directory)
+    (if (eqv? (q directory) (stat:type (stat a))) mode-directory mode-regular))
+
+  (define (every-mode-and-full-paths proc a)
+    "procedure:{integer:mode (string:path ...)} list:install-specs"
+    (every
+      (l (paths)
+        (let (maybe-mode (first paths))
+          (if (integer? maybe-mode) (proc maybe-mode (map path->full-path (tail paths)))
+            (proc #f (map path->full-path paths)))))
+      (group-split-at-matches integer? a)))
+
+  (define (dry-run-log . a) (display (string-join (map any->string a) " ")) (newline) #t)
+
+  (define (system-cp-proc path-destination symlink? dry-run?)
+    (l (paths-source)
+      (apply (if dry-run? dry-run-log execute+check-result) "cp"
+        (qq
+          ("--recursive" "--force" (unquote-splicing (if symlink? (list "--symbolic-link") (list)))
+            (unquote-splicing paths-source) (unquote path-destination))))))
+
+  (define*
+    (install-one destination sources #:key (path-destination-prefix "") symlink?
+      (mode-directory default-mode-directory)
+      (mode-regular default-mode-regular)
+      dry-run?)
+    "automatically creates missing directories in target and sets permissions to mode-directory.
+    copies source files to target and sets permissions corresponding to mode-directory and mode-regular unless overridden in sources.
     prepends target-prefix to all target paths.
     symlink source files to the destination instead of copying if \"symlink?\" is true.
     currently depends on the \"cp\" utility"
     (let*
-      ( (target (path-append target-prefix target))
-        (cp-arguments
-          (qq
-            ("--preserve=mode" "--recursive" "--force"
-              (unquote-splicing (if symlink? (list "--symbolic-link") (list)))
-              (unquote (string-append "--target-directory=" target))
-              (unquote-splicing (map path->full-path source))))))
-      ;without the umask the mode settings might not apply as specified
-      (umask 0)
-      (ensure-directory-structure-and-new-mode target directory-mode)
-      (apply execute+check-result "cp" cp-arguments)))
+      ( (destination (apply path-append path-destination-prefix (any->list destination)))
+        (system-cp (system-cp-proc destination symlink? dry-run?)))
+      ;without the umask setting the mode might not apply as specified
+      (if (not dry-run?)
+        (begin (umask 0) (ensure-directory-structure-and-new-mode destination mode-directory)))
+      (every-mode-and-full-paths
+        (l (mode-explicit paths)
+          (and (system-cp paths)
+            (every
+              (l (path-destination path-source)
+                (and
+                  (if (is-directory? path-source)
+                    ;set permissions for the directory structure created from the source path
+                    (fold-directory-tree
+                      (let (path-source-length (string-length path-source))
+                        (l (path stat-info r)
+                          (let
+                            (path
+                              (path-append path-destination (string-drop path path-source-length)))
+                            (if (eqv? (q directory) (stat:type stat-info))
+                              (false-if-exception
+                                ( (if dry-run? (l a (apply dry-run-log "chmod" a)) chmod) path
+                                  (or mode-explicit mode-directory)))
+                              (if (file-exists? path)
+                                ((if dry-run? (l a (apply dry-run-log "unlink" a)) unlink) path))))))
+                      #t path-source)
+                    #t)
+                  ( (if dry-run? (l a (apply dry-run-log "chmod" a)) chmod) path-destination
+                    (or mode-explicit
+                      (select-mode-by-file-type path-source mode-regular mode-directory)))))
+              (map (l (e) (path-append destination (basename e))) paths) paths)))
+        sources)))
 
-  (define (install-multiple-p target-prefix symlink? directory-mode . target+source)
+  (define (install-p install-one-arguments install-specs)
     "string boolean integer (string:target string:source ...) ... -> boolean
     install multiple files or directory trees with files.
     automatically creates missing directories in target and sets new directory permissions to directory-mode.
@@ -60,68 +103,53 @@
     prepends target-prefix to all target paths.
     symlinks source files to the destination instead of copying if \"symlink?\" is true.
     currently depends on the \"cp\" utility"
-    (every (l (e) (apply install (first e) target-prefix symlink? directory-mode (tail e)))
-      target+source))
+    (every (l (e) (apply install-one (first e) (tail e) install-one-arguments)) install-specs))
 
-  (define-syntax-rule
-    (install-multiple target-prefix symlink? directory-mode (install-arguments ...) ...)
-    (install-multiple-p target-prefix symlink? directory-mode (list install-arguments ...) ...))
+  (define-syntax-rule (install (install-one-arguments ...) install-spec ...)
+    (install-p (list install-one-arguments ...) (qq (install-spec ...))))
 
-  (define (cli-handle-optional a default) (if a (if (equal? "-" a) default a) default))
+  (define (install-specs-translate-guile-placeholders a path-lib-scheme)
+    (map-apply
+      (l (destination . source)
+        (pair
+          (if (list? destination) (replace-value destination (q path-lib-scheme) path-lib-scheme)
+            (if (eqv? (q path-lib-scheme) destination) path-lib-scheme destination))
+          source))
+      a))
+
+  (define (optional-keyword-argument keyword value) (if value (list keyword value) (list)))
+  ;ame/pattern alternative-names required? value-required value-optional input-type description custom-processor
+  (define (octal-integer->decimal a) (string->number (number->string a) 8))
 
   (define install-cli-guile-p
     (let
-      ( (get-program-arguments&
-          (l (c)
-            (apply
-              (l* (#:optional target-prefix path-lib-scheme symlink? directory-mode)
-                (c (cli-handle-optional target-prefix "")
-                  (cli-handle-optional path-lib-scheme "/usr/share/guile/site")
-                  (cli-handle-optional symlink? #f)
-                  (pass-if (cli-handle-optional directory-mode 493)
-                    (l (e) (if (string? e) (string->number directory-mode 8) e)))))
-              (alist-quoted-ref
-                ( (cli-create #:help-parameters
-                    (string-append
-                      "parameters\n  options ... [target-prefix path-lib-scheme symlink? directory-mode]\n  "
-                      "values can be \"-\" to use the default value")))
-                unnamed (list)))))
-        (replace-placeholders
-          (let*
-            ( (handle-symbol-path
-                (l (a path-lib-scheme) (if (eqv? (q path-lib-scheme) a) path-lib-scheme a)))
-              (handle-list-path
-                (l (a path-lib-scheme) "list string -> string:path"
-                  (apply path-append (map (l (e) (handle-symbol-path e path-lib-scheme)) a))))
-              (handle-target+source-one-proc
-                (l (path-lib-scheme)
-                  (l (e)
-                    (let (target (first e))
-                      (pair
-                        (if (list? target) (handle-list-path target path-lib-scheme)
-                          (if (symbol? target) (handle-symbol-path target path-lib-scheme) target))
-                        (tail e)))))))
-            (l (target+source path-lib-scheme)
-              (map (handle-target+source-one-proc path-lib-scheme) target+source)))))
-      (l target+source
+      ( (command-line-interface
+          (cli-create #:options
+            (ql (path-destination-prefix #f #f #t #f string "")
+              (path-lib-scheme #f #f #t #f string "") (symlink)
+              (dry-run) (default-mode-directory #f #f #t #f integer "octal notation")
+              (default-mode-regular #f #f #t #f integer "octal notation")))))
+      (l (program-arguments install-specs)
         "((list/string string ...) ...) -> boolean:success-status
-      a cli for installation scripts for guile based projects. currently depends on the \"cp\" command-line utility.
-      parses command-line arguments and installs source files to destinations given in \"target+source\" using \"install-multiple\".
-      the format for \"target+source\" is: (install-cli-guile (string:target/list:(string/symbol:placeholder ...) string:source ...) ...).
-      \"target\" can be a list of strings or symbols which are interpreted as placeholders. currently the placeholder \"path-lib-scheme\" is supported.
-      \"path-lib-scheme\" is the path where scheme libraries should be installed, it is /usr/share/guile/site if nothing else is specified.
-      command-line arguments are: target-prefix:install-prefix path-lib-scheme:guile-site symlink?:true/false directory-mode.
-      symlink? can be \"true\" or \"false\". directory-mode is an integer.
-      all command-line arguments are optional and can be \"-\" to be set to the default value.
-      see install-multiple for how source files are actually handled.
-      usage example:
-      (install-cli-guile (\"/usr/lib\" \"temp/libguile-dg.so\")
+        a cli for installation scripts for guile based projects. currently depends on the \"cp\" command-line utility.
+        parses command-line arguments and installs source files to destinations given in \"target+source\" using \"install-multiple\".
+        \"path-lib-scheme\" is the path where scheme libraries should be installed, it is /usr/share/guile/site if nothing else is specified.
+        usage example:
+        (install-cli-guile (\"/usr/lib\" \"temp/libguile-dg.so\")
         ((path-lib-scheme \"test\") \"test/sph\"))"
-        (get-program-arguments&
-          (l (target-prefix path-lib-scheme symlink? directory-mode)
-            (apply install-multiple-p target-prefix
-              symlink? directory-mode (replace-placeholders target+source path-lib-scheme)))))))
+        (let (arguments (command-line-interface program-arguments))
+          (alist-quoted-bind arguments
+            (path-destination-prefix path-lib-scheme symlink
+              default-mode-directory default-mode-regular dry-run)
+            (install-p
+              (append (list #:symlink? symlink #:dry-run? dry-run)
+                (optional-keyword-argument #:path-destination-prefix path-destination-prefix)
+                (optional-keyword-argument #:mode-directory
+                  (pass-if default-mode-directory octal-integer->decimal))
+                (optional-keyword-argument #:mode-regular
+                  (pass-if default-mode-regular octal-integer->decimal)))
+              (install-specs-translate-guile-placeholders install-specs
+                (or path-lib-scheme default-path-lib-scheme))))))))
 
-  (define-syntax-rule (install-cli-guile target+source ...)
-    ;see install-cli-guile-p
-    (apply install-cli-guile-p (quasiquote (target+source ...)))))
+  (define-syntax-rule (install-cli-guile install-spec ...)
+    (install-cli-guile-p (tail (program-arguments)) (qq (install-spec ...)))))
