@@ -31,9 +31,10 @@
         result a)
       (fold-proc (template-source-get a env) result)))
 
-  (define-syntax-rule (bindings-accessor-proc data)
+  (define (bindings-accessor-proc data)
     ;this procedure hides the data object and the underlying data type
-    (l (key . default) (alist-ref data key (if (null? default) "" (first default)))))
+    (case-lambda (() data)
+      ((key . default) (alist-ref data key (if (null? default) "" (first default))))))
 
   (define (template-fold fold-proc source bindings env result)
     "template-fold-proc template-source alist-quoted environment any -> any

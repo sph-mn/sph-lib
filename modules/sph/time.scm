@@ -10,7 +10,7 @@
     current-time-microseconds
     current-time-zone-utc-offset
     daylight-savings-time?
-    iso-8601-date+time->seconds
+    rfc3339-date->seconds
     seconds->datetime-string
     seconds->day
     seconds->day-of-week
@@ -41,15 +41,25 @@
   (define (parse-military-time->seconds a)
     (let (a (parse-military-time a)) (+ (* 3600 (first a)) (* 60 (tail a)))))
 
-  (define (iso-8601-date+time->seconds a)
-    "string:\"yyyy-mm-ddThh:mm:ss+hhmm\" -> integer:posix-epoch-seconds"
-    ;according to guile documentation, strptime does not set the time zone offset usefully.
-    (and-let*
-      ( (time (false-if-exception (first (strptime "%Y-%m-%dT%H:%M:%S%z" a))))
-        (offset (string-take-right a 4)) (offset-sign (string-ref a (- (string-length a) 5))))
-      (set-tm:gmtoff time
-        (* (if (eqv? #\- offset-sign) -1 1) (parse-military-time->seconds offset)))
-      (false-if-exception (string->number (strftime "%s" time)))))
+  (define rfc3339-date->seconds
+    (let
+      (with-time-and-offset
+        (l (a c)
+          (first
+            (if (string-suffix? "Z" a) (c (strptime "%Y-%m-%dT%H:%M:%SZ" a) 0)
+              (let*
+                ( (offset (string-take-right a 5))
+                  (offset-sign (string-ref a (- (string-length a) 6)))
+                  (time
+                    (strptime "%Y-%m-%dT%H:%M:%S%z"
+                      (string-append (string-drop-right a 5) (string-delete #\: offset)))))
+                (c time (* (if (eqv? #\- offset-sign) -1 1) (parse-military-time->seconds offset))))))))
+      (l (a)
+        "string:\"yyyy-mm-ddThh:mm:ss+hh:mm\" -> integer:posix-epoch-seconds
+    similar to iso8601"
+        ;according to guile documentation, strptime does not set the time zone offset usefully.
+        (with-time-and-offset a
+          (l (time offset) (set-tm:gmtoff time offset) (string->number (strftime "%s" time)))))))
 
   (define (current-time-zone-utc-offset)
     "offset of the current time zone to UTC without daylight-savings-time"
