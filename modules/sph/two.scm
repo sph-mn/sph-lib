@@ -31,6 +31,7 @@
     file-append-one
     generalised-length
     generalised-less?
+    system-realpath
     get-filesystem-root
     get-mime-extensions
     git-archive
@@ -436,12 +437,15 @@
       ((and (number? a) (string? b)) (string< (number->string a) b))
       ((and (list? a) (list? b)) (< (length a) (length b)))))
 
+  (define (system-realpath a) (string-trim-right (execute->string "realpath" a)))
+
   (define (get-filesystem-root path)
     "string -> string
     get the path to the root of the filesystem where path is pointing to, relative to the rootfs.
     currently depends on procfs /proc/mounts"
-    (let
-      ( (matches
+    (let*
+      ( (path (system-realpath path))
+        (matches
           (fold
             (l (e r)
               (let ((info (string-split e #\space)))
