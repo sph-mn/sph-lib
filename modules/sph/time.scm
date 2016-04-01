@@ -10,6 +10,7 @@
     current-time-microseconds
     current-time-zone-utc-offset
     daylight-savings-time?
+    hours-minutes-seconds->seconds
     seconds->datetime-string
     seconds->day
     seconds->day-of-week
@@ -17,7 +18,7 @@
     seconds->day-seconds-string
     seconds->day-start
     seconds->formatted-date-string
-    seconds->hours+minutes+seconds
+    seconds->hours-minutes-seconds
     seconds->iso-date-string
     seconds->month
     seconds->month-seconds
@@ -25,7 +26,6 @@
     seconds->year
     seconds->year-seconds
     seconds->year-start
-    time-traditional-hours->seconds
     time-traditional-parts->seconds
     time-traditional-string->seconds)
   (import
@@ -87,14 +87,6 @@
   (define (seconds->year-seconds a) (- a (seconds->year-start a)))
   (define (seconds->month-seconds a) (- a (seconds->month-start a)))
 
-  (define (seconds->hours+minutes+seconds a)
-    "integer -> (number:hours number:minutes number:seconds)"
-    (let*
-      ( (hours (inexact->exact (truncate (/ a 60 60))))
-        (minutes (inexact->exact (truncate (/ (- a (* hours 60 60)) 60))))
-        (seconds (inexact->exact (truncate (- a (* hours 60 60) (* minutes 60))))))
-      (list hours minutes seconds)))
-
   (define (seconds->iso-date-string a)
     (let (t (gmtime a))
       (string-append (number->string (+ 1900 (tm:year t))) "-"
@@ -117,8 +109,14 @@
   (define (current-iso-date-string) (seconds->iso-date-string (current-time)))
   (define (current-local-iso-date-string) (seconds->iso-date-string (current-local-time)))
 
-  (define* (time-traditional-hours->seconds hours #:optional (minutes 0) (seconds 0))
-    (+ (* 3600 hours) (* 60 minutes) seconds))
+  (define* (hours-minutes-seconds->seconds hours #:optional (minutes 0) (seconds 0))
+    "integer ... -> integer" (+ (* 3600 hours) (* 60 minutes) seconds))
+
+  (define (seconds->hours-minutes-seconds a) "integer -> (integer integer integer)"
+    (let*
+      ( (hours (truncate (/ a 3600))) (hour-seconds (* 3600 hours))
+        (minutes (truncate (/ (- a hour-seconds) 60))))
+      (list hours minutes (- a hour-seconds (* minutes 60)))))
 
   (define*
     (time-traditional-parts->seconds #:key (year 0) (month 0) (day 0) (hours 0) (minutes 0)
@@ -132,8 +130,7 @@
       (date-object
         (date->time-utc
           (make-date 0 seconds
-            minutes hours
-            day month year (time-traditional-hours->seconds offset-hours offset-minutes))))
+            minutes hours day month year (hours-minutes-seconds->seconds offset-hours offset-minutes))))
       (time-second date-object)))
 
   (define (time-traditional-string->seconds a)

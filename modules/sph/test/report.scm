@@ -21,23 +21,24 @@
   (define (test-report-compact-display-indices count display)
     (n-times count (l (n) (display " ") (display (+ 1 n)))))
 
+  (define (test-report-compact-ieo a depth display)
+    (display
+      (string-join
+        (filter-map
+          (let (indent (create-indent (+ 1 depth)))
+            (l (e) (let (value (tail e)) (and value (string-append indent (first e) ": " value)))))
+          (list
+            (pair "i"
+              (string-drop (string-drop-right (any->string-write (test-result-arguments a)) 1) 1))
+            (pair "e" (any->string-write (test-result-expected a)))
+            (pair "o" (any->string-write (test-result-result a)))))
+        "\n")))
+
   (define (test-report-compact-failure a depth display) "vector integer procedure ->"
     (let ((indent (create-indent depth)) (index (test-result-index a))) (display indent)
       (display (test-result-title a))
-      (if (and index (> index 0)) (test-report-compact-display-indices index display))
-      (display
-        (string-append "\n" (create-indent (+ 1 depth))
-          "failure" (if index (string-append " " (number->string (+ 1 index))) "") "\n"))
-      (each
-        (let (indent (create-indent (+ 2 depth)))
-          (l (e)
-            (let (value (tail e))
-              (if value (display (string-append indent (first e) ": " value "\n"))))))
-        (list
-          (pair "i"
-            (string-drop (string-drop-right (any->string-write (test-result-arguments a)) 1) 1))
-          (pair "e" (any->string-write (test-result-expected a)))
-          (pair "o" (any->string-write (test-result-result a)))))))
+      (if (<= 1 index) (test-report-compact-display-indices index display)) (newline)
+      (display indent) (display "failure\n") (test-report-compact-ieo a depth display)))
 
   (define (test-report-compact-success a depth display) "vector integer procedure ->"
     (let ((indent (create-indent depth)) (index (test-result-index a))) (display indent)
@@ -81,17 +82,17 @@
     result)
 
   (define-as test-report-hooks-null alist-quoted
-    ;settings name ->
+    ;settings index name ->
     procedure-before ignore
-    ;settings result ->
+    ;settings index result ->
     procedure-after ignore
-    ;settings name index data ->
+    ;settings index name index-data data ->
     procedure-data-before ignore
-    ;settings result ->
+    ;settings index result ->
     procedure-data-after ignore
-    ;settings module-name ->
+    ;settings index module-name ->
     module-before ignore
-    ;settings module-name result ->
+    ;settings index module-name result ->
     module-after ignore
     ;settings module-names ->
     modules-before ignore
@@ -100,16 +101,28 @@
 
   (define-as test-report-hooks-compact alist-quoted
     procedure-before
-    (l (s name)
-      (display (create-indent (boolean->integer (alist-quoted-ref s current-module-name))))
-      (display name))
-    procedure-after
-    (l (s result)
-      (if (test-result-success? result) (newline) (test-report-compact-failure result 0 display)))
-    procedure-data-before (l (s name index data) (display " ") (display (+ 1 index)))
-    procedure-data-after ignore
-    module-before (l (s name) (display (string-join (map symbol->string name) " ")) (newline))
-    module-after ignore modules-before ignore modules-after ignore)
+    (l (s index result)
+      (if (alist-quoted-ref s current-module-name) (newline) (if (not (zero? index)) (newline))))
+    procedure-after ignore
+    procedure-data-before ignore
+    procedure-data-after
+    (l (s index index-data result)
+      (let (index-data (test-result-index result))
+        (if (= 0 index-data)
+          (begin
+            (display (create-indent (boolean->integer (alist-quoted-ref s current-module-name))))
+            (display (test-result-title result))))
+        (if (test-result-success? result) (begin (display " ") (display (+ 1 index-data)))
+          (begin (newline)
+            (display
+              (create-indent (+ 1 (boolean->integer (alist-quoted-ref s current-module-name)))))
+            (display "failure") (newline)
+            (test-report-compact-ieo result
+              (boolean->integer (alist-quoted-ref s current-module-name)) display)))))
+    module-before
+    (l (s index name) (if (not (zero? index)) (newline))
+      (display (string-join (map symbol->string name) " ")))
+    module-after ignore modules-before ignore modules-after (l (s names r) (newline)))
 
   (define test-report-null ignore)
 

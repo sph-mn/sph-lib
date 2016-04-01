@@ -20,6 +20,8 @@
     any->string-write*
     list->string-columns
     list-string-append-each
+    pad-with
+    pad-with-zeros
     parenthesise
     regexp-match-replace
     regexp-replace
@@ -347,6 +349,22 @@
     "any -> any
     converts \"a\" to string only if it is a symbol, otherwise results in \"a\""
     (if (symbol? a) (symbol->string a) a))
+
+  (define (pad-with-zeros a target-length)
+    "string integer -> string
+    prepend as many zeros as needed to make the given strings length equal to \"target-length\""
+    (pad-with a #\0 target-length))
+
+  (define (pad-with a character target-length)
+    "string character integer -> string
+    prepend character to the given string until the string length equals target-length.
+    examples
+        (pad-with \"1\" #\0 2) -> \"01\"
+        (pad-with \"10\" #\0 2) -> \"10\"
+    pad-with-zeros"
+    (let (padding-length (- target-length (string-length a)))
+      (if (> padding-length 0)
+        (string-append (list->string (make-list padding-length character)) a) a)))
 
   (define (regexp-match-replace a replacements)
     "string (regexp . string:replacement)/(regexp string:search-string . string:replacement) ... -> string

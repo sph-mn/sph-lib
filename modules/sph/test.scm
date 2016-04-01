@@ -187,13 +187,13 @@
         ( (_ (name-part ...) body ...)
           (syntax (define-test-module (name-part ...) (import) body ...))))))
 
-  (define (test-module-execute settings module name)
+  (define (test-module-execute settings module index name)
     "alist module/environment (symbol ...) -> test-result"
     (let*
       ( (settings (alist-quoted-merge-key/value settings current-module-name name))
-        (settings (apply-settings-reporter+hook settings (q module-before) name))
+        (settings (apply-settings-reporter+hook settings (q module-before) index name))
         (r ((eval (q test-execute) module) settings)))
-      (apply-settings-hook+reporter settings (q module-after) name r) r))
+      (apply-settings-hook+reporter settings (q module-after) index name r) r))
 
   (define (test-modules-until a value) (take-while (l (a) (not (equal? a value))) a))
   (define (test-modules-only a value) (intersection a value))
@@ -208,13 +208,23 @@
           (if exclude (test-modules-exclude modules exclude) modules))
         until)))
 
+  (define (test-module-success? a)
+    (if (record? a) (test-result-success? a) (if (list? a) (every test-module-success? a) a)))
+
   (define (test-modules-execute settings module-names) "list list -> test-result"
     (let*
       ( (settings (apply-settings-reporter+hook settings (q modules-before) module-names))
         (r
-          (map
-            (l (name module) (pair (any->string name) (test-module-execute settings module name)))
-            module-names (map environment* module-names))))
+          (fold-multiple-with-continue
+            (l (e continue index r)
+              (let*
+                ( (name (first e)) (module (tail e))
+                  (r-test (test-module-execute settings module index name))
+                  (r-group (pair (any->string name) r-test)))
+                (if (test-module-success? r-test) (continue (+ 1 index) (pair r-group r))
+                  (list index r-group))))
+            (map pair module-names (map environment* module-names)) 0 (list)))
+        (r (if (list? r) (reverse (second r)) r)))
       (apply-settings-hook+reporter settings (q modules-after) module-names r) r))
 
   (define (settings->load-path! a)
@@ -271,7 +281,9 @@
     (test-create-result (eqv? #t result) title #f index result (list) #t))
 
   (define
-    (test-procedures-execute-one-data settings data name title test-proc hook-before hook-after
+    (test-procedures-execute-one-data settings index-procedure data name title test-proc
+      hook-before
+      hook-after
       hook-data-before
       hook-data-after
       report-before
@@ -284,34 +296,37 @@
         (let*
           ( (arguments (any->list (first d)))
             (settings
-              (begin (report-data-before settings name index arguments)
-                (call-settings-update-hook hook-data-before settings name index arguments)))
+              (begin (report-data-before settings index-procedure name index arguments)
+                (call-settings-update-hook hook-data-before settings
+                  index-procedure name index arguments)))
             (d-tail (tail d)) (expected (first d-tail))
             (r (test-proc arguments expected settings))
             (r
               (if (test-result? r) (record-update test-result r title title index index)
                 (test-create-result (equal? r expected) title #f index r arguments expected))))
-          (hook-data-after settings r) (report-data-after settings r)
+          (hook-data-after settings index-procedure index r)
+          (report-data-after settings index-procedure index r)
           (if (test-result-success? r) (loop (tail d-tail) (+ 1 index)) r)))))
 
   (define
-    (test-procedures-execute-without-data settings name title test-proc hook-before hook-after
+    (test-procedures-execute-without-data settings index name title test-proc hook-before
+      hook-after
       hook-data-before
       hook-data-after
       report-before
       report-after
       report-data-before
       report-data-after)
-    (report-data-before settings name 0 (list))
+    (report-data-before settings index name 0 (list))
     (let*
-      ( (settings (call-settings-update-hook hook-data-before settings name 0 (list)))
+      ( (settings (call-settings-update-hook hook-data-before settings index name 0 (list)))
         (r (test-proc (list) #t settings))
         (r
           (if (test-result? r) (record-update test-result r title title)
             (test-any->result r title 0))))
-      (hook-data-after settings r) (report-data-after settings r) r))
+      (hook-data-after settings index 0 r) (report-data-after settings index 0 r) r))
 
-  (define (test-procedures-execute-one settings exceptions? hooks name test-proc . data)
+  (define (test-procedures-execute-one settings index exceptions? hooks name test-proc . data)
     "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure. ensures that test-procedure results are test-results.
     ;creates only one test-result
@@ -323,28 +338,34 @@
           (test-proc
             (if exceptions? test-proc
               (l a (catch #t (thunk (apply test-proc a)) exception->string)))))
-        (report-before settings name)
+        (report-before settings index name)
         (let*
-          ( (settings (call-settings-update-hook hook-before settings name))
+          ( (settings (call-settings-update-hook hook-before settings index name))
             (r
               (if (null? data)
-                (apply test-procedures-execute-without-data settings name title test-proc hooks)
-                (apply test-procedures-execute-one-data settings data name title test-proc hooks))))
-          (hook-after settings r) (report-after settings r) r))))
+                (apply test-procedures-execute-without-data settings
+                  index name title test-proc hooks)
+                (apply test-procedures-execute-one-data settings
+                  index data name title test-proc hooks))))
+          (hook-after settings index r) (report-after settings index r) r))))
 
   (define (test-procedures-execute-parallel settings a exceptions? hooks)
     "list:alist list -> list
     executes all tests even if some fail"
-    (par-map (l (e) (apply test-procedures-execute-one settings exceptions? hooks e)) a))
+    (par-map (l (e) (apply test-procedures-execute-one settings 0 exceptions? hooks e)) a))
 
   (define (test-procedures-execute-serial settings a exceptions? hooks)
     "list:alist list -> list
     executes tests one after another and stops if one fails"
-    (map-with-continue
-      (l (continue e)
-        (let (r (apply test-procedures-execute-one settings exceptions? hooks e))
-          (if (test-result-success? r) (continue r) (list r))))
-      a))
+    (let
+      (r
+        (fold-multiple-with-continue
+          (l (e continue index r)
+            (let (r-test (apply test-procedures-execute-one settings index exceptions? hooks e))
+              (if (test-result-success? r-test) (continue (+ 1 index) (pair r-test r))
+                (list index (list r-test)))))
+          a 0 (list)))
+      (if (list? r) (reverse (second r)) r)))
 
   (define test-procedures-execute
     (let
@@ -365,7 +386,7 @@
           (alist-quoted-ref settings exceptions?) (settings->procedure-hooks settings)))))
 
   (define (test-execute-module settings name) "list (symbol ...) -> test-result"
-    (test-module-execute settings (environment* name) name))
+    (test-module-execute settings (environment* name) 0 name))
 
   (define test-execute-procedures test-procedures-execute)
   (define test-execute-modules test-modules-execute)
