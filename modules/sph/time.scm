@@ -10,7 +10,6 @@
     current-time-microseconds
     current-time-zone-utc-offset
     daylight-savings-time?
-    rfc3339-date->seconds
     seconds->datetime-string
     seconds->day
     seconds->day-of-week
@@ -26,12 +25,20 @@
     seconds->year
     seconds->year-seconds
     seconds->year-start
-    traditional-time-string->seconds)
+    time-traditional-hours->seconds
+    time-traditional-parts->seconds
+    time-traditional-string->seconds)
   (import
     (guile)
+    (ice-9 regex)
     (rnrs base)
     (sph)
-    (only (sph number) round-to-decimal-places simple-format-number))
+    (only (sph number) round-to-decimal-places simple-format-number)
+    (only (srfi srfi-19)
+      make-date
+      date->time-utc
+      time-second
+      time-nanosecond))
 
   ;epoch is 1970-01-01 00:00:00 UTC, excluding leap seconds.
 
@@ -40,26 +47,6 @@
 
   (define (parse-military-time->seconds a)
     (let (a (parse-military-time a)) (+ (* 3600 (first a)) (* 60 (tail a)))))
-
-  (define rfc3339-date->seconds
-    (let
-      (with-time-and-offset
-        (l (a c)
-          (first
-            (if (string-suffix? "Z" a) (c (strptime "%Y-%m-%dT%H:%M:%SZ" a) 0)
-              (let*
-                ( (offset (string-take-right a 5))
-                  (offset-sign (string-ref a (- (string-length a) 6)))
-                  (time
-                    (strptime "%Y-%m-%dT%H:%M:%S%z"
-                      (string-append (string-drop-right a 5) (string-delete #\: offset)))))
-                (c time (* (if (eqv? #\- offset-sign) -1 1) (parse-military-time->seconds offset))))))))
-      (l (a)
-        "string:\"yyyy-mm-ddThh:mm:ss+hh:mm\" -> integer:posix-epoch-seconds
-    similar to iso8601"
-        ;according to guile documentation, strptime does not set the time zone offset usefully.
-        (with-time-and-offset a
-          (l (time offset) (set-tm:gmtoff time offset) (string->number (strftime "%s" time)))))))
 
   (define (current-time-zone-utc-offset)
     "offset of the current time zone to UTC without daylight-savings-time"
@@ -130,7 +117,26 @@
   (define (current-iso-date-string) (seconds->iso-date-string (current-time)))
   (define (current-local-iso-date-string) (seconds->iso-date-string (current-local-time)))
 
-  (define (traditional-time-string->seconds a)
+  (define* (time-traditional-hours->seconds hours #:optional (minutes 0) (seconds 0))
+    (+ (* 3600 hours) (* 60 minutes) seconds))
+
+  (define*
+    (time-traditional-parts->seconds #:key (year 0) (month 0) (day 0) (hours 0) (minutes 0)
+      (seconds 0)
+      (offset-hours 0)
+      (offset-minutes 0))
+    "integer ... -> (seconds . nanoseconds)
+    create the posix-time seconds corresponding to the set of given traditionally used time units.
+    parts default to zero. offset-hours and offset-minutes may be negative"
+    (let
+      (date-object
+        (date->time-utc
+          (make-date 0 seconds
+            minutes hours
+            day month year (time-traditional-hours->seconds offset-hours offset-minutes))))
+      (time-second date-object)))
+
+  (define (time-traditional-string->seconds a)
     "string -> integer
     converts a string time representation of hours:minutes:seconds, where minutes and seconds are optional, to seconds"
     (apply

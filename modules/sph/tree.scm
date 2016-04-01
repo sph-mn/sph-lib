@@ -1,6 +1,6 @@
-; (sph tree) - arborescence/tree-structure processing
+; (sph tree) - nested-lists/arborescence/tree-like-structure processing
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -38,8 +38,8 @@
     produce-tree-lists
     produce-tree-lists-with-levels
     produce-with-iterator-tree
+    splice-lists-without-prefix-symbol
     tree->denoted-tree
-    tree-replace-at-once
     tree-contains-any-not?
     tree-contains-any?
     tree-contains-every?
@@ -49,9 +49,9 @@
     tree-filter->flat-list
     tree-fold
     tree-fold-lists-right
-    tree-fold-right
     tree-fold-reverse
     tree-fold-reverse-with-level
+    tree-fold-right
     tree-fold-with-level
     tree-map
     tree-map-and-self
@@ -63,6 +63,7 @@
     tree-map-with-level->flat-list
     tree-map-with-state
     tree-pair->list
+    tree-replace-at-once
     tree-replace-by-list
     tree-transform
     tree-transform-descend-identity
@@ -95,6 +96,22 @@
               (apply (l (r-2 . rest) (loop rest level update-r ...)) (loop rest (+ 1 level) (list)))
               (if (> level depth) (pair (reverse r) rest)
                 (loop (tail rest) level (append (tail e) r)))))))))
+
+  (define (splice-lists-without-prefix-symbol a)
+    "list -> list
+    merges all lists in list an sub-lists that do not have a symbol as the first element with its parent list.
+    (a 1 2 ((b 3 4) (c 5 ((d (6 7)) ())))) -> (a 1 2 (b 3 4) (c 5 (d 6 7)))
+    use-case: (ice-9 peg) parser results"
+    (fold-right
+      (l (a r)
+        (if (list? a)
+          (if (null? a) (append a r)
+            (let (prefix (first a))
+              (if (symbol? prefix)
+                (pair (pair prefix (splice-lists-without-prefix-symbol (tail a))) r)
+                (append (splice-lists-without-prefix-symbol a) r))))
+          (pair a r)))
+      (list) a))
 
   (define* (denoted-tree->prefix-tree a #:optional (depth-start 0))
     "list [integer] -> list

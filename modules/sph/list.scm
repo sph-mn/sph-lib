@@ -495,8 +495,8 @@
     (map-consecutive filter-proc (l args args) a))
 
   (define (improper-list-split-at-last a)
-    "pair:improper-list -> (list . any:non-pair)
-    (1 2 . 3) -> (1 2) 3"
+    "pair:improper-list -> (list any:non-pair)
+    (1 2 . 3) -> ((1 2) 3)"
     (let loop ((rest a) (r (list)))
       (if (pair? rest) (loop (tail rest) (pair (first rest) r)) (pair (reverse r) rest))))
 
