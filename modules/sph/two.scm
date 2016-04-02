@@ -118,7 +118,8 @@
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
 
-  (define (remove-keyword-associations a) "list -> list"
+  (define (remove-keyword-associations a) "list -> list
+    (3 #:a 1 2 #:b 4) -> (3 2)"
     (let loop ((rest a))
       (if (null? rest) rest
         (let (element (first rest))

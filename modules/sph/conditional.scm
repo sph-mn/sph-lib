@@ -23,7 +23,8 @@
 
   (define-syntax-rules pass-if
     ;"any procedure:{any -> any} -> any
-    ;apply proc with "a" if "a" is a true value, otherwise return false or evaluate else"
+    ;apply proc with "a" if "a" is a true value, otherwise return false or evaluate else.
+    ;also known as \"and=>\""
     ((a proc) ((lambda (b) (if b (proc b) #f)) a))
     ((a proc else) ((lambda (b) (if b (proc b) else)) a)))
 
