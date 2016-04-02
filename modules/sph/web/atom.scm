@@ -24,7 +24,6 @@
   ;https://en.wikipedia.org/wiki/Atom_%28standard%29#Atom_compared_to_RSS_2.0
   ;http://atomenabled.org/developers/syndication/
   ;https://tools.ietf.org/html/rfc4287
-
   (define-syntax-rule (pass-if-string a proc) (if (string? a) (proc a) a))
   (define (integer/string->rfc3339 a) (if (string? a) a (time-seconds->rfc3339 a)))
 
@@ -114,7 +113,7 @@
     (pairs (q entry) (sxml-element title)
       (sxml-element updated (integer/string->rfc3339 updated)) (sxml-element id)
       (filter identity
-        (list (sxml-element-optional published (integer/string->rfc3339 published))
+        (list (sxml-element-optional published (and published (integer/string->rfc3339 published)))
           (pass-if-string link atom-link) (pass-if-string authors atom-author)
           (pass-if-string contributors atom-contributor) (pass-if-string categories atom-category)
           (pass-if-string summary atom-summary) (pass-if-string rights atom-rights) source content))))
