@@ -1,6 +1,6 @@
 ; (sph one) - various procedures
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -16,7 +16,6 @@
   (export
     alist->regexp-match-replacements
     and-p
-    list->values
     apply*
     apply-values
     apply-without-arguments
@@ -51,6 +50,7 @@
     limit
     limit-max
     limit-min
+    list->values
     n-times
     n-times-accumulate
     number->integer-string
@@ -63,6 +63,7 @@
     procedure-cond
     program-path
     quote-odd
+    remove-keyword-associations
     round-even
     search-env-path
     socket-bind
@@ -98,6 +99,14 @@
       unfold-right
       filter
       unfold))
+
+  (define (remove-keyword-associations a)
+    "list -> list
+    (3 #:a 1 2 #:b 4) -> (3 2)"
+    (let loop ((rest a))
+      (if (null? rest) rest
+        (let (element (first rest))
+          (if (keyword? element) (loop (list-tail rest 2)) (pair element (loop (tail rest))))))))
 
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
   (define-syntax-rule (apply* arguments proc) (apply proc arguments))

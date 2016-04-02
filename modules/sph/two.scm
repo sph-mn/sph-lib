@@ -14,6 +14,8 @@
 
 (library (sph two)
   (export
+    any-hashtable-keys->values
+    any-hashtable-values->keys
     bash-escape-clear
     bindings-select-prefix
     bindings-select-regexp
@@ -31,7 +33,6 @@
     file-append-one
     generalised-length
     generalised-less?
-    system-realpath
     get-filesystem-root
     get-mime-extensions
     git-archive
@@ -55,7 +56,6 @@
     not-scm-file?
     os-seconds-at-boot
     os-seconds-since-boot
-    ;path->mime-type
     paths-find-file-size-sum
     plaintext->sxml-html
     port-column-subtract!
@@ -67,8 +67,6 @@
     read-line-crlf
     read-line-crlf-trim
     read-mime.types
-    any-hashtable-values->keys
-    any-hashtable-keys->values
     search-env-path-variable
     seconds->short-kiloseconds-string
     set-multiple-from-list!
@@ -76,13 +74,15 @@
     string-remove-leading-zeros
     sxml->xml-string
     system-cat-merge-files
-    remove-keyword-associations
+    system-realpath
     tail-symbols->string
     tree-replace-from-hashtable
     variable-type
     while-do
     while-do-map
-    while-store)
+    while-store
+    ;path->mime-type
+    )
   (import
     (guile)
     (ice-9 match)
@@ -118,21 +118,13 @@
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
 
-  (define (remove-keyword-associations a) "list -> list
-    (3 #:a 1 2 #:b 4) -> (3 2)"
-    (let loop ((rest a))
-      (if (null? rest) rest
-        (let (element (first rest))
-          (if (keyword? element) (loop (list-tail rest 2)) (pair element (loop (tail rest))))))))
-
   (define (any-hashtable-keys->values ht a)
     "r6rs-hashtable any -> any
     replace the given value or values in a list with values in hashtable for the given value as key"
     (if (list? a) (map (l (b) (any-hashtable-keys->values ht b)) a)
       (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
 
-  (define (any-hashtable-values->keys ht a)
-    "r6rs-hashtable any -> any"
+  (define (any-hashtable-values->keys ht a) "r6rs-hashtable any -> any"
     (if (list? a) (map (l (b) (any-hashtable-values->keys ht b)) a)
       (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
 

@@ -14,18 +14,16 @@
     atom-text-xhtml
     atom-title)
   (import
-    (sph common)
+    (rnrs base)
+    (sph)
     (sph time rfc3339)
-    (only (sph two) remove-keyword-associations))
+    (only (guile) filter identity)
+    (only (sph one) remove-keyword-associations))
 
-  ;creating the sxml for atom syndication feeds, similar to rss (but better)
+  ;creating the sxml for atom syndication feeds, similar to rss (but arguably better)
   ;https://tools.ietf.org/html/rfc4287
   ;http://atomenabled.org/developers/syndication/
-  (define-syntax-rule (null-if-not test consequent) (if test consequent (list)))
-  (define-syntax-rule (identity-if-or-null a) (identity-if a (list)))
   (define-syntax-rule (pass-if-string a proc) (if (string? a) (proc a) a))
-  (define (list-and-first? proc a) (and (list? a) (not (null? a)) (proc (first a))))
-  (define (list-and-first-string? a) (list-and-first? string? a))
   (define (integer/string->rfc3339 a) (if (string? a) a (time-seconds->rfc3339 a)))
 
   (define-syntax-rules sxml-element ((name value) (list (q name) value))

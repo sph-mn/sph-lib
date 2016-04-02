@@ -55,7 +55,7 @@
       quote-odd
       ignore
       exception->string)
-    (only (sph two) remove-keyword-associations))
+    (only (sph one) remove-keyword-associations))
 
   ;data-structures:
   ;  test-result: ([group-name] test-result ...)/test-result-record
