@@ -96,4 +96,6 @@
     "number integer integer -> string
     number as a string, rounded to decimal places, decimal mark shifted by n steps left (the direction where the string representation of an increasing number would grow towards)"
     (if (= 0 decimal-places) (number->string (round (/ a (expt 10 decimal-point-shift))))
-      (format #f (simple-format #f "~~,~A,~Af" decimal-places (* -1 decimal-point-shift)) a))))
+      (let
+        (pattern-format (simple-format #f "~~,~A,~Af" decimal-places (* -1 decimal-point-shift)))
+        (format #f pattern-format a)))))

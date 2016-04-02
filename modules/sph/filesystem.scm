@@ -48,7 +48,7 @@
     (sph)
     (sph process)
     (sph read-write)
-    (sph stream)
+    (sph stream base)
     (sph string)
     (sph time)
     (srfi srfi-41)
@@ -229,21 +229,16 @@
     create a new unique file in the file system and return a new buffered port for reading and writing to the file"
     (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
 
-  (define* (get-unique-target-path target-path #:optional (add-date? #t))
+  (define (get-unique-target-path target-path)
     "string boolean -> string
     find a target path that is similar to \"target-path\" but unique in the directory.
     adds incrementing numbers or/and a file modification time date if \"add-date?\" is true (default) to find the result path"
     (if (file-exists? target-path)
-      (let
-        (new-target-path
-          (string-append target-path "."
-            (if add-date? (seconds->iso-date-string (stat:mtime (stat target-path))) "1")))
-        (if (file-exists? new-target-path)
-          (let (fn-add-count (l (a count) (string-append a "." (number->string count 32))))
-            (let loop ((t (fn-add-count new-target-path 2)) (loop-count 3))
-              (if (file-exists? t)
-                (loop (fn-add-count new-target-path loop-count) (+ 1 loop-count)) t)))
-          new-target-path))
+      (let (next-path (l (count) (string-append target-path "." (number->string count 32))))
+        (let loop ((other-path (next-path 1)) (count 1))
+          (if (file-exists? other-path)
+            (loop (next-path count) (+ 1 count))
+            other-path)))
       target-path))
 
   (define (merge-files target-path . source-paths)

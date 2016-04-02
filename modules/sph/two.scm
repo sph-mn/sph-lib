@@ -107,7 +107,6 @@
     (sph string)
     (sph time)
     (sph tree)
-    (srfi srfi-41)
     (srfi srfi-69)
     (sxml simple)
     (except (rnrs hashtables) hashtable-ref)

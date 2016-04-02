@@ -90,8 +90,8 @@
   (define-syntax-rule (export-modules unquoted-name ...)
     ((lambda (m) (export-module m (q unquoted-name)) ...) (current-module)))
 
-  (define-syntax-rule (export-module with-module name)
-    (module-re-export! with-module
+  (define-syntax-rule (export-module into-module name)
+    (module-re-export! into-module
       (filter (lambda (e) (not (eqv? e (quote %module-public-interface))))
         (module-map (lambda args (car args)) (resolve-interface name)))))
 
