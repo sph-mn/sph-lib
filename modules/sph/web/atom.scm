@@ -20,9 +20,11 @@
     (only (guile) filter identity)
     (only (sph one) remove-keyword-associations))
 
-  ;creating the sxml for atom syndication feeds, similar to rss (but arguably better)
-  ;https://tools.ietf.org/html/rfc4287
+  ;for creating the sxml for atom syndication feeds
+  ;https://en.wikipedia.org/wiki/Atom_%28standard%29#Atom_compared_to_RSS_2.0
   ;http://atomenabled.org/developers/syndication/
+  ;https://tools.ietf.org/html/rfc4287
+
   (define-syntax-rule (pass-if-string a proc) (if (string? a) (proc a) a))
   (define (integer/string->rfc3339 a) (if (string? a) a (time-seconds->rfc3339 a)))
 
