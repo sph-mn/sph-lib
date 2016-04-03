@@ -26,13 +26,13 @@
     (qq (a (@ (href "#b-" (unquote title))) (unquote title))))
 
   (define (library-documentation-sxml-html-binding-documentation binding nesting-depth)
-    (section nesting-depth (create-binding-name-anchor-target (first binding))
+    (sxml-html-section nesting-depth (create-binding-name-anchor-target (first binding))
       (filter-map
         (l (e)
           (let (content (remove string-null? (tail e)))
             (if (null? content) #f
               (let (lines (append-map (l (e) (string-split e #\newline)) content))
-                (section (+ 1 nesting-depth) (first e)
+                (sxml-html-section (+ 1 nesting-depth) (first e)
                   (process-lines lines) (list (q class) (first e)))))))
         (tail binding))))
 
