@@ -7,9 +7,7 @@
     docl-itml-string->sxml-html
     docl-itml-sxml-html-env-module-names
     itml-parsed->sxml-html
-    process-lines
-    section
-    sxml-html-heading)
+    process-lines)
   (import
     (guile)
     (rnrs base)
@@ -23,26 +21,12 @@
     (sph list)
     (sph read-write)
     (sph set)
+    (sph web sxml-html)
     (only (sph hashtable) hashtable-ref symbol-hashtable)
     (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
     (only (sph tree) flatten tree-transform-with-state)
     (only (srfi srfi-1) remove))
-
-  (define html-headings (q #(h1 h2 h3 h4 h5 h6)))
-
-  (define (sxml-html-heading nesting-depth . content)
-    (pair (vector-ref html-headings (min 5 nesting-depth)) content))
-
-  (define (section nesting-depth title content . attributes)
-    "integer sxml sxml (string/symbol string/symbol) ... -> sxml"
-    (pair (q section)
-      (append (if (null? attributes) attributes (list (pair (q @) attributes)))
-        (pair (sxml-html-heading nesting-depth title)
-          (if (list? content)
-            (if (null? content) (list)
-              (if (symbol? (first content)) (list content) (list (pair (q div) content))))
-            (list (list (q div) content)))))))
 
   (define (add-spaces a)
     "list -> list
@@ -89,7 +73,7 @@
           (pair (handle-line e) r)))))
 
   (define-syntax-rule (join-heading-section a nesting-depth)
-    (section nesting-depth (first a) (process-lines (tail a))))
+    (sxml-html-section nesting-depth (first a) (process-lines (tail a))))
 
   (define-syntax-rule (heading-section? a)
     (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))

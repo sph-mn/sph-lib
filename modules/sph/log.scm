@@ -1,5 +1,3 @@
-;a diagnostic-logging system with routing
-
 (library (sph log)
   (export
     log-default-formatter
@@ -24,24 +22,27 @@
       string-replace-chars)
     (only (sph time) current-local-datetime-string))
 
-  (define (apply-log-route arg categories args)
-    (let (message ((vector-ref arg 1) categories args))
-      ;this could easily be extended to dynamically open ports or for other ways to pass the message
-      (each (l (port) (display message port)) (vector-ref arg 2))))
+  ;diagnostic logging with routing
 
-  (define (log-default-formatter categories args)
+  (define (apply-log-route a categories arguments)
+    (let (message ((vector-ref a 1) categories arguments))
+      ;this could easily be extended to dynamically open ports or for other ways to pass the message
+      (each (l (port) (display message port)) (vector-ref a 2))))
+
+  (define (log-default-formatter categories arguments)
     "(symbol ...) (any ...) ->
     categories is the list of symbol names for which the log-route has matched"
     (simple-format #f "~A ~A\n  ~A\n"
-      (current-local-datetime-string) categories
-      (string-replace-chars (string-drop-right (string-drop (any->string args) 1) 1)
+      (current-local-datetime-string) (simplify categories)
+      (string-replace-chars (string-drop-right (string-drop (any->string arguments) 1) 1)
         (list (list #\newline #\newline #\space #\space)))))
 
   (define log-default-route (vector (q all) log-default-formatter (list (current-error-port))))
+  (define log-routes (list log-default-route))
 
-  (define (log-message categories . args)
-    "symbol/(symbol ...) ->
-    filters log-routes and calls any matching log-route formatter with args.
+  (define (log-message categories . arguments)
+    "symbol/(symbol ...) any ... ->
+    filters log-routes and calls any matching log-route formatter with arguments.
     categories can be a tree-like list with prefixed symbols some/every/none.
     log-route: #(symbol/(symbol ...) procedure:{list list ->} (port:output-port ...))"
     (let (categories (if (symbol? categories) (list categories) categories))
@@ -50,7 +51,5 @@
           (if
             (or (eqv? (q all) (vector-ref log-route 0))
               (list-set-match-contains? categories (vector-ref log-route 0)))
-            (apply-log-route log-route categories args)))
-        log-routes)))
-
-  (define log-routes (list log-default-route)))
+            (apply-log-route log-route categories arguments)))
+        log-routes))))

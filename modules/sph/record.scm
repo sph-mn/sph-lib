@@ -226,6 +226,9 @@
       a))
 
   (define-syntax-case (define-record name field-name/get/set ...) s
+    ;"examples
+    ;(define-record my-record a b c)
+    ;(define-record my-other-record (a my-a-accessor-name my-a-setter-name) b (c my-c-accessor-n))"
     (let
       ( (field-spec
           (define-record-prepare-field-spec (syntax->datum (syntax name))

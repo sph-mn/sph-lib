@@ -31,6 +31,7 @@
     create-temp-fifo
     define-string
     each-u8
+    values-bind
     eq-any?
     eq-every?
     equal-any?
@@ -166,8 +167,12 @@
     (apply proc a))
 
   (define (list->values a) (apply values a))
-  (define-syntax-rule (apply-values proc producer) (call-with-values (l () producer) proc))
-  (define-syntax-rule (with-values producer proc) (call-with-values (l () producer) proc))
+  (define-syntax-rule (apply-values proc producer) (call-with-values (thunk producer) proc))
+  (define-syntax-rule (with-values producer proc) (call-with-values (thunk producer) proc))
+
+  (define-syntax-rule (values-bind producer lambda-formals body ...)
+    (call-with-values (thunk producer) (lambda lambda-formals body ...)))
+
   (define (boolean->integer a) (if a 1 0))
 
   (define (call-with-pipe proc) "procedure:{port:in port:out -> any} -> any"
