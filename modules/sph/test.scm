@@ -196,7 +196,7 @@
       (apply-settings-hook+reporter settings (q module-after) index name r) r))
 
   (define (test-modules-until a value) (take-while (l (a) (not (equal? a value))) a))
-  (define (test-modules-only a value) (intersection a value))
+  (define (test-modules-only a values) (intersection a values))
   (define (test-modules-exclude a values) (remove (l (a) (containsv? values a)) a))
 
   (define (test-modules-apply-settings settings modules)

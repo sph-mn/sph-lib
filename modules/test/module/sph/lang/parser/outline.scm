@@ -1,5 +1,9 @@
-(define-test-module (test module sph lang parser outline) (import (sph lang parser outline))
+(define-test-module (test module sph lang parser outline)
+  (import
+    (sph lang parser outline))
+
   (define-test (read-outline arguments) (read-outline (open-input-string (first arguments)) #\=))
+
   (test-execute-procedures-lambda
     (read-outline "= 1\na\nb\n== 11\nc\n== 12\n=== 121\nd\ne\n= 2\nf\ng"
       (("1" "a" "b" ("11" "c") ("12" ("121" "d" "e"))) ("2" "f" "g")) "= 1\n=== 2\n= 3"

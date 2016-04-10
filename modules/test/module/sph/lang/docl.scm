@@ -1,15 +1,15 @@
 (define-test-module (test module sph lang docl)
-  (import (rnrs eval) (sph lang docl) (sph lang docl itml-to-sxml-html))
+  (import (rnrs eval) (sph lang docl) (sph lang docl itml-to-sxhtml))
 
   (define docl-itml-env-test
     (apply environment (q (test helper sph lang docl env test))
-      (q (sph lang docl itml-to-sxml-html)) docl-itml-env-sxml-html-module-names))
+      (q (sph lang docl itml-to-sxhtml)) docl-itml-env-sxhtml-module-names))
 
-  (define-test (itml->sxml-html arguments)
-    (docl-itml-string->sxml-html (first arguments) 0 docl-state-empty docl-itml-env-test))
+  (define-test (itml->sxhtml arguments)
+    (docl-itml-string->sxhtml (first arguments) 0 docl-state-empty docl-itml-env-test))
 
   (test-execute-procedures-lambda
-    (itml->sxml-html
+    (itml->sxhtml
       "\\.scm (+ 1 2\n  (- 3 1))\n" ((p 5))
       "\\\\.(+ 1 2)" ((p "\\" ".(+ 1 2)"))
       "\\docl-text-reverse: a b c" ((p "c b a"))

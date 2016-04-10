@@ -19,8 +19,7 @@
     (itml-create-association "a" simple-inline-scm-expr simple-inline-scm-expr))
 
   (test-execute-procedures-lambda
-    (string->itml-parsed
-      "a: \\.(+ 1 2)" ((association "a" (inline-scm-expr + 1 2)))
+    (string->itml-parsed "a: \\.(+ 1 2)" ((association "a" (inline-scm-expr + 1 2)))
       (unquote simple-indent-scm-expr) ((unquote (pair (q indent-scm-expr) test-env-list-1)))
       "\\.a b\nc\nd" ((indent-scm-expr a b) "c" "d")
       "a\n  \\.b\n  c" (("a" "\\.b" "c"))
@@ -37,22 +36,25 @@
       "\\.aa: bb cc" ((line-scm-expr aa bb cc))
       ;inline
       (unquote simple-inline-expr) ((unquote (pair (q inline-expr) test-env-list-2)))
-      "\\(keyword (c (ont\\.(+ 1 2)ent)))" ((inline-expr "keyword" ("c" ("ont" (inline-scm-expr + 1 2) "ent"))))
-      "\\(+ 3 1)" ((inline-expr "+" "3" "1"))
-      "\\(+ 3 (+ 2 1))" ((inline-expr "+" "3" ("+ 2 1")))
+      "\\(keyword (c (ont\\.(+ 1 2)ent)))"
+      ((inline-expr "keyword" ("c" ("ont" (inline-scm-expr + 1 2) "ent")))) "\\(+ 3 1)"
+      ((inline-expr "+" "3" "1")) "\\(+ 3 (+ 2 1))"
+      ((inline-expr "+" "3" ("+ 2 1")))
       ;line
       (unquote simple-line-expr) ((line-expr "a" "e (b (c d))"))
-      "\\a: (b (c \\.(scm (+ 1 2)))) e" ((line-expr "a" ("(b (c " (inline-scm-expr scm (+ 1 2)) ")) e")))
-      "\\aa: bb cc" ((line-expr "aa" "bb cc"))
-      "\\\\a b" ((line "\\" "a b"))
+      "\\a: (b (c \\.(scm (+ 1 2)))) e"
+      ((line-expr "a" ("(b (c " (inline-scm-expr scm (+ 1 2)) ")) e"))) "\\aa: bb cc"
+      ((line-expr "aa" "bb cc")) "\\\\a b"
+      ((line "\\" "a b"))
       ;indent
       (unquote simple-indent-expr) ((indent-expr "a" "e" ("b" ("c d"))))
       "\\a b" ((indent-expr "a" "b"))
-      "\\keyword content\n  on\n  multiple lines" ((indent-expr "keyword" "content" "on" "multiple lines"))
+      "\\keyword content\n  on\n  multiple lines"
+      ((indent-expr "keyword" "content" "on" "multiple lines"))
       ;association
       (unquote simple-association) ((association "a b" "c d"))
       (unquote extended-association) ((association "a b" "c " (inline-scm-expr a (b ("c" d)))))
-      (unquote extended-association-2) ((association "a" (inline-scm-expr a  (b ("c" d)))))
+      (unquote extended-association-2) ((association "a" (inline-scm-expr a (b ("c" d)))))
       (unquote extended-association-3)
       ((association "a" (inline-scm-expr a (b ("c" d))) (inline-scm-expr a (b ("c" d)))))
       "aa: \\\\.(+ 1 2)" ((association "aa" "\\.(+ 1 2)"))
@@ -62,5 +64,5 @@
       "a b :c" ("a b :c")
       "keyword:content" ("keyword:content")
       "keyword: content" ((association "keyword" "content"))
-      "key\\.(+ 3 4)word: con\\.(+ 1 2)tent" ((association ("key" (inline-scm-expr + 3 4) "word") "con" (inline-scm-expr + 1 2) "tent"))
-      )))
+      "key\\.(+ 3 4)word: con\\.(+ 1 2)tent"
+      ((association ("key" (inline-scm-expr + 3 4) "word") "con" (inline-scm-expr + 1 2) "tent")))))

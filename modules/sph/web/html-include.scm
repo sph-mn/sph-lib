@@ -12,7 +12,7 @@
     (sph hashtable)
     (sph list)
     (sph one)
-    (sph web sxml-html)
+    (sph web sxhtml)
     (sph filesystem))
 
   (define (find-file path suffix->handler)
@@ -66,8 +66,8 @@
           (string-append (vector-ref config 3) target-file-name))
         #f)))
 
-  (define (content-type->sxml-html-include-tag arg)
-    (if (equal? (q stylesheet) arg) sxml-html-include-style sxml-html-include-script))
+  (define (content-type->sxhtml-include-tag arg)
+    (if (equal? (q stylesheet) arg) sxhtml-include-style sxhtml-include-script))
 
   (define (html-include-proc include-config content-type->search-paths)
       #;(include-config (symbol-hashtable content-type (vector (alist suffix single-action ...) action target-path)))
@@ -79,5 +79,5 @@
             (content-type->search-paths content-type)
             (string-join (map symbol->string paths) "/")))
         (if path
-          ((content-type->sxml-html-include-tag content-type) path)
+          ((content-type->sxhtml-include-tag content-type) path)
           "")))))

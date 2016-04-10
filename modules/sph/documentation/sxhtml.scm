@@ -79,5 +79,5 @@
                     (list (symbol->string name) (map-binding-name name library-name)
                       (map-library-name library-name)))
                   names))
-              (module-names->interface-binding-names library-names) library-names))))
+              (module-names->exports library-names) library-names))))
       (pair (q table) (map (l (e) (pair (q tr) (map (l (e) (list (q td) e)) e))) binding-info)))))

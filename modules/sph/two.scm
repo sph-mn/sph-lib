@@ -57,7 +57,7 @@
     os-seconds-at-boot
     os-seconds-since-boot
     paths-find-file-size-sum
-    plaintext->sxml-html
+    plaintext->sxhtml
     port-column-subtract!
     port-each-line-alternate-direction
     port-lines-words-hashtable-associate
@@ -154,7 +154,7 @@
 
   (define (sxml->xml-string a) (call-with-output-string (l (b) (sxml->xml a b) b)))
 
-  (define (plaintext->sxml-html a)
+  (define (plaintext->sxhtml a)
     "string -> list:sxml
     convert double newlines to paragraphs <p> and single newlines to breaks <br>."
     (map (l (e) (list (q p) (interleave (string-split e #\newline) (ql br))))

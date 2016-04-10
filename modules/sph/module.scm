@@ -15,6 +15,7 @@
     import-unexported
     include-file-from-load-path
     library-exists?
+    path-drop-load-path
     load-with-environment
     module-compose
     module-dependencies
