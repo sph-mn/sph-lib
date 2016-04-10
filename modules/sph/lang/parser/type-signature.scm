@@ -69,22 +69,25 @@
   (define-peg-pattern sig all
     (or sig-multiline (and sig-line (* (and ignored-newline (* ignored-space) sig-line)))))
 
-  (define (string->parsed-type-signature arg) "string -> list/boolean"
-    (peg:tree (match-pattern sig arg)))
+  (define (string->parsed-type-signature a) "string -> list/boolean"
+    (peg:tree (match-pattern sig a)))
 
-  (define* (parsed-type-signature->string arg #:optional line-prefix)
+  (define* (parsed-type-signature->string a #:optional line-prefix)
+    "list [string] -> string
+    \"line-prefix\" could be indent space"
     (let (line-delimiter (if line-prefix (string-append "\n" line-prefix) "\n"))
       (first
         (tree-map-lists
-          (l (ele)
-            (case (first ele) ((alternatives) (first (tail ele)))
-              ((arguments) (string-join (flatten (tail ele)) " "))
-              ((sig-line) (string-join (tail ele) " -> "))
-              ((sig-multiline) (string-append "::\n" (string-join (tail ele) "\n->\n")))
-              ((sig-multiline-part) (string-join (tail ele) "\n"))
-              ((sig-procedure) (string-append "{" (second ele) "}"))
-              ((sig) (string-join (flatten (tail ele)) line-delimiter))
-              ((repetition-argument) (string-append (second ele) " ..."))
-              ((association) (string-join (flatten (tail ele)) ":"))
-              ((optional-arguments) (string-append "[" (string-join (flatten (tail ele)) " ") "]")) (else ele)))
-          (list arg))))))
+          (l (e)
+            (case (first e) ((alternatives) (first (tail e)))
+              ((arguments) (string-join (flatten (tail e)) " "))
+              ((sig-line) (string-join (tail e) " -> "))
+              ((sig-multiline) (string-append "::\n" (string-join (tail e) "\n->\n")))
+              ((sig-multiline-part) (string-join (tail e) "\n"))
+              ((sig-procedure) (string-append "{" (second e) "}"))
+              ((sig) (string-join (flatten (tail e)) line-delimiter))
+              ((repetition-argument) (string-append (second e) " ..."))
+              ((association) (string-join (flatten (tail e)) ":"))
+              ((optional-arguments) (string-append "[" (string-join (flatten (tail e)) " ") "]"))
+              (else e)))
+          (list a))))))

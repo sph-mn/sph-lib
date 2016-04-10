@@ -1,8 +1,7 @@
-;translates itml to a source similar indent-tree but with expressions evaluated
-
 (library (sph lang docl itml-to-text)
   (export
     docl-itml-env-text
+    docl-itml-env-text-module-names
     docl-itml-parsed->text
     docl-itml-port->text
     docl-itml-string->text
@@ -15,16 +14,19 @@
     (sph)
     (sph conditional)
     (sph hashtable)
-    (sph lang itml)
     (sph lang docl)
     (sph lang docl itml)
     (sph lang indent-syntax)
+    (sph lang itml)
     (sph string)
     (only (sph tree) flatten))
 
-  (define docl-itml-env-text
-    (apply environment (q (sph lang docl env itml-to-text)) docl-default-env-module-names))
+  ;translates itml to a source similar indent-tree but with expressions evaluated
 
+  (define docl-itml-env-text-module-names
+    (pair (q (sph lang docl env itml-to-text)) docl-default-env-module-names))
+
+  (define docl-itml-env-text (apply environment docl-itml-env-text-module-names))
   (define (ascend-handle-line a nesting-depth docl-state env) (string-join a ""))
   (define (descend-handle-double-backslash a nesting-depth docl-state env) "\\")
 
@@ -45,20 +47,22 @@
     double-backslash descend-handle-double-backslash)
 
   (define-syntax-rule (expr->text prefix->handler a proc-arguments ...)
-    (let (p (hashtable-ref prefix->handler (first a))) (and p (p (tail a) proc-arguments ...))))
+    (let (handler (hashtable-ref prefix->handler (first a)))
+      (and handler (handler (tail a) proc-arguments ...))))
 
   (define (ascend-expr->text a nesting-depth docl-state env)
     (or (expr->text ascend-prefix->handler-ht a nesting-depth docl-state env) a))
 
   (define (descend-expr->text a re-descend nesting-depth docl-state env)
-    (expr->text descend-prefix->handler-ht a nesting-depth docl-state env))
+    (expr->text descend-prefix->handler-ht a re-descend nesting-depth docl-state env))
 
   (define (handle-top-level-terminal a . states) (if (eqv? (q line-empty) a) "" a))
   (define (handle-terminal a . states) (pair (apply handle-top-level-terminal a states) states))
 
   (define itml-parsed->text
     (itml-parsed->result-proc
-      (l (a nesting-depth docl-state env) (prefix-tree->indent-tree-string a nesting-depth))
+      (l (a nesting-depth docl-state env)
+        (prefix-tree->indent-tree-string a nesting-depth))
       (itml-descend-proc descend-expr->text)
       (itml-ascend-proc ascend-expr->text itml-adjust-nesting-depth) handle-top-level-terminal
       handle-terminal))

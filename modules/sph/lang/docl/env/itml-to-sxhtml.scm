@@ -1,4 +1,4 @@
-(library (sph lang docl env itml-to-sxml-html)
+(library (sph lang docl env itml-to-sxhtml)
   (export
     escape
     scm

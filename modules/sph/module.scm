@@ -1,6 +1,7 @@
 (library (sph module)
   (export
     call-if-defined
+    collect-library-names
     current-bindings
     current-module-ref
     environment*
@@ -15,32 +16,46 @@
     include-file-from-load-path
     library-exists?
     load-with-environment
-    collect-library-names
     module-compose
-    module-interface-binding-names
+    module-dependencies
+    module-dependencies-pairs
+    module-exports
     module-name->load-path+full-path&
     module-name->path
     module-name-interface-fold
     module-name-interface-map
-    module-names->interface-binding-names
+    module-names->exports
     module-ref-no-error
     path->load-path
     path->module-name
     path->symbol-list)
   (import
     (guile)
+    (ice-9 match)
     (rnrs base)
     (rnrs eval)
     (sph)
     (sph error)
     (sph filesystem)
-    (ice-9 match)
     (only (ice-9 regex) string-match)
     (only (rnrs sorting) list-sort)
     (only (sph conditional) pass-if)
     (only (sph read-write) file->datums)
     (only (sph string) string-longest-prefix string-drop-prefix)
     (only (srfi srfi-1) append-map last))
+
+  (define module-interface->module (compose resolve-module module-name))
+
+  (define (module-dependencies module) "module -> (module ...)"
+    (map module-interface->module (module-uses module)))
+
+  (define (module-dependencies-pairs module) "module -> ((module . module:dependency) ...)"
+    (map (l (e) (pair module e)) (module-dependencies module)))
+
+  (define (module-exports module)
+    "module -> (symbol ...)
+    list of exported binding names"
+    (module-map (l (name variable) name) (module-public-interface module)))
 
   (define (environment* . name)
     "(symbol ...) ... -> environment/module
@@ -66,12 +81,8 @@
     "procedure:{key value -> any} (symbol ...) -> list"
     (module-name-interface-fold (l (key value r) (pair (proc key value) r)) (list) module-name))
 
-  (define (module-interface-binding-names module)
-    (module-map (l (name variable) name) (module-public-interface module)))
-
-  (define (module-names->interface-binding-names a)
-    "((symbol ...) ...) -> (list:module-bindings ...)"
-    (map (compose module-interface-binding-names resolve-module) a))
+  (define (module-names->exports a) "((symbol ...) ...) -> (list:module-bindings ...)"
+    (map (compose module-exports resolve-module) a))
 
   (define-syntax-rule (current-bindings)
     ;return a guile-hashtable of all bindings in the current module
