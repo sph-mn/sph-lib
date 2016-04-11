@@ -115,8 +115,8 @@
   (define (seconds->hours-minutes-seconds a) "integer -> (integer integer integer)"
     (let*
       ( (hours (truncate (/ a 3600))) (hour-seconds (* 3600 hours))
-        (minutes (truncate (/ (- a hour-seconds) 60))))
-      (list hours minutes (- a hour-seconds (* minutes 60)))))
+        (minutes (inexact->exact (truncate (/ (- a hour-seconds) 60)))))
+      (list (inexact->exact hours) minutes (inexact->exact (- a hour-seconds (* minutes 60))))))
 
   (define*
     (time-traditional-parts->seconds #:key (year 0) (month 0) (day 0) (hours 0) (minutes 0)
