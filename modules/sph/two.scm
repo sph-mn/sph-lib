@@ -71,6 +71,8 @@
     seconds->short-kiloseconds-string
     set-multiple-from-list!
     srfi-19-date->seconds
+    create-indent
+    create-newline-indent
     string-remove-leading-zeros
     sxml->xml-string
     system-cat-merge-files
@@ -116,6 +118,9 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
+
+  (define (create-indent size) (list->string (make-list (* size 2) #\space)))
+  (define (create-newline-indent size) (string-append "\n" (create-indent size)))
 
   (define (any-hashtable-keys->values ht a)
     "r6rs-hashtable any -> any

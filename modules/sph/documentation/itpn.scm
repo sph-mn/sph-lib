@@ -11,34 +11,18 @@
     (sph binding-info)
     (sph documentation)
     (sph documentation display-format-plist)
-    (sph lang docl itml-to-itpn)
     (sph list)
     (sph module)
     (sph one)
+    (only (sph two) create-newline-indent)
     (sph string)
     (except (srfi srfi-1) map))
 
-  (define (create-binding-name-anchor-target title)
-    (qq (span (@ (id "b-" (unquote title))) (unquote title))))
-
-  (define (create-binding-name-anchor title)
-    (qq (a (@ (href "#b-" (unquote title))) (unquote title))))
-
-  (define (library-documentation-itpn-binding-documentation binding indent)
-    (string-append
-      indent
-      (symbol->string (first binding))
-
-      )
-    (itpn-section nesting-depth (create-binding-name-anchor-target )
-      (filter-map
-        (l (e)
-          (let (content (remove string-null? (tail e)))
-            (if (null? content) #f
-              (let (lines (append-map (l (e) (string-split e #\newline)) content))
-                (itpn-section (+ 1 nesting-depth) (first e)
-                  (process-lines lines) (list (q class) (first e)))))))
-        (tail binding))))
+  (define (with-binding-info-title-and-lines-proc c)
+    (l (binding-info)
+      (let (content (remove string-null? (tail binding-info)))
+        (if (null? content) #f
+          (c (first binding-info) (append-map (l (e) (string-split e #\newline)) content))))))
 
   (define (get-binding-documentation module-name) "list -> ((symbol:name . list:alist) ...)"
     (list-sort-with-accessor string<? first
@@ -49,24 +33,36 @@
               (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
           (module-binding-info module-name)))))
 
+  (define
+    (library-documentation-itpn-binding-documentation name binding-info newline-indent-3
+      newline-indent-4)
+    (string-join
+      (pair name
+        (filter-map
+          (with-binding-info-title-and-lines-proc
+            (l (title lines) (string-join (pair title lines) newline-indent-4)))
+          binding-info))
+      newline-indent-3))
+
   (define (documentation-itpn-library nesting-depth . library-names)
     "((symbol ...) ...) integer -> string
     index of all bindings in a module and a listing of the available binding documentation"
     (let
       ( (bindings (append-map get-binding-documentation library-names))
-        (indent (string-multiply "  " nesting-depth))
-        (indent-next (string-multiply "  " (+ 1 nesting-depth))))
+        (newline-indent-1 (create-newline-indent nesting-depth))
+        (newline-indent-2 (create-newline-indent (+ 1 nesting-depth)))
+        (newline-indent-3 (create-newline-indent (+ 2 nesting-depth)))
+        (newline-indent-4 (create-newline-indent (+ 3 nesting-depth))))
       (par-let
-        ( (index
-            (string-join (map (compose symbol->string first) bindings)
-              (string-append "\n" indent-next)))
+        ( (index (map first bindings))
           (content
             (map
               (l (e)
-                (library-documentation-itpn-binding-documentation
-                  (pair (first e) (alist-delete "module" (tail e))) (+ 1 nesting-depth)))
+                (library-documentation-itpn-binding-documentation (first e)
+                  (alist-delete "module" (tail e)) newline-indent-3 newline-indent-4))
               bindings)))
-        (list index content))))
+        (string-append "index" (string-join index newline-indent-2 (q prefix))
+          newline-indent-1 "details" (string-join content newline-indent-2 (q prefix))))))
 
   (define*
     (documentation-itpn-libraries library-names #:optional (nesting-depth 0)

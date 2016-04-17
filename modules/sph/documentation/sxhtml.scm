@@ -11,7 +11,7 @@
     (sph binding-info)
     (sph documentation)
     (sph documentation display-format-plist)
-    (sph lang docl itml-to-sxhtml)
+    (only (sph lang docl itml-to-sxhtml) process-lines)
     (sph list)
     (sph module)
     (sph one)
