@@ -382,7 +382,7 @@
      # data-structures
      custom-processor: args-fold-processor:{opt matched-name any result ->}
      input-type-names: symbol:string/number/integer
-     option: (name/pattern alternative-names required? value-required value-optional input-type description custom-processor)
+     option: (name/pattern alternative-names #:key required? value-required? value-optional? type description processor)
      pattern: (symbol symbol/ellipsis:... ...)
      commands-spec: (((string:command-name ...) procedure:{command arguments}/[cli-create-argument ...]) ...)"
     (let*

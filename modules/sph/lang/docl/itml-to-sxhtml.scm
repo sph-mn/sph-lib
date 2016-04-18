@@ -135,4 +135,6 @@
 
   (define docl-itml-parsed->sxhtml (docl-itml-parsed->result-proc itml-parsed->sxhtml))
   (define docl-itml-port->sxhtml (docl-itml-port->result-proc itml-parsed->sxhtml))
-  (define docl-itml-string->sxhtml (docl-itml-string->result-proc docl-itml-port->sxhtml)))
+  (define docl-itml-string->sxhtml
+    ;same signature as docl-itml-port->result-proc
+    (docl-itml-string->result-proc docl-itml-port->sxhtml)))
