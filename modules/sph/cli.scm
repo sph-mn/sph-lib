@@ -1,6 +1,6 @@
 ; (sph cli) - creating command-line interfaces
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -30,6 +30,7 @@
       contains?
       any->list
       list-prefix?
+      map-apply
       pattern-match-min-length
       first-or-null
       containsv?
@@ -74,17 +75,16 @@
         (if (string-null? (string-trim name-prepend)) (string-append name-prepend "[" name "]")
           (string-append "[" name-prepend name "]")))))
 
-  (define*
-    (named-option->help-text-line name/pattern #:optional names required? value-required
-      value-optional
+  (define
+    (named-option->help-text-line name/pattern names required? value-required? value-optional?
       input-type
       description
       custom-processor)
     (let
       (format-argument-name*
         (l (string-prepend)
-          (if value-required (format-argument-name input-type value-required string-prepend)
-            (if value-optional (format-argument-name input-type #f string-prepend) ""))))
+          (if value-required? (format-argument-name input-type value-required? string-prepend)
+            (if value-optional? (format-argument-name input-type #f string-prepend) ""))))
       (string-append
         (string-join
           (map
@@ -96,9 +96,8 @@
           " | ")
         (if description (string-append help-text-line-description-delimiter description) ""))))
 
-  (define*
-    (unnamed-option->help-text-line name/pattern #:optional names value-required value-optional
-      input-type
+  (define
+    (unnamed-option->help-text-line name/pattern names value-required? value-optional? input-type
       description
       custom-processor)
     (if (list? name/pattern)
@@ -126,7 +125,7 @@
     (map
       (l (e)
         (apply (if (unnamed-option? e) unnamed-option->help-text-line named-option->help-text-line)
-          e))
+          (apply option-spec->list e)))
       (list-sort (l (a b) (string< (symbol->string (first a)) (symbol->string (first b)))) a)))
 
   (define (options-spec->unnamed-arguments-strings a)
@@ -135,7 +134,7 @@
   (define (config->option-spec a)
     (apply
       (l (named . unnamed)
-        (pass-if (alist-ref named (q options)) (l (a) (append a unnamed)) unnamed))
+        (pass-if (alist-quoted-ref named options) (l (a) (append a unnamed)) unnamed))
       (keyword-list->alist+keyless a)))
 
   (define (commands->help-text-lines a) "list:commands-spec -> string"
@@ -162,7 +161,7 @@
     (map (l (e) (reverse (drop-while not (reverse (if (> (length e) 6) (drop-right e 1) e))))) a))
 
   (define (display-command-line-interface-proc config spec)
-    (l args (write (options-remove-processors spec)) (exit 0)))
+    (l arguments (write (options-remove-processors spec)) (exit 0)))
 
   (define indent "  ")
   (define options-parameter "options ...")
@@ -214,18 +213,26 @@
           (c opt name value r)))
       c))
 
-  (define* (option->args-fold-option a)
+  (define (option-spec->list . arguments) (apply option-spec-variables& list arguments))
+
+  (define*
+    (option-spec-variables& c name names #:key required? value-required? value-optional? type
+      description
+      processor)
+    (c name names required? value-required? value-optional? type description processor))
+
+  (define* (option-spec->args-fold-option a)
     (apply
-      (lambda*
-        (name #:optional names
-          required? value-required value-optional input-type description custom-processor)
+      (l
+        (name names required?
+          value-required? value-optional? input-type description custom-processor)
         (option
           (let
             ( (names (if names (if (list? names) names (list names)) names))
               (name-string (symbol->string name)))
             (if names (if (contains? names name-string) names (append names (list name-string)))
               (list (symbol->string name))))
-          value-required value-optional
+          value-required? value-optional?
           (add-typecheck input-type
             (l (opt matched-name a r)
               (if custom-processor (custom-processor opt matched-name a r)
@@ -236,33 +243,34 @@
     "alist:config -> (procedure:{options -> list:extended-options/false})"
     (list
       (l (options)
-        (pass-if (alist-ref a (q version))
+        (pass-if (alist-quoted-ref a version)
           (l (version-spec)
-            (pair (list (q version) #\v #f #f #f #f #f (display-version-proc version-spec)) options))))
+            (pair (ql version #\v #:processor (display-version-proc version-spec)) options))))
       (l (options)
         (pass-if (alist-quoted-ref a about)
-          (l (text) (pair (list (q about) #\a #f #f #f #f #f (display-about-proc text a)) options))))
+          (l (text) (pair (ql about #\a #:processor (display-about-proc text a)) options))))
       (l (options)
-        (let
-          ( (help-option (q (help #\h #f #f #f #f #f)))
-            (cli-option (q (interface #f #f #f #f #f #f))))
+        (let ((help-option (ql help #\h)) (cli-option (ql interface #f)))
           (let*
             ( (options-temp (pairs cli-option help-option options))
               (options
                 (pair
                   (append help-option
-                    (list
+                    (list #:processor
                       (display-help-proc (alist-quoted-ref a description) commands
                         command-options-config a options-temp)))
                   options)))
-            (pair (append cli-option (list (display-command-line-interface-proc a options-temp)))
+            (pair
+              (append cli-option
+                (list #:processor (display-command-line-interface-proc a options-temp)))
               options))))))
 
   (define (config->options a options-config commands command-options-config) "config list -> list"
-    (remove unnamed-option?
-      (fold (l (default-option-proc options) (or (default-option-proc options) options))
-        (if options-config options-config (list))
-        (config->options-default-options a commands command-options-config))))
+    (map-apply option-spec->list
+      (remove unnamed-option?
+        (fold (l (default-option-proc options) (or (default-option-proc options) options))
+          (if options-config options-config (list))
+          (config->options-default-options a commands command-options-config)))))
 
   (define (match-unnamed-options spec unnamed parsed)
     "list list list:matches -> (list:rest list:matches)"
@@ -286,7 +294,7 @@
               (apply append parsed) named))
           (fold-multiple match-unnamed-options unnamed-option-specs unnamed (list))))))
 
-  (define (check-required a spec) "list:options list:option-spec ->"
+  (define (check-required a option-specs) "list:options list:option-specs ->"
     (let*
       ( (given (alist-keys a))
         (missing
@@ -294,7 +302,7 @@
             (filter
               (l (e)
                 (and (if (> (length e) 2) (list-ref e 2) #f) (not (containsv? given (first e)))))
-              spec))))
+              option-specs))))
       (if (null? missing) a (throw (q missing-arguments) (length missing) missing))))
 
   (define (default-missing-arguments-handler key count option-names)
@@ -384,13 +392,13 @@
             (tail config+keyless)))
         (command-options (alist-ref config (q command-options) (list)))
         (commands (config->commands config))
-        (options (config->options config options-config commands command-options)))
+        (option-specs (config->options config options-config commands command-options)))
       (let
         ( (missing-arguments-handler (config->missing-arguments-handler config))
           (unsupported-option-handler (config->unsupported-option-handler config))
           (unnamed-options (if options-config (filter unnamed-option? options-config) (list)))
-          (options-spec (map option->args-fold-option options))
-          (command-handler (alist-ref config (q command-handler))))
+          (command-handler (alist-ref config (q command-handler)))
+          (af-options (map option-spec->args-fold-option option-specs)))
         (l arguments
           (let*
             ( (arguments (if (null? arguments) (tail (program-arguments)) (first arguments)))
@@ -401,10 +409,10 @@
                       (check-required
                         (process-unnamed-options
                           (reverse
-                            (args-fold arguments options-spec
+                            (args-fold arguments af-options
                               unrecognized-processor unnamed-processor (list)))
                           unnamed-options)
-                        options)))
+                        option-specs)))
                   (let
                     (cli
                       (if missing-arguments-handler
