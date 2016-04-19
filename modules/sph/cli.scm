@@ -216,7 +216,7 @@
   (define (option-spec->list . arguments) (apply option-spec-variables& list arguments))
 
   (define*
-    (option-spec-variables& c name names #:key required? value-required? value-optional? type
+    (option-spec-variables& c name #:key  names required? value-required? value-optional? type
       description
       processor)
     (c name names required? value-required? value-optional? type description processor))
@@ -245,12 +245,12 @@
       (l (options)
         (pass-if (alist-quoted-ref a version)
           (l (version-spec)
-            (pair (ql version #\v #:processor (display-version-proc version-spec)) options))))
+            (pair (ql version #:names #\v #:processor (display-version-proc version-spec)) options))))
       (l (options)
         (pass-if (alist-quoted-ref a about)
-          (l (text) (pair (ql about #\a #:processor (display-about-proc text a)) options))))
+          (l (text) (pair (ql about #:names #\a #:processor (display-about-proc text a)) options))))
       (l (options)
-        (let ((help-option (ql help #\h)) (cli-option (ql interface #f)))
+        (let ((help-option (ql help #:names #\h)) (cli-option (ql interface)))
           (let*
             ( (options-temp (pairs cli-option help-option options))
               (options
