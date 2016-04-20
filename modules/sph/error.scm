@@ -1,4 +1,4 @@
-;an error type for error handling based on result data types
+;an error type
 
 (library (sph error)
   (export
@@ -8,6 +8,8 @@
     error-data
     error-exit
     error-false
+    error-guard
+    error-guard-call
     error-name
     error-origin
     error-require
@@ -28,6 +30,9 @@
 
   (define-syntax-rules error-create ((name data origin) (primitive-error-create name data origin))
     ((name data) (error-create name data #f)) ((name) (error-create name #f #f)))
+
+  (define-syntax-rule (error-guard a else ...) (let (b a) (if (error? b) b (begin else ...))))
+  (define (error-guard-call a proc) (if (error? a) a (proc a)))
 
   (define (error-false a)
     "any -> any

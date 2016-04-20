@@ -1,6 +1,6 @@
 ; (sph alist) - association list processing
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -15,31 +15,33 @@
 (library (sph alist)
   (export
     alist
-    alist?
     alist-cond
     alist-keys
     alist-map
     alist-merge
     alist-merge-key/value
+    alist-q-ref
     alist-quoted
-    alists-quoted-ref
     alist-quoted-bind
     alist-quoted-bind-and*
+    alist-quoted-merge-key/value
     alist-quoted-ref
     alist-quoted-select
     alist-quoted-select-apply
     alist-quoted-update-key/value
-    alist-quoted-merge-key/value
     alist-ref
     alist-select
     alist-select-apply
     alist-set
     alist-set!
-    alist-update-key/value
     alist-update
+    alist-update-key/value
     alist-values
+    alist?
     alistq-ref
     alistq-select
+    alists-q-ref
+    alists-quoted-ref
     alists-ref
     alists-set!
     alistv-ref
@@ -113,6 +115,9 @@
   (define-syntax-rules alists-quoted-ref ((a k) (alist-quoted-ref a k))
     ((a k ... k-last) (alist-quoted-ref (alists-quoted-ref a k ...) k-last)))
 
+  (define-syntax alist-q-ref (identifier-syntax alist-quoted-ref))
+  (define-syntax alists-q-ref (identifier-syntax alist-quoted-ref))
+
   (define-syntax-rules alists-ref ((a k) (alist-ref a k))
     ((a k ... k-last) (alist-ref (alists-ref a k ...) k-last)))
 
@@ -181,7 +186,7 @@
     key and value are specified alternatingly"
     (alist-update a (list->alist key/value)))
 
- (define-syntax-rule (alist-quoted-update-key/value a key/value ...)
+  (define-syntax-rule (alist-quoted-update-key/value a key/value ...)
     ;list [any:unquoted-key any:value] ...
     (apply alist-update-key/value a (quote-odd key/value ...)))
 
@@ -200,11 +205,10 @@
 
   (define (list-alist? a)
     "list -> boolean
-    return #t if list is an association list, #f otherwise. works only on lists" (every pair? a))
+    return #t if list is an association list, #f otherwise. works only on lists"
+    (every pair? a))
 
-  (define (alist? a)
-    "any -> boolean"
-    (and (list? a) (list-alist? a)))
+  (define (alist? a) "any -> boolean" (and (list? a) (list-alist? a)))
 
   (define (alist-select-apply a keys proc)
     "list list procedure:{any:key-value ...} -> any
