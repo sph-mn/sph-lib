@@ -368,11 +368,10 @@
      #:command-handler procedure:{list:(symbol ...):command-name list:rest-arguments -> any}
      #:commands commands-spec
      #:command-options option-spec
-     #:options ((symbol/list [character/string/(character/string ...) boolean boolean
-         boolean symbol/(symbol ...) string procedure]) ...)
-     option ...
+     #:options (option-spec ...)
+     option-spec ...
      ->
-     procedure:{(string ...) -> alist:((symbol . any) ...):parsed-arguments}
+     procedure:{(string ...) -> list:alist:((symbol . any) ...):parsed-arguments}
 
      # description
      commands-options: options shared between commands
@@ -380,9 +379,10 @@
      command-handler: command-handler called for all commands (after individual command handlers)
      options: specify long, short and unnamed options
      # data-structures
-     custom-processor: args-fold-processor:{opt matched-name any result ->}
+     custom-processor: procedure:args-fold-processor:{opt matched-name any result ->}
      input-type-names: symbol:string/number/integer
-     option: (name/pattern alternative-names #:key required? value-required? value-optional? type description processor)
+     option-spec: (symbol/list:name/pattern #:names character/string/(character/string) #:required? boolean
+                   #:value-required? boolean #:value-optional? boolean #:type symbol #:description string #:processor procedure:custom-processor)
      pattern: (symbol symbol/ellipsis:... ...)
      commands-spec: (((string:command-name ...) procedure:{command arguments}/[cli-create-argument ...]) ...)"
     (let*

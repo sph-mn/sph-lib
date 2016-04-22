@@ -124,18 +124,21 @@
       ( (command-line-interface
           (cli-create #:options
             (qq
-              ( (prefix #f #f #t #f string "prepended to each destination path")
-                (path-lib-scheme #f #f
-                  #t #f
-                  string
+              ( (prefix #:value-required? #t
+                  #:type string #:description "prepended to each destination path")
+                (path-lib-scheme #:value-required? #t
+                  #:type string
+                  #:description
                   (unquote
                     (string-append "path for installed guile modules. default is "
                       (string-quote default-path-lib-scheme))))
-                (symlink #f #f #f #f #f "create symlinks instead of file copies")
-                (dry-run #f #f
-                  #f #f #f "make no changes and only show the commands that would be executed")
-                (mode-directory #f #f #t #f integer "default permissions in octal notation")
-                (mode-regular #f #f #t #f integer "default permissions in octal notation"))))))
+                (symlink #:description "create symlinks instead of file copies")
+                (dry-run #:description
+                  "make no changes and only show the commands that would be executed")
+                (mode-directory #:value-required? #t
+                  #:type integer #:description "default permissions in octal notation")
+                (mode-regular #:value-required? #t
+                  #:type integer #:description "default permissions in octal notation"))))))
       (l (program-arguments install-specs)
         "((list/string string ...) ...) -> boolean:success-status
         a command-line interface for installation scripts for guile based projects. currently depends on the \"cp\" command-line utility.

@@ -4,7 +4,7 @@
     index-with-accessor
     list-ref-cycle-randomise-proc
     list-ref-random
-    list-replace-by-table
+    list-replace-from-hashtable
     randomise)
   (import
     (rnrs base)
@@ -19,6 +19,16 @@
     (only (srfi srfi-1) delete-duplicates))
 
   ; additional list processing procedures which depend on libraries that depend on (sph list). to avoid circular dependencies
+
+  (define (list-replace-from-hashtable a ht)
+    "list rnrs-hashtable -> list
+    replaces elements in list that exist as key in a hashtable with the associated value.
+    if the value is a list, the element is either removed (empty list) or replaced with multiple elements"
+    (fold
+      (l (e r)
+        (let (value (hashtable-ref ht e))
+          (if value ((if (list? value) append pair) value r) (pair e r))))
+      (list) a))
 
   (define (group-equal a)
     "list -> ((any:group-value ...):group ...)
@@ -56,17 +66,4 @@
     algorithm: connect a random number to each element, re-sort list corresponding to the random numbers."
     (let (length-a (length a))
       (map tail
-        (list-sort (l (a b) (< (first a) (first b))) (map (l (e) (pair (random length-a) e)) a)))))
-
-  (define (list-replace-by-table a replacement-table . exclude)
-    "(any ...) hashtable:((any:pattern replacement ...) ...) any ..."
-    (delete-duplicates
-      (let loop (a a)
-        (fold
-          (l (e r)
-            (let (v (hashtable-ref replacement-table e))
-              (if v
-                (let ((v (any->list v)) (exclude (pair e exclude)))
-                  (append v (loop (complement v exclude)) r))
-                (pair e r))))
-          (list) a)))))
+        (list-sort (l (a b) (< (first a) (first b))) (map (l (e) (pair (random length-a) e)) a))))))

@@ -15,6 +15,7 @@
 (library (sph list)
   (export
     any->list
+    map-first
     any->list-s
     complement
     complement-both
@@ -40,6 +41,7 @@
     every-map
     every-or-index
     false-if-null
+    compact
     filter-append-map
     filter-not
     filter-produce
@@ -210,6 +212,12 @@
     wraps a true non-list argument in a list"
     (true->list-s a))
 
+  (define (map-first proc a)
+    "procedure list -> list
+    call \"proc\" for the first element of list and replace the first element in the list with the result of \"proc\".
+    replace-first"
+    (pair (proc (first a)) (tail a)))
+
   (define (replace-at-once match? proc a)
     "procedure:{any -> boolean} procedure:{list:matched-elements -> list:replacements} list:source -> list
     all elements matching \"match?\" are collected in a list and passed to \"proc\".
@@ -326,6 +334,11 @@
     "procedure:{any -> any} list ... -> list/false
     like map but results in false if any result of proc is not a true value"
     (apply map-unless proc not #f a))
+
+  (define (compact a)
+    "list -> list
+    keep only true elements in list. removes all boolean false values"
+    (filter identity a))
 
   (define (filter-append-map proc . lists) "apply filter-map and then apply append on the result"
     (apply append (apply filter-map proc lists)))

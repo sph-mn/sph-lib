@@ -2,6 +2,7 @@
   (export
     file->datums
     file->port
+    file->string
     port->file
     port->lines
     port->string
@@ -20,6 +21,7 @@
     rw-file->list
     rw-file->port
     rw-file->string
+    rw-file-indirect->file
     rw-list->file
     rw-list->port
     rw-list->string
@@ -27,17 +29,47 @@
     rw-port->list
     rw-port->port
     rw-port->string
+    rw-port-indirect->file
     rw-string->file
     rw-string->list
     rw-string->port
-    rw-string->string)
+    rw-string->string
+    rw-with-temporary-file-port->file
+    temp-file-port)
   (import
     (guile)
     (ice-9 rdelim)
     (rnrs base)
     (rnrs io ports)
     (sph)
+    (sph filesystem)
     (only (srfi srfi-1) drop))
+
+  (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
+    "[string] [string:infix] -> port
+    create a new unique file in the file system and return a new buffered port for reading and writing to the file"
+    (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
+
+  (define* (rw-file-indirect->file read write path-1 #:optional (path-2 path-1))
+    "like rw-port->file but takes a path for reading from an input file"
+    (rw-with-temporary-file-port->file
+      (l (port-output) (rw-file->port read write path-1 port-output)) path-2))
+
+  (define (file->string path\file)
+    "string/file -> string
+    open or use an opened file, read until end-of-file is reached and return a string of file contents"
+    (if (string? path\file) (call-with-input-file path\file port->string) (port->string path\file)))
+
+  (define (rw-with-temporary-file-port->file proc path)
+    (let* ((port-temp (temp-file-port (dirname path))) (path-temp (port-filename port-temp)))
+      (proc port-temp) (rename-file path-temp path)))
+
+  (define (rw-port-indirect->file read write port path)
+    "like rw-port->file but uses a temporary file to buffer all written data before it is written to the target path.
+    use case: read from a file for processing and write to the same file.
+    also known as: late-write"
+    (rw-with-temporary-file-port->file
+      (l (port-output) (rw-port->port read write port port-output)) path))
 
   (define (rw-port->list read port)
     (let loop ((e (read port))) (if (eof-object? e) (list) (pair e (loop (read port))))))

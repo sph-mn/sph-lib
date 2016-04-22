@@ -13,14 +13,12 @@
     ensure-directory-structure
     ensure-directory-structure-and-new-mode
     ensure-trailing-slash
-    file->string
     filename-extension
     fold-directory-tree
     get-unique-target-path
     is-directory?
     last
     merge-files
-    move-and-link
     mtime-difference
     path->full-path
     path->list
@@ -37,8 +35,7 @@
     stat-diff
     stat-diff->accessors
     stat-field-name->stat-accessor
-    string->file
-    temp-file-port)
+    string->file)
   (import
     (guile)
     (ice-9 ftw)
@@ -46,8 +43,6 @@
     (rnrs bytevectors)
     (rnrs io ports)
     (sph)
-    (sph process)
-    (sph read-write)
     (sph stream base)
     (sph string)
     (sph time)
@@ -72,15 +67,6 @@
       last))
 
   (define directory-read-all scandir)
-
-  (define (move-and-link target-path source-path)
-    "string ... -> (boolean ...)
-    move source-path to target-path and replace original source-path"
-    (and (ensure-directory-structure target-path)
-      (execute+check-result "mv" "-t" target-path source-path)
-      (execute+check-result "cp" "-rst"
-        (dirname source-path)
-        (string-append (ensure-trailing-slash target-path) (basename source-path)))))
 
   (define (directory-delete-content path)
     "string ->
@@ -192,11 +178,6 @@
     "utility for functions working with file change events and stat-records"
     (hashtable-ref stat-accessor->stat-field-name-ht a))
 
-  (define (file->string path\file)
-    "string/file -> string
-    open or use an opened file, read until end-of-file is reached and return a string of file contents"
-    (if (string? path\file) (call-with-input-file path\file port->string) (port->string path\file)))
-
   (define* (fold-directory-tree proc init path #:optional (max-depth (inf)))
     "::
     procedure:{string:current-path guile-stat-object:stat-info any:previous-result -> any} any string [integer] {string/path -> boolean} ...
@@ -224,11 +205,6 @@
     results in the last dot-separated part of string or the empty-string if no such part exists"
     (let ((r (string-split a #\.))) (if (length-greater-one? r) (last r) "")))
 
-  (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
-    "[string] [string:infix] -> port
-    create a new unique file in the file system and return a new buffered port for reading and writing to the file"
-    (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
-
   (define (get-unique-target-path target-path)
     "string boolean -> string
     find a target path that is similar to \"target-path\" but unique in the directory.
@@ -236,9 +212,7 @@
     (if (file-exists? target-path)
       (let (next-path (l (count) (string-append target-path "." (number->string count 32))))
         (let loop ((other-path (next-path 1)) (count 1))
-          (if (file-exists? other-path)
-            (loop (next-path count) (+ 1 count))
-            other-path)))
+          (if (file-exists? other-path) (loop (next-path count) (+ 1 count)) other-path)))
       target-path))
 
   (define (merge-files target-path . source-paths)

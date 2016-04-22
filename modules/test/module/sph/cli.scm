@@ -3,8 +3,8 @@
     (list #:name "test-interface"
       #:options
       (ql
-        (input (#\i "input") #t #t #f integer "this option can be used for specifying input files")
-        (test #\t) ((output-file input-file ...) #f #t))
+        (input #:names (#\i "input") #:required? #t #:value-required? #t #:type integer #:description "this option can be used for specifying input files")
+        (test #:names #\t) ((output-file input-file ...) #:required? #t))
       #:version (ql 0 1)
       #:help "test help" #:about "-my-custom-about-text-" #:missing-arguments-handler #f))
   (define test-env-cli (apply cli-create test-env-cli-config))

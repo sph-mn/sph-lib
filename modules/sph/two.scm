@@ -25,6 +25,8 @@
     copy-file!?
     copy-with-replaced-directory
     create-fifo
+    create-indent
+    create-newline-indent
     create-quote
     define-stack-fluid
     define-syntax-identifier
@@ -39,7 +41,6 @@
     git-archive->file
     git-current-short-commit-hash
     hash-select
-    hashtable-associate-words
     let-if
     let-if*
     line-reverse-direction
@@ -52,6 +53,7 @@
     listener-on-port-local?
     md5sum
     md5sum-file
+    move-and-link
     nl-string->list
     not-scm-file?
     os-seconds-at-boot
@@ -60,7 +62,6 @@
     plaintext->sxhtml
     port-column-subtract!
     port-each-line-alternate-direction
-    port-lines-words-hashtable-associate
     port-skip+count
     primitive-eval-port
     prog-sync-with-root
@@ -71,8 +72,6 @@
     seconds->short-kiloseconds-string
     set-multiple-from-list!
     srfi-19-date->seconds
-    create-indent
-    create-newline-indent
     string-remove-leading-zeros
     sxml->xml-string
     system-cat-merge-files
@@ -118,6 +117,15 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
+
+  (define (move-and-link target-path source-path)
+    "string ... -> (boolean ...)
+    move source-path to target-path and replace original source-path"
+    (and (ensure-directory-structure target-path)
+      (execute+check-result "mv" "-t" target-path source-path)
+      (execute+check-result "cp" "-rst"
+        (dirname source-path)
+        (string-append (ensure-trailing-slash target-path) (basename source-path)))))
 
   (define (create-indent size) (list->string (make-list (* size 2) #\space)))
   (define (create-newline-indent size) (string-append "\n" (create-indent size)))
@@ -265,15 +273,7 @@
       (let ((line (first line+delim)) (delim (tail line+delim)))
         (if (and (string? line) (char? delim)) (string-append line (string delim)) line))))
 
-  (define (hashtable-associate-words hashtable string) "hashtable string ->"
-    (let (string (string-split string #\space))
-      (hashtable-set! hashtable (first string) (tail string))))
 
-  (define* (port-lines-words-hashtable-associate port #:optional (hashtable (string-hashtable)))
-    "port [hashtable] -> hashtable
-    read from port to create a hashtable from a string with lines of the format: key value ...
-    one use case are configuration files for string replacements"
-    (port-lines-each (l (line) (hashtable-associate-words hashtable line)) port) hashtable)
 
   (define (bash-escape-clear)
     "display the bash escape sequence for clearing the screen - which usually means to scroll until the current line is at the top"
@@ -478,21 +478,6 @@
     "list -> string
     convert elements of list to a newline separated string"
     (string-join a "\n"))
-
-  (define (tree-replace-from-hashtable a ht) "list rnrs-hashtable -> list/any"
-    (if (list? a) (map (l (e) (tree-replace-from-hashtable e ht)) a)
-      (identity-if (hashtable-ref ht a) a)))
-
-  (define (list-replace-from-hashtable-splice a ht)
-    "list rnrs-hashtable -> list
-    replaces elements in list that exist as key in a hashtable with the corresponding value.
-    if the value is a list, the element is replaced with none (empty list) or multiple elements.
-    like tree-replace-from-hashtable but replaces with multiple elements if value is a list."
-    (fold
-      (l (e r)
-        (let (value (hashtable-ref ht e))
-          (if value ((if (list? value) append pair) value r) (pair e r))))
-      (list) a))
 
   (define (list-symbols->string a)
     "list -> list
