@@ -9,6 +9,8 @@
     error-name
     error-origin
     error-pass-if
+    error-pass-if-not
+    error-pass-if-p
     error-when-not
     error?)
   (import
@@ -28,10 +30,18 @@
     ((name data origin) (primitive-error-create name data origin))
     ((name data) (primitive-error-create name data #f)) ((name) (primitive-error-create name #f #f)))
 
-  (define (error-pass-if a consequent alternative)
+  (define (error-pass-if-p a consequent alternative)
     "any procedure:{any -> any} procedure:{any -> any} -> any
     if \"a\" is an error, call \"consequent\" with \"a\", otherwise call \"alternative\" with a"
     (if (error? a) (consequent a) (alternative a)))
+
+  (define-syntax-rules error-pass-if
+    ((a consequent alternative) (error-pass-if-p a consequent alternative))
+    ((a consequent) (error-pass-if-p a consequent identity)))
+
+  (define-syntax-rules error-pass-if-not
+    ((a consequent alternative) (error-pass-if-p a alternative consequent))
+    ((a consequent) (error-pass-if-p a identity consequent)))
 
   (define-syntax-rule (error-identity-if a else ...)
     ;"if \"a\" is an error, give \"a\", otherwise evaluate "else""
