@@ -48,7 +48,7 @@
 
   (define (typecheck+conversion type a)
     (cond ((eqv? (q string) type) a) ((eqv? (q number) type) (string->number a))
-      ((eqv? (q integer) type) (check integer? (string->number a)))
+      ((eqv? (q integer) type) (pass-predicate-and-if integer? (string->number a) identity not))
       ((list? type) (any (l (type) (typecheck+conversion type a)) type)) (else a)))
 
   (define (processor opt name a r) (pair a r))
@@ -216,7 +216,7 @@
   (define (option-spec->list . arguments) (apply option-spec-variables& list arguments))
 
   (define*
-    (option-spec-variables& c name #:key  names required? value-required? value-optional? type
+    (option-spec-variables& c name #:key names required? value-required? value-optional? type
       description
       processor)
     (c name names required? value-required? value-optional? type description processor))
@@ -382,7 +382,7 @@
      custom-processor: procedure:args-fold-processor:{opt matched-name any result ->}
      input-type-names: symbol:string/number/integer
      option-spec: (symbol/list:name/pattern #:names character/string/(character/string) #:required? boolean
-                   #:value-required? boolean #:value-optional? boolean #:type symbol #:description string #:processor procedure:custom-processor)
+                     #:value-required? boolean #:value-optional? boolean #:type symbol #:description string #:processor procedure:custom-processor)
      pattern: (symbol symbol/ellipsis:... ...)
      commands-spec: (((string:command-name ...) procedure:{command arguments}/[cli-create-argument ...]) ...)"
     (let*

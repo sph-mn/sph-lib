@@ -1,17 +1,17 @@
 (library (sph conditional)
   (export
-    pass-predicate-and-if
-    pass-predicate-or-if
-    predicate-and
-    predicate-or
-    if-predicate-and
-    if-predicate-or
+    boolean-true?
     false-if
     false-if-not
     identity-if
     if-pass
     if-pass-apply
-    boolean-true?)
+    if-predicate-and
+    if-predicate-or
+    pass-predicate-and-if
+    pass-predicate-or-if
+    predicate-and
+    predicate-or)
   (import
     (rnrs base)
     (sph))
@@ -37,10 +37,9 @@
 
   (define (pass-predicate-or-if predicates subject consequent alternative)
     "any/(procedure:{any:subject -> any} ...) any procedure:{any:subject -> any} procedure:{any:subject -> any}"
-    (if (any (l (a) (a subject)) (any->list predicates)) (consequent subject)
-      (consequent subject)))
+    (if (any (l (a) (a subject)) (any->list predicates)) (consequent subject) (consequent subject)))
 
- (define (predicate-and predicates . subjects)
+  (define (predicate-and predicates . subjects)
     "any/(procedure:{any:subject -> any} ...) any ... -> boolean
     true if every predicate gives true for every subject, false otherwise"
     (every (l (a) (every (l (b) (a b)) subjects)) (any->list predicates)))
@@ -50,33 +49,28 @@
     true if every predicate gives true for every subject, false otherwise"
     (any (l (a) (any (l (b) (a b)) subjects)) (any->list predicates)))
 
- (define-syntax-rules if-predicate-and
-    (((predicate ...) subject consequent alternative)
-      (let (b subject) (if (and (predicate b) ...) consequent alternative))
-      )
-    ((predicate subject consequent alternative)
-      (if-predicate-and (predicate) subject consequent alternative)
-      ))
+  (define-syntax-rules if-predicate-and
+    ( ( (predicate ...) subject consequent alternative)
+      (let (b subject) (if (and (predicate b) ...) consequent alternative)))
+    ( (predicate subject consequent alternative)
+      (if-predicate-and (predicate) subject consequent alternative)))
 
   (define-syntax-rules if-predicate-or
-    (((predicate ...) subject consequent alternative)
-      (let (b subject) (if (or (predicate b) ...) consequent alternative))
-      )
-    ((predicate subject consequent alternative)
-      (if-predicate-or (predicate) subject consequent alternative)
-      ))
+    ( ( (predicate ...) subject consequent alternative)
+      (let (b subject) (if (or (predicate b) ...) consequent alternative)))
+    ( (predicate subject consequent alternative)
+      (if-predicate-or (predicate) subject consequent alternative)))
 
   (define-syntax-rules if-pass
     ;"any procedure:{any -> any} -> any
     ;call proc with "a" if "a" is a true value, otherwise return false or evaluate else.
     ;also known as \"and=>\""
-    ((a consequent alternative) (let (b a) (if b (consequent b) alternative))) ((a proc) (if-pass a proc #f)))
+    ((a consequent alternative) (let (b a) (if b (consequent b) alternative)))
+    ((a proc) (if-pass a proc #f)))
 
   (define (if-pass-apply a consequent alternative)
     "list procedure:{any ... -> any} -> any
     like if-pass but uses apply to use the contents of \"a\", which should be a list in the true case, as arguments to proc"
     (if a (apply consequent a) alternative))
 
-  (define-syntax-rules boolean-true? ((a ...) (and (equal? #t a) ...)))
-
-)
+  (define-syntax-rules boolean-true? ((a ...) (and (equal? #t a) ...))))
