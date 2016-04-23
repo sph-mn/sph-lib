@@ -20,7 +20,7 @@
       const
       read
       string-drop-right)
-    (only (sph conditional) pass-if)
+    (only (sph conditional) if-pass)
     (only (sph hashtable) hashtable-ref symbol-hashtable)
     (only (sph list)
       first-or-false
@@ -114,7 +114,7 @@
   (define-peg-pattern descend-expr body (or indent-scm-expr indent-descend-expr))
 
   (define (match-prefix-expr prefix content)
-    (and-let* ((match (pass-if (search-for-pattern descend-expr prefix) peg:tree)))
+    (and-let* ((match (if-pass (search-for-pattern descend-expr prefix) peg:tree)))
       (append match content)))
 
   (define (descend a re-descend)

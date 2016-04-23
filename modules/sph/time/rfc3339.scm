@@ -13,7 +13,7 @@
     (sph)
     (sph time)
     (only (sph alist) alist-ref alist-quoted)
-    (only (sph conditional) pass-if)
+    (only (sph conditional) if-pass)
     (only (sph string) pad-with-zeros string-equal?)
     (only (sph tree) splice-lists-without-prefix-symbol)
     (only (srfi srfi-1) drop-right))
@@ -35,7 +35,7 @@
   (define-peg-pattern rfc3339-date-time all (and date (? (and time (or (ignore "Z") offset)))))
 
   (define (time-rfc3339-parse-tree a)
-    (pass-if (match-pattern rfc3339-date-time a)
+    (if-pass (match-pattern rfc3339-date-time a)
       (l (a) (splice-lists-without-prefix-symbol (peg:tree a)))))
 
   (define time-rfc3339-parse&
@@ -53,8 +53,8 @@
             (apply
               (l* (#:optional sign hours minutes)
                 (c (and sign (string-equal? "-" sign))
-                  (pass-if hours (compose string->number second) 0)
-                  (pass-if minutes (compose string->number second) 0)))
+                  (if-pass hours (compose string->number second) 0)
+                  (if-pass minutes (compose string->number second) 0)))
               (alist-ref a (q offset) (list))))))
       (l (a c)
         "string procedure:{year month day hours minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes -> any} -> any
@@ -91,7 +91,7 @@
   (define (time-rfc3339->seconds a)
     "string -> integer:seconds:posix-time
     does not include fractional seconds"
-    (pass-if (time-rfc3339->seconds-and-fraction a) first))
+    (if-pass (time-rfc3339->seconds-and-fraction a) first))
 
   (define (time-rfc3339->seconds-and-fraction a)
     "string -> (integer:seconds:posix-time . integer:seconds-fraction)"

@@ -199,7 +199,7 @@
     wraps a non-list argument in a list"
     (any->list-s a))
 
-  (define-syntax-rule (any->list-s a)
+ (define-syntax-rule (any->list-s a)
     ;"like \"any->list\" but as syntax"
     (if (list? a) a (list a)))
 

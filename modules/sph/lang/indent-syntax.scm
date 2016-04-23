@@ -15,7 +15,7 @@
     (sph)
     (sph stream)
     (srfi srfi-41)
-    (only (sph conditional) pass-if)
+    (only (sph conditional) if-pass)
     (only (sph read-write) port->lines)
     (only (sph string) string-multiply)
     (only (sph tree) denoted-tree->prefix-tree prefix-tree->denoted-tree)
@@ -30,11 +30,11 @@
     (if (>= a 0) (ceiling (/ a indent-width)) a))
 
   (define (string->indent-level a indent-width)
-    (pass-if (string-skip a #\space)
+    (if-pass (string-skip a #\space)
       (l (prefix-count) (prefix-count->indent-level prefix-count indent-width))))
 
   (define (line->denoted-tree-element a indent-width)
-    (pass-if (string-skip a #\space)
+    (if-pass (string-skip a #\space)
       (l (prefix-count)
         (list (prefix-count->indent-level prefix-count indent-width)
           (string-trim-right (string-drop a prefix-count) #\space)))

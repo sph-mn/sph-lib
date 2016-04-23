@@ -134,7 +134,7 @@
   (define (config->option-spec a)
     (apply
       (l (named . unnamed)
-        (pass-if (alist-quoted-ref named options) (l (a) (append a unnamed)) unnamed))
+        (if-pass (alist-quoted-ref named options) (l (a) (append a unnamed)) unnamed))
       (keyword-list->alist+keyless a)))
 
   (define (commands->help-text-lines a) "list:commands-spec -> string"
@@ -243,11 +243,11 @@
     "alist:config -> (procedure:{options -> list:extended-options/false})"
     (list
       (l (options)
-        (pass-if (alist-quoted-ref a version)
+        (if-pass (alist-quoted-ref a version)
           (l (version-spec)
             (pair (ql version #:names #\v #:processor (display-version-proc version-spec)) options))))
       (l (options)
-        (pass-if (alist-quoted-ref a about)
+        (if-pass (alist-quoted-ref a about)
           (l (text) (pair (ql about #:names #\a #:processor (display-about-proc text a)) options))))
       (l (options)
         (let ((help-option (ql help #:names #\h)) (cli-option (ql interface)))
@@ -388,7 +388,7 @@
     (let*
       ( (config+keyless (keyword-list->alist+keyless config)) (config (first config+keyless))
         (options-config
-          (pass-if (alist-ref config (q options)) (l (a) (append a (tail config+keyless)))
+          (if-pass (alist-ref config (q options)) (l (a) (append a (tail config+keyless)))
             (tail config+keyless)))
         (command-options (alist-ref config (q command-options) (list)))
         (commands (config->commands config))

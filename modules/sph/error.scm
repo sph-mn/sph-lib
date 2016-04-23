@@ -10,6 +10,8 @@
     error-false
     error-guard
     error-guard-call
+    error-if
+    error-if-call
     error-name
     error-origin
     error-require
@@ -31,6 +33,20 @@
   (define-syntax-rules error-create ((name data origin) (primitive-error-create name data origin))
     ((name data) (error-create name data #f)) ((name) (error-create name #f #f)))
 
+  (define-syntax-rules error-if
+    ;"evaluate \"consequent\" if \"a\" is an error object, otherwise evaluate \"alternative\".
+    ;if no \"alternative\" expression is given, give \"a\". \"a\" is evaluated only once"
+    ((a consequent alternative) (if (error? a) consequent alternative))
+    ((a consequent) (let (b a) (error-if b consequent b))))
+
+  (define-syntax-rules error-if-call
+    ;"call \"proc-consequent\" with \"a\" if \"a\" is an error object, otherwise call \"proc-alternative\" with \"a\".
+    ;if no \"proc-alternative\" is given, give \"a\""
+    ( (a proc-consequent proc-alternative)
+      (let (b a) ((if (error? b) proc-consequent proc-alternative) b)))
+    ((a proc-consequent) (let (b a) (if (error? b) (proc-consequent b) b))))
+
+  (define (error-if-call a proc) (if (error? a) (proc a) a))
   (define-syntax-rule (error-guard a else ...) (let (b a) (if (error? b) b (begin else ...))))
   (define (error-guard-call a proc) (if (error? a) a (proc a)))
 

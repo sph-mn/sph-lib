@@ -24,7 +24,7 @@
   ;https://en.wikipedia.org/wiki/Atom_%28standard%29#Atom_compared_to_RSS_2.0
   ;http://atomenabled.org/developers/syndication/
   ;https://tools.ietf.org/html/rfc4287
-  (define-syntax-rule (pass-if-string a proc) (if (string? a) (proc a) a))
+  (define-syntax-rule (if-pass-string a proc) (if (string? a) (proc a) a))
   (define (integer/string->rfc3339 a) (if (string? a) a (time-seconds->rfc3339 a)))
 
   (define-syntax-rules sxml-element ((name value) (list (q name) value))
@@ -114,9 +114,9 @@
       (sxml-element updated (integer/string->rfc3339 updated)) (sxml-element id)
       (filter identity
         (list (sxml-element-optional published (and published (integer/string->rfc3339 published)))
-          (pass-if-string link atom-link) (pass-if-string authors atom-author)
-          (pass-if-string contributors atom-contributor) (pass-if-string categories atom-category)
-          (pass-if-string summary atom-summary) (pass-if-string rights atom-rights) source content))))
+          (if-pass-string link atom-link) (if-pass-string authors atom-author)
+          (if-pass-string contributors atom-contributor) (if-pass-string categories atom-category)
+          (if-pass-string summary atom-summary) (if-pass-string rights atom-rights) source content))))
 
   (define*
     (atom-feed id title updated #:key categories contributors generator icon link logo rights
@@ -139,9 +139,9 @@
       (sxml-element id)
       (append
         (filter identity
-          (list (pass-if-string link atom-link) (pass-if-string authors atom-author)
-            (pass-if-string categories atom-category) (pass-if-string contributors atom-contributor)
-            (pass-if-string rights atom-rights) (pass-if-string subtitle atom-subtitle)
+          (list (if-pass-string link atom-link) (if-pass-string authors atom-author)
+            (if-pass-string categories atom-category) (if-pass-string contributors atom-contributor)
+            (if-pass-string rights atom-rights) (if-pass-string subtitle atom-subtitle)
             (sxml-element-optional icon) (sxml-element-optional logo)
             (sxml-element-optional generator)))
         (remove-keyword-associations content)))))

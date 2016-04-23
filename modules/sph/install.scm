@@ -156,9 +156,9 @@
               (append (list #:symlink? symlink #:dry-run? dry-run)
                 (optional-keyword-argument #:path-destination-prefix prefix)
                 (optional-keyword-argument #:mode-directory
-                  (pass-if mode-directory octal-integer->decimal))
+                  (if-pass mode-directory octal-integer->decimal))
                 (optional-keyword-argument #:mode-regular
-                  (pass-if mode-regular octal-integer->decimal)))
+                  (if-pass mode-regular octal-integer->decimal)))
               (install-specs-translate-guile-placeholders install-specs
                 (or path-lib-scheme default-path-lib-scheme))))))))
 

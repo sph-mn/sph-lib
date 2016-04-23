@@ -40,7 +40,7 @@
     (sph filesystem)
     (only (ice-9 regex) string-match)
     (only (rnrs sorting) list-sort)
-    (only (sph conditional) pass-if)
+    (only (sph conditional) if-pass)
     (only (sph read-write) file->datums)
     (only (sph string) string-longest-prefix string-drop-prefix)
     (only (srfi srfi-1) append-map last))
@@ -233,10 +233,10 @@
 
   (define (module-ref-no-error module name)
     "like guiles module-ref but results in false and does not raise an error if the variable is unbound"
-    (pass-if (module-variable module name) (l (a) (variable-ref a))))
+    (if-pass (module-variable module name) (l (a) (variable-ref a))))
 
   (define (call-if-defined module name)
-    (pass-if (module-variable module name) (l (a) ((variable-ref a)))))
+    (if-pass (module-variable module name) (l (a) ((variable-ref a)))))
 
   (define (path->symbol-list a)
     "create a module name from a typical path string. for example \"/a/b/c\" -> (a b c)"

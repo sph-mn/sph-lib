@@ -73,7 +73,7 @@
 
   (define* (html-multipart-form-data? headers #:optional (header-key "content_type"))
     "(string ...) [string] -> boolean"
-    (pass-if (assoc-ref headers header-key)
+    (if-pass (assoc-ref headers header-key)
       (l (content-type) (string-prefix? "multipart/form-data" content-type))))
 
   (define (get-boundary-from-headers headers) "(string ...) -> string/boolean-false"
@@ -86,7 +86,7 @@
         (if (string-null? boundary) (throw (q boundary-not-found) boundary) boundary))))
 
   (define-syntax-rule (header-multipart-mixed? a)
-    (pass-if (or (alist-ref a "content-type") (alist-ref a "Content-Type"))
+    (if-pass (or (alist-ref a "content-type") (alist-ref a "Content-Type"))
       (l (content-type) (alist-ref content-type "multipart/mixed"))))
 
   (define* (html-fold-multipart-form-data proc-part proc-multipart result port #:optional boundary)

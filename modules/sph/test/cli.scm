@@ -46,7 +46,7 @@
     "list ->
     if the --add-to-load-path option has been specified, add the comma separated list of paths given
     as a value to the option to the beginning of the module load-path"
-    (pass-if (alist-quoted-ref cli-arguments add-to-load-path)
+    (if-pass (alist-quoted-ref cli-arguments add-to-load-path)
       (l (a) (map (l (e) (add-to-load-path e)) (string-split a #\,)))))
 
   (define (test-execute-cli-get-settings cli-arguments)
