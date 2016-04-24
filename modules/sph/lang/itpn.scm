@@ -26,10 +26,10 @@
   (define
     (itpn-filter a patterns-prefix patterns-suffix patterns-anywhere string-contains-multiple?
       parts-combination)
-    "parsed-itpn (string ...) (string ...) (string ...) procedure:{string (string ...) -> boolean} procedure:{any ... -> boolean/any:last} -> pair:(filtered rejected)
+    "parsed-itpn (string ...) (string ...) (string ...) procedure:{string (string ...) -> boolean} procedure:{any ... -> boolean/any:last} -> list:(filtered rejected)
     filters itpn elements where all patterns of a set match in the corresponding portion - prefix, suffix or anywhere.
     the empty set matches all"
-    (apply-values pair
+    (apply-values list
       (partition
         (l (e)
           (let (e (if (string? e) (list e) e))
