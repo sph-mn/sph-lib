@@ -15,20 +15,19 @@
 (library (sph alist)
   (export
     alist
+    alist-bind
+    alist-bind-and*
     alist-cond
     alist-keys
     alist-map
     alist-merge
     alist-merge-key/value
+    alist-q
+    alist-q-merge-key/value
     alist-q-ref
-    alist-quoted
-    alist-quoted-bind
-    alist-quoted-bind-and*
-    alist-quoted-merge-key/value
-    alist-quoted-ref
-    alist-quoted-select
-    alist-quoted-select-apply
-    alist-quoted-update-key/value
+    alist-q-select
+    alist-q-select-apply
+    alist-q-update-key/value
     alist-ref
     alist-select
     alist-select-apply
@@ -41,7 +40,6 @@
     alistq-ref
     alistq-select
     alists-q-ref
-    alists-quoted-ref
     alists-ref
     alists-set!
     alistv-ref
@@ -108,15 +106,12 @@
     ;a:alist k:key d:default-if-not-found
     ((a k d) ((l (r) (if r (tail r) d)) (assoc k a))) ((a k) (assoc-ref a k)))
 
-  (define-syntax-rules alist-quoted-ref
+  (define-syntax-rules alist-q-ref
     ;a:alist k:unquoted-key d:default-if-not-found
     ((a k d) (alist-ref a (quote k) d)) ((a k) (alist-ref a (quote k))))
 
-  (define-syntax-rules alists-quoted-ref ((a k) (alist-quoted-ref a k))
-    ((a k ... k-last) (alist-quoted-ref (alists-quoted-ref a k ...) k-last)))
-
-  (define-syntax alist-q-ref (identifier-syntax alist-quoted-ref))
-  (define-syntax alists-q-ref (identifier-syntax alist-quoted-ref))
+  (define-syntax-rules alists-q-ref ((a k) (alist-q-ref a k))
+    ((a k ... k-last) (alist-q-ref (alists-q-ref a k ...) k-last)))
 
   (define-syntax-rules alists-ref ((a k) (alist-ref a k))
     ((a k ... k-last) (alist-ref (alists-ref a k ...) k-last)))
@@ -131,15 +126,15 @@
     (alist (quote a) 1 \"b\" 2 (quote c) 3)"
     (list->alist key/value))
 
-  (define-syntax-rule (alist-quoted key/value ...)
+  (define-syntax-rule (alist-q key/value ...)
     ;only the keys are quoted
     (list->alist (quote-odd key/value ...)))
 
-  (define-syntax-rule (alist-quoted-bind alist (key ...) body ...)
+  (define-syntax-rule (alist-bind alist (key ...) body ...)
     ;could allow for custom variable names for key values as an extension
     ((lambda (key ...) body ...) (alist-ref alist (quote key)) ...))
 
-  (define-syntax-rule (alist-quoted-bind-and* alist (key ...) body ...)
+  (define-syntax-rule (alist-bind-and* alist (key ...) body ...)
     ;alist values are bound in order of keys, and false is returned if any key value is false
     (and-let* ((key (alist-ref alist (quote key))) ...) (begin body ...)))
 
@@ -176,7 +171,7 @@
     key and value are specified alternatingly"
     (alist-merge a (list->alist key/value)))
 
-  (define-syntax-rule (alist-quoted-merge-key/value a key/value ...)
+  (define-syntax-rule (alist-q-merge-key/value a key/value ...)
     ;list [any:unquoted-key any:value] ...
     (apply alist-merge-key/value a (quote-odd key/value ...)))
 
@@ -186,7 +181,7 @@
     key and value are specified alternatingly"
     (alist-update a (list->alist key/value)))
 
-  (define-syntax-rule (alist-quoted-update-key/value a key/value ...)
+  (define-syntax-rule (alist-q-update-key/value a key/value ...)
     ;list [any:unquoted-key any:value] ...
     (apply alist-update-key/value a (quote-odd key/value ...)))
 
@@ -215,10 +210,10 @@
     applies proc with all alist values for keys in order"
     (apply proc (alist-select a keys)))
 
-  (define-syntax-rule (alist-quoted-select-apply a (key ...) proc)
+  (define-syntax-rule (alist-q-select-apply a (key ...) proc)
     (alist-select-apply a (quote (key ...)) proc))
 
-  (define-syntax-rule (alist-quoted-select a (key ...)) (alist-select a (quote (key ...))))
+  (define-syntax-rule (alist-q-select a (key ...)) (alist-select a (quote (key ...))))
 
   (define (alist-set a key value)
     "list any any -> list

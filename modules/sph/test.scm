@@ -60,12 +60,12 @@
   ;data-structures:
   ;  test-result: ([group-name] test-result ...)/test-result-record
 
-  (define-as test-settings-default alist-quoted
+  (define-as test-settings-default alist-q
     reporters test-reporters-default
     reporter-name (q default)
     search-type (q prefix)
     hook
-    (alist-quoted procedure-before ignore
+    (alist-q procedure-before ignore
       procedure-after ignore
       procedure-data-before ignore
       procedure-data-after ignore
@@ -84,7 +84,7 @@
   (define (settings->hook a name) "list symbol -> procedure" (alists-ref a (q hook) name))
 
   (define (settings->reporter a) "list -> (procedure . alist:hooks)"
-    (test-reporter-get (alist-quoted-ref a reporters) (alist-quoted-ref a reporter-name)))
+    (test-reporter-get (alist-q-ref a reporters) (alist-q-ref a reporter-name)))
 
   (define (settings->reporter-hook a name) "hashtable -> (report-write . report-hooks)"
     (alist-ref (tail (settings->reporter a)) name))
@@ -190,7 +190,7 @@
   (define (test-module-execute settings module index name)
     "alist module/environment (symbol ...) -> test-result"
     (let*
-      ( (settings (alist-quoted-merge-key/value settings current-module-name name))
+      ( (settings (alist-q-merge-key/value settings current-module-name name))
         (settings (apply-settings-reporter+hook settings (q module-before) index name))
         (r ((eval (q test-execute) module) settings)))
       (apply-settings-hook+reporter settings (q module-after) index name r) r))
@@ -202,7 +202,7 @@
   (define (test-modules-apply-settings settings modules)
     "list ((symbol ...) ...) -> ((symbol ...) ...)
     apply settings to a list of test-module names"
-    (alist-quoted-bind settings (only exclude until)
+    (alist-bind settings (only exclude until)
       ( (if until test-modules-until (l (a b) a))
         (if only (test-modules-only modules only)
           (if exclude (test-modules-exclude modules exclude) modules))
@@ -231,7 +231,7 @@
     "list -> (string ...)
     adds the value for the \"path-search\" setting to the global load-path and returns the value in a list to be used as a load-path variable, if the path-search value is not false.
     otherwise returns %load-path"
-    (let (path-search (alist-quoted-ref a path-search))
+    (let (path-search (alist-q-ref a path-search))
       (if path-search
         (let (path (path->full-path path-search)) (add-to-load-path path) (list path)) %load-path)))
 
@@ -246,7 +246,7 @@
     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
     (let
       ( (load-path (settings->load-path! settings))
-        (search-type (alist-quoted-ref settings search-type)))
+        (search-type (alist-q-ref settings search-type)))
       (let
         (module-names
           (every-map (l (e) (false-if-null (find-modules-by-name e search-type load-path))) name))
@@ -270,7 +270,7 @@
       (remove (l (spec) (containsv? values (first spec))) a)))
 
   (define (test-procedures-apply-settings settings a) "list list -> list"
-    (alist-quoted-bind settings (only exclude until random-order?)
+    (alist-bind settings (only exclude until random-order?)
       ( (if random-order? randomise identity)
         ( (if until test-procedures-until (l (a b) a))
           (if only (test-procedures-only a only)
@@ -371,19 +371,19 @@
     (let
       ( (get-executor
           (l (settings) "list -> procedure"
-            (if (alist-quoted-ref settings parallel?) test-procedures-execute-parallel
+            (if (alist-q-ref settings parallel?) test-procedures-execute-parallel
               test-procedures-execute-serial)))
         (settings->procedure-hooks
           (l (settings) "list -> (procedure:hook-before hook-after report-before report-after)"
             (append
-              (alist-select (alist-quoted-ref settings hook)
+              (alist-select (alist-q-ref settings hook)
                 (ql procedure-before procedure-after procedure-data-before procedure-data-after))
               (alist-select (tail (settings->reporter settings))
                 (ql procedure-before procedure-after procedure-data-before procedure-data-after))))))
       (l (settings source)
         "list ((symbol:name procedure:test-proc any:data-in/out ...) ...) -> test-result"
         ( (get-executor settings) settings (test-procedures-apply-settings settings source)
-          (alist-quoted-ref settings exceptions?) (settings->procedure-hooks settings)))))
+          (alist-q-ref settings exceptions?) (settings->procedure-hooks settings)))))
 
   (define (test-execute-module settings name) "list (symbol ...) -> test-result"
     (test-module-execute settings (environment* name) 0 name))

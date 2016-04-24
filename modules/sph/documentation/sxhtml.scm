@@ -38,7 +38,7 @@
 
   (define (get-binding-documentation module-name) "list -> ((symbol:name . list:alist) ...)"
     (list-sort-with-accessor string<? first
-      (alist-quoted-bind display-format-plist (format-binding-info format-arguments)
+      (alist-bind display-format-plist (format-binding-info format-arguments)
         (map
           (l (binding-info)
             (format-binding-info binding-info

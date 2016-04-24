@@ -12,7 +12,7 @@
     (rnrs base)
     (sph)
     (sph time)
-    (only (sph alist) alist-ref alist-quoted)
+    (only (sph alist) alist-ref alist-q)
     (only (sph conditional) if-pass)
     (only (sph string) pad-with-zeros string-equal?)
     (only (sph tree) splice-lists-without-prefix-symbol)
@@ -79,7 +79,7 @@
       (l
         (year month day
           hours minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes)
-        (alist-quoted year year
+        (alist-q year year
           month month
           day day
           hours hours

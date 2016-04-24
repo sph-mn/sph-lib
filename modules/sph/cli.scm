@@ -133,8 +133,7 @@
 
   (define (config->option-spec a)
     (apply
-      (l (named . unnamed)
-        (if-pass (alist-quoted-ref named options) (l (a) (append a unnamed)) unnamed))
+      (l (named . unnamed) (if-pass (alist-q-ref named options) (l (a) (append a unnamed)) unnamed))
       (keyword-list->alist+keyless a)))
 
   (define (commands->help-text-lines a) "list:commands-spec -> string"
@@ -243,11 +242,11 @@
     "alist:config -> (procedure:{options -> list:extended-options/false})"
     (list
       (l (options)
-        (if-pass (alist-quoted-ref a version)
+        (if-pass (alist-q-ref a version)
           (l (version-spec)
             (pair (ql version #:names #\v #:processor (display-version-proc version-spec)) options))))
       (l (options)
-        (if-pass (alist-quoted-ref a about)
+        (if-pass (alist-q-ref a about)
           (l (text) (pair (ql about #:names #\a #:processor (display-about-proc text a)) options))))
       (l (options)
         (let ((help-option (ql help #:names #\h)) (cli-option (ql interface)))
@@ -257,7 +256,7 @@
                 (pair
                   (append help-option
                     (list #:processor
-                      (display-help-proc (alist-quoted-ref a description) commands
+                      (display-help-proc (alist-q-ref a description) commands
                         command-options-config a options-temp)))
                   options)))
             (pair
@@ -348,11 +347,11 @@
         (alist-ref a (q commands)))))
 
   (define (config->missing-arguments-handler a) "list -> procedure/false"
-    (let (v (alist-quoted-ref a missing-arguments-handler (q undefined)))
+    (let (v (alist-q-ref a missing-arguments-handler (q undefined)))
       (if (eqv? (q undefined) v) default-missing-arguments-handler (and (procedure? v) v))))
 
   (define (config->unsupported-option-handler a) "list -> procedure/false"
-    (let (v (alist-quoted-ref a unsupported-option-handler (q undefined)))
+    (let (v (alist-q-ref a unsupported-option-handler (q undefined)))
       (if (eqv? (q undefined) v) default-unsupported-option-handler (and (procedure? v) v))))
 
   (define (cli-create . config)

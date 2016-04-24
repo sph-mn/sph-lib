@@ -150,7 +150,7 @@
         (install-cli-guile (\"/usr/lib\" \"temp/libguile-dg.so\")
           ((path-lib-scheme \"test\") \"test/sph\"))"
         (let (arguments (command-line-interface program-arguments))
-          (alist-quoted-bind arguments
+          (alist-bind arguments
             (prefix path-lib-scheme symlink mode-directory mode-regular dry-run)
             (install-p
               (append (list #:symlink? symlink #:dry-run? dry-run)

@@ -10,7 +10,7 @@
     (sph documentation)
     (only (srfi srfi-1) remove))
 
-  (define-as display-format-plist alist-quoted
+  (define-as display-format-plist alist-q
     format-arguments default-format-arguments
     format-binding-info
     (l (bi formatted-arguments)

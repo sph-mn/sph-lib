@@ -46,16 +46,16 @@
     "list ->
     if the --add-to-load-path option has been specified, add the comma separated list of paths given
     as a value to the option to the beginning of the module load-path"
-    (if-pass (alist-quoted-ref cli-arguments add-to-load-path)
+    (if-pass (alist-q-ref cli-arguments add-to-load-path)
       (l (a) (map (l (e) (add-to-load-path e)) (string-split a #\,)))))
 
   (define (test-execute-cli-get-settings cli-arguments)
     "list -> list
     create the test settings object from program arguments"
-    (alist-quoted-bind cli-arguments (reporter exclude only until)
+    (alist-bind cli-arguments (reporter exclude only until)
       (cli-add-to-load-path! cli-arguments)
-      (alist-quoted-merge-key/value test-settings-default reporter-name
-        (cli-value-reporter (alist-quoted-ref test-settings-default reporters) reporter) exclude
+      (alist-q-merge-key/value test-settings-default reporter-name
+        (cli-value-reporter (alist-q-ref test-settings-default reporters) reporter) exclude
         (cli-value-path/module-list exclude) only
         (cli-value-path/module-list only) until (cli-value-path/module-list until))
       test-settings-default))
@@ -64,6 +64,6 @@
     "parse program arguments and run the rest of the program depending on the given arguments.
     creates a command-line interface for executing tests in test module files"
     (let* ((arguments (test-cli)) (settings (test-execute-cli-get-settings arguments)))
-      (alist-quoted-bind arguments (source)
+      (alist-bind arguments (source)
         (if source (test-modules-execute settings (append-map test-path->module-names source))
           (list))))))

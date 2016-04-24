@@ -41,7 +41,7 @@
       string-fold
       simple-format)
     (only (rnrs io simple) display)
-    (only (sph alist) alist-quoted-bind)
+    (only (sph alist) alist-bind)
     (only (sph list)
       any->list
       contains?
@@ -244,7 +244,7 @@
     alist keys can be: limit, add-1, add-2, order"
     ;order - string/(string ...)
     ;limit - string/(offset limit)
-    (alist-quoted-bind config (limit add-1 add-2 order)
+    (alist-bind config (limit add-1 add-2 order)
       ;build sql parts
       (values
         ;beginning part

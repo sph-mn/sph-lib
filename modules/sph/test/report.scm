@@ -81,7 +81,7 @@
           (display (string-join group " ")) (display "\n"))))
     result)
 
-  (define-as test-report-hooks-null alist-quoted
+  (define-as test-report-hooks-null alist-q
     ;settings index name ->
     procedure-before ignore
     ;settings index result ->
@@ -99,10 +99,10 @@
     ;settings module-names result ->
     modules-after ignore)
 
-  (define-as test-report-hooks-compact alist-quoted
+  (define-as test-report-hooks-compact alist-q
     procedure-before
     (l (s index result)
-      (if (alist-quoted-ref s current-module-name) (newline) (if (not (zero? index)) (newline))))
+      (if (alist-q-ref s current-module-name) (newline) (if (not (zero? index)) (newline))))
     procedure-after ignore
     procedure-data-before ignore
     procedure-data-after
@@ -110,15 +110,15 @@
       (let (index-data (test-result-index result))
         (if (= 0 index-data)
           (begin
-            (display (create-indent (boolean->integer (alist-quoted-ref s current-module-name))))
+            (display (create-indent (boolean->integer (alist-q-ref s current-module-name))))
             (display (test-result-title result))))
         (if (test-result-success? result) (begin (display " ") (display (+ 1 index-data)))
           (begin (newline)
             (display
-              (create-indent (+ 1 (boolean->integer (alist-quoted-ref s current-module-name)))))
+              (create-indent (+ 1 (boolean->integer (alist-q-ref s current-module-name)))))
             (display "failure") (newline)
             (test-report-compact-ieo result
-              (boolean->integer (alist-quoted-ref s current-module-name)) display)))))
+              (boolean->integer (alist-q-ref s current-module-name)) display)))))
     module-before
     (l (s index name) (if (not (zero? index)) (newline))
       (display (string-join (map symbol->string name) " ")))
