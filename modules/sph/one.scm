@@ -71,6 +71,7 @@
     string->datum
     string-if-exception
     true?
+    display-formatted
     true?-s
     values->list
     with-values)
@@ -79,6 +80,7 @@
     (ice-9 popen)
     (ice-9 rdelim)
     (ice-9 regex)
+    (ice-9 pretty-print)
     (rnrs bytevectors)
     (rnrs io ports)
     (rnrs sorting)
@@ -100,6 +102,9 @@
       unfold-right
       filter
       unfold))
+
+  (define* (display-formatted #:key (port (current-output-port)) . a)
+    (pretty-print a port))
 
   (define (remove-keyword-associations a)
     "list -> list

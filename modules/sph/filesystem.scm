@@ -43,7 +43,7 @@
     (rnrs bytevectors)
     (rnrs io ports)
     (sph)
-    (sph stream base)
+    (sph stream)
     (sph string)
     (sph time)
     (srfi srfi-41)

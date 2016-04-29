@@ -1,6 +1,6 @@
 ; (sph) - fundamental bindings for sph-lib
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -31,7 +31,6 @@
     every
     first
     fold
-    thunk
     fold-right
     identity-s
     l
@@ -51,7 +50,8 @@
     syntax-rule
     syntax-rules_
     tail
-    throw)
+    throw
+    thunk)
   (import
     (ice-9 pretty-print)
     (ice-9 threads)
@@ -93,13 +93,13 @@
   ;  initialise all locale categories based on standard system environment variables
   (setlocale LC_ALL "")
   ;this should not be here, because it may overwrite the users preference.
-  ;  it sets the depth of backtraces which are printed on error.
+  ;  it sets the maximum depth of backtraces which are printed on error.
   (debug-set! depth 4)
   (read-disable (quote square-brackets))
 
-  (define (debug-log . args)
+  (define (debug-log . a)
     "writes all arguments to standard-output and results in the first argument"
-    (pretty-print (cons (q --) args)) (first args))
+    (pretty-print (cons (q --) a)) (first a))
 
   (define-syntax syntax-rule
     (syntax-rules () ((_ (pattern ...) expansion) (syntax-rules () ((_ pattern ...) expansion)))))
@@ -147,27 +147,25 @@
       (define-syntax name
         (lambda (syntax) (syntax-case syntax () ((_ pattern ...) expansion ...) ...)))))
 
-  (define-syntax-rule (l arg ...) (lambda arg ...))
-  (define-syntax-rule (l* arg ...) (lambda* arg ...))
+  (define-syntax-rule (l a ...) (lambda a ...))
+  (define-syntax-rule (l* a ...) (lambda* a ...))
+  (define-syntax-rule (identity-s a) a)
+  (define-syntax-rule (q a) (quote a))
+  (define-syntax-rule (quoted-list a ...) (q (a ...)))
+  (define-syntax-rule (ql a ...) (quoted-list a ...))
+  (define-syntax-rule (qq a) (quasiquote a))
+  (define pair cons)
+  (define pairs cons*)
+  (define tail cdr)
+  (define each for-each)
 
-(define-syntax-rules let
+  (define-syntax-rules let
     ;let and named-let plus a simplified syntax for binding just one variable
     ((((variable-name expr) ...) body ...) ((lambda (variable-name ...) body ...) expr ...))
     (((variable-name expr) body ...) (let ((variable-name expr)) body ...))
     ( (name ((variable-name expr) ...) body ...)
       ((lambda (name) (set! name (lambda (variable-name ...) body ...)) (name expr ...)) #f))
     ((name (variable-name expr) body ...) (let name ((variable-name expr)) body ...)))
-
-  (define-syntax-rule (identity-s arg) arg)
-  (define-syntax-rule (q arg) (quote arg))
-  (define-syntax-rule (quoted-list args ...) (q (args ...)))
-  (define-syntax-rule (ql args ...) (quoted-list args ...))
-  (define-syntax-rule (qq arg) (quasiquote arg))
-  (define-syntax-rule (qq arg) (quasiquote arg))
-  (define pair cons)
-  (define pairs cons*)
-  (define tail cdr)
-  (define each for-each)
 
   (define-syntax-rule (par-let ((v e) ...) b0 b1 ...)
     (call-with-values (lambda () (parallel e ...)) (lambda (v ...) b0 b1 ...)))
