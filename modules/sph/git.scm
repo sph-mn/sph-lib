@@ -14,18 +14,16 @@
     (only (sph two) cli-option))
 
   (define (git-branch-exists? path-repository name)
-    (zero?
-      (tail
-        (waitpid
-          (process-create
-            (thunk (chdir path-repository) (process-replace "git" "rev-parse" "--verify" name)) #f
-            #f #f)))))
+    (not
+      (string-null?
+        (call-with-working-directory path-repository
+          (thunk (execute->string "git" "rev-parse" "--quiet" "--verify" name))))))
 
   (define* (git-archive path-repository #:optional (branch "master") #:rest additional-arguments)
     "string [string] ->
     create a compressed tar archive from the contents of a git repository without (most) git metadata.
     uses the git built-in \"git archive\""
-    (eqv? 0
+    (zero?
       (status:exit-val
         (apply execute "git"
           (cli-option "git-dir" path-repository) "archive" branch additional-arguments))))
