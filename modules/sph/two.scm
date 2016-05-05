@@ -37,9 +37,6 @@
     generalised-less?
     get-filesystem-root
     get-mime-extensions
-    git-archive
-    git-archive->file
-    git-current-short-commit-hash
     hash-select
     let-if
     let-if*
@@ -194,27 +191,6 @@
         (pair (q begin)
           (map (l (e) (if (define? e) (add-define-name-prefix e name) e))
             (syntax->datum (syntax (body ...))))))))
-
-  (define* (git-archive repository-path #:optional (branch "master") #:rest additional-arguments)
-    "string [string] ->
-    create a compressed tar archive from the contents of a git repository without (most) git metadata.
-    uses the git built-in \"git archive\""
-    (eqv? 0
-      (status:exit-val
-        (apply execute "git"
-          (cli-option "git-dir" repository-path) "archive" branch additional-arguments))))
-
-  (define* (git-current-short-commit-hash repository-path #:optional (branch "master"))
-    "string -> string
-    results in the short commit hash for the latest commit in a git repository"
-    (execute->string "git" (cli-option "git-dir" (string-append repository-path ".git"))
-      "log" (cli-option #\n 1) (cli-option "pretty" "format:%h") branch))
-
-  (define*
-    (git-archive->file repository-path target-path #:optional (branch "master") #:rest
-      additional-arguments)
-    (apply git-archive (string-append repository-path ".git")
-      branch (cli-option "output" target-path) additional-arguments))
 
   (define line-reverse-direction
     ( (thunk (define (split-words a) (delete "" (map string-trim-both (string-split a #\space))))

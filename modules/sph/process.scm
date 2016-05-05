@@ -15,7 +15,6 @@
 (library (sph process)
   (export
     call-with-working-directory
-    execlp-new-process
     execute
     execute+check-result
     execute->file
@@ -133,7 +132,7 @@
         port-output (map command/proc->procedure command/proc))))
 
   (define (execute-with-pipe proc mode path . arguments)
-    "procedure integer string list ->
+    "procedure integer string list -> any
     execute a program with a pipe connected to its standard-output and/or standard-input and pass it as a port to \"proc\".
     mode can be one of the guile variables OPEN_READ OPEN_WRITE OPEN_BOTH"
     (let* ((port (apply open-pipe* mode path arguments)) (r (proc port))) (close-pipe port) r))

@@ -30,6 +30,7 @@
     count-with-limit
     define-list
     delete-duplicates-sorted
+    list-set-union
     difference
     difference+intersection
     difference+intersection-p
@@ -284,6 +285,8 @@
     "list ... -> list
     delete elements from the first list that are included in the other lists"
     (apply lset-difference equal? lists))
+
+  (define (list-set-union . a) (delete-duplicates (apply append a)))
 
   (define* (delete-duplicates-sorted a #:optional (equal-proc equal?) (preserve-order #t))
     "list [procedure:{any any -> boolean} boolean] -> list
