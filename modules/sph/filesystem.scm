@@ -293,7 +293,7 @@
                 (string-drop-right name (+ 1 (string-length (last name-split)))))))))))
 
   (define* (search-load-path path #:optional (load-paths %load-path))
-    "searches for the first match of a relative-path in load-paths.
+    "gives the first match of a relative-path in load-paths or false.
     searches from left to right in the load-paths.
     all paths in load-paths must end with a \"/\".
     searches in guiles %load-path by default"

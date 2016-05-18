@@ -2,6 +2,7 @@
   (export
     error->list
     error-create
+    error-create-p
     error-data
     error-false-if
     error-identity-if
@@ -21,14 +22,14 @@
 
   ;an error type
 
-  (define-record-type error (primitive-error-create name data origin)
+  (define-record-type error (error-create-p name data origin)
     error? (name error-name) (data error-data) (origin error-origin))
 
   (define-syntax-rules error-create
     ;"[name data origin] -> error
     ;create an error with optional field values. fields that are not set are set to false"
-    ((name data origin) (primitive-error-create name data origin))
-    ((name data) (primitive-error-create name data #f)) ((name) (primitive-error-create name #f #f)))
+    ((name data origin) (error-create-p name data origin))
+    ((name data) (error-create-p name data #f)) ((name) (error-create-p name #f #f)))
 
   (define (error-pass-if-p a consequent alternative)
     "any procedure:{any -> any} procedure:{any -> any} -> any
