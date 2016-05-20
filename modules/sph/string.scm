@@ -342,7 +342,7 @@
     replace all occurences of \"char\" in a string"
     (string-map (l (e) (if (eqv? e char) replacement e)) a))
 
-  (define (string-drop-suffix a suffix) "string string -> string"
+  (define (string-drop-suffix suffix a) "string string -> string"
     (string-drop-right a (string-length suffix)))
 
   (define (symbol?->string a)

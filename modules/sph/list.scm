@@ -15,8 +15,8 @@
 (library (sph list)
   (export
     any->list
-    map-first
     any->list-s
+    compact
     complement
     complement-both
     consecutive
@@ -30,7 +30,6 @@
     count-with-limit
     define-list
     delete-duplicates-sorted
-    list-set-union
     difference
     difference+intersection
     difference+intersection-p
@@ -42,7 +41,6 @@
     every-map
     every-or-index
     false-if-null
-    compact
     filter-append-map
     filter-not
     filter-produce
@@ -87,12 +85,14 @@
     list-set-eqv?
     list-set-match-condition?
     list-set-match-contains?
+    list-set-union
     list-sort-by-list
     list-sort-by-list-with-accessor
     list-sort-with-accessor
     list-suffix?
     map-apply
     map-consecutive
+    map-first
     map-map
     map-one
     map-segments
@@ -200,7 +200,7 @@
     wraps a non-list argument in a list"
     (any->list-s a))
 
- (define-syntax-rule (any->list-s a)
+  (define-syntax-rule (any->list-s a)
     ;"like \"any->list\" but as syntax"
     (if (list? a) a (list a)))
 
@@ -907,23 +907,26 @@
     (iterate-three-with-stop+end (l (prev e next . r) (equal? e search-value))
       (l (prev e next . r)
         (if (equal? e search-value)
-          (if (eq? (q inclusive) inclusiveness) (list (reverse (pair e prev)) next)
+          (if (equal? (q inclusive) inclusiveness) (list (reverse (pair e prev)) next)
             (list (reverse prev) (pair e next)))
           (list prev (pair e next))))
       (l (prev e next . r) r) a))
 
-  (define (split-by-pattern-take-ellipsis a len)
-    (if (= 0 len) (list a (list))
+  (define (split-by-pattern-take-ellipsis a rest-pattern-length)
+    (if (= 0 rest-pattern-length) (list a (list))
       (let (a-len (length a))
-        (if (<= a-len len) (list #f #f) (call-with-values (l () (split-at a (- a-len len))) list)))))
+        (if (< a-len rest-pattern-length) (list #f #f)
+          (call-with-values (thunk (split-at a (- a-len rest-pattern-length))) list)))))
 
   (define (split-by-pattern-match-ellipsis rest-pattern expr cont)
     (apply (l (match rest-expr) (cont match rest-expr rest-pattern))
       (split-by-pattern-take-ellipsis expr (length rest-pattern))))
 
-  (define (split-by-pattern-loop pattern expr prev-name prev-value r) "-> (matches result)"
+  (define (split-by-pattern-loop pattern expr prev-name prev-value r)
+    "-> (matches result)
+    the first pattern has already been matched and is passed with prev-name"
     (if (null? pattern) (list (reverse (pair (pair prev-name prev-value) r)) expr)
-      (if (eqv? (q ...) (first pattern))
+      (if (equal? (q ...) (first pattern))
         (split-by-pattern-match-ellipsis (tail pattern) expr
           (l (match rest-expr rest-pattern)
             (if match
@@ -934,7 +937,7 @@
                   (pair (pair prev-name (pair prev-value match)) r)))
               (list #f #f))))
         (if (null? expr)
-          (if (and (= 2 (length pattern)) (eq? (q ...) (second pattern)))
+          (if (and (= 2 (length pattern)) (equal? (q ...) (second pattern)))
             (split-by-pattern-loop (list) expr prev-name prev-value r) (list #f #f))
           (split-by-pattern-loop (tail pattern) (tail expr)
             (first pattern) (first expr) (pair (pair prev-name prev-value) r))))))
@@ -958,7 +961,7 @@
       (iterate-three
         (l (p e n count)
           (list
-            (if (not (or (eqv? (q ...) e) (and (not (null? n)) (eqv? (q ...) (first n)))))
+            (if (not (or (equal? (q ...) e) (and (not (null? n)) (equal? (q ...) (first n)))))
               (+ count 1) count)))
         a 0)))
 
