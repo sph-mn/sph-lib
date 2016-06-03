@@ -35,7 +35,8 @@
     rw-string->port
     rw-string->string
     rw-with-temporary-file-port->file
-    temp-file-port)
+    temp-file-port
+    (rename (read port->datum)))
   (import
     (guile)
     (ice-9 rdelim)
