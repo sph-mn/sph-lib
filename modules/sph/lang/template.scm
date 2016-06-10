@@ -1,48 +1,64 @@
 (library (sph lang template)
   (export
-    template-fold)
+    template-bindings-proc
+    template-compose
+    template-datum->template-proc
+    template-fold
+    template-get)
   (import
     (guile)
     (rnrs base)
     (rnrs eval)
     (sph)
-    (sph alist)
-    (sph read-write))
+    (only (sph alist) alist-ref)
+    (only (sph list) fold-multiple)
+    (only (sph read-write) rw-file->list rw-port->list))
 
-  (define (datum->template-proc a env)
+  ;alternative name: s-template.
+  ;a template engine using implicitly quasiquoted s-expressions.
+  ;creates template procedures from source data read from files or ports
+
+  (define (template-datum->template-proc a env)
+    "any:scheme-datum environment -> procedure:template-proc
+    creates a template-proc from an unevaluated template scheme datum"
     (eval (quasiquote (lambda (ref content) (unquote (list (q quasiquote) a)))) env))
 
-  (define (template-source-get a env)
+  (define (template-get env a) "environment procedure/string/port/any -> procedure"
     (if (procedure? a) a
-      (datum->template-proc
+      (template-datum->template-proc
         (if (string? a) (rw-file->list read a) (if (port? a) (rw-port->list read a) a)) env)))
 
-  (define (template-source-fold a fold-proc result env)
-    "template-source procedure:template-fold-proc any environment -> any"
-    (if (list? a)
-      (fold
-        (l (wrapped result)
-          (fold-proc
-            (if (list? wrapped)
-              (l (ref content)
-                (fold-right (l (e prev) ((template-source-get e env) ref prev)) #f wrapped))
-              (template-source-get wrapped env))
-            result))
-        result a)
-      (fold-proc (template-source-get a env) result)))
+  (define (template-compose env . source)
+    "environment template-source ... -> procedure:template-proc
+    evaluated templates from source are passed as content to the templates before them, like function composition"
+    (l (ref content) (fold-right (l (e prev) ((template-get e env) ref prev)) #f source)))
 
-  (define (bindings-accessor-proc data)
-    ;this procedure hides the data object and the underlying data type
+  (define (template-bindings-proc data)
+    ;this procedure abstracts the data object and its data type
     (case-lambda (() data)
       ((key . default) (alist-ref data key (if (null? default) "" (first default))))))
 
-  (define (template-fold fold-proc source bindings env result)
-    "template-fold-proc template-source alist-q environment any -> any
-    template-source: string:path/template-procedure/port/(string:path:merged/template-procedure/port/(string:path:wrapped/template-procedure/port/list:already-ready-result ...) ...)
-    template-fold-proc: procedure:{procedure:{key [default: \"\"] -> value/default} any:inserted-content}"
-    (template-source-fold source
-      (let (bindings-accessor (bindings-accessor-proc bindings))
-        (l (e result) (fold-proc (e bindings-accessor #f) result)))
-      result env))
+  (define (template-source-fold a fold-proc env . result)
+    "template-source procedure:template-fold-proc any environment -> any"
+    (if (list? a)
+      (apply fold-multiple
+        (l (wrapped . result)
+          (apply fold-proc
+            (if (list? wrapped) (apply template-compose env wrapped) (template-get env wrapped))
+            result))
+        a result)
+      (apply fold-proc (template-get env a) result)))
 
-  (define (template-apply a bindings) (a (bindings-accessor-proc bindings) #f)))
+  (define (template-fold fold-proc bindings env source . result)
+    "procedure:{procedure any -> any} list environment template-source any -> any
+    template-fold processes multiple template sources with or without template composition depending on the nesting of sources in the \"source\" specification.
+
+    element: string:path/template-procedure/port
+    template-source: element/(element/(element ...) ...)
+    template-source: single-element/(multiple-element/(composed-element ...) ...)
+    example
+    (template-fold (l (template-result result) (pair template-result result)) source bindings env (list))"
+    (apply template-source-fold source
+      (let (bindings-accessor (template-bindings-proc bindings))
+        (l (template . result) (apply fold-proc (template bindings-accessor #f) result)))
+      env result)))
