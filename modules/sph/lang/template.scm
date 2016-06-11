@@ -31,7 +31,7 @@
   (define (template-compose env . source)
     "environment template-source ... -> procedure:template-proc
     evaluated templates from source are passed as content to the templates before them, like function composition"
-    (l (ref content) (fold-right (l (e prev) ((template-get e env) ref prev)) #f source)))
+    (l (ref content) (fold-right (l (e prev) ((template-get env e) ref prev)) content source)))
 
   (define (template-bindings-proc data)
     ;this procedure abstracts the data object and its data type

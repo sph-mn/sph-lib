@@ -3,8 +3,8 @@
     sxhtml-alist->options
     sxhtml-heading
     sxhtml-hyperlink
-    sxhtml-include-script
-    sxhtml-include-style
+    sxhtml-include-css
+    sxhtml-include-javascript
     sxhtml-indent
     sxhtml-indent-create
     sxhtml-list->list
@@ -34,18 +34,15 @@
             (list (list (q div) content)))))))
 
   (define sxhtml-indent (ql (*ENTITY* "#160") (*ENTITY* "#160")))
-
-  (define (sxhtml-indent-create indent-level)
-    (apply append (make-list indent-level sxhtml-indent)))
-
+  (define (sxhtml-indent-create indent-level) (apply append (make-list indent-level sxhtml-indent)))
   (define (sxhtml-text->sxml a) (interleave (string-split a #\newline) (q (br))))
 
-  (define* (sxhtml-include-script path #:optional is-async) "string boolean -> sxml"
+  (define* (sxhtml-include-javascript path #:optional is-async) "string boolean -> sxml"
     (qq
       (script
         (@ (src (unquote path)) (unquote-splicing (if is-async (list (ql async async)) (list)))) "")))
 
-  (define (sxhtml-include-style path) "string -> sxml"
+  (define (sxhtml-include-css path) "string -> sxml"
     (qq (link (@ (rel "stylesheet") (type "text/css") (href (unquote path))))))
 
   (define* (sxhtml-hyperlink name #:optional (value name))

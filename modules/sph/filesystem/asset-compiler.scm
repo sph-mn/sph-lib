@@ -48,8 +48,7 @@
     (or (and (list? a) (hashtable-ref (first a) mode)) ac-output-copy))
 
   (define*
-    (ac-compile config-lang mode port-output output-format input-spec #:optional
-      processor-config)
+    (ac-compile config-lang mode port-output output-format input-spec #:optional processor-config)
     "hashtable symbol port symbol (string ...) (string/list ...) ->
     config-lang: hashtable:{format-name -> (hashtable:{mode -> processor} vector:ac-lang-input ...)}
     ac-lang-input: vector:(symbol:name procedure:{string:path -> boolean} procedure:processor)
@@ -61,8 +60,7 @@
         (map (l (a) (source->input-processor lang-output processor-config a)) input-spec) port-output)))
 
   (define*
-    (ac-compile->file config-lang mode output-directory output-format input-spec
-      #:key
+    (ac-compile->file config-lang mode output-directory output-format input-spec #:key
       processor-config
       only-if-newer
       output-file-name)
@@ -73,7 +71,5 @@
       (if (or (not only-if-newer) (input-files-updated? path-destination (flatten input-spec)))
         (begin (ensure-directory-structure (dirname path-destination))
           (call-with-output-file path-destination
-            (l (port)
-              (ac-compile config-lang mode
-                port output-format input-spec processor-config))))
+            (l (port) (ac-compile config-lang mode port output-format input-spec processor-config))))
         path-destination))))
