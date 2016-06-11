@@ -7,7 +7,8 @@
     ac-output-copy)
   (import
     (sph common)
-    (sph record))
+    (sph record)
+    (only (rnrs hashtables) equal-hash))
 
   ;merges and processes files of various formats into one.
   ;uses a configuration for processing different formats.
@@ -15,15 +16,12 @@
   ;example use case: mix of transcompiled and non-compiled files that are merged and optimised for the web
   (define-record ac-lang-input name path? processor)
 
-  (define ac-id-next
-    (let (counter 0) (thunk (set! counter (+ 1 counter)) (number->string counter 32))))
-
   (define (create-output-path path-directory format path-file input-spec)
     (string-append (ensure-trailing-slash path-directory) (symbol->string format)
       "/"
       (if path-file path-file
         (string-append "_" (first (string-split (basename (first input-spec)) #\.))
-          "-" (ac-id-next)))))
+          "-" (number->string (equal-hash input-spec) 32)))))
 
   (define (lang-output->lang-input lang-output path)
     (find (l (a) ((ac-lang-input-path? a) path)) (tail lang-output)))
@@ -65,11 +63,18 @@
       only-if-newer
       output-file-name)
     "-> string:path-destination"
-    (let
-      (path-destination
-        (create-output-path output-directory output-format output-file-name input-spec))
-      (if (or (not only-if-newer) (input-files-updated? path-destination (flatten input-spec)))
-        (begin (ensure-directory-structure (dirname path-destination))
+    (let*
+      ( (input-spec-flat (flatten input-spec))
+        (path-destination
+          (create-output-path output-directory output-format output-file-name input-spec-flat)))
+      (if
+        (or (not only-if-newer)
+          (and (every string? input-spec-flat)
+            (input-files-updated? path-destination input-spec-flat)))
+        (and (ensure-directory-structure (dirname path-destination))
           (call-with-output-file path-destination
-            (l (port) (ac-compile config-lang mode port output-format input-spec processor-config))))
+            (l (port)
+              (process-chain-finished-successfully?
+                (ac-compile config-lang mode port output-format input-spec processor-config))))
+          path-destination)
         path-destination))))
