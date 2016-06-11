@@ -2,6 +2,7 @@
   (export
     call-with-directory
     directory-delete-content
+    directory-fold
     directory-list
     directory-list-full-path
     directory-read-all
@@ -81,6 +82,11 @@
 
   (define (is-directory? path) "test if path exists and is a directory"
     (eqv? (q directory) (stat:type (stat path))))
+
+  (define (directory-fold path proc init)
+    (let (d (if (string? path) (opendir path) path))
+      (let loop ((e (readdir d)) (result init))
+        (if (eof-object? e) (begin (closedir d) result) (loop (readdir d) (proc e result))))))
 
   (define (directory-reference? file-path)
     "string -> boolean

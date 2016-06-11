@@ -125,7 +125,7 @@
 
   (define process-create-chain-with-pipes
     (l (port-input port-output . command/proc)
-      "port/true/any port/true/any procedure/(string ...)/string ->
+      "port/true/any port/true/any procedure:{->}/(string ...)/string ->
         like process-primitive-create-chain-with-pipes but also supports lists as value for command/proc which contain arguments for \"execute\".
         the first execute argument is automatically also the second argument to follow the common execv calling convention"
       (apply process-primitive-create-chain-with-pipes port-input
