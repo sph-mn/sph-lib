@@ -5,6 +5,8 @@
     es-chain
     es-chain-nc
     es-compound-nc
+    es-declare
+    es-declare-nc
     es-define
     es-define-nc
     es-environment
@@ -55,11 +57,21 @@
     chains procedure applications"
     (es-chain-nc (any->string proc) (es-identifier base) (string-join (map es-identifier args) ",")))
 
-  (define* (es-define-nc name #:optional value) "string string -> string"
-    (string-append "var " name (if value (string-append "=" value) "")))
+  (define (es-declare-nc . names) (string-append "var " (string-join names ",")))
+  (define (es-declare . names) (apply es-declare-nc (map es-identifier names)))
 
-  (define* (es-define name #:optional value) "any [any] -> string"
-    (es-define-nc (es-identifier name) (if value (es-value value) value)))
+  (define* (es-define-nc . names-and-values) "string string -> string"
+    (string-append "var "
+      (if (= 1 (length names-and-values)) (first names-and-values)
+        (string-join (map-slice 2 (l (a b) (string-append a "=" b)) names-and-values) ","))))
+
+  (define* (es-define . names-and-values) "any [any] -> string"
+    (string-append "var "
+      (if (= 1 (length names-and-values)) (es-identifier (first names-and-values))
+        (string-join
+          (map-slice 2 (l (a b) (string-append (es-identifier a) "=" (es-value b)))
+            names-and-values)
+          ","))))
 
   (define (es-environment-nc a)
     (es-object-nc (map (l (e) (if (pair? e) (pair (first e) (tail e)) (pair e e))) a)))
@@ -114,9 +126,7 @@
   (define (es-object a) "list:alist -> string"
     (string-append "{" (string-join (alist-map single-assoc a) ",") "}"))
 
-  (define (es-object-nc a)
-    (string-append "{" (string-join (alist-map single-assoc-nc a) ",") "}"))
-
+  (define (es-object-nc a) (string-append "{" (string-join (alist-map single-assoc-nc a) ",") "}"))
   (define (es-new-nc name args) (string-append "new " (es-apply-nc name)))
   (define (es-ref a key) (string-append (es-identifier a) "[" (es-value key) "]"))
 
@@ -131,13 +141,12 @@
       ";___i<arguments.length;___i+=1){" rest-formal ".push(" (es-ref (q arguments) (q ___i)) ")" "}"))
 
   (define (es-set-nc! . name/value)
-    (string-join (map-slice 2 (l (name value) (string-append name "=" value)) name/value)
-      ";"))
+    (string-join (map-slice 2 (l (name value) (string-append name "=" value)) name/value) ";"))
 
   (define (es-set! . name/value)
     (string-join
       (map-slice 2 (l (name value) (string-append (es-identifier name) "=" (es-value value)))
-          name/value)
+        name/value)
       ";"))
 
   (define-as es-escape-single-char alist
