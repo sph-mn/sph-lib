@@ -39,7 +39,7 @@
     "procedure list -> ((any:group-key any:group-value ...):group ...)
     create an association list entry with accessor result and element for every unique result of accessor"
     (let loop ((rest a) (groups (alist)))
-      (if (null? rest) groups
+      (if (null? rest) (map (l (a) (pair (first a) (reverse (tail a)))) groups)
         (let* ((e (first rest)) (key (accessor e)) (group (alist-ref groups key)))
           (loop (tail rest) (alist-set groups key (if group (pair e group) (list e))))))))
 

@@ -14,6 +14,8 @@
     (ice-9 regex)
     (rnrs base)
     (sph)
+    (guile)
+    (sph time)
     (only (sph number) round-to-decimal-places simple-format-number))
 
   (define (parse-military-time a) "-> (hours . minutes)"

@@ -23,6 +23,8 @@
     seconds->year-seconds
     seconds->year-start
     seconds-day
+    seconds->date
+    date->seconds
     seconds-hour
     seconds-leap-year?
     seconds-minute
@@ -67,7 +69,7 @@
         (first-thursday (+ first-week-start (seconds->thursday-difference first-week-start)))
         (difference (- a-thursday first-thursday)))
       (if (< difference 0) (if (seconds-extra-week-year? (- (seconds->year a) 1)) 53 52)
-        (if (= 0 difference) 1 (ceiling (/ difference seconds-week))))))
+        (+ 1 (ceiling (/ difference seconds-week))))))
 
   (define (date->seconds a) (time-second (date->time-utc a)))
   (define (seconds->date a) (time-utc->date (make-time time-utc 0 a)))

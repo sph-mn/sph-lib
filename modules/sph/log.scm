@@ -20,7 +20,7 @@
       any->string-write
       any->string
       string-replace-chars)
-    (only (sph time) current-local-datetime-string))
+    (only (sph time string) current-local-datetime-string))
 
   ;diagnostic logging with routing
 
