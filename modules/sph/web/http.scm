@@ -6,12 +6,12 @@
     http-header-line-set-cookie
     http-header-lines
     http-parse-cookie-header
-    http-parse-date->seconds
+    http-parse-date->time
     http-read-header
     http-read-header-line
     http-read-header-value
-    http-seconds->date
     http-status-line
+    http-time->date
     http-uri-query-alist->string
     http-uri-query-string->alist
     http-write-status-line
@@ -21,12 +21,12 @@
     (guile)
     (rnrs base)
     (sph)
-    (srfi srfi-19)
+    (sph time)
     (only (ice-9 regex) match:substring regexp-substitute/global)
     (only (sph list) map-slice)
     (only (sph module) import-unexported)
     (only (sph string) any->string)
-    (only (sph two) read-line-crlf-trim srfi-19-date->seconds))
+    (only (sph two) read-line-crlf-trim))
 
   ;;the html-uri-encoding procedures are copied from (sph web html) to avoid circular dependency
 
@@ -143,19 +143,13 @@
 
   (import-unexported (web http) parse-date)
   (import-unexported (web http) write-date)
-  (define (http-current-date) "-> string" (http-date->string (current-date 0)))
+  (define (http-current-date) "-> string" (http-date->string (time->date (time-current))))
 
   (define (http-date->string a) "srfi-19-date -> string"
     (call-with-output-string (l (port) (write-date a port))))
 
-  (define (http-parse-date->seconds a) "string -> integer:unix-time-seconds/false"
-    (srfi-19-date->seconds (parse-date a)))
+  (define (http-parse-date->time a) "string -> integer:seconds/false"
+    (time-from-date (parse-date a)))
 
-  (define (http-seconds->date a)
-    "integer:unix-time-seconds -> string
-    converts a unix timestamp to a http date string.
-    epoch is 1970-01-01 00:00:00 UTC, excluding leap seconds"
-    (http-date->string
-      (let (t (gmtime a))
-        (make-date 0 (tm:sec t)
-          (tm:min t) (tm:hour t) (tm:mday t) (+ 1 (tm:mon t)) (+ 1900 (tm:year t)) 0)))))
+  (define (http-time->date a) "integer:tai-seconds-since-unix-epoch -> string"
+    (http-date->string (time->date a))))

@@ -1,6 +1,8 @@
 (library (sph time string)
   (export
+    time->iso8601-ks-string
     time->iso8601-ymd
+    time-current-iso8601-ks-string
     time-current-iso8601-ymd
     time-day-string
     time-from-hms-string
@@ -28,6 +30,11 @@
     (simple-format-number (time-day a) shift decimal-places))
 
   (define (time-current-iso8601-ymd) (time->iso8601-ymd (time-current)))
+
+  (define (time->iso8601-ks-string a)
+    (string-append (time->iso8601-ymd a) ":" (time-day-string a)))
+
+  (define (time-current-iso8601-ks-string) (time->iso8601-ks-string (time-current)))
 
   (define (time-from-hms-string a)
     "string -> integer
