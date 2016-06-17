@@ -25,7 +25,7 @@
   ;http://atomenabled.org/developers/syndication/
   ;https://tools.ietf.org/html/rfc4287
   (define-syntax-rule (if-pass-string a proc) (if (string? a) (proc a) a))
-  (define (integer/string->rfc3339 a) (if (string? a) a (time-seconds->rfc3339 a)))
+  (define (integer/string->rfc3339 a) (if (string? a) a (time->rfc3339 a)))
 
   (define-syntax-rules sxml-element ((name value) (list (q name) value))
     ((name-and-value) (list (q name-and-value) name-and-value)))

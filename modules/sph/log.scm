@@ -8,6 +8,8 @@
     (rnrs base)
     (sph)
     (sph list)
+    (sph time)
+    (sph time string)
     (only (guile)
       display
       simple-format
@@ -19,8 +21,7 @@
     (only (sph string)
       any->string-write
       any->string
-      string-replace-chars)
-    (only (sph time string) current-local-datetime-string))
+      string-replace-chars))
 
   ;diagnostic logging with routing
 
@@ -33,7 +34,9 @@
     "(symbol ...) (any ...) ->
     categories is the list of symbol names for which the log-route has matched"
     (simple-format #f "~A ~A\n  ~A\n"
-      (current-local-datetime-string) (simplify categories)
+      (let (time (time-current))
+        (string-append (time->iso8601-ymd time) "ks" (time-day-string time)))
+      (simplify categories)
       (string-replace-chars (string-drop-right (string-drop (any->string arguments) 1) 1)
         (list (list #\newline #\newline #\space #\space)))))
 

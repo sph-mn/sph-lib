@@ -18,7 +18,7 @@
     (string-skip-string ("---a-" "--") 3) (string-trim-string ("---a-" "--") "-a-")
     (string-numeric? "" #f "1f" #f "a1a" #f "123" #t)
     (string-lowercase? "aBc" #f "aa1a" #t "BBB" #f "" #t)
-    (string-drop-suffix ("abcdef" "def") "abc" ("abcdefdef" "def") "abcdef")
+    (string-drop-suffix ("def" "abcdef") "abc" ("def" "abcdefdef") "abcdef")
     (string-replace-char ("abacadae" #\a #\x) "xbxcxdxe" ("" #\a #\b) "" ("a" #\a #\b) "b")
     (string-indices-char ("/a////b//c/d" #\/) (0 2 3 4 5 7 8 10))
     (string-longest-prefix ("abcdabcd" ("ab" "a" "abcda" "abc")) "abcda")

@@ -3,14 +3,11 @@
     (sph time)
     (sph time string))
 
-  ;(define-test (current-local-datetime-string) (string? (current-local-datetime-string)))
+  (define-test (time->iso8601-datetime) (string? (time->iso8601-ymd)))
+  (define 2016-6-17 1466121635)
 
-  (l (settings) #t)
-  #;(test-execute-procedures-lambda
-
-
-    current-local-datetime-string
-    (hms->timu (3 20 10) 12010 (0 20 10) 1210 (0 0 0) 0)
+  (test-execute-procedures-lambda (time->iso8601-ymd (unquote 2016-6-17) "2016-6-17")
+    (time-from-hms (3 20 10) 12010 (0 20 10) 1210 (0 0 0) 0)
     (time->hms -60 (0 -1 0)
       60 (0 1 0)
       3600 (1 0 0)

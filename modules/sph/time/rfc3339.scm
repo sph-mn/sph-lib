@@ -1,11 +1,11 @@
 (library (sph time rfc3339)
   (export
+    time->rfc3339
+    time-from-rfc3339
+    time-ns-from-rfc3339
     time-rfc3339->alist
-    time-rfc3339->seconds
-    time-rfc3339->seconds-and-fraction
     time-rfc3339-parse&
-    time-rfc3339-parse-tree
-    time-seconds->rfc3339)
+    time-rfc3339-parse-tree)
   (import
     (guile)
     (ice-9 peg)
@@ -88,32 +88,32 @@
           seconds-fraction seconds-fraction
           offset-negative? offset-negative? offset-hours offset-hours offset-minutes offset-minutes))))
 
-  (define (time-rfc3339->seconds a)
+  (define (time-from-rfc3339 a)
     "string -> integer:seconds:posix-time
     does not include fractional seconds; see time-rfc3339->seconds-and-fraction for that"
-    (if-pass (time-rfc3339->seconds-and-fraction a) first))
+    (if-pass (time-ns-from-rfc3339 a) first))
 
-  (define (time-rfc3339->seconds-and-fraction a)
-    "string -> (integer:seconds:posix-time . integer:seconds-fraction)"
+  (define (time-ns-from-rfc3339 a)
+    "string -> (integer:tai-utc-unix-seconds . integer:seconds-fraction)"
     (time-rfc3339-parse& a
       (l
         (year month day
           hours minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes)
         (let (offset-factor (if offset-negative? -1 1))
           (pair
-            (time-traditional-parts->seconds #:year year
+            (time-from-ymdhms #:year year
               #:month month
               #:day day
-              #:hours hours
-              #:minutes minutes
-              #:seconds seconds
-              #:offset-hours (* offset-factor offset-hours)
-              #:offset-minutes (* offset-factor offset-minutes))
+              #:hour hours
+              #:minute minutes
+              #:second seconds
+              #:offset-hour (* offset-factor offset-hours)
+              #:offset-minute (* offset-factor offset-minutes))
             seconds-fraction)))))
 
   (define (number->padded-string a) (pad-with-zeros (number->string a) 2))
 
-  (define* (time-seconds->rfc3339 a #:optional (offset 0) (seconds-fraction 0))
+  (define* (time->rfc3339 a #:optional (offset 0) (seconds-fraction 0))
     "integer:posix-time -> string"
     (let
       ( (date-time
@@ -136,7 +136,6 @@
             (apply
               (l (sign numbers)
                 (string-append sign (string-join (map number->padded-string numbers) ":")))
-              (let*
-                ((hms (drop-right (seconds->hours-minutes-seconds offset) 1)) (hours (first hms)))
+              (let* ((hms (drop-right (time->hms offset) 1)) (hours (first hms)))
                 (if (any negative? hms) (list "-" (map (l (a) (* -1 a)) hms)) (list "+" hms)))))))
       (string-append date-time offset))))
