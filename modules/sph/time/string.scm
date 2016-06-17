@@ -30,7 +30,7 @@
         (number->string (+ 1 (tm:mon t))) "-" (number->string (tm:mday t)))))
 
   (define* (seconds->day-seconds-string a #:optional (shift 3) (decimal-places 2))
-    (simple-format-number (seconds->day-seconds a) shift decimal-places))
+    (simple-format-number (identity a) shift decimal-places))
 
   (define* (current-day-seconds-string #:optional (shift 2) (decimal-places 0))
     "defaults to local hectoseconds" (seconds->day-seconds-string (current-time)))
@@ -39,10 +39,10 @@
     (string-append (seconds->iso-date-string a) ":" (seconds->day-seconds-string a)))
 
   (define (seconds->formatted-date-string strftime-format a) (strftime strftime-format (gmtime a)))
-  (define (current-local-datetime-string) (seconds->datetime-string (current-local-time)))
+  (define (current-local-datetime-string) (seconds->datetime-string (current-time)))
   (define (current-datetime-string) (seconds->datetime-string (current-time)))
   (define (current-iso-date-string) (seconds->iso-date-string (current-time)))
-  (define (current-local-iso-date-string) (seconds->iso-date-string (current-local-time)))
+  (define (current-local-iso-date-string) (seconds->iso-date-string (current-time)))
 
   (define (time-traditional-string->seconds a)
     "string -> integer

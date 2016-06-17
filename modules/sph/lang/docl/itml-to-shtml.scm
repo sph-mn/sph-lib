@@ -1,12 +1,12 @@
-(library (sph lang docl itml-to-sxhtml)
+(library (sph lang docl itml-to-shtml)
   (export
-    docl-itml-env-sxhtml
-    docl-itml-env-sxhtml-module-names
-    docl-itml-parsed->sxhtml
-    docl-itml-port->sxhtml
-    docl-itml-string->sxhtml
-    docl-itml-sxhtml-env-module-names
-    itml-parsed->sxhtml
+    docl-itml-env-shtml
+    docl-itml-env-shtml-module-names
+    docl-itml-parsed->shtml
+    docl-itml-port->shtml
+    docl-itml-string->shtml
+    docl-itml-shtml-env-module-names
+    itml-parsed->shtml
     process-lines)
   (import
     (guile)
@@ -14,14 +14,14 @@
     (rnrs eval)
     (sph)
     (sph lang docl)
-    (sph lang docl env itml-to-sxhtml)
+    (sph lang docl env itml-to-shtml)
     (sph lang docl itml)
     (sph lang itml)
     (sph lang itml read)
     (sph list)
     (sph read-write)
     (sph set)
-    (sph web sxhtml)
+    (sph web shtml)
     (only (sph hashtable) hashtable-ref symbol-hashtable)
     (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
@@ -73,7 +73,7 @@
           (pair (handle-line e) r)))))
 
   (define-syntax-rule (join-heading-section a nesting-depth)
-    (sxhtml-section nesting-depth (first a) (process-lines (tail a))))
+    (shtml-section nesting-depth (first a) (process-lines (tail a))))
 
   (define-syntax-rule (heading-section? a)
     (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
@@ -81,10 +81,10 @@
   (define-syntax-rule (list->sxml a nesting-depth)
     (if (heading-section? a) (join-heading-section a nesting-depth) a))
 
-  (define docl-itml-env-sxhtml-module-names
-    (pair (q (sph lang docl env itml-to-sxhtml)) docl-default-env-module-names))
+  (define docl-itml-env-shtml-module-names
+    (pair (q (sph lang docl env itml-to-shtml)) docl-default-env-module-names))
 
-  (define docl-itml-env-sxhtml (apply environment docl-itml-env-sxhtml-module-names))
+  (define docl-itml-env-shtml (apply environment docl-itml-env-shtml-module-names))
   (define (ascend-handle-line a nesting-depth docl-state env) (if (null? a) "" a))
   (define (descend-handle-double-backslash a re-descend nesting-depth docl-state env) "\\")
 
@@ -114,27 +114,27 @@
     escaped-association-infix descend-handle-escaped-association-infix
     double-backslash descend-handle-double-backslash)
 
-  (define-syntax-rule (expr->sxhtml prefix->handler a proc-arguments ...)
+  (define-syntax-rule (expr->shtml prefix->handler a proc-arguments ...)
     (let (p (hashtable-ref prefix->handler (first a))) (and p (p (tail a) proc-arguments ...))))
 
-  (define (ascend-expr->sxhtml a nesting-depth docl-state env)
-    (or (expr->sxhtml ascend-prefix->handler-ht a nesting-depth docl-state env)
+  (define (ascend-expr->shtml a nesting-depth docl-state env)
+    (or (expr->shtml ascend-prefix->handler-ht a nesting-depth docl-state env)
       (list->sxml a nesting-depth)))
 
-  (define (descend-expr->sxhtml a re-descend nesting-depth docl-state env)
-    (expr->sxhtml descend-prefix->handler-ht a re-descend nesting-depth docl-state env))
+  (define (descend-expr->shtml a re-descend nesting-depth docl-state env)
+    (expr->shtml descend-prefix->handler-ht a re-descend nesting-depth docl-state env))
 
   (define (handle-top-level-terminal a . states) (if (eqv? (q line-empty) a) (ql br) a))
   (define (handle-terminal a . states) (pair (handle-top-level-terminal a) states))
 
-  (define itml-parsed->sxhtml
+  (define itml-parsed->shtml
     (itml-parsed->result-proc (l (a nesting-depth docl-state env) (process-lines a))
-      (itml-descend-proc descend-expr->sxhtml)
-      (itml-ascend-proc ascend-expr->sxhtml itml-adjust-nesting-depth) handle-top-level-terminal
+      (itml-descend-proc descend-expr->shtml)
+      (itml-ascend-proc ascend-expr->shtml itml-adjust-nesting-depth) handle-top-level-terminal
       handle-terminal))
 
-  (define docl-itml-parsed->sxhtml (docl-itml-parsed->result-proc itml-parsed->sxhtml))
-  (define docl-itml-port->sxhtml (docl-itml-port->result-proc itml-parsed->sxhtml))
-  (define docl-itml-string->sxhtml
+  (define docl-itml-parsed->shtml (docl-itml-parsed->result-proc itml-parsed->shtml))
+  (define docl-itml-port->shtml (docl-itml-port->result-proc itml-parsed->shtml))
+  (define docl-itml-string->shtml
     ;same signature as docl-itml-port->result-proc
-    (docl-itml-string->result-proc docl-itml-port->sxhtml)))
+    (docl-itml-string->result-proc docl-itml-port->shtml)))

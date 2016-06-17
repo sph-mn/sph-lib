@@ -1,121 +1,112 @@
 (library (sph time)
   (export
-    current-day-seconds
-    current-local-time
-    current-time-microseconds
-    current-time-zone-utc-offset
-    daylight-savings-time?
-    days->seconds
-    hours-minutes-seconds->seconds
-    leap-year?
-    seconds->day
-    seconds->day-seconds
-    seconds->day-start
-    seconds->extra-week-year?
-    seconds->first-week-start
-    seconds->hours-minutes-seconds
-    seconds->month
-    seconds->month-seconds
-    seconds->month-start
-    seconds->week-day
-    seconds->week-number
-    seconds->year
-    seconds->year-seconds
-    seconds->year-start
-    seconds-day
-    seconds->date
-    date->seconds
-    seconds-hour
-    seconds-leap-year?
-    seconds-minute
-    seconds-week
-    time-traditional-parts->seconds
-    year->seconds)
+    time->day
+    time->month
+    time->week
+    time->week-day
+    time->year
+    time-current
+    time-day
+    time-day-start
+    time-days->seconds
+    time-from-month
+    time-from-week
+    time-from-year
+    time-hms->seconds
+    time-leap-year?
+    time-local-utc-offset
+    time-month-start
+    time-seconds-day
+    time-seconds-hour
+    time-seconds-minute
+    time-seconds-week
+    time-week-first
+    time-week-start
+    time-year-start
+    time-year-weeks-53?)
   (import
     (guile)
     (rnrs base)
     (sph)
     (srfi srfi-19))
 
-  ;epoch is 1970-01-01 00:00:00 UTC, excluding leap seconds.
+  ;time as integers.
+  ;seconds: tai seconds since 1970-01-01 00:00:00 UTC.
+  ;year/month/day in gregorian calender utc
+  (define (date->time a) (time-second (date->time-tai a)))
+  (define (time->date a) (time-tai->date (make-time time-tai 0 a)))
+  (define time-seconds-minute 60)
+  (define time-seconds-hour 3600)
+  (define time-seconds-day 86400)
+  (define time-seconds-week 604800)
 
-  (define (current-time-zone-utc-offset)
-    "offset of the current time zone to UTC without daylight-savings-time"
-    (let (local-time (localtime (current-time)))
-      (- (* -1 (tm:gmtoff local-time)) (if (> (tm:isdst local-time) 0) 3600 0))))
+  (define (time->day a)
+    "integer -> integer
+    day of the month 1-31"
+    (date-day (time->date a)))
 
-  (define (daylight-savings-time?) (> (tm:isdst (localtime (current-time))) 0))
+  (define (time-from-year a) (date->time (make-date 0 0 0 0 1 1 a 0)))
+  (define (time->month a) (date-month (time->date a)))
+  (define (time->year a) (date-year (time->date a)))
+  (define (time-days->seconds a) (* time-seconds-day a))
 
-  (define (current-local-time) "seconds since unix time epoch in the current time zone"
-    (+ (current-time-zone-utc-offset) (current-time)))
+  (define (time-day-start a)
+    (let (a (time->date a))
+      (date->time (make-date 0 0 0 0 (date-day a) (date-month a) (date-year a) 0))))
 
-  (define (current-time-microseconds)
-    "-> integer
-    return the number of microseconds since 1970-01-01 00:00:00 UTC, excluding leap seconds."
-    ((l (r) (+ (* (first r) 1000000) (tail r))) (gettimeofday)))
+  (define (time-week-start a) (- a (* (time->week-day a) time-seconds-day)))
 
-  (define (seconds->thursday-difference a) (days->seconds (- 3 (seconds->week-day a))))
+  (define (time-month-start a)
+    (let (a (time->date a)) (date->time (make-date 0 0 0 0 1 (date-month a) (date-year a) 0))))
 
-  (define (seconds-extra-week-year? a) "year with 53 iso weeks?"
-    (let*
-      ( (year-start-date (seconds->date (seconds->year-start a)))
-        (week-day (date-week-day year-start-date)))
-      (or (= 3 week-day) (and (= 2 week-day) (leap-year? (date-year year-start-date))))))
+  (define (time-year-start a)
+    (let (a (time->date a)) (date->time (make-date 0 0 0 0 1 1 (date-year a) 0))))
 
-  (define (seconds->week-number a) "iso week number"
-    (let*
-      ( (a-thursday (+ a (seconds->thursday-difference a)))
-        (first-week-start (seconds->first-week-start a))
-        (first-thursday (+ first-week-start (seconds->thursday-difference first-week-start)))
-        (difference (- a-thursday first-thursday)))
-      (if (< difference 0) (if (seconds-extra-week-year? (- (seconds->year a) 1)) 53 52)
-        (+ 1 (ceiling (/ difference seconds-week))))))
-
-  (define (date->seconds a) (time-second (date->time-utc a)))
-  (define (seconds->date a) (time-utc->date (make-time time-utc 0 a)))
-  (define (seconds->day a) "1-31" (date-day (seconds->date a)))
-  (define (seconds->month a) (date-month (seconds->date a)))
-  (define (seconds->year a) (date-year (seconds->date a)))
-  (define (days->seconds a) (* seconds-day a))
-  (define seconds-minute 60)
-  (define seconds-hour 60)
-  (define seconds-day 86400)
-  (define seconds-week (* 7 seconds-day))
-
-  (define (seconds->first-week-start a)
+  (define (time-week-first a)
     ;based on if thursday falls into the first week-days of the year
-    (let* ((year-start (seconds->year-start a)) (week-day (seconds->week-day year-start)))
-      (if (< week-day 4) (- year-start (+ 1 (days->seconds week-day)))
-        (+ year-start (days->seconds (- 7 week-day))))))
+    (let* ((year-start (time-year-start a)) (week-day (time->week-day year-start)))
+      (if (< week-day 4) (- year-start (+ 1 (time-days->seconds week-day)))
+        (+ year-start (time-days->seconds (- 7 week-day))))))
 
-  (define (seconds->week-day a) "from 0-6, with monday being the first day of the week"
-    (let (week-day (date-week-day (seconds->date a))) (if (= 0 week-day) 6 (- week-day 1))))
+  (define (time-year-weeks-53? a) "year with 53 iso weeks?"
+    (let*
+      ( (year-start-date (time->date (time-year-start a)))
+        (week-day (date-week-day year-start-date)))
+      ;date-week-day counts from sunday
+      (or (= 4 week-day) (and (= 3 week-day) (leap-year? (date-year year-start-date))))))
 
-  (define (seconds->day-start a)
-    (let (a (seconds->date a))
-      (date->seconds (make-date 0 0 0 0 (date-day a) (date-month a) (date-year a) 0))))
+  (define (time->week a)
+    (let (difference (- a (time-week-first a)))
+      (if (= 0 difference) 1
+        (if (< difference 0) (if (time-year-weeks-53? (time-from-year (- (time->year a) 1))) 53 52)
+          (ceiling (/ difference time-seconds-week))))))
 
-  (define (seconds->month-start a)
-    (let (a (seconds->date a)) (time-second (make-date 0 0 0 0 1 (date-month a) (date-year a) 0))))
+  ;--
 
-  (define (seconds->year-start a)
-    (let (a (seconds->date a)) (date->seconds (make-date 0 0 0 0 1 1 (date-year a) 0))))
+  (define (time-local-utc-offset) "offset of the current local time zone to UTC"
+    (* (date-zone-offset (current-date)) time-seconds-hour))
 
-  (define (seconds-leap-year? a) (leap-year? (seconds->year a)))
+  (define (time-local-current-seconds) "seconds since unix time epoch in the current time zone"
+    (time-second (date->time-utc (current-time))))
+
+  (define (time->week-day a) "from 0-6, with monday being the first day of the week"
+    (let (week-day (date-week-day (time->date a))) (if (= 0 week-day) 6 (- week-day 1))))
+
+  (define (seconds-leap-year? a) (leap-year? (time->year a)))
 
   (define (leap-year? a)
     (or (and (= 0 (modulo a 4)) (not (= 0 (modulo a 100)))) (= 0 (modulo a 400))))
 
-  (define (year->seconds a) (let (a (make-date 0 0 0 0 1 1 a 0)) (date->seconds a)))
-  (define (seconds->day-seconds a) (- a (seconds->day-start a)))
-  (define (seconds->year-seconds a) (- a (seconds->year-start a)))
-  (define (seconds->month-seconds a) (- a (seconds->month-start a)))
-  (define (current-day-seconds) (seconds->day-seconds (current-time)))
+  (define (year->seconds a) (let (a (make-date 0 0 0 0 1 1 a 0)) (date->time a)))
+  (define (time->day-seconds a) (- a (time-day-start a)))
+  (define (time->year-seconds a) (- a (time-year-start a)))
+  (define (time->month-seconds a) (- a (time-month-start a)))
+  (define (current-day-seconds) (time->day-seconds (current-time)))
 
-  (define* (hours-minutes-seconds->seconds hours #:optional (minutes 0) (seconds 0))
-    "integer ... -> integer" (+ (* 3600 hours) (* 60 minutes) seconds))
+  (define* (hms-time->seconds hours #:optional (minutes 0) (seconds 0)) "integer ... -> integer"
+    (+ (* 3600 hours) (* 60 minutes) seconds))
 
-  (define (seconds->hours-minutes-seconds a) "integer -> (integer integer integer)"
+  (define (time->hms a) "integer -> (integer integer integer)"
     (let*
       ( (hours (truncate (/ a 3600))) (hour-seconds (* 3600 hours))
         (minutes (inexact->exact (truncate (/ (- a hour-seconds) 60)))))
@@ -133,5 +124,5 @@
       (date-object
         (date->time-utc
           (make-date 0 seconds
-            minutes hours day month year (hours-minutes-seconds->seconds offset-hours offset-minutes))))
+            minutes hours day month year (hms-time->seconds offset-hours offset-minutes))))
       (time-second date-object))))
