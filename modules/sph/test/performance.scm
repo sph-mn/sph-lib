@@ -3,8 +3,8 @@
     evaluate-performance)
   (import
     (guile)
-    (ice-9 pretty-print)
     (ice-9 format)
+    (ice-9 pretty-print)
     (rnrs base)
     (rnrs sorting)
     (sph)
@@ -21,7 +21,7 @@
       number->integer-string
       n-times
       pass)
-    (only (sph time) current-time-microseconds))
+    (sph time))
 
   "compare performance of procedures with adapting the number of applications until a meaningful run time difference is found"
 
@@ -31,21 +31,21 @@
   (define (execute-tests tests iterations)
     (map
       (l (test)
-        (let ((start-time (current-time-microseconds))) (n-times iterations (tail test))
-          (- (current-time-microseconds) start-time)))
+        (let ((start-time (time-ns-current))) (n-times iterations (tail test))
+          (- (time-ns-current) start-time)))
       tests))
 
-  (define (multiply-iterations-factor result-max min-microseconds)
-    (max (/ min-microseconds result-max) 1.05))
+  (define (multiply-iterations-factor result-max min-nanoseconds)
+    (max (/ min-nanoseconds result-max) 1.05))
 
-  (define (adapt-iterations n result-max min-microseconds)
-    (round (* 1.85 n (multiply-iterations-factor result-max min-microseconds))))
+  (define (adapt-iterations n result-max min-nanoseconds)
+    (round (* 1.85 n (multiply-iterations-factor result-max min-nanoseconds))))
 
-  (define (execute-w-managed-iterations tests microseconds)
+  (define (execute-w-managed-iterations tests nanoseconds)
     (let next ((iterations 3))
       (let* ((results (execute-tests tests iterations)) (result-max (apply max results)))
-        (if (< result-max (- microseconds 500000))
-          (next (adapt-iterations iterations result-max microseconds)) results))))
+        (if (< result-max (- nanoseconds 500000))
+          (next (adapt-iterations iterations result-max nanoseconds)) results))))
 
   (define (evaluate-result seconds tests)
     (if (integer? seconds)

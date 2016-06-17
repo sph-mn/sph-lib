@@ -20,6 +20,7 @@
     time-local-utc-offset
     time-month
     time-month-start
+    time-ns-current
     time-seconds-day
     time-seconds-hour
     time-seconds-minute
@@ -46,6 +47,9 @@
   (define time-seconds-day 86400)
   (define time-seconds-week 604800)
   (define (time-current) (time-second (current-time (q time-tai))))
+
+  (define (time-ns-current)
+    (let (a (current-time (q time-tai))) (+ (* (time-second a) 1000000000) (time-nanosecond a))))
 
   (define (time->day a)
     "integer -> integer

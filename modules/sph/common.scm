@@ -9,4 +9,5 @@
   (sph hashtable) (sph list)
   (sph list one) (sph number)
   (sph one) (sph process)
-  (sph random-data) (sph read-write) (sph string) (sph time) (sph tree) (sph vector) (sph list one))
+  (sph random-data) (sph read-write)
+  (sph string) (sph time) (sph time string) (sph tree) (sph vector) (sph list one))
