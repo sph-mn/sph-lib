@@ -93,7 +93,9 @@
     (let (difference (- a (time-week-first a)))
       (if (= 0 difference) 1
         (if (< difference 0) (if (time-year-weeks-53? (time-from-year (- (time->year a) 1))) 53 52)
-          (ceiling (/ difference time-seconds-week))))))
+          (let (weeks (/ difference time-seconds-week))
+            ;any full week difference means the week has passed
+            (if (= 0 (modulo difference time-seconds-week)) (+ 1 weeks) (ceiling weeks)))))))
 
   (define (time-local-utc-offset) "offset of the current local time zone to UTC"
     (* (date-zone-offset (current-date)) time-seconds-hour))

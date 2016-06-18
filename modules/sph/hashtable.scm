@@ -33,23 +33,29 @@
     hashtable-map!
     hashtable-merge
     hashtable-merge!
-    symbol-hashtable
-    hashtable-quoted-bind
+    hashtable-q-bind
+    hashtable-q-ref
+    hashtable-q-set-multiple
     hashtable-ref
     hashtable-set-multiple
     hashtable-tree-merge
     hashtable-tree-merge!
     hashtable-update-multiple!
     hashtable-values
+    hashtables-q-ref
     hashtables-ref
     hashtables-set!
     list->hashtable
     rnrs-hashtable-ref
-    string-hashtable)
+    string-hashtable
+    symbol-hashtable)
   (import
     (rnrs base)
     (sph)
-    (only (guile) hashv hashq string-join)
+    (only (guile)
+      hashv
+      hashq
+      string-join)
     (only (rnrs hashtables) make-hashtable)
     (only (sph list) map-slice list-index-value)
     (only (sph one) quote-odd)
@@ -86,12 +92,11 @@
     (() (make-eq-hashtable))
     ((associations ...) (list->hashtable (quote-odd associations ...) eq? symbol-hash)))
 
-  (define-syntax-rules eqv-hashtable
-    (() (make-eqv-hashtable))
+  (define-syntax-rules eqv-hashtable (() (make-eqv-hashtable))
     ;not the best hash function
     ((associations ...) (list->hashtable (quote-odd associations ...) eqv? equal-hash)))
 
-  (define-syntax-rule (hashtable-quoted-bind ht (key ...) body ...)
+  (define-syntax-rule (hashtable-q-bind ht (key ...) body ...)
     ;selectively bind keys of hashtable to variables
     ((lambda (key ...) body ...) (hashtable-ref ht (quote key)) ...))
 
@@ -188,6 +193,10 @@
     (let (r (hashtable-copy ht #t))
       (map-slice 2 (l (key value) (hashtable-set! r key value)) assoc) r))
 
+  (define-syntax-rule (hashtable-q-set-multiple a key/value ...)
+    ;hashtable [any:unquoted-key any:value] ...
+    (apply hashtable-set-multiple a (quote-odd key/value ...)))
+
   (define (hashtable-update-multiple! ht keys proc)
     "hashtable list procedure:{any:values ... -> (any:new-values ...)} -> hashtable
     set values for \"keys\" in hashtable to new values by mapping using \"proc\""
@@ -198,8 +207,13 @@
     ;h:hashtable k:key d:default-if-not-found
     ((h k d) (rnrs-hashtable-ref h k d)) ((h k) (rnrs-hashtable-ref h k #f)))
 
+  (define-syntax-rules hashtable-q-ref ((h k d) (rnrs-hashtable-ref h (quote k) d))
+    ((h k) (rnrs-hashtable-ref h (quote k) #f)))
+
   (define-syntax-rules hashtables-ref ((h k) (hashtable-ref h k #f))
     ((h k ... k-last) (hashtable-ref (hashtable-ref h k ...) k-last #f)))
+
+  (define-syntax-rule (hashtables-q-ref a key ...) (apply hashtables-ref a (quote key) ...))
 
   (define-syntax-rules hashtables-set! ((h k v) (hashtable-set! h k v))
     ((h k ... k-last v) (hashtable-set! (hashtable-ref h k ...) k-last v)))
