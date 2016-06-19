@@ -3,7 +3,10 @@
     time->date
     time->day
     time->hms
+    time->hour
+    time->minute
     time->month
+    time->second
     time->week
     time->week-day
     time->year
@@ -25,6 +28,7 @@
     time-seconds-hour
     time-seconds-minute
     time-seconds-week
+    time-utc
     time-week-first
     time-week-start
     time-year
@@ -46,22 +50,16 @@
   (define time-seconds-hour 3600)
   (define time-seconds-day 86400)
   (define time-seconds-week 604800)
-  (define (time-current) (time-second (current-time (q time-tai))))
+  (define (time-current) (time-second (current-time time-tai)))
+  (define (time-utc a) (time-second (time-tai->time-utc (make-time time-tai 0 a))))
 
   (define (time-ns-current)
-    (let (a (current-time (q time-tai))) (+ (* (time-second a) 1000000000) (time-nanosecond a))))
-
-  (define (time->day a)
-    "integer -> integer
-    day of the month 1-31"
-    (date-day (time->date a)))
+    (let (a (current-time time-tai)) (+ (* (time-second a) 1000000000) (time-nanosecond a))))
 
   (define (time-day a) (- a (time-day-start a)))
   (define (time-year a) (- a (time-year-start a)))
   (define (time-month a) (- a (time-month-start a)))
   (define (time-from-year a) (time-from-date (make-date 0 0 0 0 1 1 a 0)))
-  (define (time->month a) (date-month (time->date a)))
-  (define (time->year a) (date-year (time->date a)))
   (define (time-days->seconds a) (* time-seconds-day a))
 
   (define (time-day-start a)
@@ -89,7 +87,18 @@
       ;date-week-day counts from sunday
       (or (= 4 week-day) (and (= 3 week-day) (time-leap-year-number? (date-year year-start-date))))))
 
-  (define (time->week a)
+  (define (time->day a)
+    "integer -> integer
+    day of the month 1-31"
+    (date-day (time->date a)))
+
+  (define (time->month a) (date-month (time->date a)))
+  (define (time->year a) (date-year (time->date a)))
+  (define (time->hour a) (date-hour (time->date a)))
+  (define (time->minute a) (date-minute (time->date a)))
+  (define (time->second a) (date-second (time->date a)))
+
+  (define (time->week a) "integer -> integer"
     (let (difference (- a (time-week-first a)))
       (if (= 0 difference) 1
         (if (< difference 0) (if (time-year-weeks-53? (time-from-year (- (time->year a) 1))) 53 52)

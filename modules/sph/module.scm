@@ -151,6 +151,8 @@
     (each (l (e) (module-use! (current-module) (resolve-interface e))) modules))
 
   (define-syntax-rule (import-unexported module-name binding-name)
+    ;imports and defines the binding locally at place.
+    ;unquoted-module-name unquoted-binding-name ->
     (define binding-name (@@ module-name binding-name)))
 
   (define*

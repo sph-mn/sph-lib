@@ -35,7 +35,9 @@
     (time->day (unquote 2016-6-17) 17
       (unquote 2016-1-1) 1 (unquote 2016-1-4) 4 (unquote 1981-12-31) 31)
     (time->month (unquote 2016-6-17) 6 (unquote 2016-1-1) 1 (unquote 2016-1-4) 1)
-    (time->year (unquote 2016-6-17) 2016
+    (time->year
+      (unquote (time-from-year 1979)) 1979
+      (unquote 2016-6-17) 2016
       (unquote 2016-1-1) 2016 (unquote 2016-1-4) 2016 (unquote 1981-12-31) 1981)
     (time-year-weeks-53? (unquote 2016-6-17) #f
       (unquote 2016-1-4) #f (unquote 1981-12-31) #t (unquote 2015-12-28) #t)

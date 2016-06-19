@@ -8,6 +8,7 @@
   (import
     (sph common)
     (sph record)
+    (only (guile) call-with-output-file)
     (only (rnrs hashtables) equal-hash))
 
   ;merges and processes files of various formats into one.
