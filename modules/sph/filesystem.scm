@@ -46,7 +46,6 @@
     (sph)
     (sph stream)
     (sph string)
-    (sph time)
     (srfi srfi-41)
     (only (sph hashtable)
       hashtable
