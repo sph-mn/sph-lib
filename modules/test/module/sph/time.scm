@@ -1,6 +1,8 @@
 (define-test-module (test module sph time)
   (import
-    (sph time))
+    (sph time)
+    (sph time gregorian)
+    (sph time utc))
 
   (define 2015-12-28 1451260835)
   ;2016 had 52 weeks and was a leap year
@@ -19,7 +21,22 @@
   (define 2016-6-17-11-32-59 1466163214)
   (define-test (time-local-utc-offset) (integer? (time-local-utc-offset)))
 
-  (test-execute-procedures-lambda time-local-utc-offset
+  (define-test (greg-days->year)
+    (let loop ((year 1))
+      (if (<= year 1200)
+        (if (= year (greg-days->year (greg-year->days year))) (loop (+ 1 year))
+          (assert-equal year (greg-days->year (greg-year->days year))))
+        #t)))
+
+  (define-test (greg-days->leap-days-2 arguments)
+    (greg-days->leap-days (greg-year->days (first arguments))))
+
+  (test-execute-procedures-lambda (greg-year->days 400 146097 800 292194 1 365 5 1826 0 0)
+    (greg-year->leap-days 400 97 800 194 1200 291 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2)
+    (greg-days->leap-days 0 0 1 0 4 0 365 0 1826 1 146097 97 292194 194)
+    (greg-days->leap-days-2 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2 400 97 800 194 1200 291) greg-days->year)
+
+  #;(test-execute-procedures-lambda time-local-utc-offset
     (time-year-start (unquote 2016-6-17) (unquote 2016-1-1)
       (unquote 2016-1-1) (unquote 2016-1-1)
       (unquote 2016-1-4) (unquote 2016-1-1) (unquote 1981-12-31) (unquote 1981-1-1))

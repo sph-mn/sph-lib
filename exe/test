@@ -5,7 +5,7 @@
 
 (define settings
   (test-settings-default-custom
-    ;only (q ((test module sph time string)))
+    only (q ((test module sph time)))
     path-search "modules" reporter-name (q compact)))
 
 (test-execute-modules-by-prefix #:settings settings (q (test module sph)))

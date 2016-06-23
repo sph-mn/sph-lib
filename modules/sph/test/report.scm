@@ -77,7 +77,8 @@
     (let (display (l (a) (display a port)))
       (test-result-tree-fold result
         (l (result-record group) (test-report-compact-one result-record (length group) display))
-        (l (group) (display (create-indent (max 0 (- (length group) 1))))
+        (l (group)
+          (display (create-indent (max 0 (- (length group) 1))))
           (display (string-join group " ")) (display "\n"))))
     result)
 
@@ -108,7 +109,7 @@
     procedure-data-after
     (l (s index index-data result)
       (let (index-data (test-result-index result))
-        (if (= 0 index-data)
+        (if (= 0 (or index-data 0))
           (begin
             (display (create-indent (boolean->integer (alist-q-ref s current-module-name))))
             (display (test-result-title result))))
