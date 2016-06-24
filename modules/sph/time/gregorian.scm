@@ -1,13 +1,15 @@
 (library (sph time gregorian)
   (export
-    greg-year-days
     greg-days->leap-days
     greg-days->year
+    greg-month->ordinal-day
     greg-month-days
+    greg-month-days-get
     greg-month-days-leap-year
     greg-number-of-months
     greg-year->days
     greg-year->leap-days
+    greg-year-days
     greg-year-days->month-and-day&
     greg-year-leap-year?)
   (import
@@ -33,6 +35,14 @@
 
   (define (greg-year-leap-year? a)
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))
+
+  (define-syntax-rule (greg-month-days-get leap-year?)
+    (if leap-year? greg-month-days-leap-year greg-month-days))
+
+  (define (greg-month->ordinal-day a leap-year?)
+    (let ((month-days (greg-month-days-get leap-year?)) (end (if (= 0 a) a (- a 1))))
+      (let loop ((index 0) (days 1))
+        (if (< index end) (loop (+ 1 index) (+ days (vector-ref month-days index))) days))))
 
   (define (greg-year-days->month-and-day& a greg-month-days c)
     (let loop ((index 0) (days 0))

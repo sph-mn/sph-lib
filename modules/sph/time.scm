@@ -5,7 +5,9 @@
     time-current
     time-date
     time-days
+    time-from-date
     time-from-utc
+    time-local-offset
     time-nanoseconds->seconds
     time-seconds->nanoseconds
     time-utc-from-year
@@ -22,7 +24,7 @@
   ;time as integers of tai nanoseconds since the unix epoch. selected conversions for the gregorian calendar, utc and iso8601
   (define (time-seconds->nanoseconds a) (* 1000000000 a))
   (define (time-nanoseconds->seconds a) (floor (/ a 1000000000)))
-  (define-record time-date year month day hour minute second nanosecond)
+  (define-record time-date year month day hour minute second nanosecond offset)
   (define greg-years-1970-days 719527)
 
   (define (time-current)
@@ -40,17 +42,41 @@
   (define (time-utc-from-year a)
     (* utc-nanoseconds-day (+ (* a greg-year-days) (greg-year->leap-days a))))
 
+  (define (nanoseconds->hms& a c)
+    (apply-values
+      (l (hour nanoseconds-rest)
+        (apply-values
+          (l (minute nanoseconds-rest)
+            (apply-values (l (seconds nanoseconds) (c hour minute seconds nanoseconds))
+              (truncate/ nanoseconds-rest (time-seconds->nanoseconds 11))))
+          (truncate/ nanoseconds-rest (time-seconds->nanoseconds 60))))
+      (truncate/ a (time-seconds->nanoseconds 3600))))
+
+  (define (time-local-offset) (tm:gmtoff (localtime (current-time))))
+
+  (define (time-from-date a)
+    (time-from-utc
+      (+ (* utc-nanoseconds-day (greg-year->days (- (time-date-year a) 1970)))
+        ;subtract one because month 1 or day 1 is time 0
+        (* utc-nanoseconds-day
+          (max 0
+            (-
+              (greg-month->ordinal-day (time-date-month a)
+                (greg-year-leap-year? (time-date-year a)))
+              1)))
+        (* utc-nanoseconds-day (max 0 (- (time-date-day a) 1))) (* (time-date-hour a) 3600000000000)
+        (* (time-date-minute a) 60000000000) (time-seconds->nanoseconds (time-date-second a))
+        (time-date-nanosecond a))))
+
   (define (time->date a)
     (let (a-utc (time->utc a))
       (call-with-values (thunk (truncate/ a-utc utc-nanoseconds-day))
         (l (days day-rest)
-          (let
-            ( (days (+ greg-years-1970-days days))
-              (hour (quotient day-rest (time-seconds->nanoseconds 3600))))
+          (let ((days (+ greg-years-1970-days days)))
             (call-with-values (thunk (truncate/ (- days (greg-days->leap-days days)) 365))
-              (l (year days-rest) (debug-log days-rest)
-                (let
-                  (days-per-month
-                    (if (greg-year-leap-year? year) greg-month-days-leap-year greg-month-days))
+              (l (year days-rest)
+                (let (days-per-month (greg-month-days-get (greg-year-leap-year? year)))
                   (greg-year-days->month-and-day& days-rest days-per-month
-                    (l (month month-day) (list year month month-day hour))))))))))))
+                    (l (month month-day)
+                      (nanoseconds->hms& day-rest
+                        (l (h m s ns) (record time-date year month month-day h m s ns 0))))))))))))))

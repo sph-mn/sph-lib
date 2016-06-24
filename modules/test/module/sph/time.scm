@@ -4,10 +4,10 @@
     (sph time gregorian)
     (sph time utc))
 
-  (define 2015-12-28 1451260835)
+  (define 2015-12-28 (time-seconds->nanoseconds 1451260835))
   ;2016 had 52 weeks and was a leap year
-  (define 2016-1-1 1451606435)
-  (define 2016-1-4 1451865635)
+  (define 2016-1-1 (time-seconds->nanoseconds 1451606435))
+  (define 2016-1-4 (time-seconds->nanoseconds 1451865635))
   (define 2016-6-17 1466121635)
   (define 2016-6-13 1465776035)
   (define 2016-6-1 1464739235)
@@ -34,7 +34,10 @@
   (test-execute-procedures-lambda (greg-year->days 400 146097 800 292194 1 365 5 1826 0 0)
     (greg-year->leap-days 400 97 800 194 1200 291 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2)
     (greg-days->leap-days 0 0 1 0 4 0 365 0 1826 1 146097 97 292194 194)
-    (greg-days->leap-days-2 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2 400 97 800 194 1200 291) greg-days->year)
+    (greg-days->leap-days-2 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2 400 97 800 194 1200 291)
+    (greg-month->ordinal-day (1 #f) 1 (3 #f) 60 (3 #t) 61 (12 #f) 335) greg-days->year
+    (time-from-date #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28))
+    (time->date (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)))
 
   #;(test-execute-procedures-lambda time-local-utc-offset
     (time-year-start (unquote 2016-6-17) (unquote 2016-1-1)
