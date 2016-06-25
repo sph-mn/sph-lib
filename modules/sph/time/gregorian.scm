@@ -17,7 +17,7 @@
     (rnrs base)
     (sph)
     (only (guile)
-      quotient
+      truncate-quotient
       modulo
       truncate/)
     (only (sph one) apply-values))
@@ -35,7 +35,8 @@
 
   (define (greg-years->leap-days a) "number of leap days before the year was reached"
     (let (year a)
-      (if (< year 4) 0 (- (quotient year 4) (- (quotient year 100) (quotient year 400))))))
+      (if (< year 4) 0
+        (- (truncate-quotient year 4) (- (truncate-quotient year 100) (truncate-quotient year 400))))))
 
   (define (greg-years->days a) "elapsed days to reach given year"
     (+ (* a greg-year-days) (greg-years->leap-days a)))
@@ -44,11 +45,16 @@
     "gives the number of leap days in a given time span of days since year 1"
     (apply-values
       (l (cycles-400 rest)
-        (let (cycles-100 (quotient rest years-100-days))
-          (+ (* cycles-400 97) (- (quotient (+ rest cycles-100) years-4-days) cycles-100))))
+        (let (cycles-100 (truncate-quotient rest years-100-days))
+          (+ (* cycles-400 97) (- (truncate-quotient (+ rest cycles-100) years-4-days) cycles-100))))
       (truncate/ a years-400-days)))
 
-  (define (greg-days->years a) (quotient (- a (greg-days->leap-days a)) greg-year-days))
+  (define (greg-days->years a)
+    (truncate-quotient (- a (greg-days->leap-days a)) greg-year-days)
+    #;(let (a (- a 1))
+      (debug-log (greg-days->leap-days a) (exact->inexact (/ (- a (greg-days->leap-days a)) greg-year-days)))
+ )
+ )
 
   (define (greg-year-leap-year? a)
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))

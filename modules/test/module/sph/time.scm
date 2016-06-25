@@ -69,7 +69,7 @@
             (leap-year? (greg-year-leap-year? year)) (days-in-month (greg-month-days-get leap-year?))
             (day-count (vector-ref days-in-month (- month 1)))
             (date (time->date (time-from-date expected))))
-          (debug-log (time-from-date expected) date)
+          ;(debug-log (time-from-date expected) date)
           (if (equal? expected date)
             (loop (if (and (= month 12) (= day day-count)) (+ 1 year) year)
               (if (= day day-count) (+ 1 (modulo month 12)) month) (+ 1 (modulo day day-count)))
@@ -84,11 +84,21 @@
       7 1
       8 2 9 2 104 25 900 218 96 24 99 24 100 24 101 24 102 24 103 24 104 25 400 97 800 194 1200 291)
     (greg-year-leap-year? 2000 #t 400 #t 300 #f 1972 #t 1992 #t 2016 #t 1981 #f 1970 #f)
-    (greg-days->leap-days 1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194)
-    (greg-years->days 0 0 1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180)
-    (greg-days->leap-days-2) (greg-days->leap-days-3)
+    (greg-days->leap-days
+
+      720256 477
+      720257 477
+      720258 478
+
+      1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194)
+    (greg-years->days  0 0 1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180)
+    ;(greg-days->leap-days-2) (greg-days->leap-days-3)
     (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334)
-    (greg-days->years 1 0
+    (greg-days->years
+      720256 1971
+      720257 1972
+      720258 1972
+      1 0
       365 1 366 1 1826 5 146097 400 146098 400 723180 1980 723544 1980 723545 1981)
     (greg-days->years-2)
     (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
