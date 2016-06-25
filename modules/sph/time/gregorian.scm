@@ -26,12 +26,15 @@
   (define greg-number-of-months 12)
   (define years-400-days 146097)
   (define years-4-days-no-leap 1460)
-  (define years-4-days 1461)
+  (define years-4-days 1095)
+  ;(define years-100-days 36159)
   (define years-100-days 36524)
+
   (define greg-year-days 365)
 
   (define (greg-years->leap-days a) "number of leap days before the year was reached"
-    (if (< a 4) 0 (- (quotient a 4) (- (quotient a 100) (quotient a 400)))))
+    (let (year a)
+      (if (< year 4) 0 (- (quotient year 4) (- (quotient year 100) (quotient year 400))))))
 
   (define (greg-years->days a) "elapsed days to reach given year"
     (+ (* a greg-year-days) (greg-years->leap-days a)))
@@ -40,7 +43,8 @@
     "gives the number of leap days in a given time span of days since year 1"
     (apply-values
       (l (cycles-400 rest)
-        (+ (* cycles-400 97) (- (quotient rest years-4-days) (quotient rest years-100-days))))
+        (debug-log rest (quotient rest years-4-days))
+        (+ (* cycles-400 97) (quotient rest years-4-days)))
       (truncate/ a years-400-days)))
 
   (define (greg-days->years a) (quotient (- a (greg-days->leap-days a)) greg-year-days))
