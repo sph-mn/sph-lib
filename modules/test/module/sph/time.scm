@@ -13,18 +13,18 @@
   (define 2016-6-1 (time-seconds->nanoseconds 1464739236))
   ;1981 had 53 weeks and was not a leap year
   (define 1981-12-31 (time-seconds->nanoseconds 378604820))
-  (define 1981-12-1 (time-seconds->nanoseconds 376012820))
+  (define 1981-12-1 376012820000000000)
   (define 1981-1-1 (time-seconds->nanoseconds 347155219))
   (define 1981-12-28 (time-seconds->nanoseconds 378345620))
   ;a leap second occured between the following dates
-  (define 1973-1-1 94694412000000000)
   (define 1972-12-31 94608011000000000)
+  (define 1973-1-1 94694412000000000)
   ;1992 had 53 weeks and was a leap year
   (define 1992-1-1 (time-seconds->nanoseconds 694224026))
   (define 2016-6-17-11-32-59 1466163215000000000)
   (define-test (time-local-utc-offset) (integer? (time-local-utc-offset)))
 
-  (define-test (greg-days->years)
+  (define-test (greg-days->years-2)
     (let loop ((year 1))
       (if (<= year 1200)
         (let (year-calculated (+ 1 (greg-days->years (greg-years->days (- year 1)))))
@@ -39,26 +39,28 @@
       (greg-year-days->month-and-day& days (greg-month-days-get #f) list)))
 
   (test-execute-procedures-lambda
-    (greg-days->leap-days 0 0 1 0 4 0 365 0 1826 1 146097 97 292194 194)
+    (greg-days->leap-days 1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194 200000 132)
     (greg-year-leap-year? 1972 #t 1992 #t 2016 #t 1981 #f 1970 #f)
     (greg-years->leap-days 400 97 800 194 1200 291 1 0 3 0 4 1 5 1 8 2 9 2)
-    (greg-years->days 0 0 1 365 4 1461 400 146097 800 292194 1970 719527)
+    (greg-years->days 0 0 1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180)
     (greg-days->leap-days-2 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2 400 97 800 194 1200 291)
-    (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334) greg-days->years
-    (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
+    (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334)
+    (greg-days->years 1 0
+      365 1 366 1 1826 5 146097 400 146098 400 723180 1980 723544 1980 723545 1981)
+    greg-days->years-2 (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
     (time-from-date #(1970 1 1 0 0 0 0 0 0) 0
       #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
       #(1981 1 1 0 0 0 0 0) (unquote 1981-1-1)
-      #(1973 1 1 0 0 0 0 0 0) (unquote 1973-1-1)
-
       #(1981 12 1 0 0 0 0 0) (unquote 1981-12-1)
+      #(1973 1 1 0 0 0 0 0 0) (unquote 1973-1-1)
       #(1972 12 31 0 0 0 0 0 0) (unquote 1972-12-31)
       #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28)
       #(2016 6 17 0 0 0 0 0) (unquote 2016-6-17) #(1992 1 1 0 0 0 0 0) (unquote 1992-1-1))
-    (time->date (unquote 2016-6-17-11-32-59) #(2016 6 17 11 32 59 0 0)
+    (time->date (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0)
+      (unquote 2016-6-17-11-32-59) #(2016 6 17 11 32 59 0 0)
       (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)
       (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0)
-      (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0) (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0 0)))
+      (unquote 1972-12-31) #(1972 12 31 0 0 0 0 0 0) (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0)))
 
   #;(test-execute-procedures-lambda time-local-utc-offset
     (time-year-start (unquote 2016-6-17) (unquote 2016-1-1)

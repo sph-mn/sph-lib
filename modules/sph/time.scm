@@ -73,7 +73,7 @@
 
   (define (time->date a)
     (let (a-utc (time->utc a))
-      (call-with-values (thunk (truncate/ a-utc utc-nanoseconds-day))
+      (apply-values
         (l (days day-rest)
           (let*
             ( (days (+ greg-year-1970-days days)) (years (greg-days->years days)) (year (+ years 1))
@@ -82,4 +82,5 @@
             (greg-year-days->month-and-day& days days-per-month
               (l (month month-day)
                 (nanoseconds->hms& day-rest
-                  (l (h m s ns) (record time-date year month month-day h m s ns 0)))))))))))
+                  (l (h m s ns) (record time-date year month month-day h m s ns 0)))))))
+        (truncate/ a-utc utc-nanoseconds-day)))))

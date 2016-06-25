@@ -39,16 +39,11 @@
   (define (greg-days->leap-days a)
     "gives the number of leap days in a given time span of days since year 1"
     (apply-values
-      (l (400-year-cycles days-rest)
-        (apply-values
-          (l (100-year-cycles days-rest)
-            (apply-values
-              (l (4-year-cycles) (+ (* 400-year-cycles 97) (- 4-year-cycles 100-year-cycles)))
-              (truncate/ days-rest years-4-days)))
-          (truncate/ days-rest years-100-days)))
+      (l (cycles-400 rest)
+        (+ (* cycles-400 97) (- (quotient rest years-4-days) (quotient rest years-100-days))))
       (truncate/ a years-400-days)))
 
-  (define (greg-days->years a) (truncate (/ (- a (greg-days->leap-days a)) greg-year-days)))
+  (define (greg-days->years a) (quotient (- a (greg-days->leap-days a)) greg-year-days))
 
   (define (greg-year-leap-year? a)
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))
