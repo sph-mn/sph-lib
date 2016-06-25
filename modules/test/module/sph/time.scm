@@ -16,6 +16,9 @@
   (define 1981-12-1 (time-seconds->nanoseconds 376012820))
   (define 1981-1-1 (time-seconds->nanoseconds 347155219))
   (define 1981-12-28 (time-seconds->nanoseconds 378345620))
+  ;a leap second occured between the following dates
+  (define 1973-1-1 94694412000000000)
+  (define 1972-12-1 94608011000000000)
   ;1992 had 53 weeks and was a leap year
   (define 1992-1-1 (time-seconds->nanoseconds 694224026))
   (define 2016-6-17-11-32-59 (time-seconds->nanoseconds 1466163214))
@@ -46,12 +49,16 @@
       #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
       #(1981 1 1 0 0 0 0 0) (unquote 1981-1-1)
       #(1981 12 1 0 0 0 0 0) (unquote 1981-12-1)
-      #(1973 1 1 0 0 0 0 0 0) 94694412000000000
-      #(1972 12 31 0 0 0 0 0 0) 94608011000000000
+      #(1973 1 1 0 0 0 0 0 0) (unquote 1973-1-1)
+      #(1972 12 31 0 0 0 0 0 0) (unquote 1972-12-31)
       #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28)
       #(2016 6 17 0 0 0 0 0) (unquote 2016-6-17) #(1992 1 1 0 0 0 0 0) (unquote 1992-1-1))
-    (time->date (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)
-      (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0) (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0)))
+    (time->date
+      (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)
+      (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0) (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0)
+
+      #(1973 1 1 0 0 0 0 0 0) (unquote 1973-1-1)
+      ))
 
   #;(test-execute-procedures-lambda time-local-utc-offset
     (time-year-start (unquote 2016-6-17) (unquote 2016-1-1)
