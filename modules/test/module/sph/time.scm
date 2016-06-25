@@ -4,21 +4,21 @@
     (sph time gregorian)
     (sph time utc))
 
-  (define 2015-12-28 (time-seconds->nanoseconds 1451260835))
+  (define 2015-12-28 (time-seconds->nanoseconds 1451260836))
   ;2016 had 52 weeks and was a leap year
-  (define 2016-1-1 (time-seconds->nanoseconds 1451606435))
-  (define 2016-1-4 (time-seconds->nanoseconds 1451865635))
-  (define 2016-6-17 1466121635)
-  (define 2016-6-13 1465776035)
-  (define 2016-6-1 1464739235)
+  (define 2016-1-1 (time-seconds->nanoseconds 1451606436))
+  (define 2016-1-4 (time-seconds->nanoseconds 1451865636))
+  (define 2016-6-17 (time-seconds->nanoseconds 1466121636))
+  (define 2016-6-13 (time-seconds->nanoseconds 1465776036))
+  (define 2016-6-1 (time-seconds->nanoseconds 1464739236))
   ;1981 had 53 weeks and was not a leap year
-  (define 1981-12-31 378604820)
-  (define 1981-12-1 376012820)
-  (define 1981-1-1 347155219)
-  (define 1981-12-28 378345620)
+  (define 1981-12-31 (time-seconds->nanoseconds 378604820))
+  (define 1981-12-1 (time-seconds->nanoseconds 376012820))
+  (define 1981-1-1 (time-seconds->nanoseconds 347155219))
+  (define 1981-12-28 (time-seconds->nanoseconds 378345620))
   ;1992 had 53 weeks and was a leap year
-  (define 1992-1-1 694224026)
-  (define 2016-6-17-11-32-59 1466163214)
+  (define 1992-1-1 (time-seconds->nanoseconds 694224026))
+  (define 2016-6-17-11-32-59 (time-seconds->nanoseconds 1466163214))
   (define-test (time-local-utc-offset) (integer? (time-local-utc-offset)))
 
   (define-test (greg-days->year)
@@ -31,13 +31,25 @@
   (define-test (greg-days->leap-days-2 arguments)
     (greg-days->leap-days (greg-year->days (first arguments))))
 
-  (test-execute-procedures-lambda (greg-year->days 400 146097 800 292194 1 365 5 1826 0 0)
+  (define-test (greg-year-days->month-and-day& arguments)
+    (let (days (first arguments))
+      (greg-year-days->month-and-day& days (greg-month-days-get #f) list)))
+
+  (test-execute-procedures-lambda
+    (greg-year->days 400 146097 800 292194 1 365 5 1826 0 0 1970 719527)
     (greg-year->leap-days 400 97 800 194 1200 291 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2)
     (greg-days->leap-days 0 0 1 0 4 0 365 0 1826 1 146097 97 292194 194)
     (greg-days->leap-days-2 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2 400 97 800 194 1200 291)
-    (greg-month->ordinal-day (1 #f) 1 (3 #f) 60 (3 #t) 61 (12 #f) 335) greg-days->year
-    (time-from-date #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28))
-    (time->date (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)))
+    (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334) greg-days->year
+    (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
+    (time-from-date #(1970 1 1 0 0 0 0 0 0) 0
+      #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28)
+      #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
+      #(2016 6 17 0 0 0 0 0) (unquote 2016-6-17)
+      #(1981 1 1 0 0 0 0 0) (unquote 1981-1-1)
+      #(1991 1 1 0 0 0 0 0) (unquote 1992-1-1) #(1981 12 1 0 0 0 0 0) (unquote 1981-12-1))
+    (time->date (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)
+      (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0) (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0)))
 
   #;(test-execute-procedures-lambda time-local-utc-offset
     (time-year-start (unquote 2016-6-17) (unquote 2016-1-1)

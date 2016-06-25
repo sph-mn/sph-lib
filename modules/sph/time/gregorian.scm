@@ -2,7 +2,7 @@
   (export
     greg-days->leap-days
     greg-days->year
-    greg-month->ordinal-day
+    greg-month->days
     greg-month-days
     greg-month-days-get
     greg-month-days-leap-year
@@ -39,15 +39,16 @@
   (define-syntax-rule (greg-month-days-get leap-year?)
     (if leap-year? greg-month-days-leap-year greg-month-days))
 
-  (define (greg-month->ordinal-day a leap-year?)
+  (define (greg-month->days a leap-year?)
     (let ((month-days (greg-month-days-get leap-year?)) (end (if (= 0 a) a (- a 1))))
-      (let loop ((index 0) (days 1))
+      (let loop ((index 0) (days 0))
         (if (< index end) (loop (+ 1 index) (+ days (vector-ref month-days index))) days))))
 
   (define (greg-year-days->month-and-day& a greg-month-days c)
+    "get the month and month day after given days have passed from the beginning of the year"
     (let loop ((index 0) (days 0))
       (if (< index greg-number-of-months)
         (let (days (+ days (vector-ref greg-month-days index)))
-          (if (< a days) (c (+ 1 index) (- (vector-ref greg-month-days index) (- days a)))
+          (if (< a days) (c (+ 1 index) (- (vector-ref greg-month-days index) (- days a 1)))
             (loop (+ 1 index) days)))
         (c #f #f)))))
