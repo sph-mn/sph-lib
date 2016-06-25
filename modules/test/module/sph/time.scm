@@ -24,30 +24,32 @@
   (define-test (greg-days->year)
     (let loop ((year 1))
       (if (<= year 1200)
-        (if (= year (greg-days->year (greg-year->days year))) (loop (+ 1 year))
-          (assert-equal year (greg-days->year (greg-year->days year))))
+        (if (= year (greg-days->year (greg-years->days year))) (loop (+ 1 year))
+          (assert-equal year (greg-days->year (greg-years->days year))))
         #t)))
 
   (define-test (greg-days->leap-days-2 arguments)
-    (greg-days->leap-days (greg-year->days (first arguments))))
+    (greg-days->leap-days (greg-years->days (first arguments))))
 
   (define-test (greg-year-days->month-and-day& arguments)
     (let (days (first arguments))
       (greg-year-days->month-and-day& days (greg-month-days-get #f) list)))
 
-  (test-execute-procedures-lambda
-    (greg-year->days 400 146097 800 292194 1 365 5 1826 0 0 1970 719527)
-    (greg-year->leap-days 400 97 800 194 1200 291 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2)
+  (test-execute-procedures-lambda (greg-year-leap-year? 1972 #t 1992 #t 2016 #t 1981 #f 1970 #f)
+    (greg-years->leap-days 400 97 800 194 1200 291 1 0 3 0 4 1 5 1 8 2 9 2)
+    (greg-years->days 0 0 1 365 4 1461 400 146097 800 292194 1970 719527)
     (greg-days->leap-days 0 0 1 0 4 0 365 0 1826 1 146097 97 292194 194)
     (greg-days->leap-days-2 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2 400 97 800 194 1200 291)
     (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334) greg-days->year
     (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
     (time-from-date #(1970 1 1 0 0 0 0 0 0) 0
-      #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28)
       #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
-      #(2016 6 17 0 0 0 0 0) (unquote 2016-6-17)
       #(1981 1 1 0 0 0 0 0) (unquote 1981-1-1)
-      #(1991 1 1 0 0 0 0 0) (unquote 1992-1-1) #(1981 12 1 0 0 0 0 0) (unquote 1981-12-1))
+      #(1981 12 1 0 0 0 0 0) (unquote 1981-12-1)
+      #(1973 1 1 0 0 0 0 0 0) 94694412000000000
+      #(1972 12 31 0 0 0 0 0 0) 94608011000000000
+      #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28)
+      #(2016 6 17 0 0 0 0 0) (unquote 2016-6-17) #(1992 1 1 0 0 0 0 0) (unquote 1992-1-1))
     (time->date (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)
       (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0) (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0)))
 
