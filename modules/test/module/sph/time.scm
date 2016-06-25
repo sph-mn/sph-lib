@@ -44,6 +44,17 @@
             (list (q expected) expected (q result) result (q year) (+ 1 years))))
         #t)))
 
+  (define-test (greg-days->leap-days-3)
+    (let loop ((days 0))
+      (if (< days 999999)
+        (let
+          ( (expected (greg-years->leap-days (+ 1 (greg-days->years days))))
+            (result (greg-days->leap-days days)))
+          (if (or (equal? expected result) (= 1 (- expected result))) (loop (+ 1 days))
+            (list (q expected) expected
+              (q result) result (q year) (+ 1 (greg-days->years days)) (q days) days)))
+        #t)))
+
   (define-test (greg-year-days->month-and-day& arguments)
     (let (days (first arguments))
       (greg-year-days->month-and-day& days (greg-month-days-get #f) list)))
@@ -60,7 +71,7 @@
             (date (time->date (time-from-date expected))))
           (debug-log (time-from-date expected) date)
           (if (equal? expected date)
-            (loop (if (= month 12) (+ 1 year) year)
+            (loop (if (and (= month 12) (= day day-count)) (+ 1 year) year)
               (if (= day day-count) (+ 1 (modulo month 12)) month) (+ 1 (modulo day day-count)))
             (list (q expected) expected (q result) date)))
         #t)))
@@ -73,14 +84,14 @@
       7 1
       8 2 9 2 104 25 900 218 96 24 99 24 100 24 101 24 102 24 103 24 104 25 400 97 800 194 1200 291)
     (greg-year-leap-year? 2000 #t 400 #t 300 #f 1972 #t 1992 #t 2016 #t 1981 #f 1970 #f)
-    (greg-days->leap-days 1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194
-      ;200000 132
-      )
+    (greg-days->leap-days 1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194)
     (greg-years->days 0 0 1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180)
-    (greg-days->leap-days-2) (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334)
+    (greg-days->leap-days-2) (greg-days->leap-days-3)
+    (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334)
     (greg-days->years 1 0
       365 1 366 1 1826 5 146097 400 146098 400 723180 1980 723544 1980 723545 1981)
-    greg-days->years-2 (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
+    (greg-days->years-2)
+    (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
     (time-from-date #(1970 1 1 0 0 0 0 0 0) 0
       #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
       #(1981 1 1 0 0 0 0 0) (unquote 1981-1-1)
@@ -89,7 +100,7 @@
       #(1972 12 31 0 0 0 0 0 0) (unquote 1972-12-31)
       #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28)
       #(2016 6 17 0 0 0 0 0) (unquote 2016-6-17) #(1992 1 1 0 0 0 0 0) (unquote 1992-1-1))
-    ;(time->date-2)
+    (time->date-2)
     (time->date (unquote 2000-12-31) #(2000 12 31 0 0 0 0 0 0)
       (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0)
       (unquote 2016-6-17-11-32-59) #(2016 6 17 11 32 59 0 0)

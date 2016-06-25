@@ -13,6 +13,7 @@
     greg-years->days
     greg-years->leap-days)
   (import
+    (guile)
     (rnrs base)
     (sph)
     (only (guile)
@@ -26,10 +27,10 @@
   (define greg-number-of-months 12)
   (define years-400-days 146097)
   (define years-4-days-no-leap 1460)
-  (define years-4-days 1095)
-  ;(define years-100-days 36159)
+  (define years-4-days 1461)
   (define years-100-days 36524)
-
+  ;36525
+  ;(define year-100-days 36159)
   (define greg-year-days 365)
 
   (define (greg-years->leap-days a) "number of leap days before the year was reached"
@@ -43,8 +44,8 @@
     "gives the number of leap days in a given time span of days since year 1"
     (apply-values
       (l (cycles-400 rest)
-        (debug-log rest (quotient rest years-4-days))
-        (+ (* cycles-400 97) (quotient rest years-4-days)))
+        (let (cycles-100 (quotient rest years-100-days))
+          (+ (* cycles-400 97) (- (quotient (+ rest cycles-100) years-4-days) cycles-100))))
       (truncate/ a years-400-days)))
 
   (define (greg-days->years a) (quotient (- a (greg-days->leap-days a)) greg-year-days))
