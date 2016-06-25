@@ -25,7 +25,11 @@
   (define (time-seconds->nanoseconds a) (* 1000000000 a))
   (define (time-nanoseconds->seconds a) (floor (/ a 1000000000)))
   (define-record time-date year month day hour minute second nanosecond offset)
-  (define greg-years-1970-days 719162)
+
+ (define greg-year-1970-days
+    719162)
+  (define greg-years-1970-days
+    719527)
 
   (define (time-current)
     (let* ((a (gettimeofday)) (seconds (first a)) (microseconds (tail a)))
@@ -53,7 +57,9 @@
       (l (hour nanoseconds-rest)
         (apply-values
           (l (minute nanoseconds-rest)
-            (apply-values (l (seconds nanoseconds) (c hour minute seconds nanoseconds))
+            (debug-log nanoseconds-rest)
+            (apply-values (l (seconds nanoseconds)
+                (c hour minute seconds nanoseconds))
               (truncate/ nanoseconds-rest (time-seconds->nanoseconds 11))))
           (truncate/ nanoseconds-rest (time-seconds->nanoseconds 60))))
       (truncate/ a (time-seconds->nanoseconds 3600))))
@@ -63,7 +69,7 @@
   (define (time-from-date a)
     (time-from-utc
       (+
-        (* utc-nanoseconds-day (- (greg-years->days (- (time-date-year a) 1)) greg-years-1970-days))
+        (* utc-nanoseconds-day (- (greg-years->days (- (time-date-year a) 1)) greg-year-1970-days))
         (* utc-nanoseconds-day
           (greg-month->days (time-date-month a) (greg-year-leap-year? (time-date-year a))))
         (* utc-nanoseconds-day (- (time-date-day a) 1)) (* utc-nanoseconds-hour (time-date-hour a))
