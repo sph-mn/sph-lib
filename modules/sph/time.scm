@@ -25,11 +25,8 @@
   (define (time-seconds->nanoseconds a) (* 1000000000 a))
   (define (time-nanoseconds->seconds a) (floor (/ a 1000000000)))
   (define-record time-date year month day hour minute second nanosecond offset)
-
- (define greg-year-1970-days
-    719162)
-  (define greg-years-1970-days
-    719527)
+  (define greg-year-1970-days 719162)
+  (define greg-years-1970-days 719527)
 
   (define (time-current)
     (let* ((a (gettimeofday)) (seconds (first a)) (microseconds (tail a)))
@@ -57,10 +54,8 @@
       (l (hour nanoseconds-rest)
         (apply-values
           (l (minute nanoseconds-rest)
-            (debug-log nanoseconds-rest)
-            (apply-values (l (seconds nanoseconds)
-                (c hour minute seconds nanoseconds))
-              (truncate/ nanoseconds-rest (time-seconds->nanoseconds 11))))
+            (apply-values (l (seconds nanoseconds) (c hour minute seconds nanoseconds))
+              (truncate/ nanoseconds-rest (time-seconds->nanoseconds 1))))
           (truncate/ nanoseconds-rest (time-seconds->nanoseconds 60))))
       (truncate/ a (time-seconds->nanoseconds 3600))))
 
@@ -80,11 +75,11 @@
     (let (a-utc (time->utc a))
       (call-with-values (thunk (truncate/ a-utc utc-nanoseconds-day))
         (l (days day-rest)
-          (let ((days (+ greg-years-1970-days days)))
-            (call-with-values (thunk (truncate/ (- days (greg-days->leap-days days)) 365))
-              (l (year days-rest)
-                (let (days-per-month (greg-month-days-get (greg-year-leap-year? year)))
-                  (greg-year-days->month-and-day& (+ 1 days-rest) days-per-month
-                    (l (month month-day)
-                      (nanoseconds->hms& day-rest
-                        (l (h m s ns) (record time-date year month month-day h m s ns 0))))))))))))))
+          (let*
+            ( (days (+ greg-year-1970-days days)) (years (greg-days->years days)) (year (+ years 1))
+              (days (- days (greg-years->days years)))
+              (days-per-month (greg-month-days-get (greg-year-leap-year? year))))
+            (greg-year-days->month-and-day& days days-per-month
+              (l (month month-day)
+                (nanoseconds->hms& day-rest
+                  (l (h m s ns) (record time-date year month month-day h m s ns 0)))))))))))

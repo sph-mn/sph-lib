@@ -24,11 +24,11 @@
   (define 2016-6-17-11-32-59 1466163215000000000)
   (define-test (time-local-utc-offset) (integer? (time-local-utc-offset)))
 
-  (define-test (greg-days->year)
+  (define-test (greg-days->years)
     (let loop ((year 1))
       (if (<= year 1200)
-        (if (= year (greg-days->year (greg-years->days year))) (loop (+ 1 year))
-          (assert-equal year (greg-days->year (greg-years->days year))))
+        (let (year-calculated (+ 1 (greg-days->years (greg-years->days (- year 1)))))
+          (if (= year year-calculated) (loop (+ 1 year)) (assert-equal year year-calculated)))
         #t)))
 
   (define-test (greg-days->leap-days-2 arguments)
@@ -44,7 +44,7 @@
     (greg-years->leap-days 400 97 800 194 1200 291 1 0 3 0 4 1 5 1 8 2 9 2)
     (greg-years->days 0 0 1 365 4 1461 400 146097 800 292194 1970 719527)
     (greg-days->leap-days-2 0 0 1 0 2 0 3 0 4 1 5 1 8 2 9 2 400 97 800 194 1200 291)
-    (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334) greg-days->year
+    (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334) greg-days->years
     (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
     (time-from-date #(1970 1 1 0 0 0 0 0 0) 0
       #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
@@ -55,8 +55,8 @@
       #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28)
       #(2016 6 17 0 0 0 0 0) (unquote 2016-6-17) #(1992 1 1 0 0 0 0 0) (unquote 1992-1-1))
     (time->date (unquote 2016-6-17-11-32-59) #(2016 6 17 11 32 59 0 0)
-      (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0)
       (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)
+      (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0)
       (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0) (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0 0)))
 
   #;(test-execute-procedures-lambda time-local-utc-offset

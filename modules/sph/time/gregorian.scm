@@ -1,7 +1,7 @@
 (library (sph time gregorian)
   (export
     greg-days->leap-days
-    greg-days->year
+    greg-days->years
     greg-month->days
     greg-month-days
     greg-month-days-get
@@ -48,7 +48,7 @@
           (truncate/ days-rest years-100-days)))
       (truncate/ a years-400-days)))
 
-  (define (greg-days->year a) (truncate (/ (- a (greg-days->leap-days a)) greg-year-days)))
+  (define (greg-days->years a) (truncate (/ (- a (greg-days->leap-days a)) greg-year-days)))
 
   (define (greg-year-leap-year? a)
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))
