@@ -1,6 +1,7 @@
 (define-test-module (test module sph time)
   (import
     (sph time)
+    (sph record)
     (sph time gregorian)
     (sph time utc))
 
@@ -23,6 +24,7 @@
   (define 1992-1-1 (time-seconds->nanoseconds 694224026))
   (define 2016-6-17-11-32-59 1466163215000000000)
   (define-test (time-local-utc-offset) (integer? (time-local-utc-offset)))
+  (define 2000-12-31 978220832000000000)
 
   (define-test (greg-days->years-2)
     (let loop ((year 1))
@@ -37,6 +39,23 @@
   (define-test (greg-year-days->month-and-day& arguments)
     (let (days (first arguments))
       (greg-year-days->month-and-day& days (greg-month-days-get #f) list)))
+
+  (define-test (time->date-2)
+    "creates a time record for each day, converts it time and then back to a day and compares
+    the result with the input"
+    (let loop ((year 1970) (month 1) (day 1))
+      (if (< year 3000)
+        (let*
+          ( (expected (record time-date year month day 0 0 0 0 0))
+            (leap-year? (greg-year-leap-year? year)) (days-in-month (greg-month-days-get leap-year?))
+            (day-count (vector-ref days-in-month (- month 1)))
+            (date (time->date (time-from-date expected))))
+          (debug-log (time-from-date expected) date)
+          (if (equal? expected date)
+            (loop (if (= month 12) (+ 1 year) year)
+              (if (= day day-count) (+ 1 (modulo month 12)) month) (+ 1 (modulo day day-count)))
+            (list (q expected) expected (q result) date)))
+        #t)))
 
   (test-execute-procedures-lambda
     (greg-days->leap-days 1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194 200000 132)
@@ -56,11 +75,16 @@
       #(1972 12 31 0 0 0 0 0 0) (unquote 1972-12-31)
       #(2015 12 28 0 0 0 0 0 0) (unquote 2015-12-28)
       #(2016 6 17 0 0 0 0 0) (unquote 2016-6-17) #(1992 1 1 0 0 0 0 0) (unquote 1992-1-1))
-    (time->date (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0)
+    ;(time->date-2)
+    (time->date
+      (unquote 2000-12-31) #(2000 12 31 0 0 0 0 0 0)
+
+      (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0)
       (unquote 2016-6-17-11-32-59) #(2016 6 17 11 32 59 0 0)
       (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)
       (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0)
-      (unquote 1972-12-31) #(1972 12 31 0 0 0 0 0 0) (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0)))
+      (unquote 1972-12-31) #(1972 12 31 0 0 0 0 0 0) (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0)
+      ))
 
   #;(test-execute-procedures-lambda time-local-utc-offset
     (time-year-start (unquote 2016-6-17) (unquote 2016-1-1)

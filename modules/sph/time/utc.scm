@@ -30,6 +30,6 @@
     (157766400 . 14) (126230400 . 13) (94694400 . 12) (78796800 . 11) (63072000 . 10))
 
   (define (utc-tai->leap-second-difference a)
-    (if (< a (* (- 1972 1970) 365 utc-seconds-day)) 0
+    (if (< a 63072000) 0
       (let loop ((rest utc-leap-seconds))
         (if (null? rest) 0 (let (b (first rest)) (if (>= a (first b)) (tail b) (loop (tail rest)))))))))
