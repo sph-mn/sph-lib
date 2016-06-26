@@ -22,6 +22,7 @@
     (rnrs base)
     (sph)
     (sph time)
+    (srfi srfi-19)
     (only (ice-9 regex) match:substring regexp-substitute/global)
     (only (sph list) map-slice)
     (only (sph module) import-unexported)
@@ -145,11 +146,16 @@
   (import-unexported (web http) write-date)
   (define (http-current-date) "-> string" (http-date->string (time->date (time-current))))
 
-  (define (http-date->string a) "srfi-19-date -> string"
-    (call-with-output-string (l (port) (write-date a port))))
+  (define (time-date->srfi-19-date a)
+    (time-tai->date (make-time time-tai 0 (time-nanoseconds->seconds (time-from-date a)))))
+
+  (define (time-from-srfi-19-date a) (time-seconds->nanoseconds (time-second (date->time-tai a))))
+
+  (define (http-date->string a) "time-date-object -> string"
+    (call-with-output-string (l (port) (write-date (time-date->srfi-19-date a) port))))
 
   (define (http-parse-date->time a) "string -> integer:seconds/false"
-    (time-from-date (parse-date a)))
+    (time-from-srfi-19-date (parse-date a)))
 
-  (define (http-time->date a) "integer:tai-seconds-since-unix-epoch -> string"
+  (define (http-time->date a) "integer:tai-nanoseconds-since-unix-epoch -> string"
     (http-date->string (time->date a))))

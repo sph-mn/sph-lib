@@ -12,8 +12,16 @@
     time-current
     time-date
     time-date->week-day
+    time-date-day
+    time-date-hour
     time-date-increment-day
+    time-date-minute
+    time-date-month
+    time-date-nanosecond
+    time-date-offset
+    time-date-second
     time-date-week-count
+    time-date-year
     time-days
     time-elapsed-day
     time-elapsed-hour
@@ -28,6 +36,7 @@
     time-from-years
     time-local-offset
     time-make-date
+    time-make-date*
     time-nanoseconds->seconds
     time-seconds->nanoseconds
     time-start-day
@@ -57,8 +66,12 @@
   (define greg-years-1970-days 719527)
 
   (define*
-    (time-make-date #:optional (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0)
-      (nanosecond 0)
+    (time-make-date #:key (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0) (nanosecond 0)
+      (offset 0))
+    (record time-date year month day hour minute second nanosecond offset))
+
+  (define*
+    (time-make-date* #:optional (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0) (nanosecond 0)
       (offset 0))
     (record time-date year month day hour minute second nanosecond offset))
 
@@ -103,7 +116,10 @@
           (greg-month->days (time-date-month a) (greg-year-leap-year? (time-date-year a))))
         (* utc-nanoseconds-day (- (time-date-day a) 1)) (* utc-nanoseconds-hour (time-date-hour a))
         (* utc-nanoseconds-minute (time-date-minute a))
-        (time-seconds->nanoseconds (time-date-second a)) (time-date-nanosecond a))))
+        (time-seconds->nanoseconds (time-date-second a))
+        (time-date-nanosecond a)
+        (* (time-seconds->nanoseconds (time-date-offset a)) -1)
+        )))
 
   (define (time-days-and-rest& a c)
     (apply-values (l (days day-rest) (c (+ greg-year-1970-days days) day-rest))
@@ -134,31 +150,31 @@
   (define (time->seconds a) (/ (time->utc a) 1000000000))
 
   (define (time-start-year a)
-    (let (a (time->date a)) (time-from-date (time-make-date (time-date-year a) 1 1))))
+    (let (a (time->date a)) (time-from-date (time-make-date* (time-date-year a) 1 1))))
 
   (define (time-start-month a)
     (let (a (time->date a))
-      (time-from-date (time-make-date (time-date-year a) (time-date-month a) 1))))
+      (time-from-date (time-make-date* (time-date-year a) (time-date-month a) 1))))
 
   (define (time-start-day a)
     (let (a (time->date a))
-      (time-from-date (time-make-date (time-date-year a) (time-date-month a) (time-date-day a)))))
+      (time-from-date (time-make-date* (time-date-year a) (time-date-month a) (time-date-day a)))))
 
   (define (time-start-hour a)
     (let (a (time->date a))
       (time-from-date
-        (time-make-date (time-date-year a) (time-date-month a) (time-date-day a) (time-date-hour a)))))
+        (time-make-date* (time-date-year a) (time-date-month a) (time-date-day a) (time-date-hour a)))))
 
   (define (time-start-minute a)
     (let (a (time->date a))
       (time-from-date
-        (time-make-date (time-date-year a) (time-date-month a)
+        (time-make-date* (time-date-year a) (time-date-month a)
           (time-date-day a) (time-date-hour a) (time-date-minute a)))))
 
   (define (time-start-second a)
     (let (a (time->date a))
       (time-from-date
-        (time-make-date (time-date-year a) (time-date-month a)
+        (time-make-date* (time-date-year a) (time-date-month a)
           (time-date-day a) (time-date-hour a) (time-date-minute a) (time-date-second a)))))
 
   (define (time-start-week a)

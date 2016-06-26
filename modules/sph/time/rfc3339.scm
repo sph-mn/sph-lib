@@ -12,6 +12,7 @@
     (rnrs base)
     (sph)
     (sph time)
+    (sph time utc)
     (only (sph alist) alist-ref alist-q)
     (only (sph conditional) if-pass)
     (only (sph string) pad-with-zeros string-equal?)
@@ -91,7 +92,7 @@
   (define (time-from-rfc3339 a)
     "string -> integer:seconds:posix-time
     does not include fractional seconds; see time-rfc3339->seconds-and-fraction for that"
-    (if-pass (time-ns-from-rfc3339 a) first))
+    (if-pass (time-ns-from-rfc3339 a) time-nanoseconds->seconds))
 
   (define (time-ns-from-rfc3339 a)
     "string -> (integer:tai-utc-unix-seconds . integer:seconds-fraction)"
@@ -100,16 +101,20 @@
         (year month day
           hours minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes)
         (let (offset-factor (if offset-negative? -1 1))
-          (pair
-            (time-from-ymdhms #:year year
+          (time-from-date
+            (time-make-date #:year year
               #:month month
               #:day day
               #:hour hours
               #:minute minutes
               #:second seconds
-              #:offset-hour (* offset-factor offset-hours)
-              #:offset-minute (* offset-factor offset-minutes))
-            seconds-fraction)))))
+              ;todo: use a better conversion for this
+              #:nanosecond
+              (inexact->exact
+                (time-seconds->nanoseconds
+                  (exact->inexact
+                    (/ seconds-fraction (expt 10 (string-length (number->string seconds-fraction)))))))
+              #:offset (+ (* offset-factor offset-hours 3600) (* offset-factor offset-minutes 60))))))))
 
   (define (number->padded-string a) (pad-with-zeros (number->string a) 2))
 
@@ -136,6 +141,6 @@
             (apply
               (l (sign numbers)
                 (string-append sign (string-join (map number->padded-string numbers) ":")))
-              (let* ((hms (drop-right (time->hms offset) 1)) (hours (first hms)))
+              (let* ((hms (drop-right (utc-duration->hms offset) 1)) (hours (first hms)))
                 (if (any negative? hms) (list "-" (map (l (a) (* -1 a)) hms)) (list "+" hms)))))))
       (string-append date-time offset))))
