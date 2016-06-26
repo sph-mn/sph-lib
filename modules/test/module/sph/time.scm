@@ -80,12 +80,31 @@
     (let (end 9999)
       (let loop ((year 1))
         (if (<= year end)
-          (if (= (greg-year-first-week-day year) (greg-week-day year 1 1)) (loop (+ 1 year))
-            #f)
-          #t))))
+          (if (= (greg-year-first-week-day year) (greg-week-day year 1 1)) (loop (+ 1 year)) #f) #t))))
 
   (test-execute-procedures-lambda
-    (greg-week-day)
+    (time-start-year (unquote 2016-6-17) (unquote 2016-1-1)
+      (unquote 2016-1-1) (unquote 2016-1-1)
+      (unquote 2016-1-4) (unquote 2016-1-1) (unquote 1981-12-31) (unquote 1981-1-1))
+    (time-start-day (unquote (+ 101 2016-1-1)) (unquote 2016-1-1)
+      (unquote (+ 201 2016-6-17)) (unquote 2016-6-17)
+      (unquote (+ 301 2016-1-4)) (unquote 2016-1-4) (unquote (+ 401 1981-12-31)) (unquote 1981-12-31))
+    (time-start-month (unquote 2016-1-1) (unquote 2016-1-1)
+      (unquote 2016-6-17) (unquote 2016-6-1)
+      (unquote 2016-1-4) (unquote 2016-1-1) (unquote 1981-12-31) (unquote 1981-12-1))
+    (time-start-week (unquote 2016-6-17) (unquote 2016-6-13)
+      (unquote 2016-1-1) (unquote 2015-12-28)
+      (unquote 2016-1-4) (unquote 2016-1-4) (unquote 1981-12-31) (unquote 1981-12-28))
+    (greg-year-weeks-53? 2016 #f 1981 #t 2015 #t)
+    (time->week (unquote 2016-6-17) 24
+      (unquote 2016-1-4) 1 (unquote 1981-12-31) 53 (unquote 2016-1-1) 53)
+    (time->week-first )
+    (time->week-day (unquote 2016-6-17) 4
+      (unquote 2016-1-4) 0 (unquote 1981-12-31) 3 (unquote 2016-1-1) 4)
+    (time-leap-year? (unquote 2016-6-17) #t
+      (unquote 2015-12-28) #f (unquote 2016-1-4) #t (unquote 1981-12-31) #f (unquote 2016-1-1) #t)
+    (time->days (unquote 2016-6-17-11-32-59) 41579) (time-month (unquote 2016-6-17-11-32-59) 1423979)
+    (time->years (unquote 2016-6-17-11-32-59) 14556779) (greg-week-day)
     (greg-years->leap-days 1 0
       3 0
       4 1
@@ -117,40 +136,4 @@
       (unquote 2016-6-17-11-32-59) #(2016 6 17 11 32 59 0 0)
       (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)
       (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0)
-      (unquote 1972-12-31) #(1972 12 31 0 0 0 0 0) (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0)))
-
-  #;(test-execute-procedures-lambda time-local-utc-offset
-    (time-year-start (unquote 2016-6-17) (unquote 2016-1-1)
-      (unquote 2016-1-1) (unquote 2016-1-1)
-      (unquote 2016-1-4) (unquote 2016-1-1) (unquote 1981-12-31) (unquote 1981-1-1))
-    (time-day-start (unquote (+ 101 2016-1-1)) (unquote 2016-1-1)
-      (unquote (+ 201 2016-6-17)) (unquote 2016-6-17)
-      (unquote (+ 301 2016-1-4)) (unquote 2016-1-4) (unquote (+ 401 1981-12-31)) (unquote 1981-12-31))
-    (time-month-start (unquote 2016-1-1) (unquote 2016-1-1)
-      (unquote 2016-6-17) (unquote 2016-6-1)
-      (unquote 2016-1-4) (unquote 2016-1-1) (unquote 1981-12-31) (unquote 1981-12-1))
-    (time-week-start (unquote 2016-6-17) (unquote 2016-6-13)
-      (unquote 2016-1-1) (unquote 2015-12-28)
-      (unquote 2016-1-4) (unquote 2016-1-4) (unquote 1981-12-31) (unquote 1981-12-28))
-    (time->day (unquote 2016-6-17) 17
-      (unquote 2016-1-1) 1 (unquote 2016-1-4) 4 (unquote 1981-12-31) 31)
-    (time->month (unquote 2016-6-17) 6 (unquote 2016-1-1) 1 (unquote 2016-1-4) 1)
-    (time->year
-      (unquote (time-from-year 1979)) 1979
-      (unquote 2016-6-17) 2016
-      (unquote 2016-1-1) 2016 (unquote 2016-1-4) 2016 (unquote 1981-12-31) 1981)
-    (time-year-weeks-53? (unquote 2016-6-17) #f
-      (unquote 2016-1-4) #f (unquote 1981-12-31) #t (unquote 2015-12-28) #t)
-    (time->week (unquote 2016-6-17) 24
-      (unquote 2016-1-4) 1 (unquote 1981-12-31) 53 (unquote 2016-1-1) 53)
-    (time->week-day (unquote 2016-6-17) 4
-      (unquote 2016-1-4) 0 (unquote 1981-12-31) 3 (unquote 2016-1-1) 4)
-    (time-leap-year? (unquote 2016-6-17) #t
-      (unquote 2015-12-28) #f (unquote 2016-1-4) #t (unquote 1981-12-31) #f (unquote 2016-1-1) #t)
-    (time-leap-year-number? 2016 #t 1981 #f 1982 #f 2015 #f)
-    (time-day (unquote 2016-6-17-11-32-59) 41579) (time-month (unquote 2016-6-17-11-32-59) 1423979)
-    (time-year (unquote 2016-6-17-11-32-59) 14556779)
-    (time-from-ymdhms
-      (#:year 2016 #:month
-        6 #:day 17 #:hour 11 #:minute 32 #:second 59 #:offset-hour -1 #:offset-minute -1)
-      (unquote (+ 2016-6-17-11-32-59 time-seconds-hour time-seconds-minute)))))
+      (unquote 1972-12-31) #(1972 12 31 0 0 0 0 0) (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0))))

@@ -21,7 +21,11 @@
     time-elapsed-month
     time-elapsed-year
     time-from-date
+    time-from-days
+    time-from-hours
+    time-from-minutes
     time-from-utc
+    time-from-years
     time-local-offset
     time-make-date
     time-nanoseconds->seconds
@@ -117,6 +121,12 @@
               (nanoseconds->hms& day-rest
                 (l (h m s ns) (record time-date year month month-day h m s ns 0)))))))))
 
+  (define (time-from-years a)
+    (time-from-utc (* utc-nanoseconds-day (- (greg-years->days a) greg-year-1970-days))))
+
+  (define (time-from-days a) (time-from-utc (* utc-nanoseconds-day (- a greg-year-1970-days))))
+  (define (time-from-hours a) (* utc-nanoseconds-hour a))
+  (define (time-from-minutes a) (* utc-nanoseconds-minute a))
   (define (time->days a) (/ (time->utc a) utc-nanoseconds-day))
   (define (time->years a) (greg-days->years (time->days a)))
   (define (time->hours a) (/ (time->utc a) utc-nanoseconds-hour))
@@ -124,7 +134,7 @@
   (define (time->seconds a) (/ (time->utc a) 1000000000))
 
   (define (time-start-year a)
-    (* utc-nanoseconds-day (- (greg-years->days (truncate (time->years a))) greg-year-1970-days)))
+    (let (a (time->date a)) (time-from-date (time-make-date (time-date-year a) 1 1))))
 
   (define (time-start-month a)
     (let (a (time->date a))
@@ -167,7 +177,7 @@
   (define (time-elapsed-hour a) (- a (time-start-hour a)))
   (define (time-elapsed-minute a) (- a (time-start-minute a)))
 
-  (define (time-week-first a)
+  (define (time-start-first-week a)
     "iso standard first week of current year of time.
     based on if thursday falls into the first week-days of the year"
     (time-from-utc
@@ -178,7 +188,8 @@
   (define (time-date-week-count a) (if (greg-year-weeks-53? (time-date-year a)) 53 52))
 
   (define (time->week a) "integer -> integer"
-    (let (difference (- a (time-week-first a)))
+    (let (difference (- a (time-start-first-week a)))
+      (debug-log (time->date (time-start-first-week a)))
       (if (= 0 difference) 1
         (if (< difference 0) (if (greg-year-weeks-53? (+ (time->years a) 1)) 53 52)
           (let (weeks (/ difference utc-nanoseconds-week))
