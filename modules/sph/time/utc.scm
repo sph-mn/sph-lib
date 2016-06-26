@@ -1,5 +1,7 @@
 (library (sph time utc)
   (export
+    utc-duration->hms
+    utc-duration-from-hms
     utc-leap-second?
     utc-leap-seconds
     utc-nanoseconds-day
@@ -9,7 +11,9 @@
     utc-tai->leap-second-difference)
   (import
     (rnrs base)
-    (sph))
+    (sph)
+    (only (guile) truncate/ assoc-ref)
+    (only (sph one) apply-values))
 
   (define utc-nanoseconds-minute 60000000000)
   (define utc-nanoseconds-hour 3600000000000)
@@ -35,4 +39,16 @@
   (define (utc-tai->leap-second-difference a)
     (if (< a 63072000) 0
       (let loop ((rest utc-leap-seconds))
-        (if (null? rest) 0 (let (b (first rest)) (if (>= a (first b)) (tail b) (loop (tail rest)))))))))
+        (if (null? rest) 0 (let (b (first rest)) (if (>= a (first b)) (tail b) (loop (tail rest))))))))
+
+  (define* (utc-duration-from-hms hours minutes seconds)
+    "integer ... -> integer
+    utc duration are seconds from zero, unrelated to the unix epoch"
+    (+ (* 3600 hours) (* 60 minutes) seconds))
+
+  (define* (utc-duration->hms a #:optional (c list))
+    "integer [procedure:{hour minute second} -> any] -> (integer integer integer)"
+    (apply-values
+      (l (hours rest)
+        (apply-values (l (minutes seconds) (c hours minutes seconds)) (truncate/ a 60)))
+      (truncate/ a 3600))))

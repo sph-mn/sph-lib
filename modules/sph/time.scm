@@ -1,9 +1,18 @@
 (library (sph time)
   (export
     time->date
+    time->days
+    time->hours
+    time->minutes
+    time->seconds
     time->utc
+    time->week
+    time->week-day
+    time->years
     time-current
     time-date
+    time-date->week-day
+    time-date-week-count
     time-days
     time-from-date
     time-from-utc
@@ -11,6 +20,12 @@
     time-make-date
     time-nanoseconds->seconds
     time-seconds->nanoseconds
+    time-start-day
+    time-start-hour
+    time-start-minute
+    time-start-month
+    time-start-week
+    time-start-year
     time-utc-from-year
     time-year)
   (import
@@ -100,41 +115,64 @@
   (define (time->minutes a) (/ (time->utc a) utc-nanoseconds-minute))
   (define (time->seconds a) (/ (time->utc a) 1000000000))
 
-  (define (time-week-first a)
-    "iso standard first week of current year of time.
-    based on if thursday falls into the first week-days of the year"
-    (let* ((year-start (time-year-start a)) (week-day (time->week-day year-start)))
-      (if (< week-day 4) (- year-start (+ 1 (time-days->seconds week-day)))
-        (+ year-start (time-days->seconds (- 7 week-day))))))
-
-  (define (time-add-years a years) (time-from-utc (greg-years->days (+ 1 (time->years a)))))
-
   (define (time-start-year a)
     (* utc-nanoseconds-day (- (greg-years->days (truncate (time->years a))) greg-year-1970-days)))
 
   (define (time-start-month a)
     (let (a (time->date a))
-    (time-from-date (time-make-date (time-date-year a) (time-date-month a) 1))))
+      (time-from-date (time-make-date (time-date-year a) (time-date-month a) 1))))
 
- (define (time-start-day a)
+  (define (time-start-day a)
     (let (a (time->date a))
       (time-from-date (time-make-date (time-date-year a) (time-date-month a) (time-date-day a)))))
 
- (define (time-start-hour a)
+  (define (time-start-hour a)
     (let (a (time->date a))
-      (time-from-date (time-make-date (time-date-year a) (time-date-month a) (time-date-day a) (time-date-hour a) ))))
+      (time-from-date
+        (time-make-date (time-date-year a) (time-date-month a) (time-date-day a) (time-date-hour a)))))
 
   (define (time-start-minute a)
     (let (a (time->date a))
-      (time-from-date (time-make-date (time-date-year a) (time-date-month a) (time-date-day a) (time-date-hour a) (time-date-minute a)))))
+      (time-from-date
+        (time-make-date (time-date-year a) (time-date-month a)
+          (time-date-day a) (time-date-hour a) (time-date-minute a)))))
 
+  (define (time->week-day a) "from 0-6, with monday being the first day of the week"
+    (let (a (time->date a))
+      (greg-week-day (time-date-year a) (time-date-month a) (time-date-day a))))
 
+  (define (time-date->week-day a) "from 0-6, with monday being the first day of the week"
+    (greg-week-day (time-date-year a) (time-date-month a) (time-date-day a)))
 
-  ;time-start-week
-  ;time-start-week-first
-  ;time->week
+  (define (time-elapsed-day a) (- a (time-start-day a)))
+  (define (time-elapsed-year a) (- a (time-start-year a)))
+  (define (time-elapsed-month a) (- a (time-start-month a)))
+  (define (time-elapsed-hour a) (- a (time-start-hour a)))
+  (define (time-elapsed-minute a) (- a (time-start-minute a)))
+
+  (define (time-week-first a)
+    "iso standard first week of current year of time.
+    based on if thursday falls into the first week-days of the year"
+    (let ((year-start (time-start-year a)) (week-day (time->week-day a)))
+      (if (< week-day 3) (- year-start (+ 1 (* utc-nanoseconds-day week-day)))
+        (+ year-start (* utc-nanoseconds-day (- 6 week-day))))))
+
+  (define (time-add-years a years) (time-from-utc (greg-years->days (+ 1 (time->years a)))))
+
+  (define (time-start-week a)
+    (time-from-utc (- (time->utc a) (* (time->week-day a) utc-nanoseconds-day))))
+
+  (define (time-date-week-count a) (if (greg-year-weeks-53? (time-date-year a)) 53 52))
+
+  (define (time->week a) "integer -> integer"
+    (let (difference (- a (time-week-first a)))
+      (if (= 0 difference) 1
+        (if (< difference 0) (if (time-year-weeks-53? (time-from-year (- (time->year a) 1))) 53 52)
+          (let (weeks (/ difference time-seconds-week))
+            ;any full week difference means the week has passed
+            (if (= 0 (modulo difference time-seconds-week)) (+ 1 weeks) (ceiling weeks)))))))
+
   ;time-week-count
-
   ;time-add-year
   ;time-add-week
   ;time-add-month
@@ -147,5 +185,4 @@
   ;time-subtract-day
   ;time-subtract-hour
   ;time-subtract-minute
-
-  )
+)

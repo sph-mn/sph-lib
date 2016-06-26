@@ -7,9 +7,12 @@
     greg-month-days-get
     greg-month-days-leap-year
     greg-number-of-months
+    greg-week-day
     greg-year-days
     greg-year-days->month-and-day&
+    greg-year-first-week-day
     greg-year-leap-year?
+    greg-year-weeks-53?
     greg-years->days
     greg-years->leap-days)
   (import
@@ -91,4 +94,29 @@
         (let (days (+ days (vector-ref greg-month-days index)))
           (if (< a days) (c (+ 1 index) (- (vector-ref greg-month-days index) (- days a 1)))
             (loop (+ 1 index) days)))
-        (c #f #f)))))
+        (c #f #f))))
+
+  (define (week-day-start-sunday->monday week-day) (if (= 0 week-day) 6 (- week-day 1)))
+
+  (define (greg-week-day year month day)
+    (week-day-start-sunday->monday
+      (let* ((a (truncate-quotient (- 14 month) 12)) (y (- year a)) (m (- (+ month (* 12 a)) 2)))
+        (modulo
+          (+ day y
+            (- (truncate-quotient y 4) (truncate-quotient y 100)) (truncate-quotient y 400)
+            (truncate-quotient (* 31 m) 12))
+          7))))
+
+  (define (greg-year-first-week-day a) "integer:year-number -> week-day-number:0-6"
+    (week-day-start-sunday->monday
+      (let ((a (- a 1)))
+        (truncate-remainder
+          (+ 1 (* 4 (truncate-remainder a 100))
+            (* 5 (truncate-remainder a 4)) (* 6 (truncate-remainder a 400)))
+          7))))
+
+  (define (greg-year-weeks-53? a)
+    "integer:year-number -> boolean
+    check if the given year number corresponds to a year with 53 weeks according to the iso8601 standard"
+    (let (week-day (greg-year-first-week-day a))
+      (or (= 3 week-day) (and (= 2 week-day) (time-leap-year-number? year))))))

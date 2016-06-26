@@ -76,7 +76,16 @@
             (list (q expected) expected (q result) date)))
         #t)))
 
+  (define-test (greg-week-day)
+    (let (end 9999)
+      (let loop ((year 1))
+        (if (<= year end)
+          (if (= (greg-year-first-week-day year) (greg-week-day year 1 1)) (loop (+ 1 year))
+            #f)
+          #t))))
+
   (test-execute-procedures-lambda
+    (greg-week-day)
     (greg-years->leap-days 1 0
       3 0
       4 1
