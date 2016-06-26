@@ -75,9 +75,9 @@
     (let (a-utc (time->utc a))
       (apply-values
         (l (days day-rest)
-          ;(debug-log (greg-days->years (debug-log (+ greg-year-1970-days days))))
+          ;(debug-log (+ greg-year-1970-days days) (greg-days->years (+ greg-year-1970-days days)))
           (let*
-            ( (days (+ greg-year-1970-days days)) (years (greg-days->years (- days 1))) (year (+ years 1))
+            ( (days (+ greg-year-1970-days days)) (years (greg-days->years days)) (year (+ years 1))
               (days (- days (greg-years->days years)))
               (days-per-month (greg-month-days-get (greg-year-leap-year? year))))
             (greg-year-days->month-and-day& days days-per-month

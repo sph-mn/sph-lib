@@ -25,12 +25,11 @@
   (define-as greg-month-days vector 31 28 31 30 31 30 31 31 30 31 30 31)
   (define-as greg-month-days-leap-year vector 31 29 31 30 31 30 31 31 30 31 30 31)
   (define greg-number-of-months 12)
-  (define years-400-days 146097)
-  (define years-4-days-no-leap 1460)
+  (define years-400-days 146096)
   (define years-4-days 1461)
   (define years-100-days 36524)
-  ;36525
-  ;(define year-100-days 36159)
+  ;(define years-100-days 36159)
+
   (define greg-year-days 365)
 
   (define (greg-years->leap-days a) "number of leap days before the year was reached"
@@ -44,17 +43,21 @@
   (define (greg-days->leap-days a)
     "gives the number of leap days in a given time span of days since year 1"
     (apply-values
-      (l (cycles-400 rest)
-        (let (cycles-100 (truncate-quotient rest years-100-days))
-          (+ (* cycles-400 97) (- (truncate-quotient (+ rest cycles-100) years-4-days) cycles-100))))
+      (l (cycles-400 rest-400)
+        (apply-values
+          (l (cycles-100 rest-100)
+            (debug-log rest-400 cycles-100 rest-100)
+            (apply-values
+              (l (cycles-4 rest-4)
+                (debug-log cycles-400 cycles-100 cycles-4 rest-4 (- years-100-days rest-100))
+
+                (+ (* cycles-400 97) (* cycles-100 24) cycles-4 (if (< (- years-100-days rest-100) years-4-days) 0 (if (> rest-4 1154) 1 0))))
+              (truncate/ rest-100 years-4-days)))
+          (truncate/ rest-400 years-100-days)))
       (truncate/ a years-400-days)))
 
   (define (greg-days->years a)
-    (truncate-quotient (- a (greg-days->leap-days a)) greg-year-days)
-    #;(let (a (- a 1))
-      (debug-log (greg-days->leap-days a) (exact->inexact (/ (- a (greg-days->leap-days a)) greg-year-days)))
- )
- )
+    (truncate-quotient (- a (greg-days->leap-days a)) greg-year-days))
 
   (define (greg-year-leap-year? a)
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))
