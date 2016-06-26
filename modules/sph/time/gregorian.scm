@@ -119,4 +119,4 @@
     "integer:year-number -> boolean
     check if the given year number corresponds to a year with 53 weeks according to the iso8601 standard"
     (let (week-day (greg-year-first-week-day a))
-      (or (= 3 week-day) (and (= 2 week-day) (time-leap-year-number? year))))))
+      (or (= 3 week-day) (and (= 2 week-day) (greg-year-leap-year? a))))))

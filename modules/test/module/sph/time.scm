@@ -96,9 +96,10 @@
       (unquote 2016-1-1) (unquote 2015-12-28)
       (unquote 2016-1-4) (unquote 2016-1-4) (unquote 1981-12-31) (unquote 1981-12-28))
     (greg-year-weeks-53? 2016 #f 1981 #t 2015 #t)
-    (time->week (unquote 2016-6-17) 24
-      (unquote 2016-1-4) 1 (unquote 1981-12-31) 53 (unquote 2016-1-1) 53)
-    (time->week-first )
+    (time->week
+      (unquote 2016-1-1)  53
+      (unquote 2016-6-17) 24
+      (unquote 2016-1-4) 1 (unquote 1981-12-31) 53)
     (time->week-day (unquote 2016-6-17) 4
       (unquote 2016-1-4) 0 (unquote 1981-12-31) 3 (unquote 2016-1-1) 4)
     (time-leap-year? (unquote 2016-6-17) #t

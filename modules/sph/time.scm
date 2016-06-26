@@ -128,7 +128,7 @@
   (define (time-from-hours a) (* utc-nanoseconds-hour a))
   (define (time-from-minutes a) (* utc-nanoseconds-minute a))
   (define (time->days a) (/ (time->utc a) utc-nanoseconds-day))
-  (define (time->years a) (greg-days->years (time->days a)))
+  (define (time->years a) (greg-days->years (+ greg-years-1970-days (time->days a))))
   (define (time->hours a) (/ (time->utc a) utc-nanoseconds-hour))
   (define (time->minutes a) (/ (time->utc a) utc-nanoseconds-minute))
   (define (time->seconds a) (/ (time->utc a) 1000000000))
@@ -181,15 +181,14 @@
     "iso standard first week of current year of time.
     based on if thursday falls into the first week-days of the year"
     (time-from-utc
-      (let ((year-start (time->utc (time-start-year a))) (week-day (time->week-day a)))
-        (if (< week-day 3) (- year-start (+ 1 (* utc-nanoseconds-day week-day)))
-          (+ year-start (* utc-nanoseconds-day (- 6 week-day)))))))
+      (let* ((year-start (time-start-year a)) (week-day (time->week-day year-start)))
+        (if (< week-day 3) (- (time->utc year-start) (* utc-nanoseconds-day week-day))
+          (+ (time->utc year-start) (* utc-nanoseconds-day (- 7 week-day)))))))
 
   (define (time-date-week-count a) (if (greg-year-weeks-53? (time-date-year a)) 53 52))
 
   (define (time->week a) "integer -> integer"
     (let (difference (- a (time-start-first-week a)))
-      (debug-log (time->date (time-start-first-week a)))
       (if (= 0 difference) 1
         (if (< difference 0) (if (greg-year-weeks-53? (+ (time->years a) 1)) 53 52)
           (let (weeks (/ difference utc-nanoseconds-week))
