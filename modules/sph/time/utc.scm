@@ -1,5 +1,6 @@
 (library (sph time utc)
   (export
+    utc-leap-second?
     utc-leap-seconds
     utc-nanoseconds-day
     utc-nanoseconds-hour
@@ -28,6 +29,8 @@
     (283996800 . 18) (252460800 . 17)
     (220924800 . 16) (189302400 . 15)
     (157766400 . 14) (126230400 . 13) (94694400 . 12) (78796800 . 11) (63072000 . 10))
+
+  (define (utc-leap-second? a) (integer? (assoc-ref utc-leap-seconds a)))
 
   (define (utc-tai->leap-second-difference a)
     (if (< a 63072000) 0

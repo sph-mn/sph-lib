@@ -8,6 +8,7 @@
     time-from-date
     time-from-utc
     time-local-offset
+    time-make-date
     time-nanoseconds->seconds
     time-seconds->nanoseconds
     time-utc-from-year
@@ -27,6 +28,12 @@
   (define-record time-date year month day hour minute second nanosecond offset)
   (define greg-year-1970-days 719162)
   (define greg-years-1970-days 719527)
+
+  (define*
+    (time-make-date #:optional (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0)
+      (nanosecond 0)
+      (offset 0))
+    (record time-date year month day hour minute second nanosecond offset))
 
   (define (time-current)
     (let* ((a (gettimeofday)) (seconds (first a)) (microseconds (tail a)))
@@ -87,10 +94,47 @@
               (nanoseconds->hms& day-rest
                 (l (h m s ns) (record time-date year month month-day h m s ns 0)))))))))
 
-  (define (time-year a)
-    (+ 1 (greg-days->years (truncate-quotient (time->utc a) utc-nanoseconds-day))))
+  (define (time->days a) (/ (time->utc a) utc-nanoseconds-day))
+  (define (time->years a) (greg-days->years (time->days a)))
+  (define (time->hours a) (/ (time->utc a) utc-nanoseconds-hour))
+  (define (time->minutes a) (/ (time->utc a) utc-nanoseconds-minute))
+  (define (time->seconds a) (/ (time->utc a) 1000000000))
 
-  (define (time-add-year a) #t)
+  (define (time-week-first a)
+    "iso standard first week of current year of time.
+    based on if thursday falls into the first week-days of the year"
+    (let* ((year-start (time-year-start a)) (week-day (time->week-day year-start)))
+      (if (< week-day 4) (- year-start (+ 1 (time-days->seconds week-day)))
+        (+ year-start (time-days->seconds (- 7 week-day))))))
+
+  (define (time-add-years a years) (time-from-utc (greg-years->days (+ 1 (time->years a)))))
+
+  (define (time-start-year a)
+    (* utc-nanoseconds-day (- (greg-years->days (truncate (time->years a))) greg-year-1970-days)))
+
+  (define (time-start-month a)
+    (let (a (time->date a))
+    (time-from-date (time-make-date (time-date-year a) (time-date-month a) 1))))
+
+ (define (time-start-day a)
+    (let (a (time->date a))
+      (time-from-date (time-make-date (time-date-year a) (time-date-month a) (time-date-day a)))))
+
+ (define (time-start-hour a)
+    (let (a (time->date a))
+      (time-from-date (time-make-date (time-date-year a) (time-date-month a) (time-date-day a) (time-date-hour a) ))))
+
+  (define (time-start-minute a)
+    (let (a (time->date a))
+      (time-from-date (time-make-date (time-date-year a) (time-date-month a) (time-date-day a) (time-date-hour a) (time-date-minute a)))))
+
+
+
+  ;time-start-week
+  ;time-start-week-first
+  ;time->week
+  ;time-week-count
+
   ;time-add-year
   ;time-add-week
   ;time-add-month
@@ -103,21 +147,5 @@
   ;time-subtract-day
   ;time-subtract-hour
   ;time-subtract-minute
-  ;time-start-year
-  ;time-start-week
-  ;time-start-week-first
-  ;time-start-month
-  ;time-start-day
-  ;time-start-hour
-  ;time-start-minute
-  ;time->year
-  ;time->week
-  ;time->month
-  ;time->day
-  ;time->hour
-  ;time->minute
-  ;time-week-count
-  ;time-local-offset
-  ;time-leap-year?
-  ;time-leap-second?
-)
+
+  )
