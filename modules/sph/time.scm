@@ -12,8 +12,14 @@
     time-current
     time-date
     time-date->week-day
+    time-date-increment-day
     time-date-week-count
     time-days
+    time-elapsed-day
+    time-elapsed-hour
+    time-elapsed-minute
+    time-elapsed-month
+    time-elapsed-year
     time-from-date
     time-from-utc
     time-local-offset
@@ -24,9 +30,11 @@
     time-start-hour
     time-start-minute
     time-start-month
+    time-start-second
     time-start-week
     time-start-year
     time-utc-from-year
+    time-week-first
     time-year)
   (import
     (guile)
@@ -137,6 +145,15 @@
         (time-make-date (time-date-year a) (time-date-month a)
           (time-date-day a) (time-date-hour a) (time-date-minute a)))))
 
+  (define (time-start-second a)
+    (let (a (time->date a))
+      (time-from-date
+        (time-make-date (time-date-year a) (time-date-month a)
+          (time-date-day a) (time-date-hour a) (time-date-minute a) (time-date-second a)))))
+
+  (define (time-start-week a)
+    (time-from-utc (- (time->utc a) (* (time->week-day a) utc-nanoseconds-day))))
+
   (define (time->week-day a) "from 0-6, with monday being the first day of the week"
     (let (a (time->date a))
       (greg-week-day (time-date-year a) (time-date-month a) (time-date-day a))))
@@ -153,36 +170,36 @@
   (define (time-week-first a)
     "iso standard first week of current year of time.
     based on if thursday falls into the first week-days of the year"
-    (let ((year-start (time-start-year a)) (week-day (time->week-day a)))
-      (if (< week-day 3) (- year-start (+ 1 (* utc-nanoseconds-day week-day)))
-        (+ year-start (* utc-nanoseconds-day (- 6 week-day))))))
-
-  (define (time-add-years a years) (time-from-utc (greg-years->days (+ 1 (time->years a)))))
-
-  (define (time-start-week a)
-    (time-from-utc (- (time->utc a) (* (time->week-day a) utc-nanoseconds-day))))
+    (time-from-utc
+      (let ((year-start (time->utc (time-start-year a))) (week-day (time->week-day a)))
+        (if (< week-day 3) (- year-start (+ 1 (* utc-nanoseconds-day week-day)))
+          (+ year-start (* utc-nanoseconds-day (- 6 week-day)))))))
 
   (define (time-date-week-count a) (if (greg-year-weeks-53? (time-date-year a)) 53 52))
 
   (define (time->week a) "integer -> integer"
     (let (difference (- a (time-week-first a)))
       (if (= 0 difference) 1
-        (if (< difference 0) (if (time-year-weeks-53? (time-from-year (- (time->year a) 1))) 53 52)
-          (let (weeks (/ difference time-seconds-week))
+        (if (< difference 0) (if (greg-year-weeks-53? (+ (time->years a) 1)) 53 52)
+          (let (weeks (/ difference utc-nanoseconds-week))
             ;any full week difference means the week has passed
-            (if (= 0 (modulo difference time-seconds-week)) (+ 1 weeks) (ceiling weeks)))))))
+            (if (= 0 (modulo difference utc-nanoseconds-week)) (+ 1 weeks) (ceiling weeks)))))))
 
-  ;time-week-count
-  ;time-add-year
-  ;time-add-week
-  ;time-add-month
-  ;time-add-day
-  ;time-add-hour
-  ;time-add-minute
-  ;time-subtract-year
-  ;time-subtract-week
-  ;time-subtract-month
-  ;time-subtract-day
-  ;time-subtract-hour
-  ;time-subtract-minute
-)
+  (define (time-add-years a years) (time-from-utc (greg-years->days (+ years (time->years a)))))
+  (define (time-add-day a days) (time-from-utc (+ (* utc-nanoseconds-day days) (time->utc a))))
+  (define (time-add-hours a hours) (+ (* utc-nanoseconds-hour hours) a))
+  (define (time-add-minute a minutes) (+ (* utc-nanoseconds-minute minutes) a))
+  (define (time-add-seconds a seconds) (+ (time-seconds->nanoseconds seconds) a))
+
+  (define (time-add-weeks a weeks)
+    (time-from-utc (+ (* utc-nanoseconds-day weeks 7) (time->utc a))))
+
+  (define (time-date-increment-day a)
+    (let (year (time-date-year a))
+      (let*
+        ( (month (time-date-month a)) (day (time-date-day a))
+          (day-count (vector-ref (greg-month-days-get (greg-year-leap-year? year)) (- month 1))))
+        (record time-date (if (and (= month 12) (= day day-count)) (+ 1 year) year)
+          (if (= day day-count) (+ 1 (modulo month 12)) month) (+ 1 (modulo day day-count))
+          (time-date-hour a) (time-date-minute a)
+          (time-date-second a) (time-date-nanosecond a) (time-date-offset a))))))

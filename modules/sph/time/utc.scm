@@ -7,6 +7,7 @@
     utc-nanoseconds-day
     utc-nanoseconds-hour
     utc-nanoseconds-minute
+    utc-nanoseconds-week
     utc-seconds-day
     utc-tai->leap-second-difference)
   (import
@@ -18,6 +19,7 @@
   (define utc-nanoseconds-minute 60000000000)
   (define utc-nanoseconds-hour 3600000000000)
   (define utc-nanoseconds-day 86400000000000)
+  (define utc-nanoseconds-week (* 7 utc-nanoseconds-day))
   (define utc-seconds-day 86400)
 
   (define-as utc-leap-seconds ql
