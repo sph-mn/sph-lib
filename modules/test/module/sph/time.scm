@@ -13,10 +13,11 @@
   (define 2016-6-13 (time-seconds->nanoseconds 1465776036))
   (define 2016-6-1 (time-seconds->nanoseconds 1464739236))
   ;1981 had 53 weeks and was not a leap year
-  (define 1981-12-31 (time-seconds->nanoseconds 378604820))
   (define 1981-12-1 376012820000000000)
   (define 1981-1-1 (time-seconds->nanoseconds 347155219))
+  (define 1981-12-27 (time-seconds->nanoseconds 378259220))
   (define 1981-12-28 (time-seconds->nanoseconds 378345620))
+  (define 1981-12-31 (time-seconds->nanoseconds 378604820))
   ;a leap second occured between the following dates
   (define 1972-12-31 94608011000000000)
   (define 1973-1-1 94694412000000000)
@@ -96,16 +97,12 @@
       (unquote 2016-1-1) (unquote 2015-12-28)
       (unquote 2016-1-4) (unquote 2016-1-4) (unquote 1981-12-31) (unquote 1981-12-28))
     (greg-year-weeks-53? 2016 #f 1981 #t 2015 #t)
-    (time->week
-      (unquote 2016-1-1)  53
+    (time->week (unquote 2016-1-1) 53
       (unquote 2016-6-17) 24
-      (unquote 2016-1-4) 1 (unquote 1981-12-31) 53)
+      (unquote 2016-1-4) 1 (unquote 1981-12-31) 53 (unquote 1981-12-28) 53 (unquote 1981-12-27) 52)
     (time->week-day (unquote 2016-6-17) 4
       (unquote 2016-1-4) 0 (unquote 1981-12-31) 3 (unquote 2016-1-1) 4)
-    (time-leap-year? (unquote 2016-6-17) #t
-      (unquote 2015-12-28) #f (unquote 2016-1-4) #t (unquote 1981-12-31) #f (unquote 2016-1-1) #t)
-    (time->days (unquote 2016-6-17-11-32-59) 41579) (time-month (unquote 2016-6-17-11-32-59) 1423979)
-    (time->years (unquote 2016-6-17-11-32-59) 14556779) (greg-week-day)
+    (greg-week-day)
     (greg-years->leap-days 1 0
       3 0
       4 1

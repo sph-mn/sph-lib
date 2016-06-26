@@ -188,12 +188,19 @@
   (define (time-date-week-count a) (if (greg-year-weeks-53? (time-date-year a)) 53 52))
 
   (define (time->week a) "integer -> integer"
-    (let (difference (- a (time-start-first-week a)))
+    (let*
+      ((years (time->years a)) (first-week (time-start-first-week a)) (difference (- a first-week)))
       (if (= 0 difference) 1
-        (if (< difference 0) (if (greg-year-weeks-53? (+ (time->years a) 1)) 53 52)
-          (let (weeks (/ difference utc-nanoseconds-week))
-            ;any full week difference means the week has passed
-            (if (= 0 (modulo difference utc-nanoseconds-week)) (+ 1 weeks) (ceiling weeks)))))))
+        (if (< difference 0) (if (greg-year-weeks-53? years) 53 52)
+          (let*
+            ( (year (time->years first-week))
+              (first-week-next (time-start-first-week (time-from-years year)))
+              (last-week (time-from-utc (- (time->utc first-week-next) utc-nanoseconds-week))))
+            (if (>= a last-week) (if (greg-year-weeks-53? year) 53 52)
+              (let*
+                ( (difference (- a (time-from-years (- year 1))))
+                  (weeks (/ difference utc-nanoseconds-week)))
+                (ceiling weeks))))))))
 
   (define (time-add-years a years) (time-from-utc (greg-years->days (+ years (time->years a)))))
   (define (time-add-day a days) (time-from-utc (+ (* utc-nanoseconds-day days) (time->utc a))))
