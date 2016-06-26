@@ -71,17 +71,53 @@
         (* utc-nanoseconds-minute (time-date-minute a))
         (time-seconds->nanoseconds (time-date-second a)) (time-date-nanosecond a))))
 
+  (define (time-days-and-rest& a c)
+    (apply-values (l (days day-rest) (c (+ greg-year-1970-days days) day-rest))
+      (truncate/ (time->utc a) utc-nanoseconds-day)))
+
   (define (time->date a)
-    (let (a-utc (time->utc a))
-      (apply-values
-        (l (days day-rest)
-          ;(debug-log (+ greg-year-1970-days days) (greg-days->years (+ greg-year-1970-days days)))
-          (let*
-            ( (days (+ greg-year-1970-days days)) (years (greg-days->years days)) (year (+ years 1))
-              (days (- days (greg-years->days years)))
-              (days-per-month (greg-month-days-get (greg-year-leap-year? year))))
-            (greg-year-days->month-and-day& days days-per-month
-              (l (month month-day)
-                (nanoseconds->hms& day-rest
-                  (l (h m s ns) (record time-date year month month-day h m s ns 0)))))))
-        (truncate/ a-utc utc-nanoseconds-day)))))
+    (time-days-and-rest& a
+      (l (days day-rest)
+        (let*
+          ( (years (greg-days->years days)) (year (+ years 1))
+            (days (- days (greg-years->days years)))
+            (days-per-month (greg-month-days-get (greg-year-leap-year? year))))
+          (greg-year-days->month-and-day& days days-per-month
+            (l (month month-day)
+              (nanoseconds->hms& day-rest
+                (l (h m s ns) (record time-date year month month-day h m s ns 0)))))))))
+
+  (define (time-year a)
+    (+ 1 (greg-days->years (truncate-quotient (time->utc a) utc-nanoseconds-day))))
+
+  (define (time-add-year a) #t)
+  ;time-add-year
+  ;time-add-week
+  ;time-add-month
+  ;time-add-day
+  ;time-add-hour
+  ;time-add-minute
+  ;time-subtract-year
+  ;time-subtract-week
+  ;time-subtract-month
+  ;time-subtract-day
+  ;time-subtract-hour
+  ;time-subtract-minute
+  ;time-start-year
+  ;time-start-week
+  ;time-start-week-first
+  ;time-start-month
+  ;time-start-day
+  ;time-start-hour
+  ;time-start-minute
+  ;time->year
+  ;time->week
+  ;time->month
+  ;time->day
+  ;time->hour
+  ;time->minute
+  ;time-week-count
+  ;time-local-offset
+  ;time-leap-year?
+  ;time-leap-second?
+)
