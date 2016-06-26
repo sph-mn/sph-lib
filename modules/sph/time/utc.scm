@@ -52,5 +52,5 @@
     "integer [procedure:{hour minute second} -> any] -> (integer integer integer)"
     (apply-values
       (l (hours rest)
-        (apply-values (l (minutes seconds) (c hours minutes seconds)) (truncate/ a 60)))
+        (apply-values (l (minutes seconds) (c hours minutes seconds)) (truncate/ rest 60)))
       (truncate/ a 3600))))

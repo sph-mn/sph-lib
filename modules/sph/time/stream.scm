@@ -1,5 +1,6 @@
 (library (sph time stream)
-  (export)
+  (export
+    time-date-stream)
   (import
     (rnrs base)
     (sph)
