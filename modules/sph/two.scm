@@ -79,7 +79,7 @@
     while-do
     while-do-map
     while-store
-    ;path->mime-type
+    system-path->mime-type
     )
   (import
     (guile)
@@ -138,11 +138,10 @@
       (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
 
   (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
-  (define (os-seconds-at-boot) (- (current-day-seconds) (os-seconds-since-boot)))
+  (define (os-seconds-at-boot) (- (time-nanoseconds->seconds (time-elapsed-day (time-current))) (os-seconds-since-boot)))
 
   (define (os-seconds-since-boot)
-    (let (day-seconds (seconds->day-seconds (current-time)))
-      (string->number (first (string-split (shell-eval->string "cat /proc/uptime") #\space)))))
+    (string->number (first (string-split (shell-eval->string "cat /proc/uptime") #\space))))
 
   (define (port-column-subtract! port integer)
     (set-port-column! port (- (port-column port) integer)))
@@ -496,7 +495,7 @@
     tests if a string has a .scm suffix"
     (not (string-suffix? ".scm" file-path)))
 
-  #;(define (path->mime-type path)
+  (define (system-path->mime-type path)
     "string -> string
     get the mime-type of a file by using the \"file\" program.
     see also (sph libmagic) for a more efficient variant"

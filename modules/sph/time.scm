@@ -37,6 +37,8 @@
     time-local-offset
     time-make-date
     time-make-date*
+    time-ns->s
+    time-s->ns
     time-nanoseconds->seconds
     time-seconds->nanoseconds
     time-start-day
@@ -61,6 +63,8 @@
   ;time as integers of tai nanoseconds since the unix epoch. selected conversions for the gregorian calendar, utc and iso8601
   (define (time-seconds->nanoseconds a) (* 1000000000 a))
   (define (time-nanoseconds->seconds a) (floor (/ a 1000000000)))
+  (define time-ns->s time-nanoseconds->seconds)
+  (define time-s->ns time-seconds->nanoseconds)
   (define-record time-date year month day hour minute second nanosecond offset)
   (define greg-year-1970-days 719162)
   (define greg-years-1970-days 719527)

@@ -50,7 +50,7 @@
     (if (string? spacing) spacing (create-vertical-spacing spacing)))
 
   (define (format-application-expr-proc config current-indent) "hashtable integer -> list"
-    (hashtable-quoted-bind config
+    (hashtable-q-bind config
       (indent-string max-chars-per-line max-exprs-per-line-start
         max-exprs-per-line-middle max-exprs-per-line-end)
       (let (indent-length (* current-indent (string-length indent-string)))
