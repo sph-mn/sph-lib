@@ -4,7 +4,10 @@
   (import
     (rnrs base)
     (sph)
+    (sph record)
+    (guile)
     (sph time)
+    (sph time gregorian)
     (srfi srfi-41))
 
   (define (time-date-stream date-start date-end)
@@ -16,7 +19,7 @@
       (stream-let loop
         ( (year (time-date-year date-start)) (month (time-date-month date-start))
           (day (time-date-day date-start)))
-        (if (and (<= year year-end) (<= month month-end) (<= day day-end))
+        (if (or (< year year-end) (<= month month-end) (<= day day-end))
           (let
             (day-count (vector-ref (greg-month-days-get (greg-year-leap-year? year)) (- month 1)))
             (stream-cons (record time-date year month day 0 0 0 0 0)
