@@ -94,7 +94,7 @@
         (let (days (+ days (vector-ref greg-month-days index)))
           (if (< a days) (c (+ 1 index) (- (vector-ref greg-month-days index) (- days a 1)))
             (loop (+ 1 index) days)))
-        (c #f #f))))
+        (if (= a days) (c #f #f) (c (+ 1 index) (- (vector-ref greg-month-days index) (- days a)))))))
 
   (define (week-day-start-sunday->monday week-day) (if (= 0 week-day) 6 (- week-day 1)))
 

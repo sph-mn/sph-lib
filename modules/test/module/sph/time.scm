@@ -28,7 +28,9 @@
   (define-test (time-local-utc-offset) (integer? (time-local-utc-offset)))
   (define 2000-12-31 978220832000000000)
   (define 1981-1-5 347500819000000000)
-
+  (define 1-12-31 (time-s->ns -62104147200))
+  (define -1-1-1 (time-s->ns -62167219200))
+  (define -1-6-17 (time-s->ns -62152704000))
 
   (define-test (greg-days->years-2)
     (let loop ((year 1))
@@ -116,8 +118,13 @@
       (unquote 2016-1-1) (unquote 2015-12-28)
       (unquote 2016-1-4) (unquote 2016-1-4) (unquote 1981-12-31) (unquote 1981-12-28))
     (greg-year-weeks-53? 2016 #f 1981 #t 2015 #t)
-    (time->years (unquote 2016-1-1) 2015 (unquote 2016-1-3) 2015)
+    (time->years
+      (unquote -1-1-1) -1
+
+      (unquote 2016-1-1) 2015 (unquote 2016-1-3) 2015)
     (time->week
+      (unquote -1-6-17) 3
+      (unquote 1-12-31) 1
       (unquote 1981-1-5) 2
       (unquote 1981-1-1) 1
       (unquote 2016-1-1) 53

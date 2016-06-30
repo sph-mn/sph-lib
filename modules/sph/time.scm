@@ -202,7 +202,6 @@
   (define (time-start-first-week a)
     "iso standard first week of current year of time.
     based on if thursday falls into the first week-days of the year"
-    ;(debug-log "test" (time-ns->s (time->utc a)) (time-ns->s (time->utc (time-start-year a))) (time->date (time-start-year a)))
     (time-from-utc
       (let* ((year-start (time-start-year a)) (week-day (time->week-day year-start)))
         (if (< week-day 4) (- (time->utc year-start) (* utc-nanoseconds-day week-day))
@@ -218,12 +217,16 @@
     (let*
       ( (years (time->years a)) (year (+ 1 years)) (first-week (time-start-first-week a))
         (difference (- a first-week)))
+      (debug-log years (time->date first-week) difference)
       (if (= 0 difference) 1
         (if (< difference 0) (if (greg-year-weeks-53? (- year 1)) 53 52)
           (let (last-week (time-start-last-week a))
-            (if (>= a last-week) (if (greg-year-weeks-53? year) 53 52)
-              (let (weeks (/ difference utc-nanoseconds-week))
-                (if (integer? weeks) (+ 1 weeks) (ceiling weeks)))))))))
+            (if (= a last-week) (if (greg-year-weeks-53? year) 53 52)
+              (if (> a last-week)
+                (if (>= (/ (- a last-week) utc-nanoseconds-week) 1) 1
+                  (if (greg-year-weeks-53? year) 53 52))
+                (let (weeks (/ difference utc-nanoseconds-week))
+                  (if (integer? weeks) (+ 1 weeks) (ceiling weeks))))))))))
 
   (define (time-add-years a years)
     (time-from-utc
