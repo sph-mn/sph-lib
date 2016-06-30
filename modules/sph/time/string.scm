@@ -10,6 +10,7 @@
   (import
     (rnrs base)
     (sph)
+    (sph string)
     (sph time)
     (sph time utc)
     (only (guile) string-split)
@@ -24,7 +25,7 @@
   (define (time->iso8601-ymd a)
     (let (date (time->date a))
       (string-append (number->string (time-date-year date)) "-"
-        (number->string (time-date-month date)) "-" (number->string (time-date-day date)))))
+        (pad-with-zeros (number->string (time-date-month date)) 2) "-" (pad-with-zeros (number->string (time-date-day date)) 2))))
 
   (define* (time-elapsed-day-string a #:optional (shift 3) (decimal-places 2))
     (simple-format-number (time-nanoseconds->seconds (time-elapsed-day a)) shift decimal-places))
