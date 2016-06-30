@@ -8,6 +8,7 @@
   (define 2015-12-28 (time-seconds->nanoseconds 1451260836))
   ;2016 had 52 weeks and was a leap year
   (define 2016-1-1 (time-seconds->nanoseconds 1451606436))
+  (define 2016-1-3 (time-s->ns 1451779236))
   (define 2016-1-4 (time-seconds->nanoseconds 1451865636))
   (define 2016-6-17 (time-seconds->nanoseconds 1466121636))
   (define 2016-6-13 (time-seconds->nanoseconds 1465776036))
@@ -26,6 +27,8 @@
   (define 2016-6-17-11-32-59 1466163215000000000)
   (define-test (time-local-utc-offset) (integer? (time-local-utc-offset)))
   (define 2000-12-31 978220832000000000)
+  (define 1981-1-5 347500819000000000)
+
 
   (define-test (greg-days->years-2)
     (let loop ((year 1))
@@ -83,7 +86,23 @@
         (if (<= year end)
           (if (= (greg-year-first-week-day year) (greg-week-day year 1 1)) (loop (+ 1 year)) #f) #t))))
 
-  (test-execute-procedures-lambda
+  (define-test (time-start-first-week arguments)
+    (time->date (time-start-first-week (first arguments))))
+
+  (define-test (time-start-last-week arguments)
+    (time->date (time-start-last-week (first arguments))))
+
+  (test-execute-procedures-lambda (time-start-first-week (unquote 2016-6-17)#(2016 1 4 0 0 0 0 0)
+      (unquote 1981-12-27) #(1980 12 29 0 0 0 0 0)
+      (unquote 1981-1-1) #(1980 12 29 0 0 0 0 0)
+      (unquote 1972-12-31) #(1972 1 3 0 0 0 0 0)
+      )
+    (time-start-last-week (unquote 2016-6-17) #(2016 12 26 0 0 0 0 0)
+      (unquote 1981-12-27) #(1981 12 28 0 0 0 0 0)
+      (unquote 1981-1-1) #(1981 12 28 0 0 0 0 0)
+      (unquote 1972-12-31) #(1972 12 25 0 0 0 0 0)
+
+      )
     (time-start-year (unquote 2016-6-17) (unquote 2016-1-1)
       (unquote 2016-1-1) (unquote 2016-1-1)
       (unquote 2016-1-4) (unquote 2016-1-1) (unquote 1981-12-31) (unquote 1981-1-1))
@@ -97,7 +116,12 @@
       (unquote 2016-1-1) (unquote 2015-12-28)
       (unquote 2016-1-4) (unquote 2016-1-4) (unquote 1981-12-31) (unquote 1981-12-28))
     (greg-year-weeks-53? 2016 #f 1981 #t 2015 #t)
-    (time->week (unquote 2016-1-1) 53
+    (time->years (unquote 2016-1-1) 2015 (unquote 2016-1-3) 2015)
+    (time->week
+      (unquote 1981-1-5) 2
+      (unquote 1981-1-1) 1
+      (unquote 2016-1-1) 53
+      (unquote 2016-1-3) 53
       (unquote 2016-6-17) 24
       (unquote 2016-1-4) 1 (unquote 1981-12-31) 53 (unquote 1981-12-28) 53 (unquote 1981-12-27) 52)
     (time->week-day (unquote 2016-6-17) 4

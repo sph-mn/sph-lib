@@ -37,12 +37,14 @@
     time-local-offset
     time-make-date
     time-make-date*
+    time-nanoseconds->seconds
     time-ns->s
     time-s->ns
-    time-nanoseconds->seconds
     time-seconds->nanoseconds
     time-start-day
+    time-start-first-week
     time-start-hour
+    time-start-last-week
     time-start-minute
     time-start-month
     time-start-second
@@ -75,7 +77,8 @@
     (record time-date year month day hour minute second nanosecond offset))
 
   (define*
-    (time-make-date* #:optional (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0) (nanosecond 0)
+    (time-make-date* #:optional (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0)
+      (nanosecond 0)
       (offset 0))
     (record time-date year month day hour minute second nanosecond offset))
 
@@ -120,10 +123,8 @@
           (greg-month->days (time-date-month a) (greg-year-leap-year? (time-date-year a))))
         (* utc-nanoseconds-day (- (time-date-day a) 1)) (* utc-nanoseconds-hour (time-date-hour a))
         (* utc-nanoseconds-minute (time-date-minute a))
-        (time-seconds->nanoseconds (time-date-second a))
-        (time-date-nanosecond a)
-        (* (time-seconds->nanoseconds (time-date-offset a)) -1)
-        )))
+        (time-seconds->nanoseconds (time-date-second a)) (time-date-nanosecond a)
+        (* (time-seconds->nanoseconds (time-date-offset a)) -1))))
 
   (define (time-days-and-rest& a c)
     (apply-values (l (days day-rest) (c (+ greg-year-1970-days days) day-rest))
@@ -148,7 +149,7 @@
   (define (time-from-hours a) (* utc-nanoseconds-hour a))
   (define (time-from-minutes a) (* utc-nanoseconds-minute a))
   (define (time->days a) (/ (time->utc a) utc-nanoseconds-day))
-  (define (time->years a) (greg-days->years (+ greg-years-1970-days (time->days a))))
+  (define (time->years a) (greg-days->years (+ greg-year-1970-days (time->days a))))
   (define (time->hours a) (/ (time->utc a) utc-nanoseconds-hour))
   (define (time->minutes a) (/ (time->utc a) utc-nanoseconds-minute))
   (define (time->seconds a) (/ (time->utc a) 1000000000))
@@ -167,7 +168,8 @@
   (define (time-start-hour a)
     (let (a (time->date a))
       (time-from-date
-        (time-make-date* (time-date-year a) (time-date-month a) (time-date-day a) (time-date-hour a)))))
+        (time-make-date* (time-date-year a) (time-date-month a)
+          (time-date-day a) (time-date-hour a)))))
 
   (define (time-start-minute a)
     (let (a (time->date a))
@@ -200,29 +202,33 @@
   (define (time-start-first-week a)
     "iso standard first week of current year of time.
     based on if thursday falls into the first week-days of the year"
+    ;(debug-log "test" (time-ns->s (time->utc a)) (time-ns->s (time->utc (time-start-year a))) (time->date (time-start-year a)))
     (time-from-utc
       (let* ((year-start (time-start-year a)) (week-day (time->week-day year-start)))
-        (if (< week-day 3) (- (time->utc year-start) (* utc-nanoseconds-day week-day))
+        (if (< week-day 4) (- (time->utc year-start) (* utc-nanoseconds-day week-day))
           (+ (time->utc year-start) (* utc-nanoseconds-day (- 7 week-day)))))))
+
+  (define (time-start-last-week a)
+    (time-from-utc
+      (- (time->utc (time-start-first-week (time-add-years a 1))) utc-nanoseconds-week)))
 
   (define (time-date-week-count a) (if (greg-year-weeks-53? (time-date-year a)) 53 52))
 
   (define (time->week a) "integer -> integer"
     (let*
-      ((years (time->years a)) (first-week (time-start-first-week a)) (difference (- a first-week)))
+      ( (years (time->years a)) (year (+ 1 years)) (first-week (time-start-first-week a))
+        (difference (- a first-week)))
       (if (= 0 difference) 1
-        (if (< difference 0) (if (greg-year-weeks-53? years) 53 52)
-          (let*
-            ( (year (time->years first-week))
-              (first-week-next (time-start-first-week (time-from-years year)))
-              (last-week (time-from-utc (- (time->utc first-week-next) utc-nanoseconds-week))))
+        (if (< difference 0) (if (greg-year-weeks-53? (- year 1)) 53 52)
+          (let (last-week (time-start-last-week a))
             (if (>= a last-week) (if (greg-year-weeks-53? year) 53 52)
-              (let*
-                ( (difference (- a (time-from-years (- year 1))))
-                  (weeks (/ difference utc-nanoseconds-week)))
-                (ceiling weeks))))))))
+              (let (weeks (/ difference utc-nanoseconds-week))
+                (if (integer? weeks) (+ 1 weeks) (ceiling weeks)))))))))
 
-  (define (time-add-years a years) (time-from-utc (greg-years->days (+ years (time->years a)))))
+  (define (time-add-years a years)
+    (time-from-utc
+      (* utc-nanoseconds-day (- (greg-years->days (+ years (time->years a))) greg-year-1970-days))))
+
   (define (time-add-day a days) (time-from-utc (+ (* utc-nanoseconds-day days) (time->utc a))))
   (define (time-add-hours a hours) (+ (* utc-nanoseconds-hour hours) a))
   (define (time-add-minute a minutes) (+ (* utc-nanoseconds-minute minutes) a))
