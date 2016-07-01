@@ -94,8 +94,9 @@
     (truncate-quotient (- a (greg-days->leap-days a)) greg-year-days))
 
   (define (greg-days->year a)
-    (let (years (truncate-quotient (- a (greg-days->leap-days a)) greg-year-days))
-      (if (zero? years) (if (negative? a) -1 0) (if (negative? years) years (+ 1 years)))))
+    ;floor is the largest integer less than or equal to x
+    (let (years (floor (/ (- a (greg-days->leap-days a)) greg-year-days)))
+      (if (zero? years) (if (negative? a) -1 1) (if (negative? years) years (+ 1 years)))))
 
   (define (greg-year-leap-year? a) "integer:year-number -> boolean"
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))

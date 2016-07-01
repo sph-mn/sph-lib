@@ -29,10 +29,11 @@
   (define 2000-12-31 978220832000000000)
   (define 1981-1-5 347500819000000000)
   (define 1-12-31 (time-s->ns -62104147200))
-  ;this could not be confirmed with the "date" system utility or "srfi-19",
+  ;the date for -1-1-1 could not be confirmed with the "date" system utility or "srfi-19" (both use year 0 btw),
   ;but the the calculation using time-from-date seems correct.
   (define negative-1-1-1 -62167132800000000000)
   (define negative-1-5-10 -62155987200000000000)
+  (define negative-2-4-10 -62190115200000000000)
 
   (define-test (greg-days->years-2)
     (let loop ((year 1))
@@ -97,6 +98,12 @@
     (time->date (time-start-last-week (first arguments))))
 
   (test-execute-procedures-lambda
+    (greg-days->year
+      365 2
+      364 1
+      -365 -1
+      -364 -1
+      -1 -1)
     (time-start-first-week (unquote 2016-6-17) #(2016 1 4 0 0 0 0 0)
       (unquote 1981-12-27) #(1980 12 29 0 0 0 0 0)
       (unquote 1981-1-1) #(1980 12 29 0 0 0 0 0) (unquote 1972-12-31) #(1972 1 3 0 0 0 0 0))
@@ -145,8 +152,7 @@
       1461 4 1 0 365 1 366 1 1826 5 146097 400 146098 400 723180 1980 723544 1980 723545 1981)
     (greg-days->years-2)
     (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
-    (time-from-date
-      #(-1 1 1 0 0 0 0 0) (unquote negative-1-1-1)
+    (time-from-date #(-1 1 1 0 0 0 0 0) (unquote negative-1-1-1)
       #(-1 5 10 0 0 0 0 0) (unquote negative-1-5-10)
       #(1970 1 1 0 0 0 0 0) 0
       #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
