@@ -29,8 +29,10 @@
   (define 2000-12-31 978220832000000000)
   (define 1981-1-5 347500819000000000)
   (define 1-12-31 (time-s->ns -62104147200))
-  (define -1-1-1 (time-s->ns -62167219200))
-  (define -1-6-17 (time-s->ns -62152704000))
+  ;this could not be confirmed with the "date" system utility or "srfi-19",
+  ;but the the calculation using time-from-date seems correct.
+  (define negative-1-1-1 -62167132800000000000)
+  (define negative-1-5-10 -62155987200000000000)
 
   (define-test (greg-days->years-2)
     (let loop ((year 1))
@@ -94,17 +96,13 @@
   (define-test (time-start-last-week arguments)
     (time->date (time-start-last-week (first arguments))))
 
-  (test-execute-procedures-lambda (time-start-first-week (unquote 2016-6-17)#(2016 1 4 0 0 0 0 0)
+  (test-execute-procedures-lambda
+    (time-start-first-week (unquote 2016-6-17) #(2016 1 4 0 0 0 0 0)
       (unquote 1981-12-27) #(1980 12 29 0 0 0 0 0)
-      (unquote 1981-1-1) #(1980 12 29 0 0 0 0 0)
-      (unquote 1972-12-31) #(1972 1 3 0 0 0 0 0)
-      )
+      (unquote 1981-1-1) #(1980 12 29 0 0 0 0 0) (unquote 1972-12-31) #(1972 1 3 0 0 0 0 0))
     (time-start-last-week (unquote 2016-6-17) #(2016 12 26 0 0 0 0 0)
       (unquote 1981-12-27) #(1981 12 28 0 0 0 0 0)
-      (unquote 1981-1-1) #(1981 12 28 0 0 0 0 0)
-      (unquote 1972-12-31) #(1972 12 25 0 0 0 0 0)
-
-      )
+      (unquote 1981-1-1) #(1981 12 28 0 0 0 0 0) (unquote 1972-12-31) #(1972 12 25 0 0 0 0 0))
     (time-start-year (unquote 2016-6-17) (unquote 2016-1-1)
       (unquote 2016-1-1) (unquote 2016-1-1)
       (unquote 2016-1-4) (unquote 2016-1-1) (unquote 1981-12-31) (unquote 1981-1-1))
@@ -118,12 +116,8 @@
       (unquote 2016-1-1) (unquote 2015-12-28)
       (unquote 2016-1-4) (unquote 2016-1-4) (unquote 1981-12-31) (unquote 1981-12-28))
     (greg-year-weeks-53? 2016 #f 1981 #t 2015 #t)
-    (time->years
-      (unquote -1-1-1) -1
-
-      (unquote 2016-1-1) 2015 (unquote 2016-1-3) 2015)
-    (time->week
-      (unquote -1-6-17) 3
+    (time->years (unquote negative-1-1-1) -1 (unquote 2016-1-1) 2015 (unquote 2016-1-3) 2015)
+    (time->week (unquote negative-1-5-10) 19
       (unquote 1-12-31) 1
       (unquote 1981-1-5) 2
       (unquote 1981-1-1) 1
@@ -151,7 +145,10 @@
       1461 4 1 0 365 1 366 1 1826 5 146097 400 146098 400 723180 1980 723544 1980 723545 1981)
     (greg-days->years-2)
     (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
-    (time-from-date #(1970 1 1 0 0 0 0 0 0) 0
+    (time-from-date
+      #(-1 1 1 0 0 0 0 0) (unquote negative-1-1-1)
+      #(-1 5 10 0 0 0 0 0) (unquote negative-1-5-10)
+      #(1970 1 1 0 0 0 0 0) 0
       #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
       #(1981 1 1 0 0 0 0 0) (unquote 1981-1-1)
       #(1981 12 1 0 0 0 0 0) (unquote 1981-12-1)

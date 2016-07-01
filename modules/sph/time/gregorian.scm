@@ -1,6 +1,8 @@
 (library (sph time gregorian)
   (export
     greg-days->leap-days
+    greg-days->year
+    greg-days->year-days
     greg-days->years
     greg-month->days
     greg-month-days
@@ -8,13 +10,16 @@
     greg-month-days-leap-year
     greg-number-of-months
     greg-week-day
+    greg-year->years
     greg-year-days
     greg-year-days->month-and-day&
+    greg-year-days-leap-year
     greg-year-first-week-day
     greg-year-leap-year?
     greg-year-weeks-53?
     greg-years->days
-    greg-years->leap-days)
+    greg-years->leap-days
+    greg-years->year)
   (import
     (guile)
     (rnrs base)
@@ -25,10 +30,12 @@
       truncate/)
     (only (sph one) apply-values))
 
+  ;there is no year 0
   (define-as greg-month-days vector 31 28 31 30 31 30 31 31 30 31 30 31)
   (define-as greg-month-days-leap-year vector 31 29 31 30 31 30 31 31 30 31 30 31)
   (define greg-number-of-months 12)
   (define greg-year-days 365)
+  (define greg-year-days-leap-year 365)
   ;days in years including leap years
   (define years-400-days 146096)
   (define years-3-month-2-29-days 1155)
@@ -42,10 +49,23 @@
       (if (< year 4) 0
         (- (truncate-quotient year 4) (- (truncate-quotient year 100) (truncate-quotient year 400))))))
 
+  (define (greg-years->year a)
+    "integer -> integer
+    handles negative years"
+    (if (negative? a) a (+ 1 a)))
+
+  (define (greg-year->years a)
+    "integer -> integer
+    handles negative years"
+    (if (negative? a) a (- a 1)))
+
   (define (greg-years->days a)
     "integer -> integer
     gives the days that a given number of years counted from the first day of the calendar contains"
     (+ (* a greg-year-days) (greg-years->leap-days a)))
+
+  (define (greg-days->year-days a leap-year?) "handles negative days"
+    (if (negative? a) (+ (if leap-year? greg-year-days-leap-year greg-year-days) a) a))
 
   (define (greg-days->leap-days a)
     "integer -> integer
@@ -72,6 +92,10 @@
     "integer -> integer
     the number of years the given day have reached starting from the first day of the calendar"
     (truncate-quotient (- a (greg-days->leap-days a)) greg-year-days))
+
+  (define (greg-days->year a)
+    (let (years (truncate-quotient (- a (greg-days->leap-days a)) greg-year-days))
+      (if (zero? years) (if (negative? a) -1 0) (if (negative? years) years (+ 1 years)))))
 
   (define (greg-year-leap-year? a) "integer:year-number -> boolean"
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))
@@ -109,7 +133,7 @@
 
   (define (greg-year-first-week-day a) "integer:year-number -> week-day-number:0-6"
     (week-day-start-sunday->monday
-      (let ((a (- a 1)))
+      (let ((a (greg-year->years a)))
         (truncate-remainder
           (+ 1 (* 4 (truncate-remainder a 100))
             (* 5 (truncate-remainder a 4)) (* 6 (truncate-remainder a 400)))

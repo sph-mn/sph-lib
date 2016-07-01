@@ -101,7 +101,7 @@
       (+ 1970 (truncate (/ (- days (greg-days->leap-days days)) greg-year-days)))))
 
   (define (time-utc-from-year a)
-    (* utc-nanoseconds-day (+ (* a greg-year-days) (greg-years->leap-days (- a 1)))))
+    (* utc-nanoseconds-day (+ (* a greg-year-days) (greg-years->leap-days (greg-year->years a)))))
 
   (define (nanoseconds->hms& a c)
     (apply-values
@@ -118,7 +118,8 @@
   (define (time-from-date a)
     (time-from-utc
       (+
-        (* utc-nanoseconds-day (- (greg-years->days (- (time-date-year a) 1)) greg-year-1970-days))
+        (* utc-nanoseconds-day
+          (- (greg-years->days (greg-year->years (time-date-year a))) greg-year-1970-days))
         (* utc-nanoseconds-day
           (greg-month->days (time-date-month a) (greg-year-leap-year? (time-date-year a))))
         (* utc-nanoseconds-day (- (time-date-day a) 1)) (* utc-nanoseconds-hour (time-date-hour a))
@@ -134,9 +135,10 @@
     (time-days-and-rest& a
       (l (days day-rest)
         (let*
-          ( (years (greg-days->years days)) (year (+ years 1))
-            (days (- days (greg-years->days years)))
-            (days-per-month (greg-month-days-get (greg-year-leap-year? year))))
+          ( (years (greg-days->years days)) (year (greg-days->year days))
+            (leap-year? (greg-year-leap-year? year))
+            (days (greg-days->year-days (- days (greg-years->days years)) leap-year?))
+            (days-per-month (greg-month-days-get leap-year?)))
           (greg-year-days->month-and-day& days days-per-month
             (l (month month-day)
               (nanoseconds->hms& day-rest
@@ -149,7 +151,10 @@
   (define (time-from-hours a) (* utc-nanoseconds-hour a))
   (define (time-from-minutes a) (* utc-nanoseconds-minute a))
   (define (time->days a) (/ (time->utc a) utc-nanoseconds-day))
-  (define (time->years a) (greg-days->years (+ greg-year-1970-days (time->days a))))
+
+  (define (time->years a)
+    (greg-days->years (+ greg-year-1970-days (time->days a))))
+
   (define (time->hours a) (/ (time->utc a) utc-nanoseconds-hour))
   (define (time->minutes a) (/ (time->utc a) utc-nanoseconds-minute))
   (define (time->seconds a) (/ (time->utc a) 1000000000))
@@ -215,9 +220,9 @@
 
   (define (time->week a) "integer -> integer"
     (let*
-      ( (years (time->years a)) (year (+ 1 years)) (first-week (time-start-first-week a))
-        (difference (- a first-week)))
-      (debug-log years (time->date first-week) difference)
+      ( (years (time->years a)) (year (greg-years->year years))
+        (first-week (time-start-first-week a)) (difference (- a first-week)))
+      ;(debug-log years (time->date first-week) difference)
       (if (= 0 difference) 1
         (if (< difference 0) (if (greg-year-weeks-53? (- year 1)) 53 52)
           (let (last-week (time-start-last-week a))
