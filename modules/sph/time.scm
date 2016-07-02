@@ -135,7 +135,8 @@
     (time-days-and-rest& a
       (l (days day-rest)
         (let*
-          ( (years (greg-days->years days)) (year (greg-days->year days))
+          ( (years (greg-days->years days))
+            (year (greg-days->year days))
             (leap-year? (greg-year-leap-year? year))
             (days (greg-days->year-days (- days (greg-years->days years)) leap-year?))
             (days-per-month (greg-month-days-get leap-year?)))
@@ -214,6 +215,7 @@
       (- (time->utc (time-start-first-week (time-add-years a 1))) utc-nanoseconds-week)))
 
   (define (time-date-week-count a) (if (greg-year-weeks-53? (time-date-year a)) 53 52))
+  ;todo: year -58 the week calculation is not working for the last days
 
   (define (time->week a) "integer -> integer"
     (let*

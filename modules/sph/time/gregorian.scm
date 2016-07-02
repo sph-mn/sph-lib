@@ -30,7 +30,7 @@
       truncate/)
     (only (sph one) apply-values))
 
-  ;there is no year 0
+  ;iso8601 is supposed to be followed, which uses a year 0. a year 0 keeps leap-day calculations simpler
   (define-as greg-month-days vector 31 28 31 30 31 30 31 31 30 31 30 31)
   (define-as greg-month-days-leap-year vector 31 29 31 30 31 30 31 31 30 31 30 31)
   (define greg-number-of-months 12)
@@ -44,24 +44,21 @@
 
   (define (greg-years->leap-days a)
     "integer -> integer
-    the number of leap days that occured when given years have elapsed from the first day of the calendar"
-    (let (year a)
-      (if (< year 4) 0
-        (- (truncate-quotient year 4) (- (truncate-quotient year 100) (truncate-quotient year 400))))))
+    the number of leap days that occured when given years have elapsed from the first day of the calendar.
+    negative values for negative years"
+    (let
+      (result
+        (let (a (abs a))
+          (- (truncate-quotient a 4) (- (truncate-quotient a 100) (truncate-quotient a 400)))))
+      ;consider year 0 to be a leap year
+      (if (negative? a) (+ result 1) result)))
 
-  (define (greg-years->year a)
-    "integer -> integer
-    handles negative years"
-    (if (negative? a) a (+ 1 a)))
-
-  (define (greg-year->years a)
-    "integer -> integer
-    handles negative years"
-    (if (negative? a) a (- a 1)))
+  (define (greg-years->year a) (+ 1 a))
+  (define (greg-year->years a) (- a 1))
 
   (define (greg-years->days a)
     "integer -> integer
-    gives the days that a given number of years counted from the first day of the calendar contains"
+    gives the days contained in given number of fully elapsed years"
     (+ (* a greg-year-days) (greg-years->leap-days a)))
 
   (define (greg-days->year-days a leap-year?) "handles negative days"
@@ -83,20 +80,25 @@
                   cycles-4
                   ;check if the current year would be completing a century
                   (if (< (- years-100-days rest-100) years-4-days) 0
-                    (if (< rest-4 years-3-month-2-29-days) 0 1))))
+                    (if (negative? a)
+                      (if (>= (abs rest-4) (- years-4-days years-3-month-2-29-days)) 1 0)
+                      (if (< rest-4 years-3-month-2-29-days) 0 1))
+
+                    )))
               (truncate/ rest-100 years-4-days)))
           (truncate/ rest-400 years-100-days)))
       (truncate/ a years-400-days)))
 
   (define (greg-days->years a)
     "integer -> integer
-    the number of years the given day have reached starting from the first day of the calendar"
+    the number of years the given number days fill completely"
     (truncate-quotient (- a (greg-days->leap-days a)) greg-year-days))
 
   (define (greg-days->year a)
     ;floor is the largest integer less than or equal to x
-    (let (years (floor (/ (- a (greg-days->leap-days a)) greg-year-days)))
-      (if (zero? years) (if (negative? a) -1 1) (if (negative? years) years (+ 1 years)))))
+    (let
+      (years (floor (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
+      (greg-years->year years)))
 
   (define (greg-year-leap-year? a) "integer:year-number -> boolean"
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))
