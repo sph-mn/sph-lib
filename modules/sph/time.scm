@@ -221,6 +221,7 @@
     (let*
       ( (years (time->years a)) (year (greg-years->year years))
         (first-week (time-start-first-week a)) (difference (- a first-week)))
+      (debug-log years year (time->date first-week))
       (if (= 0 difference) 1
         (if (< difference 0) (if (greg-year-weeks-53? (- year 1)) 53 52)
           (let (last-week (time-start-last-week a))

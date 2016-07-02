@@ -41,7 +41,12 @@
   (define years-3-month-2-29-days 1155)
   (define years-4-days 1461)
   (define years-100-days 36524)
-  (define (greg-years->year a) (+ a 1))
+
+  (define (greg-years->year a)
+    "does not work reliably when year is negative and part of a date with advanced months or days,
+    because advancing days in a negative year reduce the number of elapsed years but not the year number"
+    (+ a 1))
+
   (define (greg-year->years a) (- a 1))
 
   (define (greg-years->leap-days a)
