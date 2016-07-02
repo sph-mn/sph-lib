@@ -98,6 +98,7 @@
     ;floor is the largest integer less than or equal to x
     (let
       (years (floor (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
+      (debug-log a years)
       (greg-years->year years)))
 
   (define (greg-year-leap-year? a) "integer:year-number -> boolean"
