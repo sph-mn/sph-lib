@@ -120,7 +120,9 @@
       (unquote 2016-1-4) (unquote 2016-1-4) (unquote 1981-12-31) (unquote 1981-12-28))
     (greg-year-weeks-53? 2016 #f 1981 #t 2015 #t)
     (time->years (unquote negative-0-1-1) -1 (unquote 2016-1-1) 2015 (unquote 2016-1-3) 2015)
-    (time->week (unquote negative-1-5-10) 19
+    (time->week
+      (unquote negative-1-5-10) 19
+      (unquote negative-0-5-10) 19
       (unquote 1-12-31) 1
       (unquote 1981-1-5) 2
       (unquote 1981-1-1) 1
