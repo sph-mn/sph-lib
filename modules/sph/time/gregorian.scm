@@ -41,18 +41,19 @@
   (define years-3-month-2-29-days 1155)
   (define years-4-days 1461)
   (define years-100-days 36524)
-  (define (greg-years->year a) ((if (negative? a) - +) a 1))
-  (define (greg-year->years a) ((if (negative? a) + -) a 1))
+  (define (greg-years->year a) (+ a 1))
+  (define (greg-year->years a) (- a 1))
 
   (define (greg-years->leap-days a)
     "integer -> integer
     the number of leap days that occured when given years have elapsed from the first day of the calendar.
-    negative values for negative years"
-    ;consider year 0 to be a leap year
-    (let (a (greg-years->year a))
-      (debug-log a)
-
-      (- (truncate-quotient a 4) (- (truncate-quotient a 100) (truncate-quotient a 400)))))
+    negative values for negative years
+    year 0 is a leap year and begins after -1 years. the fifth negative year completes a leap year. the fourth year completes a new year. "
+    (let
+      (r
+        (let (a (abs (if (negative? a) (+ a 1) a)))
+          (- (truncate-quotient a 4) (- (truncate-quotient a 100) (truncate-quotient a 400)))))
+      (if (negative? a) (+ 1 r) r)))
 
   (define (greg-years->days a)
     "integer -> integer
@@ -93,12 +94,11 @@
 
   (define (greg-days->year a)
     ;floor is the largest integer less than or equal to x
-    (let (years (floor (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
-      #;(debug-log "years" years
-        a
-        (greg-days->leap-days a)
-        (exact->inexact (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
-      (greg-years->year years)))
+    (let
+      (years
+        ( (if (negative? a) ceiling floor)
+          (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
+      (if (and (negative? a) (zero? years)) 0 (greg-years->year years))))
 
   (define (greg-year-leap-year? a) "integer:year-number -> boolean"
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))
