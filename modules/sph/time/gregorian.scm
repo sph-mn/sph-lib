@@ -59,7 +59,7 @@
   (define (greg-years->days a)
     "integer -> integer
     gives the days contained in given number of fully elapsed years"
-    (+ (* a greg-year-days) (greg-years->leap-days a)))
+    ((if (negative? a) - +) (* a greg-year-days) (greg-years->leap-days a)))
 
   (define (greg-days->year-days a leap-year?) "handles negative days"
     (if (negative? a) (+ (if leap-year? greg-year-days-leap-year greg-year-days) a) a))
@@ -82,9 +82,7 @@
                   (if (< (- years-100-days rest-100) years-4-days) 0
                     (if (negative? a)
                       (if (>= (abs rest-4) (- years-4-days years-3-month-2-29-days)) 1 0)
-                      (if (< rest-4 years-3-month-2-29-days) 0 1))
-
-                    )))
+                      (if (< rest-4 years-3-month-2-29-days) 0 1)))))
               (truncate/ rest-100 years-4-days)))
           (truncate/ rest-400 years-100-days)))
       (truncate/ a years-400-days)))
@@ -96,9 +94,7 @@
 
   (define (greg-days->year a)
     ;floor is the largest integer less than or equal to x
-    (let
-      (years (floor (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
-      (debug-log a years)
+    (let (years (floor (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
       (greg-years->year years)))
 
   (define (greg-year-leap-year? a) "integer:year-number -> boolean"

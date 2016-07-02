@@ -31,7 +31,7 @@
   (define 1-12-31 (time-s->ns -62104147200))
   ;the date for -1-1-1 could not be confirmed with the "date" system utility or "srfi-19" (both use year 0 btw),
   ;but the the calculation using time-from-date seems correct.
-  (define negative-1-1-1 -62167219200000000000)
+  (define negative-0-1-1 -62167219200000000000)
   (define negative-1-5-10 -62155987200000000000)
   (define negative-2-4-10 -62190115200000000000)
 
@@ -97,7 +97,7 @@
   (define-test (time-start-last-week arguments)
     (time->date (time-start-last-week (first arguments))))
 
-  (test-execute-procedures-lambda (greg-days->year 365 2 364 1 -1 0 -366 -1 -365 0 -364  0)
+  (test-execute-procedures-lambda (greg-days->year 365 2 364 1 -1 0 -366 0 -365 0 -364  0)
     (greg-year->years 1 0 2 1 0 -1 -1 -2 -2 -3)
     (greg-years->days 0 0 1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180 -1 -366)
     (time-start-first-week (unquote 2016-6-17) #(2016 1 4 0 0 0 0 0)
@@ -119,7 +119,7 @@
       (unquote 2016-1-1) (unquote 2015-12-28)
       (unquote 2016-1-4) (unquote 2016-1-4) (unquote 1981-12-31) (unquote 1981-12-28))
     (greg-year-weeks-53? 2016 #f 1981 #t 2015 #t)
-    (time->years (unquote negative-1-1-1) -2 (unquote 2016-1-1) 2015 (unquote 2016-1-3) 2015)
+    (time->years (unquote negative-0-1-1) -1 (unquote 2016-1-1) 2015 (unquote 2016-1-3) 2015)
     (time->week (unquote negative-1-5-10) 19
       (unquote 1-12-31) 1
       (unquote 1981-1-5) 2
@@ -131,9 +131,9 @@
     (time->week-day (unquote 2016-6-17) 4
       (unquote 2016-1-4) 0 (unquote 1981-12-31) 3 (unquote 2016-1-1) 4)
     (greg-week-day)
-    (greg-years->leap-days -4 -2
-      -2 -1
-      -1 -1
+    (greg-years->leap-days -4 2
+      -2 1
+      -1 1
       0 0
       1 0
       3 0
@@ -151,7 +151,7 @@
       1461 4 1 0 365 1 366 1 1826 5 146097 400 146098 400 723180 1980 723544 1980 723545 1981)
     (greg-days->years-2)
     (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
-    (time-from-date #(0 1 1 0 0 0 0 0) (unquote negative-1-1-1)
+    (time-from-date #(0 1 1 0 0 0 0 0) (unquote negative-0-1-1)
       #(0 5 10 0 0 0 0 0) (unquote negative-1-5-10)
       #(1970 1 1 0 0 0 0 0) 0
       #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
