@@ -8,6 +8,7 @@
     time->utc
     time->week
     time->week-day
+    time->year
     time->years
     time-current
     time-date
@@ -153,6 +154,7 @@
   (define (time-from-minutes a) (* utc-nanoseconds-minute a))
   (define (time->days a) (/ (time->utc a) utc-nanoseconds-day))
   (define (time->years a) (greg-days->years (+ greg-year-1970-days (time->days a))))
+  (define (time->year a) (greg-days->year (+ greg-year-1970-days (time->days a))))
   (define (time->hours a) (/ (time->utc a) utc-nanoseconds-hour))
   (define (time->minutes a) (/ (time->utc a) utc-nanoseconds-minute))
   (define (time->seconds a) (/ (time->utc a) 1000000000))
@@ -219,9 +221,9 @@
 
   (define (time->week a) "integer -> integer"
     (let*
-      ( (years (time->years a)) (year (greg-years->year years))
+      ( (year (time->year a))
         (first-week (time-start-first-week a)) (difference (- a first-week)))
-      (debug-log years year (time->date first-week))
+      (debug-log year (time->date first-week))
       (if (= 0 difference) 1
         (if (< difference 0) (if (greg-year-weeks-53? (- year 1)) 53 52)
           (let (last-week (time-start-last-week a))
