@@ -135,11 +135,11 @@
     (time-days-and-rest& a
       (l (days day-rest)
         (let*
-          ( (years (greg-days->years days))
-            (year (greg-days->year days))
+          ( (years (greg-days->years days)) (year (greg-days->year days))
             (leap-year? (greg-year-leap-year? year))
             (days (greg-days->year-days (- days (greg-years->days years)) leap-year?))
             (days-per-month (greg-month-days-get leap-year?)))
+          ;(debug-log years year)
           (greg-year-days->month-and-day& days days-per-month
             (l (month month-day)
               (nanoseconds->hms& day-rest
