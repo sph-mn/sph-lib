@@ -95,15 +95,15 @@
   (define (greg-days->years a)
     "integer -> integer
     the number of years the given number days fill completely"
-    (truncate-quotient (- a (greg-days->leap-days a)) greg-year-days))
+
+    (debug-log (exact->inexact (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
+    (truncate-quotient ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days))
 
   (define (greg-days->year a)
     ;floor is the largest integer less than or equal to x
     (let
-      (years
-        ( (if (negative? a) ceiling floor)
-          (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
-      (if (and (negative? a) (zero? years)) 0 (greg-years->year years))))
+      (years (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days))
+      (if (and (negative? a) (zero? years)) 0 (greg-years->year (floor years)))))
 
   (define (greg-year-leap-year? a) "integer:year-number -> boolean"
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))

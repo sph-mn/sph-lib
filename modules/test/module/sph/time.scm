@@ -35,6 +35,7 @@
   (define negative-1-5-10 -62187609600000000000)
   (define negative-2-4-10 -62190115200000000000)
   (define negative-7-12-28 -62356867200000000000)
+  (define negative-2001-1-1 -125312659200000000000)
 
   (define-test (greg-days->years-2)
     (let loop ((year 1))
@@ -78,8 +79,7 @@
           ( (expected (record time-date year month day 0 0 0 0 0))
             (leap-year? (greg-year-leap-year? year)) (days-in-month (greg-month-days-get leap-year?))
             (day-count (vector-ref days-in-month (- month 1)))
-            (date (time->date (time-from-date expected))))
-          ;(debug-log (time-from-date expected) date)
+            (date (debug-log (time->date (debug-log (time-from-date (debug-log expected)))))))
           (if (equal? expected date)
             (loop (if (and (= month 12) (= day day-count)) (+ 1 year) year)
               (if (= day day-count) (+ 1 (modulo month 12)) month) (+ 1 (modulo day day-count)))
@@ -111,7 +111,7 @@
       104 25
       900 218
       96 24 99 24 100 24 101 24 102 24 103 24 104 25 400 97 800 194 1200 291 -1 1 -2 1 -4 1 -5 2)
-    (greg-days->year 365 2 364 1 -1 0 -366 0 -365 0 -364 0)
+    (greg-days->year 365 2 364 1 -1 0 -366 0 -365 0 -364 0 -367 -1 -731 -1 -732 -2)
     (greg-years->days 0 0
       1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180 -1 -366 -4 -1461 -7 -2557)
     (greg-days->leap-days 1460 1
@@ -121,11 +121,11 @@
       1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194 720256 478 720257 478 720258 478 -1 0 -366 1)
     (greg-days->years 1460 3
       1461 4
-      1 0 365 1 366 1 1826 5 146097 400 146098 400 723180 1980 723544 1980 723545 1981 -1 0 -366 -1)
+      1 0 365 1 366 1 1826 5 146097 400 146098 400 723180 1980 723544 1980 723545 1981 -1 0 -366 -1 -2557 -7)
     (time-start-first-week (unquote 2016-6-17) #(2016 1 4 0 0 0 0 0)
       (unquote 1981-12-27) #(1980 12 29 0 0 0 0 0)
       (unquote 1981-1-1) #(1980 12 29 0 0 0 0 0) (unquote 1972-12-31) #(1972 1 3 0 0 0 0 0))
-    (greg-year-leap-year? 2000 #t 400 #t 300 #f 1972 #t 1992 #t 2016 #t 1981 #f 1970 #f)
+    (greg-year-leap-year? 2000 #t 400 #t 300 #f 1972 #t 1992 #t 2016 #t 1981 #f 1970 #f 0 #t -4 #t -2000 #t)
     (time-start-last-week (unquote 2016-6-17) #(2016 12 26 0 0 0 0 0)
       (unquote 1981-12-27) #(1981 12 28 0 0 0 0 0)
       (unquote 1981-1-1) #(1981 12 28 0 0 0 0 0) (unquote 1972-12-31) #(1972 12 25 0 0 0 0 0))
@@ -172,10 +172,11 @@
       #(1992 1 1 0 0 0 0 0) (unquote 1992-1-1)
       #(0 1 1 0 0 0 0 0) (unquote negative-0-1-1)
       #(-1 5 10 0 0 0 0 0) (unquote negative-1-5-10) #(-7 12 28 0 0 0 0 0) (unquote negative-7-12-28))
-    (time->date-2)
     (time->date (unquote 2000-12-31) #(2000 12 31 0 0 0 0 0)
       (unquote 1981-12-1) #(1981 12 1 0 0 0 0 0)
       (unquote 2016-6-17-11-32-59) #(2016 6 17 11 32 59 0 0)
       (unquote 2015-12-28) #(2015 12 28 0 0 0 0 0)
       (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0)
-      (unquote 1972-12-31) #(1972 12 31 0 0 0 0 0) (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0))))
+      (unquote 1972-12-31) #(1972 12 31 0 0 0 0 0)
+      (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0) (unquote negative-2001-1-1) #(-2001 1 1 0 0 0 0 0))
+    (time->date-2)))
