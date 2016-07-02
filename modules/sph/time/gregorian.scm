@@ -81,15 +81,20 @@
           (l (cycles-100 rest-100)
             (apply-values
               (l (cycles-4 rest-4)
+                (debug-log cycles-4 cycles-100 cycles-400 a (* -1 (- greg-year-days month-2-29-days)))
                 (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
                   (abs cycles-4)
                   ;check if the current year would be completing a century
                   (if (< (- years-100-days rest-100) years-4-days) 0
                     (if (negative? a)
                       ;check for partial years that have passed the leap year day 2-29.
-                      ;also, add an extra leap year for year 0, which the rest of the calculation does not find
-                      (if (<= (abs rest-4) (- years-4-days (- greg-year-days month-2-29-days))) 1 2)
-                      (if (< rest-4 years-3-month-2-29-days) 0 1)))))
+                      (if (<= rest-4 (* -1 (- years-4-days (- greg-year-days month-2-29-days)))) 1
+                        0)
+                      (if (< rest-4 years-3-month-2-29-days) 0 1)))
+                  ;add an extra leap day for year 0, which the rest of the calculation does not find
+                  (if (negative? a)
+                    (if (<= a (* -1 (- greg-year-days month-2-29-days))) 1 0)
+                    0)))
               (truncate/ rest-100 years-4-days)))
           (truncate/ rest-400 years-100-days)))
       (truncate/ a years-400-days)))
@@ -97,14 +102,15 @@
   (define (greg-days->years a)
     "integer -> integer
     the number of years the given number days fill completely"
-    (debug-log "days->years" a
+    #;(debug-log "days->years" a
       (greg-days->leap-days a)
       (exact->inexact (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
     (truncate-quotient ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days))
 
   (define (greg-days->year a)
     ;floor is the largest integer less than or equal to x
-    (let (years (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days))
+      (debug-log (exact->inexact (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days)))
+      (let (years (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days))
       (if (and (negative? a) (zero? years)) 0 (greg-years->year (floor years)))))
 
   (define (greg-year-leap-year? a) "integer:year-number -> boolean"
