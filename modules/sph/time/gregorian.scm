@@ -35,7 +35,7 @@
   (define-as greg-month-days-leap-year vector 31 29 31 30 31 30 31 31 30 31 30 31)
   (define greg-number-of-months 12)
   (define greg-year-days 365)
-  (define greg-year-days-leap-year 365)
+  (define greg-year-days-leap-year 366)
   ;days in years including leap years
   (define years-400-days 146096)
   (define month-2-29-days 60)
@@ -66,8 +66,8 @@
     gives the days contained in given number of fully elapsed years"
     ((if (negative? a) - +) (* a greg-year-days) (greg-years->leap-days a)))
 
-  (define (greg-days->year-days a leap-year?) "handles negative days"
-    (debug-log a leap-year?)
+  (define (greg-days->year-days a leap-year?)
+    "gives the number of days elapsed in a year. handles negative years/days"
     (if (negative? a) (+ (if leap-year? greg-year-days-leap-year greg-year-days) a) a))
 
   (define (greg-days->leap-days a)
