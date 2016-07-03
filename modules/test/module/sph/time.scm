@@ -83,7 +83,7 @@
           (if (equal? expected date)
             (loop (if (and (= month 12) (= day day-count)) (+ 1 year) year)
               (if (= day day-count) (+ 1 (modulo month 12)) month) (+ 1 (modulo day day-count)))
-            (list (q expected) expected (q result) date)))
+            (list (q expected) expected (q result) date (q time) (time-from-date expected))))
         #t)))
 
   (define-test (greg-week-day)
@@ -111,7 +111,7 @@
       101 24
       104 25
       900 218
-      96 24 99 24 100 24 101 24 102 24 103 24 104 25 400 97 800 194 1200 291 -1 1 -2 1 -4 1 -5 2 -8 2 -9 3 -97 24 -99 24 -100 24 -103 25 -397 97)
+      96 24 99 24 100 24 101 24 102 24 103 24 104 25 400 97 800 194 1200 291 -1 1 -2 1 -4 1 -5 2 -8 2 -9 3 -97 24 -99 24 -100 24 -101 24 -104 24 -105 25 -397 97)
     (greg-days->year 365 2 364 1 1461 5 -1 0 -366 0 -365 0 -364 0 -367 -1 -731 -1 -732 -2)
     (greg-years->days 0 0
       1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180 -1 -366 -4 -1461 -7 -2557)
@@ -162,7 +162,7 @@
     (time->week-day (unquote 2016-6-17) 4
       (unquote 2016-1-4) 0 (unquote 1981-12-31) 3 (unquote 2016-1-1) 4)
     (greg-week-day)
-    ;(greg-days->leap-days-2) (greg-days->leap-days-3)
+    (greg-days->leap-days-2) (greg-days->leap-days-3)
     (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334) (greg-days->years-2)
     (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
     (time-from-date #(1970 1 1 0 0 0 0 0) 0
