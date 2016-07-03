@@ -72,21 +72,24 @@
 
   (define (greg-days->leap-days a)
     "integer -> integer
-    gives the number of leap days in a given time span of days"
-    ;the leap year cycle is 400 years long and contains 97 leap days. first the cycles are counted and subtracted,
-    ;and similar to that process other cycles are subtracted.
-    ;since the input is in days and leap days usually occur at the end of the second month, partial years/cycles are relevant
+    gives the number of leap days in a given time span of full days"
+    ;the leap year cycle is 400 years long and contains 97 leap days.
+    ;the following counts cycles from bigger to smaller while subtracting
+    ;the days of the matched cycles before continuing with the next step.
+    ;since the given value is in days, partial years/cycles are relevant
     (apply-values
       (l (cycles-400 rest-400)
         (apply-values
           (l (cycles-100 rest-100)
             (apply-values
               (l (cycles-4 rest-4)
+                (debug-log rest-4 rest-100 years-100-days (- years-100-days (abs rest-100)) years-4-days)
                 (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
                   (abs cycles-4)
                   (if (negative? a)
-                    ;check if the current day falls into a centurial year
-                    (if (< (- years-100-days rest-100) years-4-days) 0
+                    ;check if the last day falls into a centurial year.
+                    ;if true, no partial year has to be considered
+                    (if (< (- years-100-days (abs rest-100)) years-4-days) 0
                       ;check for partial years that have passed the leap year day 2-29
                       (if (>= (abs rest-4) (- greg-year-days month-2-29-days)) 1 0))
                     (if (< (- years-100-days rest-100) years-4-days) 0
