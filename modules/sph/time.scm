@@ -135,7 +135,6 @@
   (define (time->date a)
     (time-days-and-rest& a
       (l (days day-rest)
-        (debug-log days (greg-days->years days) (greg-days->year days))
         (let*
           ( (years (greg-days->years days)) (year (greg-days->year days))
             (leap-year? (greg-year-leap-year? year))

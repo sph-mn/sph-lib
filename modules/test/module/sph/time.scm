@@ -79,7 +79,7 @@
           ( (expected (record time-date year month day 0 0 0 0 0))
             (leap-year? (greg-year-leap-year? year)) (days-in-month (greg-month-days-get leap-year?))
             (day-count (vector-ref days-in-month (- month 1)))
-            (date (debug-log (time->date (debug-log (time-from-date (debug-log expected)))))))
+            (date (time->date (time-from-date expected))))
           (if (equal? expected date)
             (loop (if (and (= month 12) (= day day-count)) (+ 1 year) year)
               (if (= day day-count) (+ 1 (modulo month 12)) month) (+ 1 (modulo day day-count)))
@@ -108,10 +108,13 @@
       7 1
       8 2
       9 2
+      101 24
       104 25
       900 218
-      96 24 99 24 100 24 101 24 102 24 103 24 104 25 400 97 800 194 1200 291 -1 1 -2 1 -4 1 -5 2)
-    (greg-days->year 365 2 364 1 -1 0 -366 0 -365 0 -364 0 -367 -1 -731 -1 -732 -2)
+      96 24 99 24 100 24 101 24 102 24 103 24 104 25 400 97 800 194 1200 291 -1 1 -2 1 -4 1 -5 2
+      ;-100 24 -101 24
+      )
+    (greg-days->year 365 2 364 1 1461 5 -1 0 -366 0 -365 0 -364 0 -367 -1 -731 -1 -732 -2)
     (greg-years->days 0 0
       1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180 -1 -366 -4 -1461 -7 -2557)
     (greg-days->leap-days 1460 1
