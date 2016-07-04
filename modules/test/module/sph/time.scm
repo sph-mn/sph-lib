@@ -73,7 +73,7 @@
   (define-test (time->date-2)
     "creates a time record for each day, converts it time and then back to a day and compares
     the result with the input"
-    (let loop ((year -101) (month 1) (day 1))
+    (let loop ((year -2002) (month 1) (day 1))
       (if (< year 2002)
         (let*
           ( (expected (record time-date year month day 0 0 0 0 0))
@@ -111,15 +111,28 @@
       101 24
       104 25
       900 218
-      96 24 99 24 100 24 101 24 102 24 103 24 104 25 400 97 800 194 1200 291 -1 1 -2 1 -4 1 -5 2 -8 2 -9 3 -97 24 -99 24 -100 24 -101 24 -104 24 -105 25 -397 97)
-    (greg-days->year 365 2 364 1 1461 5 -1 0 -366 0 -365 0 -364 0 -367 -1 -731 -1 -732 -2)
-    (greg-years->days 0 0
-      1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180 -1 -366 -4 -1461 -7 -2557)
+      96 24
+      99 24
+      100 24
+      101 24
+      102 24
+      103 24
+      104 25
+      400 97
+      800 194
+      1200 291
+      -1 1
+      -2 1 -4 1 -5 2 -8 2 -9 3 -96 24 -97 25 -99 25 -98 25 -100 25 -101 25 -104 25 -105 26 -106 26)
     (greg-days->leap-days 1460 1
       1461 1
       1462 1
       36159 24
-      1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194 720256 478 720257 478 720258 478 -1 0 -366 1)
+      1826 1
+      0 0 1 0 4 0 365 0 146097 97 292194 194 720256 478 720257 478 720258 478 -1 0 -366 1
+      )
+    (greg-days->year 365 2 364 1 1461 5 -1 0 -366 0 -365 0 -364 0 -367 -1 -731 -1 -732 -2)
+    (greg-years->days 0 0
+      1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180 -1 -366 -4 -1461 -7 -2557)
     (greg-days->years 1460 3
       1461 4
       1 0
@@ -162,7 +175,7 @@
     (time->week-day (unquote 2016-6-17) 4
       (unquote 2016-1-4) 0 (unquote 1981-12-31) 3 (unquote 2016-1-1) 4)
     (greg-week-day)
-    (greg-days->leap-days-2) (greg-days->leap-days-3)
+    ;(greg-days->leap-days-2) (greg-days->leap-days-3)
     (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334) (greg-days->years-2)
     (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
     (time-from-date #(1970 1 1 0 0 0 0 0) 0
