@@ -40,8 +40,9 @@
   (define years-400-days 146096)
   ;days elapsed until the beginning of -2-29
   (define month-2-29-days 59)
-  (define years-3-month-2-29-days (+ (* 3 greg-year-days) month-2-29-days))
-  (define years-3-after-month-2-29-days (+ (* 3 greg-year-days) 306))
+  (define years-3-month-2-29-days 1154)
+  (define after-month-2-29-days (- greg-year-days-leap-year 31 28))
+  (define years-3-after-month-2-29-days (+ (* 3 greg-year-days) after-month-2-29-days))
   (define years-4-days 1461)
   (define years-100-days 36524)
 
@@ -98,17 +99,15 @@
         ;the same as with positive days/years when year 0 is ignored.
         ;for day totals shorter than a year we check if the leap day in year 0 has passed.
         ;for longer day totals the number of contained cycles are calculated, similar to the branch for positive numbers.
-        (if (< a-abs greg-year-days-leap-year) (if (> a-abs years-3-after-month-2-29-days) 1 0)
+        (if (<= a-abs greg-year-days-leap-year) (if (> a-abs after-month-2-29-days) 1 0)
           (+ 1
             (days-cycles& (- a-abs greg-year-days-leap-year)
               (l (cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4)
-                ;(debug-log rest-4 years-3-after-month-2-29-days)
                 ;check if the last day falls into a centurial year.
                 (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
                   (abs cycles-4)
                   (if (< (- years-100-days (abs rest-100)) years-4-days) 0
-                    ;days for year 0 are added back here
-                    (if (>= (+ (abs rest-4) greg-year-days-leap-year) years-3-after-month-2-29-days) 1 0))))))))
+                    (if (>= (abs rest-4) years-3-after-month-2-29-days) 1 0))))))))
       (days-cycles& a
         (l (cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4)
           (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
@@ -117,7 +116,7 @@
             ;if true, no partial year has to be considered.
             ;(+ years-100-days rest-100) means the days after the last matched 100 year cycle
             (if (< (- years-100-days rest-100) years-4-days) 0
-              (if (<= rest-4 years-3-month-2-29-days) 0 1)))))))
+              (if (< rest-4 years-3-month-2-29-days) 0 1)))))))
 
   (define (greg-days->years a)
     "integer -> integer

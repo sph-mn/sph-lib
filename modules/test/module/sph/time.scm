@@ -134,11 +134,12 @@
       ;near 100 years
       36159 24
       1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194 720256 478 720257 478 720258 478 -1 0 -366 1
-      ;three years near february 29
+      ;three nears february 29
       1153 0
       1154 1
-      -1401 1
-      -1402 2
+      ;four years near february 29
+      -1766 1
+      -1768 2
       )
     (greg-days->year 365 2 364 1 1461 5 -1 0 -366 0 -365 0 -364 0 -367 -1 -731 -1 -732 -2)
     (greg-years->days 0 0
