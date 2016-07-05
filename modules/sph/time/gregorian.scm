@@ -70,31 +70,41 @@
     "gives the number of days elapsed in a year. handles negative years/days"
     (if (negative? a) (+ (if leap-year? greg-year-days-leap-year greg-year-days) a) a))
 
-  (define (greg-days->leap-days a)
-    "integer -> integer
-    gives the number of leap days in a given time span of full days"
-    ;the leap year cycle is 400 years long and contains 97 leap days.
-    ;the following counts cycles from bigger to smaller while subtracting
-    ;the days of the matched cycles before continuing with the next step.
-    ;since the given value is in days, partial years/cycles are relevant
+  (define (days-cycles& days c)
     (apply-values
       (l (cycles-400 rest-400)
         (apply-values
           (l (cycles-100 rest-100)
             (apply-values
-              (l (cycles-4 rest-4)
-                (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
-                  (abs cycles-4)
-                  (if (negative? a)
-                    ;check if the last day falls into a centurial year.
-                    ;if true, no partial year has to be considered.
-                    ;(+ years-100-days rest-100) means the days after the last matched 100 year cycle
-                    0
-                    (if (< (- years-100-days rest-100) years-4-days) 0
-                      (if (< rest-4 years-3-month-2-29-days) 0 1)))))
+              (l (cycles-4 rest-4) (c cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4))
               (truncate/ rest-100 years-4-days)))
           (truncate/ rest-400 years-100-days)))
-      (truncate/ a years-400-days)))
+      (truncate/ days years-400-days)))
+
+  (define (greg-days->leap-days a)
+    "integer -> integer
+    gives the number of leap days in a given time span of full days"
+    ;the full leap year cycle is 400 years long and contains 97 leap days.
+    ;the following counts different cycles from bigger to smaller while subtracting
+    ;the days of the matched cycles before continuing with the next step.
+    ;since the given value is in days, partial years are relevant
+    (if (negative? a)
+      (days-cycles& (- (abs a) greg-year-days-leap-year)
+        (l (cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4)
+          (debug-log rest-4)
+          (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
+            (abs cycles-4)
+            (if (< (- years-100-days (abs rest-100)) years-4-days) 0
+              (if (> (abs rest-4) (- greg-year-days month-2-29-days)) 1 0)))))
+      (days-cycles& a
+        (l (cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4)
+          (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
+            (abs cycles-4)
+            ;check if the last day falls into a centurial year.
+            ;if true, no partial year has to be considered.
+            ;(+ years-100-days rest-100) means the days after the last matched 100 year cycle
+            (if (< (- years-100-days rest-100) years-4-days) 0
+              (if (< rest-4 years-3-month-2-29-days) 0 1)))))))
 
   (define (greg-days->years a)
     "integer -> integer
@@ -141,6 +151,7 @@
           7))))
 
   (define (greg-year-first-week-day a) "integer:year-number -> week-day-number:0-6"
+    ;could be solved with greg-week-day but this seems more efficient
     (week-day-start-sunday->monday
       (let ((a (greg-year->years a)))
         (truncate-remainder
