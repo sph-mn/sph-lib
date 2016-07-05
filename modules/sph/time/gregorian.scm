@@ -54,12 +54,11 @@
     "integer -> integer
     the number of leap days that occured when given years have elapsed from the first day of the calendar.
     negative values for negative years
-    year 0 is a leap year and begins after -1 years. the fifth negative year completes a leap year. the fourth year completes a new year"
+    year 0 is a leap year and begins after -1 years. the fifth negative year completes a leap year. the fourth (positive) year completes a new year"
     (if (negative? a)
-      ;does anyone know a formula for negative years?
-      (let loop ((year (greg-years->year a)) (leap-days 0))
-        (if (<= year 1) (loop (+ year 1) (+ leap-days (if (greg-year-leap-year? year) 1 0)))
-          leap-days))
+      ;without year 0, a leap year, the formula for positive numbers works the same. at the end we add the leap day from year 0
+      (let (a (- (abs a) 1))
+        (+ 1 (- (truncate-quotient a 4) (- (truncate-quotient a 100) (truncate-quotient a 400)))))
       (- (truncate-quotient a 4) (- (truncate-quotient a 100) (truncate-quotient a 400)))))
 
   (define (greg-years->days a)
@@ -74,41 +73,28 @@
   (define (greg-days->leap-days a)
     "integer -> integer
     gives the number of leap days in a given time span of full days"
-    (if (negative? a)
-      ;this is extremely inefficient - a formula is needed
-      (let loop ((year 0) (month 12) (day 31) (days 0) (leap-days 0))
-        (if (> days a)
-          (let*
-            ( (leap-year? (greg-year-leap-year? year))
-              (days-in-month (greg-month-days-get leap-year?)))
-            (loop (if (and (= month 1) (= day 1)) (- year 1) year)
-              (if (= day 1) (if (= month 1) 12 (- month 1)) month)
-              (if (= day 1) (vector-ref days-in-month (if (= month 1) 11 (- month 2))) (- day 1))
-              (- days 1) (if (and (= month 2) (= day 29)) (+ 1 leap-days) leap-days)))
-          leap-days))
-      ;the leap year cycle is 400 years long and contains 97 leap days.
-      ;the following counts cycles from bigger to smaller while subtracting
-      ;the days of the matched cycles before continuing with the next step.
-      ;since the given value is in days, partial years/cycles are relevant
-      (let
-        (r
-          (apply-values
-            (l (cycles-400 rest-400)
-              (apply-values
-                (l (cycles-100 rest-100)
-                  (apply-values
-                    (l (cycles-4 rest-4)
-                      (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
-                        (abs cycles-4)
-                        ;check if the last day falls into a centurial year.
-                        ;if true, no partial year has to be considered.
-                        ;(+ years-100-days rest-100) means the days after the last matched 100 year cycle
-                        (if (< (- years-100-days rest-100) years-4-days) 0
-                          (if (< rest-4 years-3-month-2-29-days) 0 1))))
-                    (truncate/ rest-100 years-4-days)))
-                (truncate/ rest-400 years-100-days)))
-            (truncate/ a years-400-days)))
-        r)))
+    ;the leap year cycle is 400 years long and contains 97 leap days.
+    ;the following counts cycles from bigger to smaller while subtracting
+    ;the days of the matched cycles before continuing with the next step.
+    ;since the given value is in days, partial years/cycles are relevant
+    (apply-values
+      (l (cycles-400 rest-400)
+        (apply-values
+          (l (cycles-100 rest-100)
+            (apply-values
+              (l (cycles-4 rest-4)
+                (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
+                  (abs cycles-4)
+                  (if (negative? a)
+                    ;check if the last day falls into a centurial year.
+                    ;if true, no partial year has to be considered.
+                    ;(+ years-100-days rest-100) means the days after the last matched 100 year cycle
+                    0
+                    (if (< (- years-100-days rest-100) years-4-days) 0
+                      (if (< rest-4 years-3-month-2-29-days) 0 1)))))
+              (truncate/ rest-100 years-4-days)))
+          (truncate/ rest-400 years-100-days)))
+      (truncate/ a years-400-days)))
 
   (define (greg-days->years a)
     "integer -> integer
