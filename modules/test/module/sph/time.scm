@@ -76,7 +76,7 @@
     (let loop ((year -2002) (month 1) (day 1))
       (if (< year 2002)
         (let*
-          ( (expected (debug-log (record time-date year month day 0 0 0 0 0)))
+          ( (expected (record time-date year month day 0 0 0 0 0))
             (leap-year? (greg-year-leap-year? year)) (days-in-month (greg-month-days-get leap-year?))
             (day-count (vector-ref days-in-month (- month 1)))
             (date (time->date (time-from-date expected))))
@@ -133,14 +133,22 @@
       1462 1
       ;near 100 years
       36159 24
-      1826 1 0 0 1 0 4 0 365 0 146097 97 292194 194 720256 478 720257 478 720258 478 -1 0 -366 1
+      1826 1
+      0 0
+      1 0
+      4 0
+      365 0
+      146097 97
+      292194 194
+      720256 478
+      720257 478
+      720258 478
+      -1 0
+      -366 1
       ;three nears february 29
-      1153 0
-      1154 1
+      1153 0 1154 1
       ;four years near february 29
-      -1766 1
-      -1768 2
-      )
+      -1766 1 -1768 2)
     (greg-days->year 365 2 364 1 1461 5 -1 0 -366 0 -365 0 -364 0 -367 -1 -731 -1 -732 -2)
     (greg-years->days 0 0
       1 365 4 1461 400 146097 800 292194 1970 719527 1980 723180 -1 -366 -4 -1461 -7 -2557)
@@ -185,8 +193,8 @@
       (unquote 1981-12-27) 52 (unquote negative-1-5-10) 19 (unquote negative-0-1-1) 52)
     (time->week-day (unquote 2016-6-17) 4
       (unquote 2016-1-4) 0 (unquote 1981-12-31) 3 (unquote 2016-1-1) 4)
-    (greg-week-day)
-    (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334) (greg-days->years-2)
+    (greg-week-day) (greg-month->days (1 #f) 0 (2 #f) 31 (3 #f) 59 (3 #t) 60 (12 #f) 334)
+    (greg-days->years-2)
     (greg-year-days->month-and-day& 0 (1 1) 1 (1 2) 3 (1 4) 31 (2 1) 364 (12 31))
     (time-from-date #(1970 1 1 0 0 0 0 0) 0
       #(2016 1 1 0 0 0 0 0) (unquote 2016-1-1)
@@ -206,5 +214,5 @@
       (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0)
       (unquote 1972-12-31) #(1972 12 31 0 0 0 0 0)
       (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0) (unquote negative-2001-1-1) #(-2001 1 1 0 0 0 0 0))
-    ;(greg-days->leap-days-2) (greg-days->leap-days-3)
+    (greg-days->leap-days-2) (greg-days->leap-days-3)
     (time->date-2)))
