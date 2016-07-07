@@ -2,9 +2,9 @@ dependencies
   guile >= 2
   for the installation executable: sh
 installation
-  \escape
+  shell:
     su root
     ./exe/install
   see more options using
-  \escape
+  shell:
     ./exe/install --help
