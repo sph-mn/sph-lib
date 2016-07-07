@@ -63,12 +63,12 @@
         (thunk
           (map (l (n handler) (sigaction n (first handler) (tail handler))) signal-numbers handlers)))))
 
-  (define (call-with-exception-handling exception-keys exception-handler loop-listen proc)
+  (define (call-with-exception-handling exception-keys exception-handler loop-listen socket proc)
     "boolean/(symbol ...) false/procedure:{key procedure:resume exception-arguments ... -> any} procedure:resume procedure -> any
     if exception-handler or -keys is not false then install given these handlers for the inner request processing.
     the exception-handler receives a procedure to resume listening"
     (if (and exception-handler exception-keys)
-      (catch exception-keys proc (l (key . args) (apply exception-handler key loop-listen args)))
+      (catch exception-keys proc (l (key . a) (apply exception-handler key loop-listen socket a)))
       (proc)))
 
   (define (call-with-epipe-and-ebadf-handling loop-listen proc)
@@ -87,7 +87,7 @@
       (thunk
         (let loop-listen ()
           (call-with-exception-handling exception-keys exception-handler
-            loop-listen
+            loop-listen socket
             (thunk
               (call-with-epipe-and-ebadf-handling loop-listen
                 (thunk

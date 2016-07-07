@@ -18,8 +18,8 @@
     execute
     execute+check-result
     execute->file
-    execute->string
     execute->port
+    execute->string
     execute-and
     execute-with-pipe
     exit-value-zero?
@@ -103,7 +103,8 @@
     the childs process-id in the foreground process. the optional arguments set the standard-ports for the new process"
     (let (process-id (primitive-fork))
       (if (= 0 process-id)
-        (begin (process-set-standard-ports input-port output-port error-port) (exit (content)))
+        (begin (process-set-standard-ports input-port output-port error-port)
+          (let (status (content)) (primitive-_exit (if (integer? status) status (if status 0 1)))))
         process-id)))
 
   (define process-primitive-create-chain-with-pipes
@@ -115,13 +116,14 @@
                 (process-create (thunk (close (first ports)) (proc)) inp (tail ports))
                 (close (tail ports)) (apply loop (first ports) last-out rest))))))
       (l (input-port output-port . proc)
-        "each proc is executed in a separate process. the standard input and output of the processes are linked by pipes"
+        "each proc is executed in a separate process. the standard input and output of the processes are linked with pipes"
         (if (not (null? proc))
           (apply loop (if (and input-port (boolean? input-port)) (current-input-port) input-port)
             (if (and output-port (boolean? output-port)) (current-output-port) output-port) proc)))))
 
   (define (command/proc->procedure a)
-    (if (procedure? a) a (if (list? a) (thunk (apply execute a)) (thunk (execute a)))))
+    (if (procedure? a) a
+      (if (list? a) (thunk (apply process-replace a)) (thunk (process-replace a)))))
 
   (define process-create-chain-with-pipes
     (l (port-input port-output . command/proc)
