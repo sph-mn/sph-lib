@@ -19,7 +19,7 @@
   (define-syntax-rule (docl-eval nesting-depth docl-state a ...) (any->string (begin a ...)))
 
   (define-syntax-rule (docl-param-insert nesting-depth docl-state keys ...)
-    (any->string (alists-q-ref (tail docl-state) keys ...)))
+    (any->string (or (alists-q-ref (tail docl-state) keys ...) (list (quote keys) ...))))
 
   (define (escape nesting-depth docl-state . a)
     (string-join

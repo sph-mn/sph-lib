@@ -9,13 +9,15 @@
     (rnrs base)
     (sph)
     (sph alist)
+    (sph string)
     (only (sph lang indent-syntax) prefix-tree->indent-tree-string))
 
   (define-syntax-rule (docl-eval-qq nesting-depth docl-state a ...) (qq (a ...)))
   (define-syntax-rule (docl-eval nesting-depth docl-state a ...) (begin a ...))
 
   (define-syntax-rule (docl-param-insert nesting-depth docl-state keys ...)
-    (alists-q-ref (tail docl-state) keys ...))
+    (or (alists-q-ref (tail docl-state) keys ...)
+      (string-join (map any->string (list (quote keys) ...)) " ")))
 
   (define (escape nesting-depth docl-state . a)
     (list (q pre)

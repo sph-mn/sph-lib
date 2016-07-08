@@ -4,9 +4,11 @@
     +
     -
     /
+    and
     docl-param-ref
     l
     list
+    or
     qq
     quote
     string-append
