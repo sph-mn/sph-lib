@@ -1,17 +1,21 @@
 (library (sph lang docl env itml-to-shtml)
   (export
-    escape
-    scm
-    sxml)
+    docl-eval
+    docl-eval-qq
+    docl-param-insert
+    escape)
   (import
     (guile)
     (rnrs base)
     (sph)
+    (sph alist)
     (only (sph lang indent-syntax) prefix-tree->indent-tree-string))
 
-  (define-syntax-rule (sxml nesting-depth docl-state a ...) (qq (a ...)))
+  (define-syntax-rule (docl-eval-qq nesting-depth docl-state a ...) (qq (a ...)))
+  (define-syntax-rule (docl-eval nesting-depth docl-state a ...) (begin a ...))
 
-  (define (scm nesting-depth docl-state . a) (first a))
+  (define-syntax-rule (docl-param-insert nesting-depth docl-state keys ...)
+    (alists-q-ref (tail docl-state) keys ...))
 
   (define (escape nesting-depth docl-state . a)
     (list (q pre)

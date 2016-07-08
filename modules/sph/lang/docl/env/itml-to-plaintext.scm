@@ -1,7 +1,9 @@
 (library (sph lang docl env itml-to-plaintext)
   (export
-    escape
-    scm)
+    docl-eval
+    docl-eval-qq
+    docl-param-insert
+    escape)
   (import
     (rnrs base)
     (sph)
@@ -13,8 +15,11 @@
     (only (sph list) map-selected)
     (only (sph string) any->string string-multiply))
 
-  (define (scm nesting-depth docl-state . a)
-    (if (null? a) a (if (list? (first a)) (first a) (string-join (map any->string a) " "))))
+  (define-syntax-rule (docl-eval-qq nesting-depth docl-state a ...) (any->string (qq (a ...))))
+  (define-syntax-rule (docl-eval nesting-depth docl-state a ...) (any->string (begin a ...)))
+
+  (define-syntax-rule (docl-param-insert nesting-depth docl-state keys ...)
+    (any->string (alists-q-ref (tail docl-state) keys ...)))
 
   (define (escape nesting-depth docl-state . a)
     (string-join

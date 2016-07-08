@@ -1,12 +1,21 @@
 (library (sph lang docl env default)
   (export
+    *
+    +
+    -
+    /
+    docl-param-ref
+    l
     list
     qq
-    unquote
-    l
-    + - / *
-    quote)
+    quote
+    string-append
+    unquote)
   (import
-    (sph)
     (guile)
-    (rnrs base)))
+    (rnrs base)
+    (sph)
+    (sph alist))
+
+  (define-syntax-rule (docl-param-ref docl-state keys ...)
+    (alists-q-ref (tail docl-state) keys ...)))

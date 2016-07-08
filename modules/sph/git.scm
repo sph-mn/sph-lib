@@ -11,7 +11,7 @@
     (sph)
     (sph process)
     (only (guile) status:exit-val waitpid)
-    (only (sph two) cli-option))
+    (only (sph one) cli-option))
 
   (define (git-branch-exists? path-repository name)
     (not
