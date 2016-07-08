@@ -14,24 +14,23 @@
     (only (sph tree) flatten)
     (only (srfi srfi-1) break))
 
-  ;a scheme-datum to css/cascading-stylesheets transcompiler that can be used inline with other scheme code.
+  ;a scheme-datum to css/cascading-stylesheets transcompiler that can also be used inline with other scheme code.
   ;the name is an abbreviation of prefixed-list-css
-  (define (symbol?->string arg) (if (symbol? arg) (symbol->string arg) arg))
-  (define-syntax-rule (at-prefix? arg) (eqv? #\@ (string-ref arg 0)))
+  (define (symbol?->string a) (if (symbol? a) (symbol->string a) a))
+  (define-syntax-rule (at-prefix? a) (eqv? #\@ (string-ref a 0)))
 
-  (define-syntax-rule (join-selector arg)
+  (define-syntax-rule (join-selector a)
     (apply string-append
       (tail
         (fold
           (l (ele result)
             (if (eqv? #\& (string-ref ele 0)) (pair (substring ele 1) result)
               (pairs " " ele result)))
-          (list) arg))))
+          (list) a))))
 
-  (define-syntax-rule (join-properties arg)
-    (string-join
-      (map-slice 2 (l (a b) (string-append (symbol?->string a) ":" (any->string b))) arg) ";"
-      (q suffix)))
+  (define-syntax-rule (join-properties a)
+    (string-join (map-slice 2 (l (a b) (string-append (symbol?->string a) ":" (any->string b))) a)
+      ";" (q suffix)))
 
   (define (join-rule context properties-string rules)
     (if (null? context) (string-append properties-string (rules->string rules context))
@@ -47,10 +46,10 @@
       (string-append prefix "{" (join-rule context properties-string rules) "}")
       (join-rule (pair prefix context) properties-string rules)))
 
-  (define (rule->string arg context) "list/string list -> string"
-    (if (string? arg) arg
-      (let (prefix (first arg))
-        (call-with-values (l () (break list? (tail arg)))
+  (define (rule->string a context) "list/string list -> string"
+    (if (string? a) a
+      (let (prefix (first a))
+        (call-with-values (l () (break list? (tail a)))
           (l (properties rules)
             (if (list? prefix)
               (if (null? properties)
@@ -71,8 +70,8 @@
                   (rule->string-without-rules prefix context (join-properties properties))
                   (rule->string-with-rules prefix context (join-properties properties) rules)))))))))
 
-  (define (rules->string arg context)
-    (apply string-append (flatten (map (l (ele) (rule->string ele context)) arg))))
+  (define (rules->string a context)
+    (apply string-append (flatten (map (l (ele) (rule->string ele context)) a))))
 
   (define (plcss->css-string exprs) "(rule ...) -> string" (rules->string exprs (list)))
   (define (plcss->css exprs port) "(rule ...) port ->" (display (plcss->css-string exprs) port))

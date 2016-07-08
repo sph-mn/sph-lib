@@ -66,11 +66,12 @@
     ;call proc with "a" if "a" is a true value, otherwise return false or evaluate else.
     ;also known as \"and=>\""
     ((a consequent alternative) (let (b a) (if b (consequent b) alternative)))
-    ((a proc) (if-pass a proc #f)))
+    ((a proc) (let (b a) (if b (consequent b) b))))
 
-  (define (if-pass-apply a consequent alternative)
-    "list procedure:{any ... -> any} -> any
-    like if-pass but uses apply to use the contents of \"a\", which should be a list in the true case, as arguments to proc"
-    (if a (apply consequent a) alternative))
+  (define-syntax-rules if-pass-apply
+    ;"list procedure:{any ... -> any} -> any
+    ;like if-pass but uses apply to use the contents of \"a\", which should be a list in the true case, as arguments to proc"
+    ((a consequent alternative) (let (b a) (if b (apply consequent b) alternative)))
+    ((a proc) (let (b a) (if b (apply consequent b) b))))
 
   (define-syntax-rules boolean-true? ((a ...) (and (equal? #t a) ...))))

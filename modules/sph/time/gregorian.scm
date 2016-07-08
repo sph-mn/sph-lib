@@ -30,7 +30,7 @@
       truncate/)
     (only (sph one) apply-values))
 
-  ;iso8601 is supposed to be followed, which uses a year 0. a year 0 keeps leap-day calculations simpler
+  ;iso8601 is supposed to be followed, which uses a year 0. a year 0 supposedly keeps leap-day calculations simpler
   (define-as greg-month-days vector 31 28 31 30 31 30 31 31 30 31 30 31)
   (define-as greg-month-days-leap-year vector 31 29 31 30 31 30 31 31 30 31 30 31)
   (define greg-number-of-months 12)
@@ -95,26 +95,25 @@
     works with positive and negative day values and considers partial years where the leap day always falls on february 29"
     (if (negative? a)
       (let (a-abs (abs a))
-        ;similar to greg-years->leap-days, based on the fact that the leap cycles are calculated
-        ;the same as with positive days/years when year 0 is ignored.
+        ;the calculation for negative values is similar to greg-years->leap-days, based on the fact that the formula for
+        ;positive values can be used as long as year 0 is ignored.
         ;for day totals shorter than a year we check if the leap day in year 0 has passed.
-        ;for longer day totals the number of contained cycles are calculated, similar to the branch for positive numbers.
+        ;for longer day totals the contained cycles are counted, like for positive values.
         (if (<= a-abs greg-year-days-leap-year) (if (> a-abs after-month-2-29-days) 1 0)
           (+ 1
             (days-cycles& (- a-abs greg-year-days-leap-year)
               (l (cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4)
-                ;check if the last day falls into a centurial year.
                 (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
                   (abs cycles-4)
+                  ;check if the last day falls into centurial 4-year range, which does not include a leap day
                   (if (< (- years-100-days (abs rest-100)) years-4-days) 0
                     (if (>= (abs rest-4) years-3-after-month-2-29-days) 1 0))))))))
       (days-cycles& a
         (l (cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4)
           (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
             (abs cycles-4)
-            ;check if the last day falls into a centurial year.
-            ;if true, no partial year has to be considered.
-            ;(+ years-100-days rest-100) means the days after the last matched 100 year cycle
+            ;check if the last day falls into centurial 4-year range, which does not include a leap day.
+            ;(+ years-100-days rest-100) are the days after the last contained 100 year cycle
             (if (< (- years-100-days rest-100) years-4-days) 0
               (if (< rest-4 years-3-month-2-29-days) 0 1)))))))
 

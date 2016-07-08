@@ -19,7 +19,6 @@
     bash-escape-clear
     bindings-select-prefix
     bindings-select-regexp
-    cli-option
     cli-option-join
     cons-if-not-included
     copy-file!?

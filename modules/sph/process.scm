@@ -176,10 +176,10 @@
 
   (define (exit-value-zero? system-result) (zero? (status:exit-val system-result)))
 
-  (define (execute+check-result name . options)
+  (define (execute+check-result path . arguments)
     "string (string ...) -> boolean
     execute command with system*, check exit-status and return true if it is zero, false otherwise."
-    (let ((status (status:exit-val (apply system* name options))))
+    (let ((status (status:exit-val (apply system* path arguments))))
       (true? (and status (= status 0)))))
 
   (define (shell-eval+check-result command-str)

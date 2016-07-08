@@ -10,7 +10,7 @@
     (sph)
     (only (sph list) n-times-map))
 
-  ; a generic thread-pool that uses signal-conditions and has a customisable queue
+  ; a generic thread-pool that uses signal-conditions and has a customisable queue type
 
   (define-as thread-pool-queue-lifo list
     list null?

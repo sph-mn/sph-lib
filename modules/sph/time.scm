@@ -70,7 +70,6 @@
   (define time-s->ns time-seconds->nanoseconds)
   (define-record time-date year month day hour minute second nanosecond offset)
   (define greg-year-1970-days 719162)
-  (define greg-years-1970-days 719527)
 
   (define*
     (time-make-date #:key (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0) (nanosecond 0)
