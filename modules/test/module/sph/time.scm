@@ -214,5 +214,6 @@
       (unquote 2016-1-1) #(2016 1 1 0 0 0 0 0)
       (unquote 1972-12-31) #(1972 12 31 0 0 0 0 0)
       (unquote 1973-1-1) #(1973 1 1 0 0 0 0 0) (unquote negative-2001-1-1) #(-2001 1 1 0 0 0 0 0))
-    (greg-days->leap-days-2) (greg-days->leap-days-3)
-    (time->date-2)))
+    ;(greg-days->leap-days-2) (greg-days->leap-days-3)
+    ;(time->date-2)
+    ))
