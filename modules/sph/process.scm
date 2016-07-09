@@ -112,9 +112,10 @@
       ( (loop
           (l (inp last-out proc . rest)
             (if (null? rest) (process-create proc inp last-out)
-              (let (ports (pipe))
-                (process-create (thunk (close (first ports)) (proc)) inp (tail ports))
-                (close (tail ports)) (apply loop (first ports) last-out rest))))))
+              (let ((ports (pipe)))
+                (let ((port-input (first ports)) (port-output (tail ports)))
+                  (process-create (thunk (close-port port-input) (proc)) inp port-output)
+                  (close-port port-output) (apply loop port-input last-out rest)))))))
       (l (input-port output-port . proc)
         "each proc is executed in a separate process. the standard input and output of the processes are linked with pipes"
         (if (not (null? proc))
