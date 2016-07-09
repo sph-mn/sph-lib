@@ -33,7 +33,7 @@
     hashtable-map!
     hashtable-merge
     hashtable-merge!
-    hashtable-q-bind
+    hashtable-bind
     hashtable-q-ref
     hashtable-q-set-multiple
     hashtable-ref
@@ -96,7 +96,7 @@
     ;not the best hash function
     ((associations ...) (list->hashtable (quote-odd associations ...) eqv? equal-hash)))
 
-  (define-syntax-rule (hashtable-q-bind ht (key ...) body ...)
+  (define-syntax-rule (hashtable-bind ht (key ...) body ...)
     ;selectively bind keys of hashtable to variables
     ((lambda (key ...) body ...) (hashtable-ref ht (quote key)) ...))
 
