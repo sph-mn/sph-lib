@@ -42,6 +42,7 @@
   (import
     (guile)
     (ice-9 popen)
+    (ice-9 threads)
     (rnrs base)
     (rnrs io ports)
     (sph)
@@ -107,32 +108,23 @@
           (let (status (content)) (primitive-_exit (if (integer? status) status (if status 0 1)))))
         process-id)))
 
-  (define process-primitive-create-chain-with-pipes
-    (letrec
-      ( (loop
-          (l (inp last-out proc . rest)
-            (if (null? rest) (process-create proc inp last-out)
-              (let ((ports (pipe)))
-                (let ((port-input (first ports)) (port-output (tail ports)))
-                  (process-create (thunk (close-port port-input) (proc)) inp port-output)
-                  (close-port port-output) (apply loop port-input last-out rest)))))))
-      (l (input-port output-port . proc)
-        "each proc is executed in a separate process. the standard input and output of the processes are linked with pipes"
-        (if (not (null? proc))
-          (apply loop (if (and input-port (boolean? input-port)) (current-input-port) input-port)
-            (if (and output-port (boolean? output-port)) (current-output-port) output-port) proc)))))
-
-  (define (command/proc->procedure a)
-    (if (procedure? a) a
-      (if (list? a) (thunk (apply process-replace a)) (thunk (process-replace a)))))
-
   (define process-create-chain-with-pipes
     (l (port-input port-output . command/proc)
       "port/true/any port/true/any procedure:{any ->}/(string ...)/string ->
-        like process-primitive-create-chain-with-pipes but also supports lists as value for command/proc which contain arguments for \"execute\".
-        the first execute argument is automatically also the second argument to follow the common execv calling convention"
-      (apply process-primitive-create-chain-with-pipes port-input
-        port-output (map command/proc->procedure command/proc))))
+        supports lists as value for command/proc which contain arguments for \"execute\".
+      the first execute argument is automatically also the second argument to follow the common execv calling convention"
+      (apply rw-chain-with-pipes port-input
+        port-output
+        (map
+          (l (a)
+            (l (in-pipe out-pipe in out)
+              (process-create
+                (thunk (if in-pipe (close-port in-pipe))
+                  (if (procedure? a) (a)
+                    (if (list? a) (apply process-replace a) (process-replace a))))
+                (or in in-pipe) (or out out-pipe))
+              (if out-pipe (close-port out-pipe))))
+          command/proc))))
 
   (define (execute-with-pipe proc mode path . arguments)
     "procedure integer string list -> any

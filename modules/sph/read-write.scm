@@ -17,6 +17,7 @@
     rw-any->list
     rw-any->port
     rw-any->string
+    rw-chain-with-pipes
     rw-file->file
     rw-file->list
     rw-file->port
@@ -45,6 +46,21 @@
     (sph)
     (sph filesystem)
     (only (srfi srfi-1) drop))
+
+  (define rw-chain-with-pipes
+    (letrec
+      ( (loop
+          (l (in-pipe out-pipe in out proc . rest)
+            (if (null? rest) (proc in-pipe #f in out)
+              (let (ports (pipe))
+                (let ((in-pipe (first ports)) (out-pipe (tail ports)))
+                  (proc in-pipe out-pipe in #f) (apply loop in-pipe out-pipe #f out rest)))))))
+      (l (port-input port-output . proc)
+        "create a pipe for each procedure output and the next procedure input and call procedures with the respective input/output-ports"
+        (if (not (null? proc))
+          (apply loop #f
+            #f (if (and port-input (boolean? port-input)) (current-input-port) port-input)
+            (if (and port-output (boolean? port-output)) (current-output-port) port-output) proc)))))
 
   (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
     "[string] [string:infix] -> port
