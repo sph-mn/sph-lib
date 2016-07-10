@@ -19,6 +19,7 @@
     alist-bind-and*
     alist-cond
     alist-keys
+    alist-keys-map
     alist-map
     alist-merge
     alist-merge-key/value
@@ -214,6 +215,7 @@
     (alist-select-apply a (quote (key ...)) proc))
 
   (define-syntax-rule (alist-q-select a (key ...)) (alist-select a (quote (key ...))))
+  (define (alist-keys-map proc a) (map (l (a) (pair (proc (first a)) (tail a))) a))
 
   (define (alist-set a key value)
     "list any any -> list

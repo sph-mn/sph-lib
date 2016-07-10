@@ -16,6 +16,7 @@
     (only (guile)
       identity
       string-null?
+      string-downcase
       assoc-ref
       string-suffix?
       eof-object?
@@ -35,7 +36,7 @@
       string-trim-right
       unread-string)
     (only (ice-9 regex) match:substring regexp-substitute/global)
-    (only (sph alist) alist-ref)
+    (only (sph alist) alist-ref alist-keys-map)
     (only (sph string) string-equal?)
     (only (sph two) read-line-crlf read-line-crlf-trim)
     (only (sph web http) http-read-header http-read-header-value)
@@ -96,11 +97,16 @@
      ->
      any
 
+     proc-multipart is only called for multipart/mixed.
      a functional parser for multipart-form-data that allows to stop after any cr-lf-terminated line or part and reads content stream-like via a reader procedure
      and supports nested multipart/mixed data.
     see also html-read-multipart-form-data"
+    ;see the code of "html-read-multipart-form-data" for a usage example
     (let* ((boundary (if boundary boundary (read-boundary port))) (header (http-read-header port)))
-      (if (header-multipart-mixed? header) (proc-multipart header port result)
+      (if
+        ;todo: also match "multipart/alternative", "multipart/digest" and "multipart/parallel" here,
+        ;  it is othewrise the same as "multipart/mixed"
+        (header-multipart-mixed? header) (proc-multipart header port result)
         (letrec
           ( (fold-lines
               (l (proc-line result-fold-lines after-fold-lines)
@@ -117,8 +123,8 @@
                         (l (result) (fold-lines proc-line result after-fold-lines)))))))))
           (proc-part header fold-lines result)))))
 
-  (define (html-read-multipart-form-data port)
-    "port -> list
+  (define* (html-read-multipart-form-data port #:optional normalise-header-keys?)
+    "port [procedure:{string -> string/any}] -> list
     parses all multipart form data available on port into a list.
     for stream-like and conditional parsing see html-fold-multipart-form-data"
     (reverse
@@ -128,7 +134,7 @@
             (l (result-fold-lines result next-part)
               (next-part
                 (pair
-                  (pair header
+                  (pair (if normalise-header-keys? (alist-keys-map string-downcase header) header)
                     (if (null? result-fold-lines) result-fold-lines
                       (string-join
                         (reverse
@@ -136,7 +142,11 @@
                             (tail result-fold-lines)))
                         "")))
                   result)))))
-        (l (header port result) (pair (pair header (html-read-multipart-form-data port)) result))
+        (l (header port result)
+          (pair
+            (pair (if normalise-header-keys? (alist-keys-map string-downcase header) header)
+              (html-read-multipart-form-data port))
+            result))
         (list) port)))
 
   (define (html-multipart-form-data-ref a name)
