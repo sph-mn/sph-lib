@@ -1,8 +1,11 @@
 (library (sph read-write)
   (export
+    bytevector->file
+    file->bytevector
     file->datums
     file->port
     file->string
+    port->bytevector
     port->file
     port->lines
     port->string
@@ -76,6 +79,14 @@
     "string/file -> string
     open or use an opened file, read until end-of-file is reached and return a string of file contents"
     (if (string? path\file) (call-with-input-file path\file port->string) (port->string path\file)))
+
+  (define (file->bytevector path\file)
+    "string -> bytevector
+    open or use an opened file, read until end-of-file is reached and return a bytevector of file contents"
+    (call-with-input-file path\file port->bytevector #:binary #t))
+
+  (define (bytevector->file a path)
+    (call-with-output-file path (l (out) (put-bytevector out a)) #:binary #t))
 
   (define (rw-with-temporary-file-port->file proc path)
     (let* ((port-temp (temp-file-port (dirname path))) (path-temp (port-filename port-temp)))
@@ -168,6 +179,7 @@
       (l (data port) (put-bytevector port data)) port port-2))
 
   (define port->string get-string-all)
+  (define port->bytevector get-bytevector-all)
 
   (define* (port-copy-all port port-2 #:optional (buffer-size 4096))
     (if (not (eof-object? (port-copy-some port port-2 buffer-size)))

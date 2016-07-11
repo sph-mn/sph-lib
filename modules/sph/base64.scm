@@ -32,7 +32,9 @@
 (library (sph base64)
   (export
     base64-decode
-    base64-encode)
+    base64-decode-port
+    base64-encode
+    base64-encode-port)
   (import
     (rnrs))
 

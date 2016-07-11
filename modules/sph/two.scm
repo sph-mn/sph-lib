@@ -71,15 +71,14 @@
     string-remove-leading-zeros
     sxml->xml-string
     system-cat-merge-files
+    system-path->mime-type
     system-realpath
     tail-symbols->string
     tree-replace-from-hashtable
     variable-type
     while-do
     while-do-map
-    while-store
-    system-path->mime-type
-    )
+    while-store)
   (import
     (guile)
     (ice-9 match)
@@ -137,7 +136,9 @@
       (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
 
   (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
-  (define (os-seconds-at-boot) (- (time-nanoseconds->seconds (time-elapsed-day (time-current))) (os-seconds-since-boot)))
+
+  (define (os-seconds-at-boot)
+    (- (time-nanoseconds->seconds (time-elapsed-day (time-current))) (os-seconds-since-boot)))
 
   (define (os-seconds-since-boot)
     (string->number (first (string-split (shell-eval->string "cat /proc/uptime") #\space))))
@@ -234,20 +235,16 @@
   (define* (create-fifo path #:optional (permissions 438)) (mknod path (q fifo) permissions 0))
 
   (define (read-line-crlf-trim port)
-    "try to read a line that is known to be cr-lf terminated and remove the cr-lf or return eof-object.
-    this is supposed to be fast"
+    "try to read a line that is known to be cr-lf terminated and remove the cr-lf or return eof-object"
     (let (line+delim (%read-line port))
       (let ((line (first line+delim)) (delim (tail line+delim)))
         (if (and (string? line) (char? delim)) (substring line 0 (- (string-length line) 1)) line))))
 
   (define (read-line-crlf port)
-    "try to read a line that is known to be cr-lf terminated or return eof-object.
-    this is supposed to be fast"
+    "try to read a line that is known to be cr-lf terminated or return eof-object"
     (let (line+delim (%read-line port))
       (let ((line (first line+delim)) (delim (tail line+delim)))
         (if (and (string? line) (char? delim)) (string-append line (string delim)) line))))
-
-
 
   (define (bash-escape-clear)
     "display the bash escape sequence for clearing the screen - which usually means to scroll until the current line is at the top"

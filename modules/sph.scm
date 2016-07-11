@@ -66,7 +66,6 @@
       cons*
       syntax->datum
       LC_ALL
-      set-port-encoding!
       read-disable
       exit
       setlocale
