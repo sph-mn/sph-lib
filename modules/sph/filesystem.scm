@@ -203,6 +203,7 @@
         init (directory-list path (negate directory-reference?)))))
 
   (define* (directory-tree-each proc path #:optional (max-depth (inf)))
+    "procedure:{string stat-object ->} string [integer] ->"
     (fold-directory-tree (l (path stat-info r) (proc path stat-info)) #f path max-depth))
 
   (define (filename-extension a)

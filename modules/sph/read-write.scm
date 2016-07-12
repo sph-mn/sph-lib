@@ -207,7 +207,11 @@
             (let (match/table (table-match-or-update char table))
               (if (string? match/table)
                 (pair
-                  (list->string (reverse (drop before-chars (- (string-length match/table) 1))))
+                  (if (null? before-chars) ""
+                    (list->string
+                      (reverse
+                        (drop before-chars
+                          (min (length before-chars) (- (string-length match/table) 1))))))
                   match/table)
                 (loop (read-char port) (pair char before-chars) match/table))))))))
 

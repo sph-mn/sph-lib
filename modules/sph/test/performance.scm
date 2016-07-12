@@ -31,8 +31,8 @@
   (define (execute-tests tests iterations)
     (map
       (l (test)
-        (let ((start-time (time-ns-current))) (n-times iterations (tail test))
-          (- (time-ns-current) start-time)))
+        (let ((start-time (time-current))) (n-times iterations (tail test))
+          (- (time-current) start-time)))
       tests))
 
   (define (multiply-iterations-factor result-max min-nanoseconds)

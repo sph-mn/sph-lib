@@ -14,9 +14,9 @@
     (sph test report)
     (except (srfi srfi-1) map))
 
-  ;work in progress: this should create a command line interface for running tests.
+  ;unfinished: this should create a command line interface for running tests.
 
-  (define test-cli
+  #;(define test-cli
     (cli-create #:parameters "options ... source ..."
       #:description
       (string-join
@@ -31,7 +31,7 @@
         (add-to-load-path #f #f #t) (path-search #f #f #t)
         (search-type) (exclude #f #f #t) (only #f #f #t) (until #f #f #t))))
 
-  (define (cli-value-path/module-list a)
+  #;(define (cli-value-path/module-list a)
     "false/string -> false/list
     parsed a list of comma separated filesystem or module paths, \"/\" or \"//\" separated respectively, without filename suffixes"
     (false-if-not a
@@ -39,17 +39,17 @@
         (l (e) (if (string-contains e "//") (map string->symbol (string-split-regexp e "//")) e))
         (string-split a #\,))))
 
-  (define (cli-value-reporter reporters a) "false/string -> procedure"
+  #;(define (cli-value-reporter reporters a) "false/string -> procedure"
     (test-reporter-get reporters (string->symbol a)))
 
-  (define (cli-add-to-load-path! cli-arguments)
+  #;(define (cli-add-to-load-path! cli-arguments)
     "list ->
     if the --add-to-load-path option has been specified, add the comma separated list of paths given
     as a value to the option to the beginning of the module load-path"
     (if-pass (alist-q-ref cli-arguments add-to-load-path)
       (l (a) (map (l (e) (add-to-load-path e)) (string-split a #\,)))))
 
-  (define (test-execute-cli-get-settings cli-arguments)
+  #;(define (test-execute-cli-get-settings cli-arguments)
     "list -> list
     create the test settings object from program arguments"
     (alist-bind cli-arguments (reporter exclude only until)
@@ -60,10 +60,10 @@
         (cli-value-path/module-list only) until (cli-value-path/module-list until))
       test-settings-default))
 
-  (define (test-execute-cli)
+  #;(define (test-execute-cli)
     "parse program arguments and run the rest of the program depending on the given arguments.
     creates a command-line interface for executing tests in test module files"
     (let* ((arguments (test-cli)) (settings (test-execute-cli-get-settings arguments)))
       (alist-bind arguments (source)
-        (if source (test-modules-execute settings (append-map test-path->module-names source))
+        (if source (test-execute-modules settings (append-map test-path->module-names source))
           (list))))))
