@@ -59,8 +59,8 @@
                           (next (+ 1 index) bits shift #f r))))
                     (next (+ 1 index) bits shift index-decode r))
                   (next (+ 1 index) bits shift value r)))
-              (if (> value 0)
-                (cons
+              (if value
+                (pair
                   (bitwise-and (bitwise-arithmetic-shift-left (bitwise-ior bits value) shift) 255)
                   r)
                 r)))))))
