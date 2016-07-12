@@ -5,6 +5,7 @@
     file->datums
     file->port
     file->string
+    file-port->file-port
     port->bytevector
     port->file
     port->lines
@@ -49,6 +50,12 @@
     (sph)
     (sph filesystem)
     (only (srfi srfi-1) drop))
+
+  (define*
+    (file-port->file-port path-input path-output proc #:key (input-binary? #t) (output-binary? #t))
+    (call-with-input-file path-input
+      (l (in) (call-with-output-file path-output (l (out) (proc in out)) #:binary output-binary?))
+      #:binary input-binary?))
 
   (define rw-chain-with-pipes
     (letrec

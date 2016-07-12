@@ -48,7 +48,7 @@
   (define* (shtml-hyperlink name #:optional (value name))
     (qq (a (@ (href (unquote value))) (unquote name))))
 
-  (define (shtml-alist->options a) "((content . value/false) ...) -> list"
+  (define (shtml-alist->options a) "((content . string:value/false)/string ...) -> list"
     (map
       (l (e)
         (if (pair? e) (qq (option (@ (value (unquote (tail e)))) (unquote (first e))))
