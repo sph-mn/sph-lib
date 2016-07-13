@@ -125,7 +125,7 @@
   (define (hashtable-map proc a)
     "procedure:{key value -> value} hashtable -> hashtable
     set a new value for every key value association in hash"
-    (hashtable-map! proc (hashtable-copy a)))
+    (let (r (hashtable-copy a)) (hashtable-map! proc r) r))
 
   (define (hashtable-make-immutable a)
     "hashtable -> hashtable

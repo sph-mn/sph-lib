@@ -1,5 +1,3 @@
-;sets based on hashtables
-
 (library (sph set)
   (export
     set-create
@@ -14,6 +12,7 @@
     (rnrs hashtables)
     (sph)
     (sph string))
+  ;hashtable based sets
 
   (define-syntax-rule (primitive-set-create entries hash-proc equiv)
     (let (r (make-hashtable hash-proc equiv)) (each (l (e) (hashtable-set! r e #t)) entries) r))
