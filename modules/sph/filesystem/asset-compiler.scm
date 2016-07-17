@@ -6,10 +6,17 @@
     ac-lang-input
     ac-output-copy)
   (import
-    (sph common)
+    (guile)
+    (rnrs base)
+    (sph)
+    (sph list)
+    (sph read-write)
     (sph record)
-    (only (guile) call-with-output-file)
-    (only (rnrs hashtables) equal-hash))
+    (only (rnrs hashtables) equal-hash)
+    (only (sph filesystem) ensure-directory-structure ensure-trailing-slash)
+    (only (sph hashtable) hashtable-ref)
+    (only (sph tree) flatten)
+    (only (srfi srfi-1) find))
 
   ;merges and processes files of various formats into one.
   ;uses a configuration for processing different formats.
@@ -74,8 +81,6 @@
             (input-files-updated? path-destination input-spec-flat)))
         (and (ensure-directory-structure (dirname path-destination))
           (call-with-output-file path-destination
-            (l (port)
-              (process-chain-finished-successfully?
-                (ac-compile config-lang mode port output-format input-spec processor-config))))
+            (l (port) (ac-compile config-lang mode port output-format input-spec processor-config)))
           path-destination)
         path-destination))))

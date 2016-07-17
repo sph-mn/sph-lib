@@ -49,7 +49,8 @@
     (sph one)
     (sph read-write)
     (srfi srfi-31)
-    (only (sph conditional) false-if))
+    (only (sph conditional) false-if)
+    (only (srfi srfi-1) last))
 
   (define execute system*)
   (define shell-eval system)
@@ -81,22 +82,24 @@
     (apply execle (if (string-contains name/path "/") name/path (search-env-path name/path))
       env (basename name/path) arguments))
 
-  (define (get-file-descriptor port mode port-default)
-    (or (and port (false-if-exception (fileno (if (boolean? port) port-default port))))
-      (open-fdes *null-device* mode)))
+  (define (get-port a port-default) (if (boolean? a) port-default a))
+
+  (define (get-file-descriptor port mode)
+    (or (and port (false-if-exception (fileno port))) (open-fdes *null-device* mode)))
 
   (define (process-set-standard-ports input-port output-port error-port)
     "sets standard input/output/error ports for process-chains. used in create-chain-with-pipes"
     (each
       (l (a)
         (apply
-          (l (default-descriptor port-default port mode)
-            (let (descriptor (get-file-descriptor port mode port-default))
-              (if (not (= descriptor default-descriptor)) (dup2 descriptor default-descriptor))))
+          (l (default-descriptor port-default port mode guile-set-port)
+            (let*
+              ((port (get-port port port-default)) (descriptor (get-file-descriptor port mode)))
+              (guile-set-port port) (dup2 descriptor default-descriptor)))
           a))
-      (list (list 0 (current-input-port) input-port O_RDONLY)
-        (list 1 (current-output-port) output-port O_WRONLY)
-        (list 2 (current-error-port) error-port O_WRONLY))))
+      (list (list 0 (current-input-port) input-port O_RDONLY set-current-input-port)
+        (list 1 (current-output-port) output-port O_WRONLY set-current-output-port)
+        (list 2 (current-error-port) error-port O_WRONLY set-current-error-port))))
 
   (define* (process-create content #:optional (input-port #t) (output-port #t) (error-port #t))
     "procedure:{-> integer:exit-code} port/false port/false port/false -> process-id
@@ -110,22 +113,22 @@
 
   (define process-create-chain-with-pipes
     (l (port-input port-output . command/proc)
-      "port/true/any port/true/any procedure:{}/(string ...)/string ->
+      "port/true/any port/true/any procedure:{}/(string ...)/string -> (integer:pid/proc-result ...)
         supports lists as value for command/proc which contain arguments for \"execute\".
       the first execute argument is automatically also the second argument to follow the common execv calling convention"
       (apply rw-chain-with-pipes port-input
         port-output
         (map
           (l (a)
-            (l (in-pipe out-pipe in out)
+            (l (pipe-in pipe-out in out) (if pipe-out (setvbuf pipe-out _IONBF))
               (let
                 (pid
                   (process-create
-                    (thunk (if in-pipe (close-port in-pipe))
+                    (thunk (if pipe-in (close-port pipe-in))
                       (if (procedure? a) (a)
                         (if (list? a) (apply process-replace a) (process-replace a))))
-                    (or in in-pipe) (or out out-pipe)))
-                (if out-pipe (close-port out-pipe)) pid)))
+                    (or in pipe-in) (or out pipe-out)))
+                (if pipe-out (close-port pipe-out)) pid)))
           command/proc))))
 
   (define (execute-with-pipe proc mode path . arguments)

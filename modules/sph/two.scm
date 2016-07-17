@@ -27,6 +27,7 @@
     create-indent
     create-newline-indent
     create-quote
+    debug-log-file
     define-stack-fluid
     define-syntax-identifier
     display-line*
@@ -122,6 +123,11 @@
       (execute+check-result "cp" "-rst"
         (dirname source-path)
         (string-append (ensure-trailing-slash target-path) (basename source-path)))))
+
+  (define (debug-log-file . a)
+    "writes all arguments in one line prefixed by the process id to an automatically created log file \"/tmp/sph-scm-debug-log\""
+    (let (file (open-file "/tmp/sph-scm-debug-log" "a")) (display-line (pair (getpid) a) file)
+      (close file)))
 
   (define (create-indent size) (list->string (make-list (* size 2) #\space)))
   (define (create-newline-indent size) (string-append "\n" (create-indent size)))

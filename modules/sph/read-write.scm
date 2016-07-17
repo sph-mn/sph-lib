@@ -61,13 +61,14 @@
     (letrec
       ( (loop
           (l (in-pipe out-pipe in out proc . rest)
-            (if (null? rest) (proc in-pipe #f in out)
+            (if (null? rest) (list (proc in-pipe #f in out))
               (let (ports (pipe))
                 (let ((in-pipe (first ports)) (out-pipe (tail ports)))
-                  (proc in-pipe out-pipe in #f) (apply loop in-pipe out-pipe #f out rest)))))))
+                  (pair (proc in-pipe out-pipe in #f) (apply loop in-pipe out-pipe #f out rest))))))))
       (l (port-input port-output . proc)
-        "create a pipe for each procedure output and the next procedure input and call procedures with the respective input/output-ports"
-        (if (not (null? proc))
+        "port port procedure ... -> (procedure-result ...)
+        create a pipe for each procedure output and the next procedure input and call procedures with the respective input/output-ports"
+        (if (null? proc) proc
           (apply loop #f
             #f (if (and port-input (boolean? port-input)) (current-input-port) port-input)
             (if (and port-output (boolean? port-output)) (current-output-port) port-output) proc)))))
