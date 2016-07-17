@@ -81,22 +81,22 @@
     (apply execle (if (string-contains name/path "/") name/path (search-env-path name/path))
       env (basename name/path) arguments))
 
-  (define (get-file-descriptor port mode default)
-    (or (and port (false-if-exception (fileno (if (boolean? port) default port))))
+  (define (get-file-descriptor port mode port-default)
+    (or (and port (false-if-exception (fileno (if (boolean? port) port-default port))))
       (open-fdes *null-device* mode)))
 
   (define (process-set-standard-ports input-port output-port error-port)
-    "initialises standard input/output/error ports for process-chains. used in create-chain-with-pipes"
-    (let
-      ( (input-fd (get-file-descriptor input-port O_RDONLY (current-input-port)))
-        (output-fd (get-file-descriptor output-port O_WRONLY (current-output-port)))
-        (error-fd (get-file-descriptor error-port O_WRONLY (current-error-port))))
-      (if (not (= input-fd 0))
-        (begin (if (= output-fd 0) (set! output-fd (dup->fdes 0)))
-          (if (= error-fd 0) (set! error-fd (dup->fdes 0))) (dup2 input-fd 0)))
-      (if (not (= output-fd 1))
-        (begin (if (= error-fd 1) (set! error-fd (dup->fdes 1))) (dup2 output-fd 1)))
-      (dup2 error-fd 2)))
+    "sets standard input/output/error ports for process-chains. used in create-chain-with-pipes"
+    (each
+      (l (a)
+        (apply
+          (l (default-descriptor port-default port mode)
+            (let (descriptor (get-file-descriptor port mode port-default))
+              (if (not (= descriptor default-descriptor)) (dup2 descriptor default-descriptor))))
+          a))
+      (list (list 0 (current-input-port) input-port O_RDONLY)
+        (list 1 (current-output-port) output-port O_WRONLY)
+        (list 2 (current-error-port) error-port O_WRONLY))))
 
   (define* (process-create content #:optional (input-port #t) (output-port #t) (error-port #t))
     "procedure:{-> integer:exit-code} port/false port/false port/false -> process-id
