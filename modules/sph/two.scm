@@ -60,6 +60,7 @@
     port-each-line-alternate-direction
     port-skip+count
     primitive-eval-port
+    process-unique-integer
     prog-sync-with-root
     read-line-crlf
     read-line-crlf-trim
@@ -300,6 +301,7 @@
           (define (name) (fluid-ref (unsyntax name.fluid)))))))
 
   (define-syntax-rule (swap! a b) ((l (temp-a) (set! a b) (set! b temp-a)) a))
+  (define process-unique-integer (let (value 0) (thunk (set! value (+ 1 value)) value)))
 
   (define (bindings-select-prefix prefix bindings-hash)
     "string guile-hashtable -> (symbol ...)

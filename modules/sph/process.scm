@@ -118,12 +118,14 @@
         (map
           (l (a)
             (l (in-pipe out-pipe in out)
-              (process-create
-                (thunk (if in-pipe (close-port in-pipe))
-                  (if (procedure? a) (a)
-                    (if (list? a) (apply process-replace a) (process-replace a))))
-                (or in in-pipe) (or out out-pipe))
-              (if out-pipe (close-port out-pipe))))
+              (let
+                (pid
+                  (process-create
+                    (thunk (if in-pipe (close-port in-pipe))
+                      (if (procedure? a) (a)
+                        (if (list? a) (apply process-replace a) (process-replace a))))
+                    (or in in-pipe) (or out out-pipe)))
+                (if out-pipe (close-port out-pipe)) pid)))
           command/proc))))
 
   (define (execute-with-pipe proc mode path . arguments)
