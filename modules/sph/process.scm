@@ -187,11 +187,11 @@
 
   (define-syntax-rule (type-path? a) (eqv? (q path) a))
 
-  (define (process-chain-finished-successfully? pid)
+  (define (process-chain-finished-successfully? result-list)
     "integer/any -> integer/boolean
     if pid is an integer, wait for the termination of the process and check if its exit status is 0.
     if pid is anything else, the result is pid"
-    (if (integer? pid) (= 0 (status:exit-val (tail (waitpid pid)))) pid))
+    (every (l (a) (if (integer? a) (= 0 (status:exit-val (tail (waitpid a)))) a)) result-list))
 
   (define (chain-with-paths/pipes-call-with-source source source-type proc)
     "-> integer:pid/unspecified
@@ -200,34 +200,36 @@
     (if source
       (if (string? source)
         (let (pid (if (type-path? source-type) (proc source) (call-with-input-file source proc)))
-          (if (integer? pid) (waitpid pid)) (delete-file source))
+          (delete-file source) pid)
         (if (type-path? source-type)
           (let (source-path (create-temp-fifo))
             ;currently in this case it is necessary that proc creates a sub-process
             (let (pid (proc source-path)) (port->file source source-path)
               (close source)
               ;and no stream processing in this case, because it is not yet clear how to handle this
-              (first-as-result (process-chain-finished-successfully? pid) (delete-file source-path))))
+              (delete-file source-path) pid))
           (first-as-result (proc source) (close source))))
       (proc source)))
 
   (define (chain-with-paths/pipes-call-with-source-first source source-type proc)
-    "any symbol procedure:{any:source ->} -> any"
+    "any symbol procedure:{any:source ->} -> any
+    sets up input output ports and calls \"proc\""
     (if (string? source)
       (if (type-path? source-type) (proc source) (call-with-input-file source proc))
       (if (and (port? source) (type-path? source-type))
         (let (path (create-temp-fifo)) (proc path) (port->file source path)) (proc source))))
 
   (define (chain-with-paths/pipes-call-with-destination source destination-type proc)
-    "any symbol procedure:{any string/port -> any} -> string/port:next-input"
+    "any symbol procedure:{any string/port -> any} -> (integer:pid . string/port:next-input)"
     (if (type-path? destination-type)
       (let (destination-path (create-temp-fifo))
-        (process-create (thunk (proc source destination-path)) (port-or-true source))
-        destination-path)
+        (list (process-create (thunk (proc source destination-path)) (port-or-true source))
+          destination-path))
       (let (ports (pipe))
-        (process-create (thunk (close (first ports)) (proc source (tail ports)))
-          (port-or-true source) (tail ports))
-        (close (tail ports)) (first ports))))
+        (list
+          (process-create (thunk (close (first ports)) (proc source (tail ports)))
+            (port-or-true source) (tail ports))
+          (begin (close (tail ports)) (first ports))))))
 
   (define-syntax-rule (port-or-true a) (or (and (port? a) a) #t))
 
@@ -258,7 +260,7 @@
      string:file-path/port/boolean-true:standard-output/any
      (symbol:path/port/any symbol:path/port/any procedure:{port/string/false:source port/string/false:destination}) ...
      ->
-     integer:last-process-pid/unspecified
+     (integer:process-pid/proc-result ...)
 
      similar to process-create-chain-with-pipes, but also supports intermediate file paths in the form of automatically created temporary named-pipes.
      procedures of varying type signatures can be used for processes, processes that read from or write to files, or that read from or write to ports, all types possibly mixed.
@@ -267,27 +269,33 @@
      the procedure arguments may be file-paths, named-pipe-paths or unnamed-pipes/ports. the type of the first source and last destination is completely unrestricted and can be anything.
      as an example, you could connect a program that reads from a file and writes to standard out with a program that also reads from a file and writes to a port with arguments like this:
      (#f final-destination-port (list (q any) (q port) (l (input port) (file->port \"test\" port))) (list (q path) (q port) (l (path port) (do-stuff path port))))
-    note: this procedure does not wait until the last process has finished. you can use \"waitpid\" or \"process-chain-finished-successfully?\" to archieve that. (relevant for example when
+    note: this procedure does not wait until all processes have finished. you can use \"waitpid\" or \"process-chain-finished-successfully?\" to archieve that. (relevant for example when
     processes write to a tty, the program would exit but new output appears after the new prompt)"
     ;debugging tip: look at the port types (input/output) that are passed to process-create by displaying the port objects
-    (if (null? proc-config) #t
-      (let-syntax ((get-port (syntax-rule (a default) (if (and a (boolean? a)) default a))))
-        (apply
-          (rec (loop is-first source config . rest)
-            (apply
-              (l (source-type destination-type proc)
-                ( (if is-first chain-with-paths/pipes-call-with-source-first
-                    chain-with-paths/pipes-call-with-source)
-                  source source-type
-                  (l (source)
-                    (if (null? rest)
-                      (chain-with-paths/pipes-call-with-destination-last source
-                        (get-port destination (current-output-port)) destination-type proc)
-                      (apply loop #f
-                        (chain-with-paths/pipes-call-with-destination source destination-type proc)
-                        rest)))))
-              config))
-          #t (get-port source (current-input-port)) proc-config))))
+    (if (null? proc-config) (list)
+      ;"tail" skips the first #f pid
+      (tail
+        (let-syntax ((get-port (syntax-rule (a default) (if (and a (boolean? a)) default a))))
+          (apply
+            (rec (loop is-first pid source config . rest)
+              (pair pid
+                (apply
+                  (l (source-type destination-type proc)
+                    ( (if is-first chain-with-paths/pipes-call-with-source-first
+                        chain-with-paths/pipes-call-with-source)
+                      source source-type
+                      (l (source)
+                        (if (null? rest)
+                          (list
+                            (chain-with-paths/pipes-call-with-destination-last source
+                              (get-port destination (current-output-port)) destination-type proc))
+                          (apply loop #f
+                            (append
+                              (chain-with-paths/pipes-call-with-destination source destination-type
+                                proc)
+                              rest))))))
+                  config)))
+            #t #f (get-port source (current-input-port)) proc-config)))))
 
   (define (execute-and a . rest)
     "(string ...) ... -> system*-result
