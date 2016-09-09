@@ -118,11 +118,12 @@
   (define (move-and-link target-path source-path)
     "string ... -> (boolean ...)
     move source-path to target-path and replace original source-path"
-    (and (ensure-directory-structure target-path)
-      (execute+check-result "mv" "-t" target-path source-path)
-      (execute+check-result "cp" "-rst"
-        (dirname source-path)
-        (string-append (ensure-trailing-slash target-path) (basename source-path)))))
+    (let (target-path (path->full-path target-path))
+      (and (ensure-directory-structure target-path)
+        (execute+check-result "mv" "-t" target-path source-path)
+        (execute+check-result "ln" "-s"
+          (string-append (ensure-trailing-slash target-path) (basename source-path))
+          (dirname source-path)))))
 
   (define (debug-log-file . a)
     "writes all arguments in one line prefixed by the process id to an automatically created log file \"/tmp/sph-scm-debug-log\""
