@@ -16,6 +16,7 @@
   (export
     any->string
     any->string-display
+    any->string-pretty-print
     any->string-write
     any->string-write*
     list->string-columns
@@ -60,6 +61,7 @@
   (import
     (guile)
     (ice-9 regex)
+    (ice-9 pretty-print)
     (rnrs base)
     (sph)
     (only (rnrs bytevectors) u8-list->bytevector utf8->string)
@@ -75,6 +77,7 @@
     (if (symbol? a) (symbol->string a) (any->string-write a)))
 
   (define (any->string-write a) (object->string a write))
+  (define (any->string-pretty-print a) (object->string a pretty-print))
   (define (any->string-display a) (object->string a display))
 
   (define (string-slice-at-words a slice-length)

@@ -196,7 +196,8 @@
       (exit 0)))
 
   (define (display-about-proc text config)
-    (l (opt name a r) (display (string-append (if (procedure? text) (text) text) "\n")) (exit 0)))
+    (l (opt name a r)
+      (display (string-append (if (procedure? text) (text) text) "\n")) (exit 0)))
 
   (define (add-typecheck type c)
     (if type
@@ -247,7 +248,7 @@
             (pair (ql version #:names #\v #:processor (display-version-proc version-spec)) options))))
       (l (options)
         (if-pass (alist-q-ref a about)
-          (l (text) (pair (ql about #:names #\a #:processor (display-about-proc text a)) options))))
+          (l (text) (pair (qq (about #:names #\a #:processor (unquote (display-about-proc text a)))) options))))
       (l (options)
         (let ((help-option (ql help #:names #\h)) (cli-option (ql interface)))
           (let*
