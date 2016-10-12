@@ -15,7 +15,7 @@
     (sph time utc)
     (only (sph alist) alist-ref alist-q)
     (only (sph conditional) if-pass)
-    (only (sph string) pad-with-zeros string-equal?)
+    (only (sph string) string-fill-left string-equal?)
     (only (sph tree) splice-lists-without-prefix-symbol)
     (only (srfi srfi-1) drop-right))
 
@@ -116,7 +116,7 @@
                     (/ seconds-fraction (expt 10 (string-length (number->string seconds-fraction)))))))
               #:offset (+ (* offset-factor offset-hours 3600) (* offset-factor offset-minutes 60))))))))
 
-  (define (number->padded-string a) (pad-with-zeros (number->string a) 2))
+  (define (number->padded-string a) (string-fill-left (number->string a) 2 #\0))
 
   (define* (time->rfc3339 a #:optional (offset 0) (seconds-fraction 0))
     "integer:posix-time -> string"

@@ -25,8 +25,8 @@
   (define (time->iso8601-ymd a) "integer -> string"
     (let (date (time->date a))
       (string-append (number->string (time-date-year date)) "-"
-        (pad-with-zeros (number->string (time-date-month date)) 2) "-"
-        (pad-with-zeros (number->string (time-date-day date)) 2))))
+        (string-fill-left (number->string (time-date-month date)) 2 #\0) "-"
+        (string-fill-left (number->string (time-date-day date)) 2 #\0))))
 
   (define* (time-elapsed-day-string a #:optional (shift 3) (decimal-places 2))
     (simple-format-number (time-nanoseconds->seconds (time-elapsed-day a)) shift decimal-places))

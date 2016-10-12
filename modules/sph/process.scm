@@ -15,6 +15,7 @@
 (library (sph process)
   (export
     call-with-working-directory
+    process-finished-successfully?
     execute
     execute+check-result
     execute->file
@@ -114,8 +115,10 @@
   (define process-create-chain-with-pipes
     (l (port-input port-output . command/proc)
       "port/true/any port/true/any procedure:{}/(string ...)/string -> (integer:pid/proc-result ...)
-        supports lists as value for command/proc which contain arguments for \"execute\".
-      the first execute argument is automatically also the second argument to follow the common execv calling convention"
+      creates a new process for each command/proc and sets the standard-input and -output of the processes in a chaining manner:
+      the first input is the given input-port, the first output is the input of the next process, until the last port is the given output-port.
+      supports lists as value for command/proc that contain arguments for \"execute\".
+      the first program-path automatically becomes the second argument to follow the common execv calling convention"
       (apply rw-chain-with-pipes port-input
         port-output
         (map
@@ -187,11 +190,14 @@
 
   (define-syntax-rule (type-path? a) (eqv? (q path) a))
 
+  (define (process-finished-successfully? pid) "integer -> boolean
+    wait for the termination of the process identified by the given process id and check if its exit status is 0"
+    (= 0 (status:exit-val (tail (waitpid pid)))))
+
   (define (process-chain-finished-successfully? result-list)
-    "integer/any -> integer/boolean
-    if pid is an integer, wait for the termination of the process and check if its exit status is 0.
-    if pid is anything else, the result is pid"
-    (every (l (a) (if (integer? a) (= 0 (status:exit-val (tail (waitpid a)))) a)) result-list))
+    "(integer:pid ...) -> boolean
+    wait for the termination of the processes and check if its exit status is 0"
+    (every process-finished-successfully? result-list))
 
   (define (chain-with-paths/pipes-call-with-source source source-type proc)
     "-> integer:pid/unspecified

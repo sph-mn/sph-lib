@@ -21,8 +21,6 @@
     any->string-write*
     list->string-columns
     list-string-append-each
-    pad-with
-    pad-with-zeros
     parenthesise
     regexp-match-replace
     regexp-replace
@@ -33,6 +31,7 @@
     string-contains-char?
     string-contains-every?
     string-downcase-first
+    string-compress-space
     string-drop-prefix
     string-drop-prefix-if-exists
     string-drop-suffix
@@ -40,6 +39,8 @@
     string-each
     string-enclose
     string-equal?
+    string-fill-left
+    string-fill-right
     string-indices
     string-indices-char
     string-join-tree
@@ -60,8 +61,8 @@
     symbol?->string)
   (import
     (guile)
-    (ice-9 regex)
     (ice-9 pretty-print)
+    (ice-9 regex)
     (rnrs base)
     (sph)
     (only (rnrs bytevectors) u8-list->bytevector utf8->string)
@@ -240,6 +241,11 @@
             (if (and info (not (null? info))) (append (tail info) prev) (pair e prev))))
         (list) a)))
 
+  (define (string-compress-space a)
+    "string -> string
+    replace multiple subsequent space characters with one space"
+    (regexp-replace a " {2,}" " "))
+
   (define (string-quote a) "string -> string"
     "enclose a string with \" or ' quotes, depending on if the string already
     includes one of these. preferring \". results in false if string already contains both type of quotes."
@@ -353,21 +359,19 @@
     converts \"a\" to string only if it is a symbol, otherwise results in \"a\""
     (if (symbol? a) (symbol->string a) a))
 
-  (define (pad-with-zeros a target-length)
-    "string integer -> string
-    prepend as many zeros as needed to make the given strings length equal to \"target-length\""
-    (pad-with a #\0 target-length))
+  (define (string-fill-right a target-length character)
+    (let (count (- target-length (string-length a)))
+      (if (> count 0) (string-append a (list->string (make-list count character))) a)))
 
-  (define (pad-with a character target-length)
+  (define (string-fill-left a target-length character)
     "string character integer -> string
     prepend character to the given string until the string length equals target-length.
     examples
-        (pad-with \"1\" #\0 2) -> \"01\"
-        (pad-with \"10\" #\0 2) -> \"10\"
-    pad-with-zeros"
-    (let (padding-length (- target-length (string-length a)))
-      (if (> padding-length 0)
-        (string-append (list->string (make-list padding-length character)) a) a)))
+        (string-fill-left \"1\" #\0 2) -> \"01\"
+        (string-fill-left \"10\" #\0 2) -> \"10\"
+    string-fill-left-zeros"
+    (let (count (- target-length (string-length a)))
+      (if (> count 0) (string-append (list->string (make-list count character)) a) a)))
 
   (define (regexp-match-replace a replacements)
     "string (regexp . string:replacement)/(regexp string:search-string . string:replacement) ... -> string
