@@ -34,7 +34,7 @@
     "(symbol ...) (any ...) ->
     categories is the list of symbol names for which the log-route has matched"
     (simple-format #f "~A ~A\n  ~A\n"
-      (time-current-iso8601-ks-string) (simplify categories)
+      (time-current-iso8601-date-and-day-ks-string) (simplify categories)
       (string-replace-chars (string-drop-right (string-drop (any->string arguments) 1) 1)
         (list (list #\newline #\newline #\space #\space)))))
 
