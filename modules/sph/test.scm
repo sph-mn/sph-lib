@@ -70,7 +70,7 @@
       procedure-data-before ignore
       procedure-data-after ignore
       module-before ignore module-after ignore modules-before ignore modules-after ignore)
-    random-order? #f parallel? #f exceptions? #t exclude #f only #f until #f)
+    random-order? #f parallel? #f exception-strings? #t exclude #f only #f until #f)
 
   (define-syntax-rule (test-settings-default-custom key/value ...)
     ;[any:unquoted-key any:value] ... -> list
@@ -326,7 +326,7 @@
             (test-any->result r title 0))))
       (hook-data-after settings index 0 r) (report-data-after settings index 0 r) r))
 
-  (define (test-procedures-execute-one settings index exceptions? hooks name test-proc . data)
+  (define (test-procedures-execute-one settings index exception-strings? hooks name test-proc . data)
     "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure. ensures that test-procedure results are test-results.
     ;creates only one test-result
@@ -336,7 +336,7 @@
       (let
         ( (title (symbol->string name))
           (test-proc
-            (if exceptions? test-proc
+            (if exception-strings? test-proc
               (l a (catch #t (thunk (apply test-proc a)) exception->string)))))
         (report-before settings index name)
         (let*
@@ -349,19 +349,19 @@
                   index data name title test-proc hooks))))
           (hook-after settings index r) (report-after settings index r) r))))
 
-  (define (test-procedures-execute-parallel settings a exceptions? hooks)
+  (define (test-procedures-execute-parallel settings a exception-strings? hooks)
     "list:alist list -> list
     executes all tests even if some fail"
-    (par-map (l (e) (apply test-procedures-execute-one settings 0 exceptions? hooks e)) a))
+    (par-map (l (e) (apply test-procedures-execute-one settings 0 exception-strings? hooks e)) a))
 
-  (define (test-procedures-execute-serial settings a exceptions? hooks)
+  (define (test-procedures-execute-serial settings a exception-strings? hooks)
     "list:alist list -> list
     executes tests one after another and stops if one fails"
     (let
       (r
         (fold-multiple-with-continue
           (l (e continue index r)
-            (let (r-test (apply test-procedures-execute-one settings index exceptions? hooks e))
+            (let (r-test (apply test-procedures-execute-one settings index exception-strings? hooks e))
               (if (test-result-success? r-test) (continue (+ 1 index) (pair r-test r))
                 (list index (list r-test)))))
           a 0 (list)))
@@ -383,7 +383,7 @@
       (l (settings source)
         "list ((symbol:name procedure:test-proc any:data-in/out ...) ...) -> test-result"
         ( (get-executor settings) settings (test-procedures-apply-settings settings source)
-          (alist-q-ref settings exceptions?) (settings->procedure-hooks settings)))))
+          (alist-q-ref settings exception-strings?) (settings->procedure-hooks settings)))))
 
   (define (test-execute-module settings name) "list (symbol ...) -> test-result"
     (test-module-execute settings (environment* name) 0 name))

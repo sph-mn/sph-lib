@@ -1,8 +1,8 @@
 # sph-lib
 see [sph-lib](http://sph.mn/content/187).
 # dependencies
-[gnu guile](https://www.gnu.org/software/guile/) >= 2
-for the installation executable: shell
+* [gnu guile](https://www.gnu.org/software/guile/) >= 2
+* for the installation executable: shell
 # installation
 ```
 su root
@@ -13,9 +13,9 @@ see more options using
 ./exe/install --help
 ```
 # non-exhaustive list of included libraries
-* (sph alist) association list processing
-* (sph base64)
-* (sph base91)
+* (sph alist) association list processing utilities
+* (sph base64) encoder/decoder
+* (sph base91) encoder/decoder
 * (sph cli) quickly initialise a command-line interface
 * (sph common) includes commonly used modules
 * (sph conditional)
