@@ -123,7 +123,7 @@
         port-output
         (map
           (l (a)
-            (l (pipe-in pipe-out in out) (if pipe-out (setvbuf pipe-out _IONBF))
+            (l (pipe-in pipe-out in out) (if pipe-out (setvbuf pipe-out (q none)))
               (let
                 (pid
                   (process-create

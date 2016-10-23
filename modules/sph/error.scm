@@ -35,7 +35,10 @@
     ;converts exceptions to errors.
     ;"evaluate body like in a \"begin\" but if an exception occurs, result in an error with
     ;the error-id being the exception key, error-group being the current module name and error-data being the exception arguments".
-    (catch #t (thunk body ...) (l (key . a) (error-create key (module-name (current-module)) a))))
+    (catch #t (thunk body ...)
+      (l (key . a)
+        (error-create key (module-name (current-module))
+          (if (null? a) a (list (pair (q exception-data) a)))))))
 
   (define-syntax-cases error-let* s
     ;"like let* but results in an error when a binding value evaluates to an error. similar to and-let*"

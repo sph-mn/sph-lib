@@ -10,6 +10,7 @@
     (ice-9 match)
     (sph common)
     (sph test base)
+    (only (guile) current-output-port)
     (except (rnrs hashtables) hashtable-ref))
 
   (define (create-indent depth) (string-multiply "  " depth))
