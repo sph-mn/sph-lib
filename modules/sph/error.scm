@@ -1,6 +1,7 @@
 (library (sph error)
   (export
     error->list
+    error-and
     error-create
     error-create-p
     error-create-record
@@ -63,4 +64,8 @@
 
   (define-syntax-rules error-return
     ((a consequent alternative) (error-pass a alternative consequent))
-    ((a consequent) (error-pass a identity consequent))))
+    ((a consequent) (error-pass a identity consequent)))
+
+  (define-syntax-rules error-and ((a) a)
+    ;"if any argument evaluates to an error, return it, otherwise return the last result"
+    ((a n ...) ((lambda (b) (if (error? b) b (error-and n ...))) a))))
