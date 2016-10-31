@@ -18,6 +18,7 @@
     any
     catch
     compose-s
+    datum->syntax
     debug-log
     define*
     define-as
@@ -32,6 +33,7 @@
     first
     fold
     fold-right
+    identifier?
     identity-s
     l
     l*
@@ -45,38 +47,56 @@
     q
     ql
     qq
+    quasisyntax
     quoted-list
     second
+    syntax
+    syntax->datum
     syntax-rule
     syntax-rules_
     tail
     throw
-    thunk)
+    thunk
+    unsyntax
+    unsyntax-splicing
+    with-syntax)
   (import
     (ice-9 pretty-print)
     (ice-9 threads)
     (except (rnrs base) let)
     (only (guile)
-      define-syntax
-      newline
-      datum->syntax
-      current-output-port
-      debug-set!
-      debug-disable
-      cons*
-      syntax->datum
       LC_ALL
-      read-disable
+      catch
+      cons*
+      current-output-port
+      datum->syntax
+      debug-disable
+      debug-set!
+      define-syntax
+      display
       exit
+      filter
+      identifier?
+      module-map
+      module-re-export!
+      module-uses
+      newline
+      quasisyntax
+      read-disable
+      read-set!
+      resolve-interface
       setlocale
       string=
       syntax
-      throw
-      catch
-      read-set!
+      syntax->datum
       syntax-case
-      write
-      display)
+      throw
+      unsyntax
+      unsyntax-splicing
+      with-syntax
+      resolve-interface
+      current-module
+      write)
     (only (ice-9 optargs) lambda* define*)
     (only (srfi srfi-1)
       any
@@ -88,12 +108,15 @@
       fold-right)
     (only (srfi srfi-2) and-let*))
 
+  ;export (rnrs base). exclude let because it is redefined here
+
+  (module-re-export! (current-module)
+    (filter (lambda (e) (not (or (eq? e (quote %module-public-interface)) (eq? e (quote let)))))
+      (module-map (lambda a (car a)) (resolve-interface (q (rnrs base))))))
+
   ;affects port\string encodings
   ;  initialise all locale categories based on standard system environment variables
   (setlocale LC_ALL "")
-  ;this should not be here, because it may overwrite the users preference.
-  ;  it sets the maximum depth of backtraces which are printed on error.
-  (debug-set! depth 4)
   (read-disable (quote square-brackets))
 
   (define (debug-log . a)
@@ -108,13 +131,13 @@
       ((_ ((pattern ...) expansion) ...) (syntax-rules () ((_ pattern ...) expansion) ...))))
 
   (define-syntax define-syntax-rule
-    ;remove possibility to define keywords
-    ;remove possibility to define multiple clauses
+    ;removes possibility to define keywords
+    ;removes possibility to define multiple clauses
     (syntax-rule ((name pattern ...) expansion)
       (define-syntax name (syntax-rule (pattern ...) expansion))))
 
   (define-syntax define-syntax-rules
-    ;remove possibility to define keywords
+    ;removes possibility to define keywords
     (syntax-rule (name ((pattern ...) expansion) ...)
       (define-syntax name (syntax-rules () ((_ pattern ...) expansion) ...))))
 
@@ -124,9 +147,9 @@
         (define identifier (first identifier)))))
 
   (define-syntax-rules define-syntax-case
-    ;remove possibility to define keywords
-    ;remove possibility to use custom lambda for define-syntax
-    ;remove possibility to define multiple clauses
+    ;removes possibility to define keywords
+    ;removes possibility to use custom lambda for define-syntax
+    ;removes possibility to define multiple clauses
     ( ( (name . pattern) syntax-name expansion)
       (define-syntax name
         (lambda (syntax-name) (syntax-case syntax-name () ((_ . pattern) expansion)))))
