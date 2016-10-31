@@ -133,11 +133,11 @@
 
   (define-syntax-rule (alist-bind alist (key ...) body ...)
     ;could allow for custom variable names for key values as an extension
-    ((lambda (key ...) body ...) (alist-ref alist (quote key)) ...))
+    ((lambda (a) ((lambda (key ...) body ...) (alist-ref a (quote key)) ...)) alist))
 
   (define-syntax-rule (alist-bind-and* alist (key ...) body ...)
     ;alist values are bound in order of keys, and false is returned if any key value is false
-    (and-let* ((key (alist-ref alist (quote key))) ...) (begin body ...)))
+    (let (a alist) (and-let* ((key (alist-ref a (quote key))) ...) (begin body ...))))
 
   (define-syntax-rule (bindings->alist identifier ...)
     ;create an alist with keys named like the identifiers and values from identified variables
