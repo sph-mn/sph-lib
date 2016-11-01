@@ -49,7 +49,7 @@
     (sph string)
     (sph test base)
     (sph test report)
-    (srfi srfi-1)
+    (except (srfi srfi-1) map)
     (only (sph filesystem) path->full-path)
     (only (sph one)
       quote-odd

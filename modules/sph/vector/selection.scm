@@ -11,7 +11,6 @@
     vector-selection-stream
     vector-selections)
   (import
-    (rnrs base)
     (rnrs sorting)
     (sph)
     (sph error)
