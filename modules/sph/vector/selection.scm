@@ -18,7 +18,7 @@
     (srfi srfi-41)
     (only (guile) vector-copy))
 
-  ;vectors as selections from a set
+  ;vectors as selections from a set. and creating vectors from sets
 
   (define (vector-selection set-indices set)
     "vector:#(integer ...) vector -> vector
