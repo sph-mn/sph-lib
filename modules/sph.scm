@@ -39,6 +39,7 @@
     l*
     lambda*
     let
+    null
     pair
     pairs
     par-let
@@ -201,6 +202,8 @@
             (fold list (pair (first name-datum) (syntax->datum (syntax (expr ...))))
               (tail name-datum))))
         (syntax (name expr ...)))))
+
+  (define null (list))
 
   (define-syntax-rules define-as
     ;example: (define-as customname list 1 2 3)

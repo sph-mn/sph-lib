@@ -2,6 +2,7 @@
   (export
     error->list
     error-and
+    error-capture
     error-create
     error-create-p
     error-create-record
@@ -11,8 +12,10 @@
     error-if-exception
     error-let*
     error-pass
+    error-raise
     error-return
-    error?)
+    error?
+    error?-s)
   (import
     (guile)
     (rnrs base)
@@ -22,7 +25,7 @@
   ;an error type
 
   (define-record-type error (error-create-record id group data)
-    error? (id error-id) (group error-group) (data error-data))
+    error?-s (id error-id) (group error-group) (data error-data))
 
   (define (error-create-p id group data) (error-create-record id group data))
 
@@ -31,6 +34,8 @@
     ;create an error with optional field values. fields that are not set are set to false"
     ((id group data) (error-create-record id group data)) ((id group) (error-create id group (list)))
     ((id) (error-create id #f (list))))
+
+  (define (error? a) (error?-s a))
 
   (define-syntax-rule (error-if-exception body ...)
     ;converts exceptions to errors.
@@ -50,16 +55,16 @@
             (with-syntax
               ( (body (loop (tail bindings))) (identifier (datum->syntax s (first binding)))
                 (value (datum->syntax s (first (tail binding)))))
-              (syntax ((lambda (identifier) (if (error? identifier) identifier body)) value)))))))
+              (syntax ((lambda (identifier) (if (error?-s identifier) identifier body)) value)))))))
     ( ( (identifier value) body ...)
-      (syntax ((lambda (identifier) (if (error? identifier) identifier (begin body ...))) value))))
+      (syntax ((lambda (identifier) (if (error?-s identifier) identifier (begin body ...))) value))))
 
   (define (error->list a) "error -> (any:id any:group any:data)"
     (list (error-id a) (error-group a) (error-data a)))
 
   (define-syntax-rules error-pass
     ;"if \"a\" is an error, call \"consequent\" with \"a\", otherwise call \"alternative\" with a"
-    ((a consequent alternative) (let (b a) (if (error? b) (consequent b) (alternative b))))
+    ((a consequent alternative) (let (b a) (if (error?-s b) (consequent b) (alternative b))))
     ((a consequent) (error-pass a consequent identity)))
 
   (define-syntax-rules error-return
@@ -68,4 +73,13 @@
 
   (define-syntax-rules error-and ((a) a)
     ;"if any argument evaluates to an error, return it, otherwise return the last result"
-    ((a n ...) ((lambda (b) (if (error? b) b (error-and n ...))) a))))
+    ((a n ...) ((lambda (b) (if (error?-s b) b (error-and n ...))) a)))
+
+  (define-syntax-rule (error-raise create-arguments ...)
+    ;"experimental: can be used to skip callers from composed routines or early returns from a series of potentially error producing calls
+    ;and creating an error object at the place where "error-capture" is specified"
+    (throw (q error) (error-create create-arguments ...)))
+
+  (define-syntax-rule (error-capture body ...)
+    ;"experimental: errors created by "error-raise" in body will be converted to an error object"
+    (catch (q error) (thunk body ...) (l (key error) error))))
