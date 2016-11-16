@@ -22,6 +22,7 @@
     (string-replace-char ("abacadae" #\a #\x) "xbxcxdxe" ("" #\a #\b) "" ("a" #\a #\b) "b")
     (string-indices-char ("/a////b//c/d" #\/) (0 2 3 4 5 7 8 10))
     (string-longest-prefix ("abcdabcd" ("ab" "a" "abcda" "abc")) "abcda")
-    (string-camelcase->dashes "aA" "a-a" "AA" "a-a" "aa AAa" "aa a-aa")
+    (string-camelcase->dash "aA" "a-a" "AA" "AA" "abCdEfg" "ab-cd-efg" "aa AAa" "aa AAa")
+    (string-camelcase->underscore "aA" "a_a" "AA" "AA" "abCdEfg" "ab_cd_efg" "aa AAa" "aa AAa")
     (string-downcase-first "AAA" "aAA" "" "" "A" "a")
     (string-join-tree (("a" ("b" "c") ("d" ("e" ("f") "g"))) "") "abcdefg")))

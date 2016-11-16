@@ -25,13 +25,14 @@
     regexp-match-replace
     regexp-replace
     string-ascii->utf8
-    string-camelcase->dashes
+    string-camelcase->dash
+    string-camelcase->underscore
     string-case
+    string-compress-space
     string-contains-any?
     string-contains-char?
     string-contains-every?
     string-downcase-first
-    string-compress-space
     string-drop-prefix
     string-drop-prefix-if-exists
     string-drop-suffix
@@ -113,14 +114,24 @@
     replace all occurences of regexp in string with replacement"
     (regexp-substitute/global #f regexp str (q pre) replacement (q post)))
 
-  (define (string-camelcase->dashes a)
+  (define (string-camelcase-replace a replace-proc)
+    "string {match-structure -> replacement} -> string"
+    (regexp-replace a "(\\s|^)[a-z][a-zA-Z0-9]+"
+      (l (match)
+        (regexp-replace (match:substring match) "[A-Z]"
+          replace-proc))))
+
+ (define (string-camelcase->underscore a)
     "string -> string
     aA -> a-a
-    AA -> a-a
-    aa AAa -> aa a-aa"
-    (regexp-replace
-      (regexp-replace a "(\\s|^)[A-Z]" (l (match) (string-downcase (match:substring match)))) "[A-Z]"
-      (l (match) (string-append "-" (string-downcase (match:substring match))))))
+    aa aAa -> aa a-aa"
+    (string-camelcase-replace a (l (match) (string-append "_" (string-downcase (match:substring match))))))
+
+  (define (string-camelcase->dash a)
+    "string -> string
+    aA -> a-a
+    aa aAa -> aa a-aa"
+    (string-camelcase-replace a (l (match) (string-append "-" (string-downcase (match:substring match))))))
 
   (define (string-downcase-first a)
     "string -> string

@@ -38,7 +38,7 @@
   (define greg-year-days-leap-year 366)
   ;days in years including leap years
   (define years-400-days 146096)
-  ;days elapsed until the beginning of -2-29
+  ;days elapsed up to the beginning of 2-29
   (define month-2-29-days 59)
   (define years-3-month-2-29-days 1154)
   (define after-month-2-29-days (- greg-year-days-leap-year 31 28))

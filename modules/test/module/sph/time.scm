@@ -145,7 +145,7 @@
       720258 478
       -1 0
       -366 1
-      ;three nears february 29
+      ;three years near february 29
       1153 0 1154 1
       ;four years near february 29
       -1766 1 -1768 2)
