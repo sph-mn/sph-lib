@@ -17,7 +17,7 @@
     filename-extension
     fold-directory-tree
     get-unique-target-path
-    is-directory?
+    file-path-directory?
     last
     merge-files
     mtime-difference
@@ -76,10 +76,10 @@
       (stream-each
         (l (e)
           (let (e (string-append path e))
-            (if (is-directory? e) (begin (directory-delete-content e) (rmdir e)) (delete-file e))))
+            (if (file-path-directory? e) (begin (directory-delete-content e) (rmdir e)) (delete-file e))))
         (directory-stream path))))
 
-  (define (is-directory? path) "test if path exists and is a directory"
+  (define (file-path-directory? path) "test if path exists and is a directory"
     (eqv? (q directory) (stat:type (stat path))))
 
   (define (directory-fold path proc init)
