@@ -76,7 +76,7 @@
             (every
               (l (path-destination path-source)
                 (and
-                  (if (is-directory? path-source)
+                  (if (file-path-directory? path-source)
                     ;set permissions for the directory structure created from the source path
                     (fold-directory-tree
                       (let (path-source-length (string-length path-source))
