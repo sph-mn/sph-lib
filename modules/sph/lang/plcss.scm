@@ -79,5 +79,5 @@
   (define (plcss-element-style->css-string a) (join-properties a))
 
   (define-syntax-rule (css-style rules ...)
-    ;without selectors like for inline-styles in xml tag attributes
+    ;without selectors. use case: inline-styles in xml tag attributes
     (join-properties (quasiquote (rules ...)))))
