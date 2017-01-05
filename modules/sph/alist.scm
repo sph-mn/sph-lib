@@ -141,6 +141,7 @@
 
   (define-syntax-rule (bindings->alist identifier ...)
     ;create an alist with keys named like the identifiers and values from identified variables
+    ;example: (let ((a 1) (b 2)) (bindings->alist a b)) -> (((quote a) . 1) ((quote b) . 2))
     (list (pair (quote identifier) identifier) ...))
 
   (define (set-alist-bindings! alist)

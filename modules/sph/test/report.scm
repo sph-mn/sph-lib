@@ -10,8 +10,8 @@
     (ice-9 match)
     (sph common)
     (sph test base)
-    (only (guile) current-output-port)
-    (except (rnrs hashtables) hashtable-ref))
+    (except (rnrs hashtables) hashtable-ref)
+    (only (guile) current-output-port))
 
   (define (create-indent depth) (string-multiply "  " depth))
   ;todo: test nested results display, assertion title display.
@@ -28,9 +28,7 @@
         (filter-map
           (let (indent (create-indent (+ 1 depth)))
             (l (e) (let (value (tail e)) (and value (string-append indent (first e) ": " value)))))
-          (list
-            (pair "i"
-              (string-drop (string-drop-right (any->string-write (test-result-arguments a)) 1) 1))
+          (list (pair "i" (any->string-write (test-result-arguments a)))
             (pair "e" (any->string-write (test-result-expected a)))
             (pair "o" (any->string-write (test-result-result a)))))
         "\n")))
@@ -78,8 +76,7 @@
     (let (display (l (a) (display a port)))
       (test-result-tree-fold result
         (l (result-record group) (test-report-compact-one result-record (length group) display))
-        (l (group)
-          (display (create-indent (max 0 (- (length group) 1))))
+        (l (group) (display (create-indent (max 0 (- (length group) 1))))
           (display (string-join group " ")) (display "\n"))))
     result)
 
@@ -111,16 +108,14 @@
     (l (s index index-data result)
       (let (index-data (test-result-index result))
         (if (= 0 (or index-data 0))
-          (begin
-            (display (create-indent (boolean->integer (alist-q-ref s current-module-name))))
+          (begin (display (create-indent (boolean->integer (alist-q-ref s current-module-name))))
             (display (test-result-title result))))
         (if (test-result-success? result) (begin (display " ") (display (+ 1 index-data)))
           (begin (newline)
-            (display
-              (create-indent (+ 1 (boolean->integer (alist-q-ref s current-module-name)))))
+            (display (create-indent (+ 1 (boolean->integer (alist-q-ref s current-module-name)))))
             (display "failure") (newline)
-            (test-report-compact-ieo result
-              (boolean->integer (alist-q-ref s current-module-name)) display)))))
+            (test-report-compact-ieo result (boolean->integer (alist-q-ref s current-module-name))
+              display)))))
     module-before
     (l (s index name) (if (not (zero? index)) (newline))
       (display (string-join (map symbol->string name) " ")))
