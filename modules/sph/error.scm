@@ -68,6 +68,7 @@
     ((a consequent) (error-pass a consequent identity)))
 
   (define-syntax-rules error-return
+    ;"if \"a\" is an error, return it, otherwise call \"alternative\""
     ((a consequent alternative) (error-pass a alternative consequent))
     ((a consequent) (error-pass a identity consequent)))
 
