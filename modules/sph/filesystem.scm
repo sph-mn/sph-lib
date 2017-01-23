@@ -125,7 +125,7 @@
     string procedure -> (string ...)
     results in a list of all paths under path, excluding path and the directory references \".\" and \"..\""
     ;breadth-first search
-    (let (entries (directory-read-all path (negate directory-reference?)))
+    (let (entries (or (directory-read-all path (negate directory-reference?)) (list)))
       (fold-right
         (l (e r)
           (let (e (string-append path "/" e))
