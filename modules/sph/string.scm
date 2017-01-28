@@ -48,6 +48,8 @@
     string-last-index
     string-longest-prefix
     string-lowercase?
+    string-matches-any-regexp?
+    string-matches-every-regexp?
     string-multiply
     string-numeric?
     string-octet-length
@@ -114,24 +116,30 @@
     replace all occurences of regexp in string with replacement"
     (regexp-substitute/global #f regexp str (q pre) replacement (q post)))
 
+  (define (string-matches-any-regexp? a regexp-list) "string (regexp-object ...) -> boolean"
+    (any (l (e) (regexp-exec e a)) regexp-list))
+
+  (define (string-matches-every-regexp? a regexp-list) "string (regexp-object ...) -> boolean"
+    (every (l (e) (regexp-exec e a)) regexp-list))
+
   (define (string-camelcase-replace a replace-proc)
     "string {match-structure -> replacement} -> string"
     (regexp-replace a "(\\s|^)[a-z][a-zA-Z0-9]+"
-      (l (match)
-        (regexp-replace (match:substring match) "[A-Z]"
-          replace-proc))))
+      (l (match) (regexp-replace (match:substring match) "[A-Z]" replace-proc))))
 
- (define (string-camelcase->underscore a)
+  (define (string-camelcase->underscore a)
     "string -> string
     aA -> a-a
     aa aAa -> aa a-aa"
-    (string-camelcase-replace a (l (match) (string-append "_" (string-downcase (match:substring match))))))
+    (string-camelcase-replace a
+      (l (match) (string-append "_" (string-downcase (match:substring match))))))
 
   (define (string-camelcase->dash a)
     "string -> string
     aA -> a-a
     aa aAa -> aa a-aa"
-    (string-camelcase-replace a (l (match) (string-append "-" (string-downcase (match:substring match))))))
+    (string-camelcase-replace a
+      (l (match) (string-append "-" (string-downcase (match:substring match))))))
 
   (define (string-downcase-first a)
     "string -> string
