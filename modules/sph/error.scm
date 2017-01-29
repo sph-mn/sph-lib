@@ -63,12 +63,12 @@
     (list (error-id a) (error-group a) (error-data a)))
 
   (define-syntax-rules error-pass
-    ;"if \"a\" is an error, call \"consequent\" with \"a\", otherwise call \"alternative\" with a"
+    ;"if \"a\" is an error, call procedure \"consequent\" with \"a\", otherwise call \"alternative\" with a"
     ((a consequent alternative) (let (b a) (if (error?-s b) (consequent b) (alternative b))))
     ((a consequent) (error-pass a consequent identity)))
 
   (define-syntax-rules error-return
-    ;"if \"a\" is an error, return it, otherwise call \"alternative\""
+    ;"if \"a\" is an error, return it, otherwise call procedure \"alternative\""
     ((a consequent alternative) (error-pass a alternative consequent))
     ((a consequent) (error-pass a identity consequent)))
 
