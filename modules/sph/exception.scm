@@ -12,7 +12,7 @@
 (define-syntax-rule (exception-intercept on-exception expression)
   ;"evaluate \"on-exception\" only when an exception occurs in expression.
   ;the result is the result of \"expression\" if no exception occurred"
-  (with-exception-handler (l (a) on-exception) (thunk expression)))
+  (with-exception-handler (l (a) on-exception (raise a)) (thunk expression)))
 
 (define-syntax-rule (exception-intercept-if expression exception no-exception)
   ;"evaluate \"exception\" when an exception occurs in expression. evaluate \"no-exception\" if no exception occurred.
