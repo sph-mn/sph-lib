@@ -14,11 +14,13 @@
 
 (library (sph documentation)
   (export
-    default-display-format
     default-format-arguments
+    docstring->lines
+    docstring-split-signature
     documentation-display-formats
     format-module-documentation
-    itpn-docstring-split-signature)
+    itpn-docstring-split-signature
+    lines->docstring)
   (import
     (guile)
     (ice-9 peg)
@@ -31,55 +33,21 @@
     (sph record)
     (only (ice-9 regex) regexp-substitute/global)
     (only (rnrs sorting) list-sort)
-    (only (sph string) string-multiply)
+    (only (sph list) fold-multiple)
+    (only (sph string) string-multiply string-equal?)
     (only (srfi srfi-1) remove))
-
-  (define (default-format-arguments arguments type)
-    "pair/list:alist symbol:\"procedure\"/\"syntax\"/\"variable\" -> string
-    formats argumets in sph type-signature notation format.
-    arguments as retrieved by \"module-binding-info\", which uses (ice-9 session) \"procedure-arguments\""
-    ;syntax arguments can be pairs
-    (if
-      (and (eqv? (q procedure) type) (list? arguments)
-        (not (null? arguments)) (pair? (first arguments)))
-      (alist-bind arguments (optional rest required keyword allow-other-keys?)
-        (let
-          ( (optional-string
-              (if (or (not optional) (null? optional)) ""
-                (string-append "[" (string-join (map symbol->string optional) " ") "]")))
-            (required-string
-              (if (or (not required) (null? required)) ""
-                (string-join (map symbol->string required) " ")))
-            (keyword-string
-              (if (or (not keyword) (null? keyword)) ""
-                (string-drop-right (string-drop (simple-format #f "~S" (map first keyword)) 1) 1)))
-            (rest-string
-              (if (or (not rest) (null? rest)) "" (string-append (symbol->string rest) " ..."))))
-          (string-join
-            (filter (l (ele) (not (string-null? ele)))
-              (list required-string keyword-string optional-string rest-string))
-            " ")))
-      (if (equal? (q syntax) type)
-        (let ((res (simple-format #f "~S" arguments)))
-          (string-append (substring res 1 (- (string-length res) 1))))
-        (if (equal? (q variable) type)
-          (if arguments (call-with-output-string (l (port) (display arguments port))) "") ""))))
 
   (define (docstring->lines a) "string -> (string ...)"
     (let (a (regexp-substitute/global #f " +" a (q pre) " " (q post)))
       (map (l (a) (string-trim a)) (string-split a #\newline))))
 
-  (define itpn-indent (string #\space #\space))
-
-  (define (itpn-docstring-split-signature a continue)
+  (define (docstring-split-signature a line-prefix continue)
     "string procedure:{string:type-signatures string:rest-of-docstring} -> any
     if a string starts with a type-signature, split string at the end of it"
     (if a
       (let (signature (match-pattern peg-type-signature a))
         (if signature
-          (continue
-            (parsed-type-signature->string (peg:tree signature)
-              (string-append itpn-indent itpn-indent))
+          (continue (parsed-type-signature->string (peg:tree signature) line-prefix)
             (docstring->lines (string-drop a (peg:end signature))))
           (continue #f (docstring->lines a))))
       (continue #f (list))))
@@ -90,35 +58,66 @@
         (string-append indent "description"
           (string-join a (string-append "\n" indent indent) (q prefix)) "\n"))))
 
-  (define-as display-format-itpn
-    ;this defines the default formatter
-    alist-q format-arguments
-    default-format-arguments format-binding-info
-    (l (bi formatted-arguments) "vector:record string -> string"
-      (string-append (symbol->string (bi-name bi)) "\n"
-        (itpn-docstring-split-signature (bi-documentation bi)
-          (l (signature text-lines)
-            (string-append
-              (if (or signature (not (string-null? formatted-arguments)))
-                (string-append itpn-indent "signature\n"
-                  itpn-indent itpn-indent
-                  (if (string-null? formatted-arguments) formatted-arguments
-                    (string-append formatted-arguments "\n"))
-                  (if signature (string-append itpn-indent itpn-indent signature "\n") ""))
-                "")
-              (lines->docstring text-lines itpn-indent))))
-        itpn-indent "type: " (symbol->string (bi-type bi))))
-    format-module-documentation
-    (l (module-name md) "any (string ...) -> string" (string-join md "\n"))
-    format-modules-documentation (l (mds) "(string ...) -> string" (apply string-append mds)))
+  (define (replace-underscore a state)
+    (if (string-equal? "_" a) (number->string (+ 10 state) 32) a))
 
-  (define-as documentation-display-formats alist-q
-    default display-format-itpn itpn display-format-itpn)
+  (define (list-replace-underscores& a state c) "call (c list-with-replacements updated-state)"
+    (apply c
+      ( (l (a) (pair (reverse (first a)) (tail a)))
+        (fold-multiple
+          (l (a result state) (list (pair (replace-underscore a state) result) (+ 1 state))) a
+          (list) state))))
+
+  (define (replace-underscores& required optional c)
+    (list-replace-underscores& (map symbol->string required) 0
+      (l (required state)
+        (list-replace-underscores& (map symbol->string optional) state
+          (l (optional state) (c required optional state))))))
+
+  (define (default-format-arguments arguments type)
+    "pair/list:alist symbol:\"procedure\"/\"syntax\"/\"variable\" -> string
+    formats argumets in sph type-signature notation format.
+    arguments as retrieved by \"module-binding-info\", which uses (ice-9 session) \"procedure-arguments\""
+    ;syntax arguments can be pairs
+    (if
+      (and (eqv? (q procedure) type) (list? arguments)
+        (not (null? arguments)) (pair? (first arguments)))
+      (alist-bind arguments (optional rest required keyword allow-other-keys?)
+        (replace-underscores& required optional
+          (l (required optional state)
+            (let
+              ( (optional-string
+                  (if (or (not optional) (null? optional)) ""
+                    (string-append "[" (string-join optional " ") "]")))
+                (required-string
+                  (if (or (not required) (null? required)) "" (string-join required " ")))
+                (keyword-string
+                  (if (or (not keyword) (null? keyword)) ""
+                    (string-drop-right (string-drop (simple-format #f "~S" (map first keyword)) 1)
+                      1)))
+                (rest-string
+                  (if (or (not rest) (null? rest)) ""
+                    (string-append (replace-underscore (symbol->string rest) state) " ..."))))
+              (let
+                (signature-string
+                  (string-join
+                    (filter (l (a) (not (string-null? a)))
+                      (list required-string keyword-string optional-string rest-string))
+                    " "))
+                signature-string)))))
+      (if (equal? (q syntax) type)
+        (let ((r (simple-format #f "~S" arguments)))
+          (string-append (substring r 1 (- (string-length r) 1))))
+        (if (equal? (q variable) type)
+          (if arguments (call-with-output-string (l (port) (display arguments port))) "") ""))))
+
+  (define documentation-display-formats (list))
 
   (define* (format-module-documentation module-names #:optional (format-handler-name (q default)))
     "((symbol ...) ...)/(symbol ...) symbol ->
     output documentation for a list of module-names. format-handler-name can currently either be
-    default, plaintext, itpn, dokuwiki"
+    default, itpn.
+    for just retrieving module documentation you might want to consider (sph binding-info)"
     (let
       ( (format-handler
           (or (assoc-ref documentation-display-formats format-handler-name)

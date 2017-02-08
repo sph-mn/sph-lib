@@ -214,8 +214,8 @@
 
   (define string-each string-for-each)
 
-  (define-syntax-rule (string-enclose str enclose-str)
-    ;"append enclose-str to beginning and end of argument string"
+  (define (string-enclose str enclose-str)
+    "append enclose-str to beginning and end of argument string"
     (string-append enclose-str str enclose-str))
 
   (define (string-longest-prefix a prefix-list)

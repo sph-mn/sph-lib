@@ -10,6 +10,8 @@
     (sph documentation)
     (only (srfi srfi-1) remove))
 
+  ;a format that creates a list with entries like this: (dg-any-read (signature _ [_] dg-selection [count] -> error/(vector ...)) (description ) (type procedure))
+
   (define-as display-format-plist alist-q
     format-arguments default-format-arguments
     format-binding-info

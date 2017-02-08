@@ -67,7 +67,7 @@
       (map-binding-name (l (name library-name) (symbol->string name)))
       (map-library-name any->string))
     "((symbol ...) ...) [{symbol list:library-name -> sxml} {list:library-name -> sxml}] -> list
-    a table of all bindings from all specified libraries with the binding name in the first column and the library name in the second"
+    a table of all bindings from all specified libraries with binding names in the first column and associated library names in the second"
     (let
       (binding-info
         (map tail
