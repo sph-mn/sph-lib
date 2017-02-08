@@ -27,7 +27,8 @@
             (string-append (symbol->string (bi-name bi))
               (if (contains? (ql procedure syntax) (bi-type bi))
                 (string-append " :: " arguments-string) "")
-              docstring)))))
+              ;docstring
+              )))))
     format-module-documentation
     (l (module-name md) "any (string ...) -> string" (string-join md "\n"))
     format-modules-documentation

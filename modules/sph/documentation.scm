@@ -47,7 +47,9 @@
     (if a
       (let (signature (match-pattern peg-type-signature a))
         (if signature
-          (continue (parsed-type-signature->string (peg:tree signature) line-prefix)
+          (continue
+            (parsed-type-signature->string (type-signature-simplify-tree (peg:tree signature))
+              line-prefix)
             (docstring->lines (string-drop a (peg:end signature))))
           (continue #f (docstring->lines a))))
       (continue #f (list))))
