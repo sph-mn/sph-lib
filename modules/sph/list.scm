@@ -124,6 +124,7 @@
     split-at-last
     split-at-value
     split-by-pattern
+    tail-or-null
     true->list
     true->list-s
     (rename (lset-adjoin list-set-add)
@@ -992,4 +993,6 @@
 
   (define-syntax-rule (pair-bind a (b c) body ...)
     ;binds the first and second value of "a" to "b" and "c" respectively. ideally, maybe, lambda/apply should support (apply (lambda (a . b)) (pair 1 2))
-    ((lambda (b c) body ...) (first a) (tail a))))
+    ((lambda (b c) body ...) (first a) (tail a)))
+
+  (define (tail-or-null a) "list -> list" (if (null? a) a (tail a))))
