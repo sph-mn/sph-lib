@@ -66,7 +66,6 @@
     read-line-crlf
     read-line-crlf-trim
     read-mime.types
-    search-env-path-variable
     seconds->short-kiloseconds-string
     set-multiple-from-list!
     srfi-19-date->seconds
@@ -533,12 +532,6 @@
                     (string-split (regexp-replace (regexp-replace line "\t" " ") " +" " ") #\space)))
                 (pair (delete "" name+extensions) r))))
           (list) file))))
-
-  (define (search-env-path-variable a)
-    "string -> string/false
-    try to complete a relative path by searching the paths in the PATH environment variable.
-    PATH is parsed anew each call, if you want to cache that you can use guiles search-path and parse-path separately"
-    (search-path (parse-path (getenv "PATH")) a))
 
   (define-syntax-rules set-multiple-from-list! ((() expr) (quote unspecified))
     ;set multiple variables using a list

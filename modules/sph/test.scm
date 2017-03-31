@@ -54,7 +54,7 @@
     (only (sph one)
       quote-odd
       ignore
-      exception->string)
+      guile-exception->string)
     (only (sph one) remove-keyword-associations))
 
   ;data-structures:
@@ -337,7 +337,7 @@
         ( (title (symbol->string name))
           (test-proc
             (if exception-strings? test-proc
-              (l a (catch #t (thunk (apply test-proc a)) exception->string)))))
+              (l a (catch #t (thunk (apply test-proc a)) guile-exception->string)))))
         (report-before settings index name)
         (let*
           ( (settings (call-settings-update-hook hook-before settings index name))

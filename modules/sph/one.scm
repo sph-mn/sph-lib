@@ -30,8 +30,8 @@
     cli-option
     create-temp-fifo
     define-string
+    display-formatted
     each-u8
-    values-bind
     eq-any?
     eq-every?
     equal-any?
@@ -39,8 +39,9 @@
     eqv-any?
     eqv-every?
     every-s
-    exception->key
-    exception->string
+    exception->value
+    guile-exception->key
+    guile-exception->string
     first-as-result
     if-exception
     ignore
@@ -71,16 +72,16 @@
     string->datum
     string-if-exception
     true?
-    display-formatted
     true?-s
     values->list
+    values-bind
     with-values)
   (import
     (guile)
     (ice-9 popen)
+    (ice-9 pretty-print)
     (ice-9 rdelim)
     (ice-9 regex)
-    (ice-9 pretty-print)
     (rnrs bytevectors)
     (rnrs io ports)
     (rnrs sorting)
@@ -88,6 +89,7 @@
     (sph number)
     (sph string)
     (except (rnrs base) map)
+    (rnrs exceptions)
     (only (ice-9 popen)
       close-pipe
       open-pipe
@@ -103,8 +105,7 @@
       filter
       unfold))
 
-  (define* (display-formatted #:key (port (current-output-port)) . a)
-    (pretty-print a port))
+  (define* (display-formatted #:key (port (current-output-port)) . a) (pretty-print a port))
 
   (define (remove-keyword-associations a)
     "list -> list
@@ -196,11 +197,16 @@
         (string-append "--" name "=" (any->string value)))
       (if (char? name) (string #\- name) (string-append "--" name))))
 
-  (define (search-env-path a)
+  (define (search-env-path . a)
     "string -> string
-    search for any match of path a in the directories in the PATH environment variable and result in the full path"
-    (any (l (e) (let (path (string-append e "/" a)) (if (file-exists? path) path #f)))
-      (parse-path (getenv "PATH"))))
+    search for any match of paths \"a\" in the directories in the PATH environment variable and result in the full path"
+    (let*
+      ( (path-parsed (parse-path (getenv "PATH")))
+        (search-path
+          (l (a)
+            (any (l (e) (let (path (string-append e "/" a)) (if (file-exists? path) path #f)))
+              path-parsed))))
+      (map search-path a)))
 
   (define-syntax-rule (first-as-result result body ...) ((l (r) (begin body ...) r) result))
 
@@ -381,7 +387,9 @@
     ;passing a to predicate and eventually handler.
     (cond ((predicate a) (handler a)) ... else))
 
-  (define-syntax-rule (exception->key expr) (catch #t (l () expr) (l (key . args) key)))
+  (define-syntax-rule (exception->value expr) (guard (obj (#t obj)) expr))
+
+  (define-syntax-rule (guile-exception->key expr) (catch #t (l () expr) (l (key . args) key)))
 
   (define-syntax-rules quote-odd
     ;any ... -> list
