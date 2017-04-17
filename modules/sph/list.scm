@@ -20,6 +20,7 @@
     complement
     complement-both
     consecutive
+    consecutive&
     contains-all?
     contains-some?
     contains?
@@ -509,7 +510,7 @@
   (define (group-consecutive filter-proc a)
     "{any -> boolean} list -> list
     wrap multiple elements that consecutively match \"filter-proc\" in a list"
-    (map-consecutive filter-proc (l args args) a))
+    (map-consecutive filter-proc (l a a) a))
 
   (define (improper-list-split-at-last a)
     "pair:improper-list -> (list any:non-pair)
@@ -972,6 +973,8 @@
     \"proc\", the second being the rest.
     like srfi-1 span but the result is a list and not multiple return values"
     (call-with-values (thunk (span proc a)) (l r r)))
+
+  (define (consecutive& proc a c) (call-with-values (thunk (span proc a)) c))
 
   (define (group-split-at-matches start-group? a)
     "procedure:{any -> boolean} list -> (list ...)
