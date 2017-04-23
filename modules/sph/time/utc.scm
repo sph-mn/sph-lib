@@ -13,8 +13,7 @@
   (import
     (rnrs base)
     (sph)
-    (only (guile) truncate/ assoc-ref)
-    (only (sph one) apply-values))
+    (only (guile) truncate/ assoc-ref))
 
   (define utc-nanoseconds-minute 60000000000)
   (define utc-nanoseconds-hour 3600000000000)

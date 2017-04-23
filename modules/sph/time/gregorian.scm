@@ -27,8 +27,7 @@
     (only (guile)
       truncate-quotient
       modulo
-      truncate/)
-    (only (sph one) apply-values))
+      truncate/))
 
   ;iso8601 is supposed to be followed, which uses a year 0. a year 0 supposedly keeps leap-day calculations simpler
   (define-as greg-month-days vector 31 28 31 30 31 30 31 31 30 31 30 31)

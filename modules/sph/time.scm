@@ -58,7 +58,6 @@
     (guile)
     (rnrs base)
     (sph)
-    (only (sph one) apply-values)
     (sph record)
     (sph time gregorian)
     (sph time utc))

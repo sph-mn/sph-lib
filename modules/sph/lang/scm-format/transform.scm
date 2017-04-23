@@ -15,7 +15,6 @@
     (sph lang scm-format base)
     (sph list)
     (sph string)
-    (only (sph one) apply-values)
     (only (srfi srfi-1) delete-duplicates))
 
   (define (definition? a)

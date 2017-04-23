@@ -1,6 +1,6 @@
 ; (sph one) - various procedures
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2016 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -17,7 +17,6 @@
     alist->regexp-match-replacements
     and-p
     apply*
-    apply-values
     apply-without-arguments
     boolean->integer
     bytevector-append
@@ -28,6 +27,7 @@
     call-at-interval-w-state
     call-with-pipe
     cli-option
+    cli-option-join
     create-temp-fifo
     define-string
     display-formatted
@@ -40,9 +40,9 @@
     eqv-every?
     every-s
     exception->value
+    first-as-result
     guile-exception->key
     guile-exception->string
-    first-as-result
     if-exception
     ignore
     in-between?
@@ -83,13 +83,13 @@
     (ice-9 rdelim)
     (ice-9 regex)
     (rnrs bytevectors)
+    (rnrs exceptions)
     (rnrs io ports)
     (rnrs sorting)
     (sph)
     (sph number)
     (sph string)
     (except (rnrs base) map)
-    (rnrs exceptions)
     (only (ice-9 popen)
       close-pipe
       open-pipe
@@ -173,7 +173,6 @@
     (apply proc a))
 
   (define (list->values a) (apply values a))
-  (define-syntax-rule (apply-values proc producer) (call-with-values (thunk producer) proc))
   (define-syntax-rule (with-values producer proc) (call-with-values (thunk producer) proc))
 
   (define-syntax-rule (values-bind producer lambda-formals body ...)
@@ -196,6 +195,26 @@
       (if (char? name) (string-append (string #\- name #\space) (any->string value))
         (string-append "--" name "=" (any->string value)))
       (if (char? name) (string #\- name) (string-append "--" name))))
+
+  (define (cli-option-join options)
+    "((name value ...)/string ...) -> (string ...)
+    ((\"a\" 3)) -> -a 3
+    ((\"abc\" 3)) -> --abc 3
+    creates a command-line options string, automatically appending - or -- to option names.
+    - pairs with prefixes that are characters or single char strings become single char options
+    - pairs with prefixes that are multi char strings become multi char options
+    - the tail of pairs is string-joined with spaces and used as the value for the option
+    - strings become keyless arguments"
+    (map
+      (l (e)
+        (if (string? e) e
+          (let*
+            ( (name (first e)) (name (if (char? name) (string name) name)) (value (tail e))
+              (value
+                (if (null? value) ""
+                  (string-append " " (if (string? value) value (string-join value " "))))))
+            (string-append (if (= (string-length name) 1) "-" "--") name value))))
+      options))
 
   (define (search-env-path . a)
     "string -> string
@@ -388,7 +407,6 @@
     (cond ((predicate a) (handler a)) ... else))
 
   (define-syntax-rule (exception->value expr) (guard (obj (#t obj)) expr))
-
   (define-syntax-rule (guile-exception->key expr) (catch #t (l () expr) (l (key . args) key)))
 
   (define-syntax-rules quote-odd

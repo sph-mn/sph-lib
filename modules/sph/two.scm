@@ -1,6 +1,6 @@
 ; (sph two) - example implementations of various procedures. problem specific, circular dependent on sph-one, system dependent, new or more experimental.
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2016 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -19,7 +19,6 @@
     bash-escape-clear
     bindings-select-prefix
     bindings-select-regexp
-    cli-option-join
     cons-if-not-included
     copy-file!?
     copy-with-replaced-directory
@@ -321,26 +320,6 @@
     return a list of binding names as symbols matching regexp"
     (hash-select (l (cur-symbol) (string-match regexp-str (symbol->string cur-symbol)))
       bindings-hash))
-
-  (define (cli-option-join options)
-    "((name value ...)/string ...) -> (string ...)
-    ((\"a\" 3)) -> -a 3
-    ((\"abc\" 3)) -> --abc 3
-    creates a command-line options string, automatically appending - or -- to option names.
-    - pairs with prefixes that are characters or single char strings become single char options
-    - pairs with prefixes that are multi char strings become multi char options
-    - the tail of pairs is string-joined with spaces and used as the value for the option
-    - strings become keyless arguments"
-    (map
-      (l (e)
-        (if (string? e) e
-          (let*
-            ( (name (first e)) (name (if (char? name) (string name) name)) (value (tail e))
-              (value
-                (if (null? value) ""
-                  (string-append " " (if (string? value) value (string-join value " "))))))
-            (string-append (if (= (string-length name) 1) "-" "--") name value))))
-      options))
 
   (define* (cons-if-not-included any lis #:optional (contain-proc member)) "add "
     any " to the beginning of lis if an equal element does not already exist in lis"

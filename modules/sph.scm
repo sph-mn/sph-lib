@@ -1,6 +1,6 @@
 ; (sph) - fundamental bindings for sph-lib
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2016 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -16,6 +16,7 @@
   (export
     and-let*
     any
+    apply-values
     catch
     compose-s
     datum->syntax
@@ -212,4 +213,5 @@
     ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
   (define* (display-line a #:optional (port (current-output-port))) (display a port) (newline port))
-  (define-syntax-rule (thunk body ...) (l () body ...)))
+  (define-syntax-rule (thunk body ...) (l () body ...))
+  (define-syntax-rule (apply-values proc producer) (call-with-values (thunk producer) proc)))
