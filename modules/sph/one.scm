@@ -205,16 +205,22 @@
     - pairs with prefixes that are multi char strings become multi char options
     - the tail of pairs is string-joined with spaces and used as the value for the option
     - strings become keyless arguments"
-    (map
-      (l (e)
-        (if (string? e) e
-          (let*
-            ( (name (first e)) (name (if (char? name) (string name) name)) (value (tail e))
-              (value
-                (if (null? value) ""
-                  (string-append " " (if (string? value) value (string-join value " "))))))
-            (string-append (if (= (string-length name) 1) "-" "--") name value))))
-      options))
+    (string-join
+      (fold
+        (l (e r)
+          (if (string? e) (pair e r)
+            (if (and (list? e) (not (null? e)))
+              (pair
+                (let*
+                  ( (name (first e)) (name (if (char? name) (string name) name)) (value (tail e))
+                    (value
+                      (if (null? value) ""
+                        (string-append " " (if (string? value) value (string-join value " "))))))
+                  (string-append (if (= (string-length name) 1) "-" "--") name value))
+                r)
+              r)))
+        (list) options)
+      " "))
 
   (define (search-env-path . a)
     "string -> string
