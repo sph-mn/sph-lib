@@ -86,7 +86,7 @@
     list-set-eqv?
     list-set-match-condition?
     list-set-match-contains?
-    list-set-union
+    union
     list-sort-by-list
     list-sort-by-list-with-accessor
     list-sort-with-accessor
@@ -288,7 +288,7 @@
     delete elements from the first list that are included in the other lists"
     (apply lset-difference equal? lists))
 
-  (define (list-set-union . a) (delete-duplicates (apply append a)))
+  (define (union . a) (delete-duplicates (apply append a)))
 
   (define* (delete-duplicates-sorted a #:optional (equal-proc equal?) (preserve-order #t))
     "list [procedure:{any any -> boolean} boolean] -> list

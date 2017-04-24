@@ -1,6 +1,7 @@
 (library (sph filesystem)
   (export
     call-with-directory
+    call-with-input-files
     directory-delete-content
     directory-fold
     directory-list
@@ -14,10 +15,10 @@
     ensure-directory-structure
     ensure-directory-structure-and-new-mode
     ensure-trailing-slash
+    file-path-directory?
     filename-extension
     fold-directory-tree
     get-unique-target-path
-    file-path-directory?
     last
     merge-files
     mtime-difference
@@ -66,6 +67,10 @@
       map!
       last))
 
+  (define (call-with-input-files proc . paths)
+    (let* ((files (map (l (e) (open-file e "r")) paths)) (r (apply proc files))) (each close files)
+      r))
+
   (define directory-read-all scandir)
 
   (define (directory-delete-content path)
@@ -76,7 +81,8 @@
       (stream-each
         (l (e)
           (let (e (string-append path e))
-            (if (file-path-directory? e) (begin (directory-delete-content e) (rmdir e)) (delete-file e))))
+            (if (file-path-directory? e) (begin (directory-delete-content e) (rmdir e))
+              (delete-file e))))
         (directory-stream path))))
 
   (define (file-path-directory? path) "test if path exists and is a directory"
