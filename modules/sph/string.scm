@@ -393,7 +393,7 @@
       (if (> count 0) (string-append (list->string (make-list count character)) a) a)))
 
   (define (regexp-match-replace a replacements)
-    "string (regexp . string:replacement)/(regexp string:search-string . string:replacement) ... -> string
+    "string ((regexp . string:replacement)/(regexp string:search-string . string:replacement) ...) -> string
     replace strings inside string portions matched by regular expressions"
     (fold
       (l (e r)
