@@ -277,13 +277,17 @@
   (define (path->full-path path)
     "string -> string
     get the full filesystem path for a relative path or return a full path.
-    also resolves the directory references . and .."
+    also resolves the directory references \".\" and \"..\".
+    when given a relative path, it first tries to use the environment variable \"PWD\" for completing the path. if that is not available it uses \"getcwd\".
+    paths from \"getcwd\" do not contain symlinks (it searches directories upwards)"
     (if (string-null? path) #f
       (string-join
         (let
           (path-list
-            (path->list (if (eqv? #\/ (string-ref path 0)) path (string-append (getcwd) "/" path))))
-          (reverse!
+            (path->list
+              (if (eqv? #\/ (string-ref path 0)) path
+                (string-append (or (getenv "PWD") (getcwd)) "/" path))))
+          (reverse
             (fold
               (l (e r) (if (string-equal? "." e) r (if (string-equal? ".." e) (tail r) (pair e r))))
               (list) path-list)))

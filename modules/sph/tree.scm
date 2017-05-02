@@ -484,12 +484,15 @@
 
   (define (tree-transform a descend-proc ascend-proc terminal-proc)
     "list {any procedure -> (any boolean)} {list -> any} {any -> any} -> any
-    input-list {element recurse-descend -> result-element continue?} {element -> result-element} {element -> result-element} -> result
+    input-list {element recurse-descend -> (result-element continue?)} {element -> result-element} {element -> result-element} -> result
     transform tree by traversing top to bottom then bottom to top, applying descend-proc on lists when descending tree,
     ascend-proc on lists when ascending, and terminal-proc for non-list elements.
     descend-proc should return a list of two values - one for the result and a boolean indicating if the result
     should further be passed to ascend-proc and terminal-proc.
-    this procedure can also be useful to compile trees into string output languages"
+    descend-proc receives a procedure to recursively evaluate.
+    example use cases:
+    * compiling s-expression list trees into string output languages by mapping sub-expressions to strings
+    * applying transformations to s-expressions"
     (let recurse-descend ((e a))
       (if (and (list? e) (not (null? e)))
         (apply
