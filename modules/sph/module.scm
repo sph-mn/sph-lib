@@ -6,6 +6,7 @@
     current-module-ref
     environment*
     export-modules
+    file-contains-module?
     find-modules
     find-modules-by-name
     import!
@@ -15,7 +16,6 @@
     import-unexported
     include-file-from-load-path
     library-exists?
-    path-drop-load-path
     load-with-environment
     module-compose
     module-dependencies
@@ -29,7 +29,8 @@
     module-ref-no-error
     path->load-path
     path->module-name
-    path->symbol-list)
+    path->symbol-list
+    path-drop-load-path)
   (import
     (guile)
     (ice-9 match)
@@ -43,7 +44,10 @@
     (only (sph conditional) if-pass)
     (only (sph read-write) file->datums)
     (only (sph string) string-longest-prefix string-drop-prefix)
-    (only (srfi srfi-1) append-map last))
+    (only (srfi srfi-1)
+      append-map
+      last
+      find))
 
   (define module-interface->module (compose resolve-module module-name))
 
@@ -126,15 +130,13 @@
     files must have a \".scm\" suffix.
     file contents are not checked, the result may include files that contain no library definition"
     (if load-path
-      (let
-        ( (base-path-stat (false-if-exception (stat base-path)))
-          (path->module-name* (l (e) (path->module-name (string-drop-prefix load-path e)))))
+      (let (base-path-stat (false-if-exception (stat base-path)))
         (if base-path-stat
-          (if (eqv? (q regular) (stat:type base-path-stat)) (list (path->module-name* base-path))
+          (if (eqv? (q regular) (stat:type base-path-stat)) (list (path->module-name base-path))
             (fold-directory-tree
               (l (e stat-info r)
                 (if (and (string-suffix? ".scm" e) (eqv? (q regular) (stat:type stat-info)))
-                  (pair (path->module-name* e) r) r))
+                  (pair (path->module-name e) r) r))
               (list) base-path max-depth))
           (list)))
       (error-create (q path-is-not-in-load-path))))
@@ -204,12 +206,16 @@
     ( (l (a) (if filename-extension (string-append a filename-extension) a))
       (string-join (map symbol->string a) "/")))
 
-  (define* (path->module-name a #:optional drop-load-path? (drop-filename-extension "scm"))
-    "string -> (symbol ...)
-    creates a module name from a filesystem path. module existence is not checked, neither are load-paths (except when dropping load-path from path)"
-    (path->symbol-list
-      ( (if drop-load-path? path-drop-load-path identity)
-        (if filename-extension (remove-filename-extension a (list drop-filename-extension)) a))))
+  (define (file-contains-module? path)
+    "string -> boolean
+    true if file contains as the first expression an r6rs or r7rs library definition"
+    (if (path->module-name path) #t #f))
+
+  (define (path->module-name a)
+    "string -> (symbol ...)/false
+     checks the first expression for an r6rs or r7rs library definition"
+    (match (call-with-input-file a read) ((library ((? symbol? name) ..1) _ ...) name)
+      ((define-library ((? symbol? name) ..1) _ ...) name) (_ #f)))
 
   (define (not-scm-suffix? str) (not (string-suffix? ".scm" str)))
 
@@ -227,8 +233,14 @@
             load-paths)))
       (and r (apply c r))))
 
-  (define* (path-drop-load-path a #:optional (load-path %load-path))
-    (string-drop-prefix (string-longest-prefix a load-path) a))
+  (define* (path-drop-load-path a #:optional (load-paths %load-path))
+    "string [list] -> string
+    remove from the beginning of a path the first load-path path exists in.
+    returns the input path as is if no load-path contains it"
+    (or
+      (any (l (b) (and (string-prefix? b a) (string-drop-prefix (ensure-trailing-slash b) a)))
+        load-paths)
+      a))
 
   (define (path->load-path a) "returns one load-path where a load-path-relative path can be found"
     (any (l (load-path) (and (file-exists? (string-append load-path "/" a)) load-path)) %load-path))
