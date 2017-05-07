@@ -6,7 +6,8 @@
     read-space-indent-tree->denoted-tree
     read-space-indent-tree->prefix-tree
     read-space-indent-tree-element->denoted-tree
-    string-indent->delimited-tree)
+    string-indent->delimited-tree
+    string->indent-level)
   (import
     (guile)
     (ice-9 match)

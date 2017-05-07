@@ -224,7 +224,8 @@
 
   (define (search-env-path . a)
     "string -> string
-    search for any match of paths \"a\" in the directories in the PATH environment variable and result in the full path"
+    search for any match of paths \"a\" in the directories in the PATH environment variable and result in the full path.
+    similar to guiles %search-load-path but does not consider filename extensions"
     (let*
       ( (path-parsed (parse-path (getenv "PATH")))
         (search-path
