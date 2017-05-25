@@ -19,15 +19,15 @@
   (define libscrypt (dynamic-link "libscrypt"))
 
   (define foreign-scrypt->string
-    (pointer->procedure uint32 (dynamic-func "scrypt_to_string_base91" libscrypt)
+    (pointer->procedure int (dynamic-func "scrypt_to_string_base91" libscrypt)
       (list (q *) size_t (q *) size_t uint64 uint32 uint32 size_t (q *) (q *))))
 
   (define foreign-scrypt
-    (pointer->procedure uint32 (dynamic-func "scrypt" libscrypt)
+    (pointer->procedure int (dynamic-func "scrypt" libscrypt)
       (list (q *) size_t (q *) size_t uint64 uint32 uint32 (q *) size_t)))
 
   (define foreign-scrypt-set-defaults
-    (pointer->procedure uint32 (dynamic-func "scrypt_set_defaults" libscrypt) (q (* * * * * *))))
+    (pointer->procedure int (dynamic-func "scrypt_set_defaults" libscrypt) (q (* * * * * *))))
 
   (define pointer-size (sizeof (q *)))
 
@@ -61,10 +61,10 @@
 
   (define (scrypt password salt size logN r p)
     "bytevector bytevector integer integer integer integer -> bytevector:hash"
-    (let (r (make-bytevector size 0))
+    (let (result (make-bytevector size 0))
       (foreign-scrypt (bytevector->pointer password) (bytevector-length password)
         (bytevector->pointer salt) (bytevector-length salt)
-        (expt 2 logN) r p (bytevector->pointer r) size)
-      r))
+        (expt 2 logN) r p (bytevector->pointer result) size)
+      result))
 
   (define (scrypt-check key . args) (bytevector=? key (apply scrypt args))))

@@ -190,7 +190,7 @@
   (define (test-module-execute settings module index name)
     "alist module/environment (symbol ...) -> test-result"
     (let*
-      ( (settings (alist-q-merge-key/value settings current-module-name name))
+      ( (settings (alist-q-set-multiple settings current-module-name name))
         (settings (apply-settings-reporter+hook settings (q module-before) index name))
         (r ((eval (q test-execute) module) settings)))
       (apply-settings-hook+reporter settings (q module-after) index name r) r))

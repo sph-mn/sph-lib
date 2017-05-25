@@ -54,7 +54,7 @@
     create the test settings object from program arguments"
     (alist-bind cli-arguments (reporter exclude only until)
       (cli-add-to-load-path! cli-arguments)
-      (alist-q-merge-key/value test-settings-default reporter-name
+      (alist-q-set-multiple test-settings-default reporter-name
         (cli-value-reporter (alist-q-ref test-settings-default reporters) reporter) exclude
         (cli-value-path/module-list exclude) only
         (cli-value-path/module-list only) until (cli-value-path/module-list until))

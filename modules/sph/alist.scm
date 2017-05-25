@@ -22,20 +22,20 @@
     alist-keys-map
     alist-map
     alist-merge
-    alist-merge-key/value
     alist-q
-    alist-q-merge-key/value
     alist-q-ref
     alist-q-select
     alist-q-select-apply
-    alist-q-update-key/value
+    alist-q-set-multiple
+    alist-q-update-multiple
     alist-ref
     alist-select
     alist-select-apply
     alist-set
     alist-set!
+    alist-set-multiple
     alist-update
-    alist-update-key/value
+    alist-update-multiple
     alist-values
     alist?
     alistq-ref
@@ -167,25 +167,25 @@
     create a new alist with the associations of both alists, preferring entries of \"b\""
     (append (filter (l (e) (not (alist-ref b (first e)))) a) b))
 
-  (define (alist-merge-key/value a . key/value)
+  (define (alist-set-multiple a . key/value)
     "list [any:key any:value] ...
     update or add values in alist for specific keys.
     key and value are specified alternatingly"
     (alist-merge a (list->alist key/value)))
 
-  (define-syntax-rule (alist-q-merge-key/value a key/value ...)
+  (define-syntax-rule (alist-q-set-multiple a key/value ...)
     ;list [any:unquoted-key any:value] ...
-    (apply alist-merge-key/value a (quote-odd key/value ...)))
+    (apply alist-set-multiple a (quote-odd key/value ...)))
 
-  (define (alist-update-key/value a . key/value)
+  (define (alist-update-multiple a . key/value)
     "list [any:key any:value] ...
     update values in alist for specific keys.
     key and value are specified alternatingly"
     (alist-update a (list->alist key/value)))
 
-  (define-syntax-rule (alist-q-update-key/value a key/value ...)
+  (define-syntax-rule (alist-q-update-multiple a key/value ...)
     ;list [any:unquoted-key any:value] ...
-    (apply alist-update-key/value a (quote-odd key/value ...)))
+    (apply alist-update-multiple a (quote-odd key/value ...)))
 
   (define (alist-update a b)
     "list list -> list

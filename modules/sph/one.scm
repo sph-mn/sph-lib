@@ -62,6 +62,8 @@
     prefix-imply-for
     procedure->cached-procedure
     procedure->temporarily-cached-procedure
+    procedure-append
+    procedure-append-ignore-result
     procedure-cond
     program-path
     quote-odd
@@ -412,6 +414,16 @@
     ;uses list-pairs of a predicate procedure and a handler procedure
     ;passing a to predicate and eventually handler.
     (cond ((predicate a) (handler a)) ... else))
+
+  (define (procedure-append . proc)
+    "procedure ... -> procedure:{any ... -> (any ...)}
+    creates a new procedure that applies each given procedure with its arguments and returns all results in a list"
+    (l a (map (l (b) (apply b a)) proc)))
+
+  (define (procedure-append-ignore-result . proc)
+    "procedure ... -> procedure:{any ... -> unspecified}
+    like procedure-append but does not collect results and returns unspecified"
+    (l a (each (l (b) (apply b a)) proc)))
 
   (define-syntax-rule (exception->value expr) (guard (obj (#t obj)) expr))
   (define-syntax-rule (guile-exception->key expr) (catch #t (l () expr) (l (key . args) key)))
