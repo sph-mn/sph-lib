@@ -38,6 +38,7 @@
   (import
     (guile)
     (rnrs eval)
+    (rnrs exceptions)
     (sph)
     (sph alist)
     (sph conditional)
@@ -45,17 +46,13 @@
     (sph list)
     (sph list one)
     (sph module)
+    (sph one)
     (sph record)
     (sph string)
     (sph test base)
     (sph test report)
     (except (srfi srfi-1) map)
-    (only (sph filesystem) path->full-path)
-    (only (sph one)
-      quote-odd
-      ignore
-      guile-exception->string)
-    (only (sph one) remove-keyword-associations))
+    (only (sph filesystem) path->full-path))
 
   ;data-structures:
   ;  test-result: ([group-name] test-result ...)/test-result-record
@@ -70,7 +67,10 @@
       procedure-data-before ignore
       procedure-data-after ignore
       module-before ignore module-after ignore modules-before ignore modules-after ignore)
-    random-order? #f parallel? #f exception-strings? #t exclude #f only #f until #f)
+    ; symbol:rnrs/guile
+    exception->key? #f
+    ; false/procedure:{test-proc -> proc}
+    procedure-wrap #f random-order? #f parallel? #f exclude #f only #f until #f)
 
   (define-syntax-rule (test-settings-default-custom key/value ...)
     ;[any:unquoted-key any:value] ... -> list
@@ -245,8 +245,7 @@
     - module names are mapped to filesystem paths
     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
     (let
-      ( (load-path (settings->load-path! settings))
-        (search-type (alist-q-ref settings search-type)))
+      ((load-path (settings->load-path! settings)) (search-type (alist-q-ref settings search-type)))
       (let
         (module-names
           (every-map (l (e) (false-if-null (find-modules-by-name e search-type load-path))) name))
@@ -322,11 +321,23 @@
       ( (settings (call-settings-update-hook hook-data-before settings index name 0 (list)))
         (r (test-proc (list) #t settings))
         (r
-          (if (test-result? r) (record-update test-result r title title)
+          (if (test-result? r)
+            (record-update test-result r
+              title
+              (let (sub-title (test-result-title r))
+                (if sub-title (string-append title " " sub-title) title)))
             (test-any->result r title 0))))
       (hook-data-after settings index 0 r) (report-data-after settings index 0 r) r))
 
-  (define (test-procedures-execute-one settings index exception-strings? hooks name test-proc . data)
+  (define (test-procedure-wrap settings test-proc)
+    (let (wrap (alist-ref settings (q procedure-wrap)))
+      (if (procedure? wrap) (wrap test-proc) test-proc)))
+
+  (define (test-exception->key settings test-proc)
+    (let (a (alist-ref settings (q exception->key)))
+      (if a (if (eq? (q guile) a) guile-exception->key rnrs-exception->object) test-proc)))
+
+  (define (test-procedures-execute-one settings index hooks name test-proc . data)
     "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
     ;stops on failure. ensures that test-procedure results are test-results.
     ;creates only one test-result
@@ -335,9 +346,7 @@
         hook-data-after report-before report-after report-data-before report-data-after)
       (let
         ( (title (symbol->string name))
-          (test-proc
-            (if exception-strings? test-proc
-              (l a (catch #t (thunk (apply test-proc a)) guile-exception->string)))))
+          (test-proc (test-exception->key settings (test-procedure-wrap settings test-proc))))
         (report-before settings index name)
         (let*
           ( (settings (call-settings-update-hook hook-before settings index name))
@@ -349,19 +358,19 @@
                   index data name title test-proc hooks))))
           (hook-after settings index r) (report-after settings index r) r))))
 
-  (define (test-procedures-execute-parallel settings a exception-strings? hooks)
+  (define (test-procedures-execute-parallel settings a hooks)
     "list:alist list -> list
     executes all tests even if some fail"
-    (par-map (l (e) (apply test-procedures-execute-one settings 0 exception-strings? hooks e)) a))
+    (par-map (l (e) (apply test-procedures-execute-one settings 0 hooks e)) a))
 
-  (define (test-procedures-execute-serial settings a exception-strings? hooks)
+  (define (test-procedures-execute-serial settings a hooks)
     "list:alist list -> list
     executes tests one after another and stops if one fails"
     (let
       (r
         (fold-multiple-with-continue
           (l (e continue index r)
-            (let (r-test (apply test-procedures-execute-one settings index exception-strings? hooks e))
+            (let (r-test (apply test-procedures-execute-one settings index hooks e))
               (if (test-result-success? r-test) (continue (+ 1 index) (pair r-test r))
                 (list index (list r-test)))))
           a 0 (list)))
@@ -383,7 +392,7 @@
       (l (settings source)
         "list ((symbol:name procedure:test-proc any:data-in/out ...) ...) -> test-result"
         ( (get-executor settings) settings (test-procedures-apply-settings settings source)
-          (alist-q-ref settings exception-strings?) (settings->procedure-hooks settings)))))
+          (settings->procedure-hooks settings)))))
 
   (define (test-execute-module settings name) "list (symbol ...) -> test-result"
     (test-module-execute settings (environment* name) 0 name))

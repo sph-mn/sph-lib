@@ -34,7 +34,8 @@
         "\n")))
 
   (define (test-report-compact-failure a depth display) "vector integer procedure ->"
-    (let ((indent (create-indent depth)) (index (test-result-index a))) (display indent)
+    (let ((indent (create-indent depth)) (index (test-result-index a)))
+      (display indent)
       (display (test-result-title a))
       (if (<= 1 index) (test-report-compact-display-indices index display)) (newline)
       (display indent) (display "failure\n") (test-report-compact-ieo a depth display)))
@@ -108,7 +109,8 @@
     (l (s index index-data result)
       (let (index-data (test-result-index result))
         (if (= 0 (or index-data 0))
-          (begin (display (create-indent (boolean->integer (alist-q-ref s current-module-name))))
+          (begin
+            (display (create-indent (boolean->integer (alist-q-ref s current-module-name))))
             (display (test-result-title result))))
         (if (test-result-success? result) (begin (display " ") (display (+ 1 index-data)))
           (begin (newline)

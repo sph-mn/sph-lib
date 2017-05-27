@@ -39,7 +39,6 @@
     eqv-any?
     eqv-every?
     every-s
-    exception->value
     first-as-result
     guile-exception->key
     guile-exception->string
@@ -55,6 +54,7 @@
     list->values
     n-times
     n-times-accumulate
+    not-null?
     number->integer-string
     or-p
     pass
@@ -68,11 +68,11 @@
     program-path
     quote-odd
     remove-keyword-associations
+    rnrs-exception->object
     round-even
     search-env-path
     socket-bind
     string->datum
-    string-if-exception
     true?
     true?-s
     values->list
@@ -106,6 +106,16 @@
       unfold-right
       filter
       unfold))
+
+  (define (not-null? a) (not (null? a)))
+
+  (define (rnrs-exception->object proc) "procedure -> procedure"
+    (l a (guard (exc (#t exc)) (apply proc a))))
+
+  (define (guile-exception->key proc)
+    "procedure -> procedure
+    guard catches guile exceptions, but it seems impossible to get the key"
+    (l a (catch #t (thunk (apply proc a)) (l (key . a) key))))
 
   (define* (display-formatted #:key (port (current-output-port)) . a) (pretty-print a port))
 
@@ -425,9 +435,6 @@
     like procedure-append but does not collect results and returns unspecified"
     (l a (each (l (b) (apply b a)) proc)))
 
-  (define-syntax-rule (exception->value expr) (guard (obj (#t obj)) expr))
-  (define-syntax-rule (guile-exception->key expr) (catch #t (l () expr) (l (key . args) key)))
-
   (define-syntax-rules quote-odd
     ;any ... -> list
     ;quote each argument at odd indexes starting from one, not quoting each second argument.
@@ -454,14 +461,10 @@
                 (loop (+ 1 index) 0))
               #f))))))
 
-  (define (exception->string key . args)
+  (define (guile-exception->string key . a)
     "symbol any ... -> string
     create a space separated string from exception key and arguments"
-    (string-join (map any->string args) " "))
-
-  (define-syntax-rule (string-if-exception expr)
-    ;result in an exception string created by exception->string if any exception occurs
-    (catch #t (l () expr) exception->string))
+    (string-join (map any->string a) " "))
 
   (define-syntax-rule (if-exception expr consequent) (catch #t (l () expr) (l exc consequent)))
   (define socket-bind bind)
