@@ -4,7 +4,7 @@
 (pre-define imht-set-key-t int)
 (pre-define imht-set-can-contain-zero? 0)
 (sc-include "foreign/imht-set")
-(pre-include "libguile.h" "dirent.h" "unistd.h")
+(pre-include "libguile.h" "dirent.h" "unistd.h" "limits.h")
 (pre-define-if-not-defined OPEN-MAX 1024)
 
 (pre-define (scm-c-define-procedure-c name required optional rest c-function documentation)
