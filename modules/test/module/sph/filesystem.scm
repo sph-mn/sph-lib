@@ -3,7 +3,7 @@
     (sph string)
     (sph filesystem))
 
-  (define cwd (string-append (getcwd) "/"))
+  (define cwd (string-append (or (getenv "PWD") (getcwd)) "/"))
 
   (define-test (path->full-path arguments)
     (string-replace-string (apply path->full-path arguments) cwd ""))

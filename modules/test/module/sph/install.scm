@@ -11,6 +11,7 @@
         (let (status (tail (waitpid (process-create (thunk (close in) (proc)) #f out))))
           (close out) (list status (get-string-all in))))))
 
+
   (define-test (install-cli-guile-p arguments)
     (apply (l (status output) (and (= 0 status) (string? output)))
       (process-create-with-output-to-string (thunk (apply install-cli-guile-p arguments)))))

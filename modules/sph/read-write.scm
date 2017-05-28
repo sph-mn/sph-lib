@@ -21,7 +21,7 @@
     rw-any->list
     rw-any->port
     rw-any->string
-    rw-chain-with-pipes
+    rw-chain-pipes
     rw-file->file
     rw-file->list
     rw-file->port
@@ -57,7 +57,7 @@
       (l (in) (call-with-output-file path-output (l (out) (proc in out)) #:binary output-binary?))
       #:binary input-binary?))
 
-  (define rw-chain-with-pipes
+  (define rw-chain-pipes
     (letrec
       ( (loop
           (l (in-pipe out-pipe in out proc . rest)

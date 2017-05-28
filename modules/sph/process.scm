@@ -1,6 +1,6 @@
 ; (sph process) - process creation, management and inter-process communication.
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2016 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -15,7 +15,6 @@
 (library (sph process)
   (export
     call-with-working-directory
-    process-finished-successfully?
     execute
     execute+check-result
     execute->file
@@ -24,19 +23,18 @@
     execute-and
     execute-with-pipe
     exit-value-zero?
-    primitive-process-create-chain-with-pipes
     process-and
     process-chain-finished-successfully?
+    process-chain-paths/pipes
+    process-chain-pipes
+    process-chain-pipes->string
     process-create
-    process-create-chain-with-paths/pipes
-    process-create-chain-with-pipes
-    process-create-chain-with-pipes->string
+    process-finished-successfully?
     process-primitive-create-chain-with-pipes
     process-replace
-    process-replace-with-environment
-    process-replace-without-search
-    process-replace-without-search-with-environment
-    process-set-standard-ports
+    process-replace-e
+    process-replace-p
+    process-replace-pe
     shell-eval
     shell-eval+check-result
     shell-eval->string)
@@ -59,67 +57,87 @@
   (define (call-with-working-directory path p)
     (let* ((cwd (getcwd)) (r (begin (chdir path) (p)))) (chdir cwd) r))
 
-  (define (process-replace-without-search program-path . arguments)
+  (define (process-replace program-path . arguments)
     "replaces the current process image with the execution of the program at program-path.
-    executes programs conventionally with program-path as the first argument"
+    executes programs conventionally with program-path as the first argument.
+    uses execl"
     (apply execl program-path (basename program-path) arguments))
 
-  (define (process-replace program-name/path . arguments)
+  (define (process-replace-p program-name/path . arguments)
     "like process-replace-without-search except that if the path to the program to execute does not start with a slash
-    it is searched in the directories in the PATH environment variable"
+    it is searched in the directories in the PATH environment variable.
+    uses execlp"
     (apply execlp program-name/path (basename program-name/path) arguments))
 
-  (define (process-replace-without-search-with-environment env path . arguments)
+  (define (process-replace-e env path . arguments)
     "(string:\"name=value\" ...) string string ... ->
-    like process-replace-without-search but the environment variables of the process are passed with the env parameter.
-    simpler interface to execle.
-    to use the current environment variables the (environ) procedure can be used - it creates output in the expected format for \"env\""
+    like process-replace but the environment variables of the process are passed with the env parameter.
+    to use the current environment variables the (environ) procedure can be used - it creates output in the expected format for \"env\".
+    uses execle"
     (apply execle path env (basename path) arguments))
 
-  (define (process-replace-with-environment env name/path . arguments)
+  (define (process-replace-pe env name/path . arguments)
     "(string:\"name=value\" ...) string string ... ->
-    like process-replace-without-search-with-environment except that if the path to the program to execute does not start with a slash
+    like process-replace-e except that if the path to the program to execute does not start with a slash
     it is searched in the directories in the PATH environment variable"
-    (apply execle (if (string-contains name/path "/") name/path (search-env-path name/path))
+    (apply execle (if (string-prefix? "/" name/path) name/path (search-env-path name/path))
       env (basename name/path) arguments))
 
   (define (get-port a port-default) (if (boolean? a) port-default a))
 
-  (define (get-file-descriptor port mode)
-    (or (and port (false-if-exception (fileno port))) (open-fdes *null-device* mode)))
-
-  (define (process-set-standard-ports input-port output-port error-port)
-    "sets standard input/output/error ports for process-chains. used in create-chain-with-pipes"
-    (each
-      (l (a)
-        (apply
-          (l (default-descriptor port-default port mode guile-set-port)
+  (define*
+    (process-create executable #:optional (arguments (list)) input-port output-port error-port
+      #:key
+      prepare
+      (env (environ)))
+    "procedure string:path/file-name [list port/false port/false port/false list:environ-result] -> process-id
+    \"executable\" is the path or file name of a file to execute to become the new process.
+    if the given string for \"executable\" does not start with a slash, it is searched in the directories in the PATH environment variable.
+    \"prepare\" is a thunk that will be called after fork just before the execve system call. it can be used for example to close file descriptors that have been copied by fork.
+    the optional parameters are to set the standard streams and environment variables for the new process.
+    by default the standard streams are not inherited from the parent process (they are closed in the child)"
+    (let
+      ( (new-i (and input-port (fileno input-port))) (new-o (and output-port (fileno output-port)))
+        (new-e (and error-port (fileno error-port)))
+        (executable (if (string-prefix? "/" executable) executable (search-env-path executable)))
+        (first-argument (basename executable)))
+      (let (process-id (primitive-fork))
+        (if (= 0 process-id)
+          (begin
+            ;this branch is executed in the forked process.
+            ;a fork copies only the current thread and state of previously existing threads might be inconsistent.
+            ;because of that it is advised to call, if any, only "async-safe" functions until "exec".
+            ;the following is supposed to do as little as possible - but ideally it would be implemented in c, but then c compilation is required for using this library.
             (let*
-              ((port (get-port port port-default)) (descriptor (get-file-descriptor port mode)))
-              (guile-set-port port) (dup2 descriptor default-descriptor)))
-          a))
-      (list (list 0 (current-input-port) input-port O_RDONLY set-current-input-port)
-        (list 1 (current-output-port) output-port O_WRONLY set-current-output-port)
-        (list 2 (current-error-port) error-port O_WRONLY set-current-error-port))))
+              ( (new-i (or new-i (open-fdes "/dev/null" O_RDONLY)))
+                (new-o (or new-o (open-fdes "/dev/null" O_WRONLY)))
+                (new-e (or new-e (open-fdes "/dev/null" O_WRONLY)))
+                ;move conflicting descriptors
+                (new-o (if (and (> new-i 0) (= 0 new-o)) (dup new-o) new-o))
+                (new-e (if (and (> new-i 0) (= 0 new-e)) (dup new-e) new-e))
+                (new-e (if (and (> new-o 1) (= 1 new-e)) (dup new-e) new-e)))
+              ;if new-i is not already the inherited standard descriptor
+              (if (> new-i 0)
+                (begin
+                  ;move the new output and error streams away from descriptor 0 if they use it
+                  ;(dup2 old new) closes the new descriptor if necessary and makes the new one an alias for the old one.
+                  ;this makes the desired stream the standard input of the new process
+                  (dup2 new-i 0) (close-fdes new-i)))
+              (if (> new-o 1) (begin (dup2 new-o 1) (close-fdes new-o)))
+              (if (> new-e 2) (begin (dup2 new-e 2) (close-fdes new-e))))
+            (and prepare (prepare))
+            ;execle because it uses execve which posix requires to be async-safe in contrast to execv
+            (apply execle executable env first-argument arguments))
+          process-id))))
 
-  (define* (process-create content #:optional (input-port #t) (output-port #t) (error-port #t))
-    "procedure:{-> integer:exit-code} port/false port/false port/false -> process-id
-    apply zero parameter procedure content in a background copied process image created by fork and result in
-    the childs process-id in the foreground process. the optional arguments set the standard-ports for the new process"
-    (let (process-id (primitive-fork))
-      (if (= 0 process-id)
-        (begin (process-set-standard-ports input-port output-port error-port)
-          (let (status (content)) (primitive-_exit (if (integer? status) status (if status 0 1)))))
-        process-id)))
-
-  (define process-create-chain-with-pipes
+  (define process-chain-pipes
     (l (port-input port-output . command/proc)
       "port/true/any port/true/any procedure:{}/(string ...)/string -> (integer:pid/proc-result ...)
       creates a new process for each command/proc and sets the standard-input and -output of the processes in a chaining manner:
       the first input is the given input-port, the first output is the input of the next process, until the last port is the given output-port.
       supports lists as value for command/proc that contain arguments for \"execute\".
       the first program-path automatically becomes the second argument to follow the common execv calling convention"
-      (apply rw-chain-with-pipes port-input
+      (apply rw-chain-pipes port-input
         port-output
         (map
           (l (a)
@@ -169,10 +187,9 @@
     (let* ((port (open-pipe command-str OPEN_READ)) (result-str (port->string port)))
       (close-pipe port) result-str))
 
-  (define (process-create-chain-with-pipes->string input . process-handler)
-    "any procedure/string:command ->"
+  (define (process-chain-pipes->string input . process-handler) "any procedure/string:command ->"
     (call-with-pipe
-      (l (in out) (apply process-create-chain-with-pipes input out process-handler)
+      (l (in out) (apply process-chain-pipes input out process-handler)
         (close out) (port->string in))))
 
   (define (exit-value-zero? system-result) (zero? (status:exit-val system-result)))
@@ -190,7 +207,8 @@
 
   (define-syntax-rule (type-path? a) (eqv? (q path) a))
 
-  (define (process-finished-successfully? pid) "integer -> boolean
+  (define (process-finished-successfully? pid)
+    "integer -> boolean
     wait for the termination of the process identified by the given process id and check if its exit status is 0"
     (= 0 (status:exit-val (tail (waitpid pid)))))
 
@@ -199,10 +217,10 @@
     wait for the termination of the processes and check if its exit status is 0"
     (every process-finished-successfully? result-list))
 
-  (define (chain-with-paths/pipes-call-with-source source source-type proc)
+  (define (chain-paths/pipes-call-with-source source source-type proc)
     "-> integer:pid/unspecified
     if the result is not a pid, then the suprocess is already finished.
-    this procedure creates the result for a process-create-chain-with-paths/pipes loop iteration"
+    this procedure creates the result for a process-chain-paths/pipes loop iteration"
     (if source
       (if (string? source)
         (let (pid (if (type-path? source-type) (proc source) (call-with-input-file source proc)))
@@ -217,7 +235,7 @@
           (first-as-result (proc source) (close source))))
       (proc source)))
 
-  (define (chain-with-paths/pipes-call-with-source-first source source-type proc)
+  (define (chain-paths/pipes-call-with-source-first source source-type proc)
     "any symbol procedure:{any:source ->} -> any
     sets up input output ports and calls \"proc\""
     (if (string? source)
@@ -225,7 +243,7 @@
       (if (and (port? source) (type-path? source-type))
         (let (path (create-temp-fifo)) (proc path) (port->file source path)) (proc source))))
 
-  (define (chain-with-paths/pipes-call-with-destination source destination-type proc)
+  (define (chain-paths/pipes-call-with-destination source destination-type proc)
     "any symbol procedure:{any string/port -> any} -> (integer:pid . string/port:next-input)"
     (if (type-path? destination-type)
       (let (destination-path (create-temp-fifo))
@@ -239,8 +257,7 @@
 
   (define-syntax-rule (port-or-true a) (or (and (port? a) a) #t))
 
-  (define
-    (chain-with-paths/pipes-call-with-destination-last source destination destination-type proc)
+  (define (chain-paths/pipes-call-with-destination-last source destination destination-type proc)
     "any any symbol procedure:{any any ->} -> integer:process-id/any"
     (if (type-path? destination-type)
       (if (port? destination)
@@ -260,15 +277,15 @@
         (process-create (thunk (proc source destination)) (port-or-true source)
           (port-or-true destination)))))
 
-  (define (process-create-chain-with-paths/pipes source destination . proc-config)
+  (define (process-chain-paths/pipes source destination . proc-config)
     "::
-     string:file-path/port/boolean-true:standard-input/any
-     string:file-path/port/boolean-true:standard-output/any
+     string:file-path/port/true:standard-input/any
+     string:file-path/port/true:standard-output/any
      (symbol:path/port/any symbol:path/port/any procedure:{port/string/false:source port/string/false:destination}) ...
      ->
      (integer:process-pid/proc-result ...)
 
-     similar to process-create-chain-with-pipes, but also supports intermediate file paths in the form of automatically created temporary named-pipes.
+     similar to process-chain-pipes, but also supports temporary intermedia file paths as input/output arguments (the paths point to named pipes).
      procedures of varying type signatures can be used for processes, processes that read from or write to files, or that read from or write to ports, all types possibly mixed.
      procedures of proc-config are applied in series in separate processes with source and destination ports in a data-flow chaining manner, like using | with bash.
      the source and destination arguments are made compatible automatically, with their expected input and output types specified by the first two symbols of a proc-config element.
@@ -287,18 +304,17 @@
               (pair pid
                 (apply
                   (l (source-type destination-type proc)
-                    ( (if is-first chain-with-paths/pipes-call-with-source-first
-                        chain-with-paths/pipes-call-with-source)
+                    ( (if is-first chain-paths/pipes-call-with-source-first
+                        chain-paths/pipes-call-with-source)
                       source source-type
                       (l (source)
                         (if (null? rest)
                           (list
-                            (chain-with-paths/pipes-call-with-destination-last source
+                            (chain-paths/pipes-call-with-destination-last source
                               (get-port destination (current-output-port)) destination-type proc))
                           (apply loop #f
                             (append
-                              (chain-with-paths/pipes-call-with-destination source destination-type
-                                proc)
+                              (chain-paths/pipes-call-with-destination source destination-type proc)
                               rest))))))
                   config)))
             #t #f (get-port source (current-input-port)) proc-config)))))
