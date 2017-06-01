@@ -1,4 +1,4 @@
-; (sph two) - example implementations of various procedures. problem specific, circular dependent on sph-one, system dependent, new or more experimental.
+; (sph two) - various procedures. deemed less useful than procedures in (sph one). system dependent, new or more experimental.
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -14,30 +14,47 @@
 
 (library (sph two)
   (export
+    alist->regexp-match-replacements
+    and-p
     any-hashtable-keys->values
     any-hashtable-values->keys
+    apply*
+    apply-without-arguments
     bash-escape-clear
     bindings-select-prefix
     bindings-select-regexp
+    boolean->integer
+    call
     cons-if-not-included
     copy-file!?
     copy-with-replaced-directory
-    create-fifo
     create-indent
     create-newline-indent
     create-quote
     debug-log-file
     define-stack-fluid
+    define-string
     define-syntax-identifier
+    display-formatted
     display-line*
+    eq-any?
+    eq-every?
+    equal-any?
+    equal-every?
+    eqv-any?
+    eqv-every?
+    every-s
     file-append
     file-append-one
+    fold-integers
     generalised-length
     generalised-less?
     get-filesystem-root
     get-mime-extensions
     get-mime-extensions-cached
+    guile-exception->string
     hash-select
+    if-guile-exception
     let-if
     let-if*
     line-reverse-direction
@@ -45,6 +62,7 @@
     list->csv-line
     list->nl-string
     list->string-list
+    list->values
     list-replace-from-hashtable-splice
     list-symbols->string
     listener-on-port-local?
@@ -52,7 +70,10 @@
     md5sum-file
     move-and-link
     nl-string->list
+    not-null?
     not-scm-file?
+    number->integer-string
+    or-p
     os-seconds-at-boot
     os-seconds-since-boot
     paths-find-file-size-sum
@@ -60,6 +81,8 @@
     port-column-subtract!
     port-each-line-alternate-direction
     port-skip+count
+    prefix-definition-names
+    prefix-imply-for
     primitive-eval-port
     process-unique-integer
     prog-sync-with-root
@@ -69,6 +92,7 @@
     seconds->short-kiloseconds-string
     set-multiple-from-list!
     srfi-19-date->seconds
+    string->datum
     string-remove-leading-zeros
     sxml->xml-string
     system-cat-merge-files
@@ -76,10 +100,13 @@
     system-realpath
     tail-symbols->string
     tree-replace-from-hashtable
+    true?
+    values-bind
     variable-type
     while-do
     while-do-map
-    while-store)
+    while-store
+    with-values)
   (import
     (guile)
     (ice-9 match)
@@ -114,6 +141,47 @@
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
 
+  (define (guile-exception->string key . a)
+    "symbol any ... -> string
+    create a space separated string from exception key and arguments.
+    uses \"any->string\" with the format of \"display\" to convert non-string arguments"
+    (string-join (map any->string a) " "))
+
+  (define (list->values a) (apply values a))
+  (define-syntax-rule (with-values producer proc) (call-with-values (thunk producer) proc))
+
+  (define (call proc . a)
+    "procedure any ... -> any
+    apply procedure \"proc\" with arguments \"a\""
+    (apply proc a))
+
+  (define-syntax-rule (values-bind producer lambda-formals body ...)
+    (call-with-values (thunk producer) (lambda lambda-formals body ...)))
+
+  (define (fold-integers start end init proc)
+    (let loop ((n start) (r init)) (if (< n end) (loop (+ 1 n) (proc n r)) r)))
+
+  (define* (integer->integer-string a #:optional (radix 10))
+    "integer -> string
+    return integer as a string without a radix point or fractional value."
+    (number->string (inexact->exact a) radix))
+
+  (define (apply-without-arguments procedure) (procedure))
+  (define-syntax-rule (true?-s expr) (if expr #t #f))
+
+  (define (alist->regexp-match-replacements a)
+    "automatically converts strings at the prefix position to regular expressions"
+    (map (l (e) (pair (if (string? (first e)) (make-regexp (first e)) (first e)) (tail e))) a))
+
+  (define* (string->datum a #:optional (reader read))
+    "get the first scheme expression from a string" (call-with-input-string a reader))
+
+  (define-syntax-rule (if-guile-exception expr consequent)
+    ;example: (if-guile-exception (throw (q test)) "return this on exception")
+    (catch #t (l () expr) (l exc consequent)))
+
+  (define* (display-formatted #:key (port (current-output-port)) . a) (pretty-print a port))
+
   (define (move-and-link target-path source-path)
     "string ... -> (boolean ...)
     move source-path to target-path and replace original source-path"
@@ -124,10 +192,53 @@
           (string-append (ensure-trailing-slash target-path) (basename source-path))
           (dirname source-path)))))
 
+  (define-syntax-rule (create-equal-any list-pred member-pred equality-pred)
+    ;see *-any?/every? definitions
+    (lambda (a b)
+      "any/list any/list -> boolean
+      check if there is either equality or inclusion between the arguments.
+      examples
+      eqv-any? (4 2 6) (3 1 2) -> true
+      eqv-any? (3 1 2) 2 -> true
+      eqv-any? 4 (3 1 2) -> false"
+      (if (list? a) (if (list? b) (list-pred (l (e) (member-pred e b)) a) (member-pred b a))
+        (if (list? b) (member-pred a b) (equality-pred a b)))))
+
+  (define eqv-any? (create-equal-any any memv eqv?))
+  (define eqv-every? (create-equal-any every memv eqv?))
+  (define equal-any? (create-equal-any any member equal?))
+  (define equal-every? (create-equal-any every member equal?))
+  (define eq-any? (create-equal-any any memq eq?))
+  (define eq-every? (create-equal-any every memq eq?))
+  (define (not-null? a) (not (null? a)))
+
+  (define-syntax-rules every-s
+    ;"like 'every' for lists but implemented as syntax. proc is not bound
+    ;example: (every-s integer? 1 2 3) is expanded to: (if (and (integer? 1) (integer? 2) (integer? 3)) #t #f)"
+    ((proc a) (if (proc a) #t #f)) ((proc a a-n ...) (if (proc a) (every-s proc a-n ...) #f)))
+
+  (define (define-string name value)
+    "string any ->
+    define a variable by using a string for the name"
+    (primitive-eval (quasiquote (define (unquote (string->symbol name)) (unquote value)))))
+
+  (define (boolean->integer a) (if a 1 0))
+
   (define (debug-log-file . a)
     "writes all arguments in one line prefixed by the process id to an automatically created log file \"/tmp/sph-scm-debug-log\""
     (let (file (open-file "/tmp/sph-scm-debug-log" "a")) (display-line (pair (getpid) a) file)
       (close file)))
+
+  (define (and-p . a)
+    "any -> false/any
+    like the \"and\" syntax but as a procedure"
+    (let loop ((rest a) (previous #t))
+      (if (null? rest) previous (if (first rest) (loop (tail rest) (first rest)) #f))))
+
+  (define (or-p . a)
+    "any -> false/any
+    like the \"or\" syntax but as a procedure"
+    (any identity a))
 
   (define (create-indent size) (list->string (make-list (* size 2) #\space)))
   (define (create-newline-indent size) (string-append "\n" (create-indent size)))
@@ -153,7 +264,7 @@
   (define (port-column-subtract! port integer)
     (set-port-column! port (- (port-column port) integer)))
 
-  (define (port-skip+count port skip-char)
+  (define (port-skip+count port skip-char) ""
     (let loop ((char (peek-char port)) (count 0))
       (if (eqv? char skip-char) (loop (begin (read-char port) (peek-char port)) (+ count 1)) count)))
 
@@ -238,8 +349,6 @@
 
   (define (srfi-19-date->seconds a) "srfi-14-date -> integer unix-time-seconds"
     (time-second (date->time-utc a)))
-
-  (define* (create-fifo path #:optional (permissions 438)) (mknod path (q fifo) permissions 0))
 
   (define (read-line-crlf-trim port)
     "try to read a line that is known to be cr-lf terminated and remove the cr-lf or return eof-object"
@@ -572,4 +681,49 @@
   (define-syntax-rules while-store
     ( (expr stop-if)
       (let loop ((cur expr) (r (list))) (if (stop-if cur) (reverse r) (loop expr (cons cur r)))))
-    ((expr) (while-store expr not))))
+    ((expr) (while-store expr not)))
+
+  (eval-when (expand load eval)
+    (define (prefix-join a) "symbol -> symbol"
+      (string->symbol (string-join (map symbol->string a) "-")))
+    (define (symbol-prepend-prefix-proc prefix)
+      (if (list? prefix) (l (a) (prefix-join (append prefix (list a))))
+        (l (a) (symbol-append prefix a)))))
+
+  (define-syntax-case (prefix-definition-names prefix body ...) s
+    ;symbol/(symbol ...) any ...
+    ;all defines in "body" are rewritten to bind a name prepended with symbols in prefix joined by "-".
+    ;usages are not rewritten.
+    ;example: (define-with-prefix (a b) (define c 1) (define (d e) 2)) -> (define a-b-c 1) (define (a-b-d e) 2)
+    (let
+      ( (symbol-prepend-prefix (symbol-prepend-prefix-proc (syntax->datum (syntax prefix))))
+        (body-datum (syntax->datum (syntax (body ...))))
+        (is-define? (l (a) (and (list? a) (not (null? a)) (eqv? (quote define) (first a))))))
+      (datum->syntax s
+        (pair (q begin)
+          (map
+            (l (e)
+              (if (is-define? e)
+                (apply
+                  (l (define-symbol define-name . define-body)
+                    (if (pair? define-name)
+                      (pairs define-symbol
+                        (pair (symbol-prepend-prefix (first define-name)) (tail define-name))
+                        define-body)
+                      (pairs define-symbol (symbol-prepend-prefix define-name) define-body)))
+                  e)
+                e))
+            body-datum)))))
+
+  (define-syntax-case (prefix-imply-for prefix (name ...) body ...) s
+    ;bind the values of the indentifiers "{prefix}-{name}" to "name" in the scope for "body"
+    (let*
+      ( (symbol-prepend-prefix (symbol-prepend-prefix-proc (syntax->datum (syntax prefix))))
+        (add-prefix-to-formals
+          (l (a) (map (l (e) (if (eqv? (q t) e) e (symbol-prepend-prefix e))) a)))
+        (name-datum (syntax->datum (syntax (name ...)))))
+      (datum->syntax s
+        (pair (pairs (q lambda) name-datum (syntax->datum (syntax (body ...))))
+          (add-prefix-to-formals name-datum)))))
+
+  (define-syntax-rule (apply* arguments proc) (apply proc arguments)))

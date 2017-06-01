@@ -1,6 +1,6 @@
 ; (sph install) - file installation/copy helpers
 ; written for the guile scheme interpreter
-; Copyright (C) 2015-2016 sph <sph@posteo.eu>
+; Copyright (C) 2015-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -18,17 +18,34 @@
     install-cli-guile
     install-cli-guile-p
     install-one
-    install-p)
+    install-p
+    sph-install-description)
   (import
-    (sph common))
+    (guile)
+    (sph)
+    (sph alist)
+    (sph cli)
+    (sph conditional)
+    (sph filesystem)
+    (sph list)
+    (sph process)
+    (sph string))
+
+  (define sph-install-description
+    "# features
+     * installation with specific file mode. using \"cp\" or the like usually uses owner and permissions for the current user, which might be root
+     * dry-run for listing what is to be done
+     * command line interface with --help and other options
+     * list data structure for defining source and destination  paths nested with support for some default variables
+     * symlinking files instead of installing them, for development and updates in a versioned repository
+     # data structures
+     * destination: string:path/symbol:placeholder/(string/symbol ...):concatenated-path
+     * source: string:path/symbol:placeholder/integer:mode-for-following/(string:path/symbol:placeholder ...):concatenated-path
+     * install-spec: (destination source ...)")
 
   (define default-mode-directory 493)
   (define default-mode-regular 420)
   (define default-path-lib-scheme "/usr/share/guile/site")
-  ;data-structure
-  ;  destination: string:path/symbol:placeholder/(string/symbol ...):concatenated-path
-  ;  source: string:path/symbol:placeholder/integer:mode-for-following/(string:path/symbol:placeholder ...):concatenated-path
-  ;  install-spec: (destination source ...)
 
   (define (select-mode-by-file-type a mode-regular mode-directory)
     (if (eqv? (q directory) (stat:type (stat a))) mode-directory mode-regular))
@@ -100,8 +117,10 @@
     "list list -> boolean
     install multiple files or directory trees with files.
     automatically creates missing directories in target and sets new directory permissions to default or custom specified values.
-    currently depends on the \"cp\" utility"
-    (every (l (e) (apply install-one (first e) (tail e) install-one-arguments)) install-specs))
+    currently depends on the \"cp\" utility.
+    allows empty lists as install-spec"
+    (every (l (e) (or (null? e) (apply install-one (first e) (tail e) install-one-arguments)))
+      install-specs))
 
   (define-syntax-rule (install (install-one-arguments ...) install-spec ...)
     (install-p (list install-one-arguments ...) (qq (install-spec ...))))
@@ -116,7 +135,6 @@
       a))
 
   (define (optional-keyword-argument keyword value) (if value (list keyword value) (list)))
-  ;ame/pattern alternative-names required? value-required value-optional input-type description custom-processor
   (define (octal-integer->decimal a) (string->number (number->string a) 8))
 
   (define install-cli-guile-p
@@ -134,7 +152,7 @@
                       (string-quote default-path-lib-scheme))))
                 (symlink #:description "create symlinks instead of file copies")
                 (dry-run #:description
-                  "make no changes and only show the commands that would be executed")
+                  "make no changes and only show the (equivalent) commands that would be executed")
                 (mode-directory #:value-required? #t
                   #:type integer #:description "default permissions in octal notation")
                 (mode-regular #:value-required? #t

@@ -24,10 +24,14 @@
     (sph list)
     (sph string)
     (sph tree)
-    (only (sph one) round-even)
     (only (srfi srfi-1) last))
 
   ;formatters for expressions
+
+  (define (round-even a)
+    "number -> integer
+    floor to the nearest even integer"
+    (let (a (inexact->exact (round a))) (+ a (modulo a 2))))
 
   (define (add-multiple-leading-parenthesis-spacing config lines) "( (content ..."
     (if
@@ -236,9 +240,8 @@
             ( (name imports body ...)
               (apply string-append "("
                 (symbol->string (first a)) " "
-                (format-list name config current-indent (inf) (inf) (inf))
-                "\n" indent
-                (format-import imports recurse config (+ 1 current-indent))
+                (format-list name config current-indent (inf) (inf) (inf)) "\n"
+                indent (format-import imports recurse config (+ 1 current-indent))
                 (if (null? body) (list ")")
                   (list vertical-spacing indent
                     (string-join-with-vertical-spacing

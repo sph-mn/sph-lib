@@ -2,6 +2,7 @@
   (export
     call-with-directory
     call-with-input-files
+    call-with-temporary-file
     directory-delete-content
     directory-fold
     directory-list
@@ -70,6 +71,14 @@
   (define (call-with-input-files proc . paths)
     (let* ((files (map (l (e) (open-file e "r")) paths)) (r (apply proc files))) (each close files)
       r))
+
+  (define (call-with-temporary-file proc)
+    "procedure:{port -> any} -> any
+    call proc with an input/output port to a temporary file.
+    the file is deleted after proc or the current process exits.
+    result is the result of calling proc"
+    (let* ((name (tmpnam)) (file (open-file (tmpnam) "w+")) (result (proc file))) (close file)
+      result))
 
   (define directory-read-all scandir)
 

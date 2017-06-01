@@ -8,6 +8,7 @@
     file-port->file-port
     port->bytevector
     port->file
+    each-u8
     port->lines
     port->string
     port-copy-all
@@ -50,6 +51,12 @@
     (sph)
     (sph filesystem)
     (only (srfi srfi-1) drop))
+
+  (define (each-u8 proc port)
+    "procedure:{octet -> any} port -> unspecified
+    apply proc with each octet read from port until end-of-file is reached."
+    (let next ((octet (get-u8 port)))
+      (if (eof-object? octet) #t (begin (proc octet) (next (get-u8 port))))))
 
   (define*
     (file-port->file-port path-input path-output proc #:key (input-binary? #t) (output-binary? #t))
