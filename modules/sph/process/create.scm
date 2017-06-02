@@ -1,19 +1,17 @@
 (library (sph process create)
   (export
+    process-chain
     process-chain-finished-successfully?
     process-chain-paths/pipes
-    process-chain-pipes
     process-chain-pipes->string
     process-create
     process-primitive-create-chain-with-pipes)
   (import
+    (guile)
     (sph)
-    (only (guile)
-      basename
-      string-prefix?
-      load-extension
-      environ)
-    (only (sph one) search-env-path))
+    (sph read-write)
+    (only (sph list) any->list first-or-false)
+    (only (sph one) search-env-path begin-first))
 
   (load-extension "libguile-sph-lib" "init_sph_lib")
 
@@ -30,45 +28,51 @@
     with the key parameters the environment variables for the new process can be set in the format (environ) returns.
     no file descriptors from the parent process are transferred to the child except if listed in keep-descriptors or given using the input/output/error-port parameters.
     returns the process id of the newly created child process or false if the process could not be created"
-    (primitive-process-create
-      (if (string-prefix? "/" executable) executable (search-env-path executable))
-      (pair (basename executable) arguments) input-port output-port error-port env keep-descriptors))
-
+    (if search-path?
+      (let
+        (executable
+          (if (string-prefix? "/" executable) executable
+            (first-or-false (search-env-path executable))))
+        (and executable (file-exists? executable)
+          (primitive-process-create executable (pair (basename executable) arguments)
+            input-port output-port error-port env keep-descriptors)))
+      (and (file-exists? executable)
+        (primitive-process-create executable (pair (basename executable) arguments)
+          input-port output-port error-port env keep-descriptors))))
 
   ; the following definitions are not directly dependent on the loaded extension
   ;
   (define-syntax-rule (type-path? a) (eqv? (q path) a))
 
-  (define process-chain-pipes
-    (l (port-input port-output . command/proc)
-      "port/true/any port/true/any procedure:{}/(string ...)/string -> (integer:pid/proc-result ...)
-      creates a new process for each command/proc and sets the standard-input and -output of the processes in a chaining manner:
-      the first input is the given input-port, the first output is the input of the next process, until the last port is the given output-port.
-      supports lists as value for command/proc that contain arguments for \"execute\".
-      the first program-path automatically becomes the second argument to follow the common execv calling convention"
-      (apply rw-chain-pipes port-input
-        port-output
-        (map
-          (l (a)
-            (l (pipe-in pipe-out in out) (if pipe-out (setvbuf pipe-out (q none)))
-              (let
-                (pid
-                  (process-create
-                    (thunk (if pipe-in (close-port pipe-in))
-                      (if (procedure? a) (a)
-                        (if (list? a) (apply process-replace a) (process-replace a))))
-                    (or in pipe-in) (or out pipe-out)))
-                (if pipe-out (close-port pipe-out)) pid)))
-          command/proc))))
+  (define* (process-chain first-input last-output execute-arguments #:key search-path?)
+    "port/any port/any (string/(string:executable string:argument ...) ...) -> (integer:pid ...)
+    creates a new process for each execute-argument and sets standard input and output of the processes in a chaining manner:
+    input is the first-input or the input from the previous process, the output is the output to the next process or the last-output.
+    error port for each process is the current-error-port of the process calling process-chain pipes.
+    if any process could not be created then all previously created processed are sent SIGTERM and the result is an empty list"
+    (let*
+      ( (execute-arguments-length (length execute-arguments)) (error (current-error-port))
+        (pids
+          (apply rw-pipe-chain first-input
+            last-output
+            (map
+              (l (a)
+                (let (executable-and-arguments (any->list a))
+                  (l (in out)
+                    (begin-first
+                      (process-create (first executable-and-arguments)
+                        (tail executable-and-arguments) in out error #:search-path? search-path?)
+                      (if (not (eq? first-input in)) (close in))
+                      (if (not (eq? last-output out)) (close out))))))
+              execute-arguments))))
+      (if (= (length pids) execute-arguments-length) pids
+        (begin (each (l (a) (kill a SIGTERM)) pids) (list)))))
 
+  #;(
   (define (process-chain-pipes->string input . process-handler) "any procedure/string:command ->"
     (call-with-pipe
-      (l (in out)
-        (apply process-chain-pipes input out process-handler)
-        (close out)
-        (port->string in)
-
-        )))
+      (l (in out) (apply process-chain-pipes input out process-handler)
+        (close out) (port->string in))))
 
   (define (chain-paths/pipes-call-with-destination source destination-type proc)
     "any symbol procedure:{any string/port -> any} -> (integer:pid . string/port:next-input)"
@@ -177,4 +181,6 @@
                               (chain-paths/pipes-call-with-destination source destination-type proc)
                               rest))))))
                   config)))
-            #t #f (get-port source (current-input-port)) proc-config))))))
+  #t #f (get-port source (current-input-port)) proc-config)))))
+
+  ))

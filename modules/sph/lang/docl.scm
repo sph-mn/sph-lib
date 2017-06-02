@@ -19,7 +19,7 @@
     (only (rnrs hashtables) equal-hash)
     (only (sph alist) list->alist)
     (only (sph list) contains?)
-    (only (sph one) first-as-result))
+    (only (sph one) begin-first))
 
   (define docl-default-env-module-names (ql (sph lang docl env default)))
   ;(call-hierachy-information . alist)
@@ -34,7 +34,7 @@
     (let (source-name (get-source-identifier input))
       (if (and source-name (contains? (first docl-state) source-name)) ""
         (let (docl-state (pair (pair source-name (first docl-state)) (tail docl-state)))
-          (first-as-result
+          (begin-first
             (catch #t (thunk (proc input docl-state))
               (l (key . args)
                 (error-create key args

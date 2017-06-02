@@ -1,6 +1,7 @@
 (library (sph read-write)
   (export
     bytevector->file
+    each-u8
     file->bytevector
     file->datums
     file->port
@@ -8,7 +9,6 @@
     file-port->file-port
     port->bytevector
     port->file
-    each-u8
     port->lines
     port->string
     port-copy-all
@@ -22,7 +22,6 @@
     rw-any->list
     rw-any->port
     rw-any->string
-    rw-chain-pipes
     rw-file->file
     rw-file->list
     rw-file->port
@@ -31,6 +30,7 @@
     rw-list->file
     rw-list->port
     rw-list->string
+    rw-pipe-chain
     rw-port->file
     rw-port->list
     rw-port->port
@@ -64,21 +64,16 @@
       (l (in) (call-with-output-file path-output (l (out) (proc in out)) #:binary output-binary?))
       #:binary input-binary?))
 
-  (define rw-chain-pipes
-    (letrec
-      ( (loop
-          (l (in-pipe out-pipe in out proc . rest)
-            (if (null? rest) (list (proc in-pipe #f in out))
-              (let (ports (pipe))
-                (let ((in-pipe (first ports)) (out-pipe (tail ports)))
-                  (pair (proc in-pipe out-pipe in #f) (apply loop in-pipe out-pipe #f out rest))))))))
-      (l (port-input port-output . proc)
-        "port port procedure ... -> (procedure-result ...)
-        create a pipe for each procedure output and the next procedure input and call procedures with the respective input/output-ports"
-        (if (null? proc) proc
-          (apply loop #f
-            #f (if (and port-input (boolean? port-input)) (current-input-port) port-input)
-            (if (and port-output (boolean? port-output)) (current-output-port) port-output) proc)))))
+  (define (rw-pipe-chain first-input last-output . proc)
+    "port/true port/true procedure:{pipe-input pipe-output port/false:first-input port/false:last-output} ... -> (procedure-result ...)
+    create a pipe for each procedure output and the next procedure input and call procedures with the respective input/output-ports.
+    if any result is false then stop and return results up to that point"
+    (if (null? proc) proc
+      (let loop ((in first-input) (out #f) (proc (first proc)) (rest (tail proc)))
+        (if (null? rest) (list (proc in last-output))
+          (let (pipe-ports (pipe))
+            (let (result (proc in (tail pipe-ports)))
+              (if result (pair result (loop (first pipe-ports) #f (first rest) (tail rest))) (list))))))))
 
   (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
     "[string] [string:infix] -> port

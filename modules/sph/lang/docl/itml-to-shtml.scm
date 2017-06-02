@@ -23,7 +23,6 @@
     (sph set)
     (sph web shtml)
     (only (sph hashtable) hashtable-ref symbol-hashtable)
-    (only (sph one) string->datum first-as-result)
     (only (sph string) string-equal?)
     (only (sph tree) flatten tree-transform-with-state)
     (only (srfi srfi-1) remove))

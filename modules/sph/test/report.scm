@@ -7,20 +7,25 @@
     test-reporter-names
     test-reporters-default)
   (import
+    (guile)
     (ice-9 match)
-    (sph common)
+    (sph)
+    (sph alist)
+    (sph hashtable)
+    (sph string)
     (sph test base)
     (except (rnrs hashtables) hashtable-ref)
-    (only (guile) current-output-port))
+    (only (sph one) ignore call-multiple-times)
+    (only (sph two) boolean->integer)
+    (only (srfi srfi-1) filter-map))
 
   (define (create-indent depth) (string-multiply "  " depth))
-  ;todo: test nested results display, assertion title display.
   ;notes:
   ; test reporters for writing to standard output for example while tests are running are implemented as a special hook
   ; configuration with hook procedures to be called by the test execution procedures.
 
   (define (test-report-compact-display-indices count display)
-    (n-times count (l (n) (display " ") (display (+ 1 n)))))
+    (call-multiple-times count (l (n) (display " ") (display (+ 1 n)))))
 
   (define (test-report-compact-ieo a depth display)
     (display
@@ -34,8 +39,7 @@
         "\n")))
 
   (define (test-report-compact-failure a depth display) "vector integer procedure ->"
-    (let ((indent (create-indent depth)) (index (test-result-index a)))
-      (display indent)
+    (let ((indent (create-indent depth)) (index (test-result-index a))) (display indent)
       (display (test-result-title a))
       (if (<= 1 index) (test-report-compact-display-indices index display)) (newline)
       (display indent) (display "failure\n") (test-report-compact-ieo a depth display)))
@@ -109,8 +113,7 @@
     (l (s index index-data result)
       (let (index-data (test-result-index result))
         (if (= 0 (or index-data 0))
-          (begin
-            (display (create-indent (boolean->integer (alist-q-ref s current-module-name))))
+          (begin (display (create-indent (boolean->integer (alist-q-ref s current-module-name))))
             (display (test-result-title result))))
         (if (test-result-success? result) (begin (display " ") (display (+ 1 index-data)))
           (begin (newline)

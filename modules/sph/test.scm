@@ -197,7 +197,7 @@
 
   (define (test-modules-until a value) (take-while (l (a) (not (equal? a value))) a))
   (define (test-modules-only a values) (intersection a values))
-  (define (test-modules-exclude a values) (remove (l (a) (containsv? values a)) a))
+  (define (test-modules-exclude a values) (remove (l (a) (contains? values a)) a))
 
   (define (test-modules-apply-settings settings modules)
     "list ((symbol ...) ...) -> ((symbol ...) ...)
@@ -272,8 +272,7 @@
     (alist-bind settings (only exclude until random-order?)
       ( (if random-order? randomise identity)
         ( (if until test-procedures-until (l (a b) a))
-          (if only (test-procedures-only a only)
-            (if exclude (test-procedures-exclude a (exclude)) a))
+          (if only (test-procedures-only a only) (if exclude (test-procedures-exclude a exclude) a))
           until))))
 
   (define (test-any->result result title index)

@@ -19,7 +19,6 @@
     (sph lang itml read)
     (sph string)
     (only (sph list) map-selected)
-    (only (sph one) true?)
     (only (sph tree)
       tree-map-leafs
       flatten

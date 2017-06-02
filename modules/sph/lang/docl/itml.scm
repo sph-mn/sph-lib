@@ -32,7 +32,6 @@
       open-input-string)
     (only (sph lang indent-syntax) prefix-tree->indent-tree-string)
     (only (sph list) simplify-list)
-    (only (sph one) string->datum)
     (only (sph string) parenthesise)
     (only (sph tree) flatten tree-transform-with-state))
 

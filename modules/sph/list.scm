@@ -805,14 +805,14 @@
     each proc call should return a list of multiple elements, one for the mapped element, and one for each new state value."
     (apply fold-multiple (l (e r . states) (pair (apply proc e states) r)) a (list) init))
 
-  (define (n-times-map count proc)
+  (define (map-integer-range count proc)
     "integer {integer -> any} -> list
-    map over the integers 0 to \"count\""
+    map over the integers 0 to count - 1"
     (reverse (let loop ((n 0) (r (list))) (if (< n count) (loop (+ 1 n) (pair (proc n) r)) r))))
 
-  (define (n-times-fold count init proc)
+  (define (fold-integer-range count init proc)
     "integer {integer -> any} -> list
-    fold over the numbers 0 to count"
+    fold over the numbers 0 to count - 1"
     (let loop ((n 0) (r init)) (if (< n count) (loop (+ 1 n) (proc n r)) r)))
 
   (define (pair-fold-multiple proc a . init)

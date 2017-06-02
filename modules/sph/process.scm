@@ -84,11 +84,11 @@
     (let* ((port (apply open-pipe* mode path arguments)) (r (proc port))) (close-pipe port) r))
 
   (define (process-eval code proc)
-    "scheme-datum procedure:{process-output-port -> any} -> any
+    "(scheme-expression ...) procedure:{process-output-port -> any} -> any
     evaluate code in a new guile process, independent from the current process (no shared environment)
     and pass a port for the standard output of the process to proc"
     (call-with-temporary-file
-      (l (file) (write code file)
+      (l (file) (map (l (a) (write a file)) code)
         (fsync file)
         (execute-with-pipe proc OPEN_READ "guile" "--no-auto-compile" (port-filename file)))))
 

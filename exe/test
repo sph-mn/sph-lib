@@ -3,9 +3,13 @@
 
 (import (sph) (sph test))
 
+(define exclusions
+  (if (file-exists? "/usr/lib/libguile-sph-lib.so") (list)
+    (list (q (test module sph process create)))))
+
 (define settings
   (test-settings-default-custom
     ;only (q ((test module sph one)))
-    path-search "modules" reporter-name (q compact)))
+    exclude exclusions path-search "modules" reporter-name (q compact)))
 
 (test-execute-modules-by-prefix #:settings settings (q (test module sph)))

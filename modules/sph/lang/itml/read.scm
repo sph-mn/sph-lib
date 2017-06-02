@@ -28,7 +28,7 @@
       simplify-list
       splice-last-list
       list-tail-ref)
-    (only (sph one) string->datum)
+    (only (sph two) string->datum)
     (only (sph string)
       parenthesise
       any->string
