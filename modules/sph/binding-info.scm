@@ -1,5 +1,3 @@
-;retrieve information about module bindings
-
 (library (sph binding-info)
   (export
     bi-arguments
@@ -12,7 +10,8 @@
     macro->binding-info
     module-binding-info
     procedure->binding-info
-    sort-module-binding-info)
+    sort-module-binding-info
+    sph-binding-info-description)
   (import
     (guile)
     (rnrs base)
@@ -22,6 +21,7 @@
     (sph record)
     (only (ice-9 session) procedure-arguments))
 
+  (define sph-binding-info-description "get information about bindings in module")
   ;specifies if the current values of the variables should be included in the documentation.
   ;might be interesting but can be a security issue for publicly accessible documentation
   (define bi-include-variable-values #f)
@@ -65,7 +65,9 @@
             ( (if (procedure? value) procedure->binding-info
                 (if (macro? value) macro->binding-info variable->binding-info))
               value name))))
-      (l (module-name) "get properties of all exported bindings for the given module"
+      (l (module-name)
+        "(symbol ...) -> (vector ...)
+        get information about all exported bindings of the given module"
         (module-name-interface-map get-info module-name))))
 
   (define (sort-module-binding-info a) "(binding-info ...)"

@@ -1,4 +1,3 @@
-; (sph alist) - association list processing
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2016 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -50,7 +49,8 @@
     list->alist
     list->group-alist
     list-alist?
-    set-alist-bindings!)
+    set-alist-bindings!
+    sph-alist-description)
   (import
     (rnrs base)
     (sph)
@@ -61,6 +61,8 @@
       (assq-ref alistq-ref)
       (assv-ref alistv-ref)
       (assoc-set! alist-set!)))
+
+  (define sph-alist-description "association list processing")
 
   (define (keyword-list->alist+keyless a)
     "list -> (list:alist any ...)

@@ -21,6 +21,7 @@
     fold-directory-tree
     get-unique-target-path
     last
+    list->path
     merge-files
     mtime-difference
     path->full-path
@@ -29,6 +30,8 @@
     path-append*
     path-directories
     poll-watch
+    readlink*
+    realpath*
     remove-filename-extension
     remove-trailing-slash
     search-load-path
@@ -278,29 +281,62 @@
       args))
 
   (define (path->list path)
-    "parse a string representation of a filesystem path to a list of its parts.
-    an empty string as the first element in the list stands for the root directory"
-    (let (lis (filter (l (e) (not (string-null? e))) (string-split path #\/)))
-      (if (and path (not (string-null? path)) (eqv? (string-ref path 0) #\/)) (pair "" lis) lis)))
+    "string -> list
+    parse a string representation of a filesystem path to a list of its parts.
+    an empty string as the first element in the list stands for the root directory.
+    removes unnecessary slashes"
+    (if (string-null? path) (list)
+      (let
+        ( (full? (eqv? (string-ref path 0) #\/))
+          (result (filter (l (e) (not (string-null? e))) (string-split path #\/))))
+        (if full? (pair "" result) result))))
 
-  (define (path->full-path path)
+  (define* (list->path a)
+    "(string ...) -> string
+    for a full path prepend an empty string to the input. this is analogous to the output of path->list"
+    (if (equal? (list "") a) "/" (string-join a "/")))
+
+  (define (readlink* path)
     "string -> string
-    get the full filesystem path for a relative path or return a full path.
-    also resolves the directory references \".\" and \"..\".
-    when given a relative path, it first tries to use the environment variable \"PWD\" for completing the path. if that is not available it uses \"getcwd\".
-    paths from \"getcwd\" do not contain symlinks (it searches directories upwards)"
+    like readlink but also resolves symlinks to symlinks until a non-symlink is found or a target does not exist"
+    (let* ((path (readlink path)) (stat-info (false-if-exception (stat path))))
+      (if stat-info (if (eq? (q symlink) (stat:type stat-info)) (readlink* path) path) path)))
+
+  (define (realpath* path)
+    "string -> false/string
+    resolves the directory references \".\" and \"..\" as well as symlinks and removes unnecessary slashes.
+    named realpath* because it does not use the posix realpath because guile currently does not include it.
+    the foreign function interface could be an alternative"
+    ;/.. = /
+    (and-let* ((path (path->full-path path)) (path-list (path->list path)))
+      (let loop ((rest (reverse path-list)) (result (list)))
+        (if (null? rest) (list->path result)
+          (let (a (first rest))
+            (cond ((string-equal? "." a) (loop (tail rest) result))
+              ( (string-equal? ".." a)
+                (let* ((rest (reverse (path->list (loop (tail rest) (list))))))
+                  (loop
+                    (if (null? rest) rest (tail rest)) result)))
+              (else
+                (let*
+                  ((path (list->path (reverse rest))) (stat-info (false-if-exception (lstat path))))
+                  (and stat-info
+                    (if (eq? (q symlink) (stat:type stat-info))
+                      (let*
+                        ( (link-target (readlink* path))
+                          (path
+                            (if (string-prefix? "/" link-target) link-target
+                              (string-append (list->path (reverse (tail rest))) "/" link-target))))
+                        (string-append (realpath* path) "/" (list->path result)))
+                      (loop (tail rest) (pair a result))))))))))))
+
+  (define* (path->full-path path #:optional realpath?)
+    "string -> string
+    uses \"getcwd\" to complete relative paths.
+    with \"getcwd\" the basename can be a symlink but all other parts have symlinks resolved.
+    the environment variable PWD is not used because it is not automatically updated when the process changes directory"
     (if (string-null? path) #f
-      (string-join
-        (let
-          (path-list
-            (path->list
-              (if (eqv? #\/ (string-ref path 0)) path
-                (string-append (or (getenv "PWD") (getcwd)) "/" path))))
-          (reverse
-            (fold
-              (l (e r) (if (string-equal? "." e) r (if (string-equal? ".." e) (tail r) (pair e r))))
-              (list) path-list)))
-        "/")))
+      (if (eqv? #\/ (string-ref path 0)) path (string-append (getcwd) "/" path))))
 
   (define remove-filename-extension
     (let

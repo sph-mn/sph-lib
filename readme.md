@@ -3,6 +3,8 @@ see [sph-lib](http://sph.mn/content/187).
 # dependencies
 * [gnu guile](https://www.gnu.org/software/guile/) >= 2
 * for the installation executable: shell
+* for (sph process create): linux, libc, gcc
+* for (sph scrypt): [scrypt](https://github.com/jkalbhenn/scrypt)
 # installation
 ```
 su root
@@ -12,7 +14,122 @@ see more options using
 ```
 ./exe/install --help
 ```
-# non-exhaustive list of included libraries
+
+## extended
+if you intend to use (sph process create) also call the following before install:
+```
+./exe/compile
+```
+
+this is unfortunately necessary because guile does not come with a generic process creation procedure and it can not be adequately implemented in scheme.
+
+## install destinations
+* /usr/share/guile/site/sph/*
+* /usr/lib/libguile-sph-lib.so
+
+# included libraries
+* (sph)
+* (csv csv)
+* (sph process create)
+* (sph user-cli)
+* (sph thread-pool)
+* (sph exception)
+* (sph vector selection)
+* (sph stream)
+* (sph record)
+* (sph linux)
+* (sph libmagic)
+* (sph ice-9-stream)
+* (sph char-set-vector)
+* (sph system reader)
+* (sph base64)
+* (sph deprecation)
+* (sph threads)
+* (sph time stream)
+* (sph time utc)
+* (sph time gregorian)
+* (sph time rfc3339)
+* (sph time string)
+* (sph lang plcss)
+* (sph lang template)
+* (sph lang docl)
+* (sph lang docl env itml-to-plaintext)
+* (sph lang docl env default)
+* (sph lang docl env itml-to-shtml)
+* (sph lang docl itml-to-plaintext)
+* (sph lang docl itml)
+* (sph lang docl itml-to-shtml)
+* (sph lang itml)
+* (sph lang indent-syntax)
+* (sph lang sxml-element-style-css)
+* (sph lang scm-format transform)
+* (sph lang scm-format base)
+* (sph lang scm-format format)
+* (sph lang itpn)
+* (sph lang scm-format)
+* (sph lang itml read)
+* (sph lang itml write)
+* (sph lang parser outline)
+* (sph lang parser type-signature)
+* (sph lang ecmascript expressions)
+* (sph hashtable one)
+* (sph debug)
+* (sph common)
+* (sph one)
+* (sph set)
+* (sph process)
+* (sph time)
+* (sph documentation shtml)
+* (sph documentation display-format-signature)
+* (sph documentation display-format-plist)
+* (sph documentation itpn)
+* (sph documentation display-format-itpn)
+* (sph filesystem watch)
+* (sph filesystem asset-compiler)
+* (sph filesystem versioning)
+* (sph sql)
+* (sph filesystem)
+* (sph error)
+* (sph list)
+* (sph hashtable)
+* (sph install)
+* (sph two)
+* (sph server)
+* (sph git)
+* (sph number)
+* (sph json)
+* (sph tree)
+* (sph string)
+* (sph random-data)
+* (sph test)
+* (sph log)
+* (sph conditional)
+* (sph read-write)
+* (sph tree two)
+* (sph cli)
+* (sph scgi)
+* (sph replacement-table)
+* (sph list one)
+* (sph module)
+* (sph base91)
+* (sph interface-format)
+* (sph vector)
+* (sph guile-dbi lib)
+* (sph guile-dbi sql)
+* (sph vhash)
+* (sph config)
+* (sph scrypt)
+* (sph web shtml)
+* (sph web http)
+* (sph web atom)
+* (sph web html)
+* (sph uniform-vector)
+* (sph documentation)
+* (sph binding-info)
+* (sph alist)
+
+
+
 * (sph alist) association list processing utilities
 * (sph base64) encoder/decoder
 * (sph base91) encoder/decoder

@@ -1,6 +1,6 @@
 ; (sph documentation) - retrieve or display documentation for guile scheme libraries
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2016 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -19,8 +19,11 @@
     docstring-split-signature
     documentation-display-formats
     format-module-documentation
+    get-all-module-information
     itpn-docstring-split-signature
-    lines->docstring)
+    lines->docstring
+    list-module-information
+    module-description)
   (import
     (guile)
     (ice-9 peg)
@@ -35,7 +38,7 @@
     (only (rnrs sorting) list-sort)
     (only (sph list) fold-multiple)
     (only (sph string) string-multiply string-equal?)
-    (only (srfi srfi-1) remove))
+    (only (srfi srfi-1) remove filter-map))
 
   (define (docstring->lines a) "string -> (string ...)"
     (let (a (regexp-substitute/global #f " +" a (q pre) " " (q post)))
@@ -137,4 +140,25 @@
                     (format-binding-info binding-info
                       (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
                   (sort-module-binding-info (module-binding-info module-name)))))
-            module-names))))))
+            module-names)))))
+
+  (define (module-description name)
+    "(symbol ...) -> false/string
+    get the module description from an exported variable with a specific name.
+    (a b c) -> a-b-c-description"
+    (false-if-exception
+      (module-ref (resolve-module name)
+        (string->symbol (string-append (string-join (map symbol->string name) "-") "-description")))))
+
+  (define (get-all-module-information . search-path)
+    (map
+      (l (a) (alist-q name (first a) full-path (tail a) description (module-description (first a))))
+      (apply append (filter-map (l (a) (false-if-exception (find-modules a))) search-path))))
+
+  (define (list-module-information . search-path)
+    (let (info (apply get-all-module-information search-path))
+      (each
+        (l (a)
+          (alist-bind a (name description)
+            (display name) (if description (begin (display " - ") (display description))) (newline)))
+        info))))

@@ -3,20 +3,26 @@
     (sph string)
     (sph filesystem))
 
-  (define cwd (string-append (or (getenv "PWD") (getcwd)) "/"))
+  (define cwd (string-append (realpath* (getcwd)) "/"))
 
   (define-test (path->full-path arguments)
     (string-replace-string (apply path->full-path arguments) cwd ""))
 
+  (define-test (realpath* arguments)
+    (string-replace-string (apply realpath* arguments) cwd ""))
+
   (test-execute-procedures-lambda
     (path->full-path
       ".abc." ".abc."
-      "..abc.." "..abc.."
+      "..abc.." "..abc..")
+    (realpath*
       "../../" (unquote (dirname (dirname cwd)))
       ".././" (unquote (dirname cwd))
       "./../" (unquote (dirname cwd))
-      "abc/../def" "def"
-      "abc/./def" "abc/def")
+     ; "abc/../def" "def"
+      ;"abc/./def" "abc/def"
+      )
+
     (filename-extension
       ("ab.d.e.fg") "fg"
       ("ab") ""

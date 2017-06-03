@@ -102,12 +102,12 @@
     (apply (settings->hook settings name) settings a)
     (apply (settings->reporter-hook settings name) settings a))
 
-  (define (path->load-path+path& a c) "string procedure:{? string -> any} -> any"
+  (define (path->load-path-and-path& a c) "string procedure:{? string -> any} -> any"
     (let (load-path (path->load-path a))
       (if load-path (c load-path a) (let (a (string-append a ".scm")) (c (path->load-path a) a)))))
 
   (define (test-path->module-names a) "string -> list/error"
-    (path->load-path+path& a
+    (path->load-path-and-path& a
       (l (load-path a)
         (if load-path
           (case (stat:type (stat (string-append load-path "/" a)))
