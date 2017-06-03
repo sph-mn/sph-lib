@@ -20,12 +20,13 @@
     call-at-approximated-interval
     call-at-interval
     call-at-interval-w-state
-    call-multiple-times
     call-with-pipe
+    call-with-pipes
     cli-option
     cli-option-join
     create-fifo
     create-temp-fifo
+    each-integer
     guile-exception->key
     ignore
     in-between?
@@ -59,6 +60,7 @@
     (rnrs io ports)
     (rnrs sorting)
     (sph)
+    (sph list)
     (sph number)
     (sph string)
     (except (rnrs base) map)
@@ -255,9 +257,17 @@
                 (loop (+ 1 index) 0))
               #f))))))
 
-  (define (call-with-pipe proc) "procedure:{port:in port:out -> any} -> any"
-    (apply (l (in out) (let (r (proc in out)) (close in) (close out) r))
-      (let (ports (pipe)) (list (first ports) (tail ports)))))
+  (define (call-with-pipes count proc)
+    "integer procedure:{[pipe-n-in pipe-n-out] ... -> any} -> any
+    the pipes are closed after proc finished. they can also be closed by proc.
+    blocking: reading from the input side might block as long as the output side is not yet closed"
+    (let
+      (pipes
+        (fold-integers count (list)
+          (l (n result) (let (a (pipe)) (pairs (first a) (tail a) result)))))
+      (begin-first (apply proc pipes) (each (l (a) (if (not (port-closed? a)) (close a))) pipes))))
+
+  (define (call-with-pipe proc) "equivalent to (call-with-pipes 1 proc)" (call-with-pipes 1 proc))
 
   (define* (cli-option name #:optional value)
     "creates a string for one generic command-line option in the gnu format -{single-character} or --{word} or --{word}=.
@@ -310,7 +320,7 @@
     ;like begin but returns the result of the first expression instead of the last one.
     ((l (r) (begin expression ...) r) result))
 
-  (define (call-multiple-times count proc)
+  (define (each-integer count proc)
     "integer procedure:{integer ->} ->
     call proc \"count\" times"
     (let loop ((n 0)) (if (< n count) (begin (proc n) (loop (+ 1 n))))))

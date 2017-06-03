@@ -38,7 +38,6 @@
   (import
     (guile)
     (rnrs eval)
-    (rnrs exceptions)
     (sph)
     (sph alist)
     (sph conditional)
@@ -115,7 +114,7 @@
             ((directory) (find-modules-by-name (path->module-name a) (q prefix) %load-path))
             ((regular) (list (path->module-name a)))
             ( (symlink)
-              ;as far as we know readlink fails for circular symlinks
+              ;assumes that readlink fails on circular symlinks
               (test-path->module-names (readlink a))))
           (error-create (q file-not-found-in-load-path))))))
 

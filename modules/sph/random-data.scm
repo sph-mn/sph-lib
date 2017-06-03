@@ -14,7 +14,7 @@
     (sph)
     (only (guile) random-state-from-platform)
     (only (sph char-set-vector) char-set-vector:designated)
-    (only (sph list) n-times-map)
+    (only (sph list) map-integers)
     (rename (guile) (random primitive-random)))
 
   (define random-state (random-state-from-platform))
@@ -35,7 +35,7 @@
   (define* (random-list list-length #:optional (max-value 255) (min-value 0) (state random-state))
     "integer integer integer random-state -> (integer ...)
     create a list of numbers using \"random\""
-    (n-times-map list-length (l (n) (random max-value min-value state))))
+    (map-integers list-length (l (n) (random max-value min-value state))))
 
   (define*
     (random-chars list-length #:optional (char-set char-set-vector:designated) (state random-state))
@@ -45,7 +45,7 @@
     (let*
       ( (char-set (if (string? char-set) (string->utf8 char-set) char-set))
         (char-set-last-index (- (vector-length char-set) 1)))
-      (n-times-map list-length (l (n) (vector-ref char-set (random char-set-last-index 0 state))))))
+      (map-integers list-length (l (n) (vector-ref char-set (random char-set-last-index 0 state))))))
 
   (define (random-bytevector size) "integer -> bytevector"
     (let (r (make-bytevector size))

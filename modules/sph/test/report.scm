@@ -15,7 +15,7 @@
     (sph string)
     (sph test base)
     (except (rnrs hashtables) hashtable-ref)
-    (only (sph one) ignore call-multiple-times)
+    (only (sph one) ignore each-integer)
     (only (sph two) boolean->integer)
     (only (srfi srfi-1) filter-map))
 
@@ -25,7 +25,7 @@
   ; configuration with hook procedures to be called by the test execution procedures.
 
   (define (test-report-compact-display-indices count display)
-    (call-multiple-times count (l (n) (display " ") (display (+ 1 n)))))
+    (each-integer count (l (n) (display " ") (display (+ 1 n)))))
 
   (define (test-report-compact-ieo a depth display)
     (display

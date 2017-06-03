@@ -58,7 +58,7 @@
       hashtable-each
       hashtable-merge
       hashtable-merge!)
-    (only (sph list) n-times-map)
+    (only (sph list) map-integers)
     (only (sph one) quote-odd)
     (only (srfi srfi-1) filter-map))
 
@@ -128,7 +128,7 @@
   (define* (record-accessors record-layout)
     "hashtable:record-layout -> (proc ...)
     returns all accessors for the given record-layout in a list"
-    (n-times-map (hashtable-size record-layout) (l (index) (l (record) (vector-ref record index)))))
+    (map-integers (hashtable-size record-layout) (l (index) (l (record) (vector-ref record index)))))
 
   (define record-append vector-append)
 
@@ -186,7 +186,7 @@
   (define (record-setters record-layout)
     "record-layout (symbol ...) -> proc ...
     returns all setters for the given layout in a list"
-    (n-times-map (hashtable-size record-layout)
+    (map-integers (hashtable-size record-layout)
       (l (index) (l (record value) (vector-set! record index value)))))
 
   (define record? vector?)

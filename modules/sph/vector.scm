@@ -36,8 +36,8 @@
     (only (srfi srfi-1) delete-duplicates)
     (rename (rnrs base) (vector-for-each vector-each)))
 
-  (define (n-times n proc)
-    ;redefine n-times from (one) to avoid mutual library dependency (one -> vector, vector -> one)
+  (define (each-integer n proc)
+    ;redefine each-integer from (one) to avoid mutual library dependency (one -> vector, vector -> one)
     "evaluate a procedure a number of times, passing the current number to proc. starts from 0"
     (let loop ((e-n 0) (prev #f)) (if (<= e-n n) (loop (+ 1 e-n) (proc n)) prev)))
 

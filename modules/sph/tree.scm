@@ -78,7 +78,7 @@
     (only (sph alist) alist-ref)
     (only (sph list)
       contains?
-      n-times-fold
+      fold-integers
       fold-multiple
       fold-segments
       length-eq-one?)

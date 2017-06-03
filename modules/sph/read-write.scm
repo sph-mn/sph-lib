@@ -71,9 +71,9 @@
     (if (null? proc) proc
       (let loop ((in first-input) (out #f) (proc (first proc)) (rest (tail proc)))
         (if (null? rest) (list (proc in last-output))
-          (let (pipe-ports (pipe))
-            (let (result (proc in (tail pipe-ports)))
-              (if result (pair result (loop (first pipe-ports) #f (first rest) (tail rest))) (list))))))))
+          (let (a (pipe))
+            (let (result (proc in (tail a)))
+              (if result (pair result (loop (first a) #f (first rest) (tail rest))) (list))))))))
 
   (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
     "[string] [string:infix] -> port

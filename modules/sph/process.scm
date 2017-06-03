@@ -23,9 +23,9 @@
     execute-and
     execute-with-pipe
     exit-value-zero?
-    process-and
     process-eval
-    process-finished-successfully?
+    process-finish
+    process-finish-success?
     process-replace
     process-replace-e
     process-replace-p
@@ -134,10 +134,14 @@
     execute command with system, check exit-status and return true if it is zero, false otherwise."
     (let ((status (status:exit-val (system command-str)))) (not (not (and status (= status 0))))))
 
-  (define (process-finished-successfully? pid)
+  (define (process-finish pid)
     "integer -> boolean
-    wait for the termination of the process identified by the given process id and check if its exit status is 0"
-    (= 0 (status:exit-val (tail (waitpid pid)))))
+    use waitpid without extra options and return the exit status integer.
+    waitpid waits for the termination of the process and afterwards frees the resources of the child process
+    which prevents it from staying in zombie status"
+    (tail (waitpid pid)))
+
+  (define (process-finish-success? pid) (= 0 (process-finish pid)))
 
   (define (execute-and a . rest)
     "(string ...) ... -> system*-result
@@ -145,10 +149,4 @@
      if one call returns with a non-zero exit value the processing stops and returns the result of system*"
     (let loop ((rest rest) (result (apply system* a)))
       (if (null? rest) result
-        (if (= 0 (status:exit-val result)) (loop (tail rest) (apply system* (first rest)))))))
-
-  (define-syntax-rule (process-and create-exit-status ...)
-    (and
-      ( (lambda (status) (and (integer? status) (zero? status)))
-        (status:exit-val create-exit-status))
-      ...)))
+        (if (= 0 (status:exit-val result)) (loop (tail rest) (apply system* (first rest))))))))

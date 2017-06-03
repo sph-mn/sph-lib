@@ -19,7 +19,7 @@
       string-join)
     (only (sph one)
       number->integer-string
-      n-times
+      each-integer
       pass)
     (sph time))
 
@@ -31,7 +31,7 @@
   (define (execute-tests tests iterations)
     (map
       (l (test)
-        (let ((start-time (time-current))) (n-times iterations (tail test))
+        (let ((start-time (time-current))) (each-integer iterations (tail test))
           (- (time-current) start-time)))
       tests))
 

@@ -1,6 +1,6 @@
 ; (sph list) - list processing
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2016 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -104,8 +104,8 @@
     map-with-continue
     map-with-index
     map-with-state
-    n-times-fold
-    n-times-map
+    fold-integers
+    map-integers
     pair->list
     pair-bind
     pair-fold-multiple
@@ -805,14 +805,14 @@
     each proc call should return a list of multiple elements, one for the mapped element, and one for each new state value."
     (apply fold-multiple (l (e r . states) (pair (apply proc e states) r)) a (list) init))
 
-  (define (map-integer-range count proc)
+  (define (map-integers count proc)
     "integer {integer -> any} -> list
-    map over the integers 0 to count - 1"
+    map over integers from 0 to count - 1"
     (reverse (let loop ((n 0) (r (list))) (if (< n count) (loop (+ 1 n) (pair (proc n) r)) r))))
 
-  (define (fold-integer-range count init proc)
+  (define (fold-integers count init proc)
     "integer {integer -> any} -> list
-    fold over the numbers 0 to count - 1"
+    fold over integers from 0 to count - 1"
     (let loop ((n 0) (r init)) (if (< n count) (loop (+ 1 n) (proc n r)) r)))
 
   (define (pair-fold-multiple proc a . init)

@@ -8,7 +8,7 @@
     (ice-9 threads)
     (rnrs base)
     (sph)
-    (only (sph list) n-times-map))
+    (only (sph list) map-integers))
 
   ; a generic thread-pool that uses signal-conditions and has a customisable queue type
 
@@ -49,7 +49,7 @@
           (pair
             (l (a) (with-mutex queue-mutex (enq! queue a))
               (signal-condition-variable queue-not-empty))
-            (n-times-map (or (and (integer? count) count) (current-processor-count))
+            (map-integers (or (and (integer? count) count) (current-processor-count))
               (letrec
                 ( (process-queue
                     (thunk

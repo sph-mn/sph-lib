@@ -64,6 +64,7 @@
 
   (define (environment* . name)
     "(symbol ...) ... -> environment/module
+    similar to \"environment\" from (rnrs eval).
     this can be used to load modules that use syntax to create their module definition.
     the modules contents are first evaluated in the top-level environment - before the environment object is created.
     the syntax used for creating the module definition must be available in the current top-level environment.
