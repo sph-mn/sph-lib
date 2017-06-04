@@ -27,7 +27,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * /usr/share/guile/site/sph/*
 * /usr/lib/libguile-sph-lib.so
 
-# included libraries
+# libraries
 * (sph) - bindings that are fundamental to all sph libraries
 * (sph alist) - association list processing
 * (sph base64) - encoder/decoder
@@ -119,7 +119,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph time utc) - utc related time calculations
 * (sph tree) - processing tree-like list structures
 * (sph tree two)
-* (sph two) - various bindings deemed less useful than the ones in (sph one). system dependent, new or more experimental
+* (sph two) - various bindings deemed less useful than the ones in (sph one)
 * (sph uniform-vector)
 * (sph user-cli) - text based user interaction. for example choices or confirmations
 * (sph vector)
@@ -129,5 +129,3 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph web html)
 * (sph web http)
 * (sph web shtml)
-* (test helper sph lang docl env test)
-* (test sph documentation)

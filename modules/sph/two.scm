@@ -148,8 +148,7 @@
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
 
-  (define sph-two-description
-    "various bindings deemed less useful than the ones in (sph one). system dependent, new or more experimental")
+  (define sph-two-description "various bindings deemed less useful than the ones in (sph one)")
 
   (define (sort-symbol-lists a)
     "((symbol ...) ...) -> list
