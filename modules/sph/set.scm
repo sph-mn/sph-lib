@@ -4,8 +4,11 @@
     set-add-multiple
     set-contains?
     set-create
-    set-string-create
-    set-symbol-create
+    set-create-empty
+    set-create-string
+    set-create-string-empty
+    set-create-symbol
+    set-create-symbol-empty
     sph-set-description
     (rename (hashtable-delete! set-delete!)))
   (import
@@ -16,13 +19,25 @@
 
   (define sph-set-description "hashtables as sets")
 
-  (define-syntax-rule (primitive-set-create entries hash-proc equiv)
-    (let (r (make-hashtable hash-proc equiv)) (each (l (e) (hashtable-set! r e #t)) entries) r))
+  (define-syntax-rule (primitive-set-create set entries)
+    (let (r set) (each (l (a) (hashtable-set! r a #t)) entries) r))
 
-  (define (set-create . entries) (primitive-set-create entries equal-hash equal?))
-  (define (set-string-create . entries) (primitive-set-create entries string-hash string-equal?))
-  (define (set-symbol-create . entries) (primitive-set-create entries symbol-hash eq?))
-  (define (set-contains? a value) (hashtable-ref a value #f))
+  (define (set-add-multiple! a entries) (each (l (b) (hashtable-set! a b #t)) entries))
+  (define (set-create-empty initial-size) (make-hashtable equal-hash equal? initial-size))
+
+  (define (set-create-string-empty initial-size)
+    (make-hashtable string-hash string-equal? initial-size))
+
+  (define (set-create-symbol-empty initial-size) (make-hashtable symbol-hash eq? initial-size))
+  (define (set-create . entries) (primitive-set-create (set-create-empty (length entries)) entries))
+
+  (define (set-create-string . entries)
+    (primitive-set-create (set-create-empty-string (length entries)) entries))
+
+  (define (set-create-symbol . entries)
+    (primitive-set-create (set-create-empty-symbol (length entries)) entries))
+
+  (define (set-contains? a value) (hashtable-contains? a value))
   (define (set-add! a value) (hashtable-set! a value #t))
 
   (define (set-add-multiple a . entries)

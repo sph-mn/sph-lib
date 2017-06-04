@@ -1,23 +1,23 @@
 (library (sph vector selection)
   (export
     sph-vector-selection-description
-    tuple-complexity-maximum
-    tuple-distinct-maximum
-    vector-complexity
+    vector-distinct-count
+    vector-distinct-maximum
+    vector-distinct-stream
     vector-numeric-increment-be
     vector-numeric-increment-be!
     vector-numeric-increment-le
     vector-numeric-increment-le!
     vector-selection
+    vector-selection-maximum
     vector-selections
     vector-selections-stream)
   (import
-    (rnrs base)
-    (rnrs sorting)
     (sph)
-    (sph error)
+    (sph set)
     (srfi srfi-41)
-    (only (guile) vector-copy))
+    (only (guile) vector-copy)
+    (only (sph vector) vector-range))
 
   (define sph-vector-selection-description
     "create and analyse selections from sets: permutations, combinations, n-tuples")
@@ -61,9 +61,9 @@
 
   (define* (vector-selections set #:optional width)
     "vector integer -> (vector ...)
-    return a list of all possible arrangements of values from \"set\" with duplicate elements allowed. set can contain any datatype.
+    return a list of all distinct selections of values from \"set\" with duplicate elements allowed. set can contain any datatype.
     the optional parameter \"width\" specifies the length of selections.
-    for example, width: 2 creates all possible two element arrangements of set.
+    for example, a width of two creates all possible two element selections of set.
     the default for \"width\" is the length of the set"
     (let*
       ( (last-index (- (vector-length set) 1))
@@ -82,54 +82,73 @@
             (next (vector-numeric-increment-le v selection-last-index)))
           stream-null))))
 
-  (define* (tuple-distinct-maximum set-length #:optional (selection-width set-length))
+  (define* (vector-selection-maximum set-length #:optional (selection-width set-length))
     "integer integer -> integer
-    calculate the maximum number of possible arrangements for a set with length \"set-length\" and optional \"width\" which defaults to \"set-length\""
+    calculate the maximum number of possible distinct selections from a set with length \"set-length\" and
+    optional \"selection-width\" which defaults to \"set-length\""
     (if (= 0 set-length) 0 (expt set-length selection-width)))
 
-  (define* (tuple-complexity-maximum width #:optional (min-width 1))
+  (define* (vector-distinct-maximum width #:optional (min-width 1))
     "integer integer -> integer
     calculate the maximum number of possible distinct tuples in a tuple up to width, optionally ignoring widths smaller than min-width"
     (if (or (= 0 width) (< width min-width)) 0
       (if (= min-width width) 1
-        (+ (- (+ 1 width) min-width) (tuple-complexity-maximum width (+ 1 min-width))))))
+        (+ (- (+ 1 width) min-width) (vector-distinct-maximum width (+ 1 min-width))))))
 
-  (define (vector-complexity-count-one start-index width tuple tuple-length)
-    "integer integer vector integer -> integer
-    helper for \"vector-complexity\""
-    ; ???
-    (let (end-index (+ start-index (- width 1)))
-      (let loop ((index (+ 1 start-index)) (match-index start-index))
-        (debug-log (q index) index (q match-index) match-index)
-        (if (< index tuple-length)
-          (begin (debug-log (q equal?) (vector-ref tuple match-index) (vector-ref tuple index))
-            (if (equal? (vector-ref tuple match-index) (vector-ref tuple index))
-              (if (= match-index end-index) 1 (loop (+ 1 index) (+ 1 match-index)))
-              (loop (if (eqv? match-index start-index) (+ 1 index) index) start-index)))
-          0))))
+  (define-syntax-rule (vector-distinct-set-create tuple-length width)
+    (set-create-empty (+ 1 (- tuple-length width))))
 
-  (define* (vector-complexity tuple #:optional (min-width 1) max-width)
+  (define* (vector-distinct-count a #:optional (min-width 1) max-width)
     "vector integer integer -> integer
-    count all distinct tuples in a tuple.
+    count all distinct sub-vectors in a vector with lengths from min-width to max-width.
     distinctness is defined by elements, order and length"
-    ; how sub-tuples are counted:
+    ; how sub-vectors are counted:
     ; #([1 2 3] 4)
     ; #(1 [2 3 4])
     ; #([1 2] 3 4)
     ; #(1 [2 3] 4)
     ; #(1 2 [3 4])
-    (let* ((tuple-length (vector-length tuple)) (max-width (if max-width max-width tuple-length)))
-      (if (> min-width max-width) #f
-        (let next-level ((level max-width) (duplicates 0))
-          (debug-log (q level) level)
-          (if (<= min-width level)
-            (next-level (- level 1)
-              (+
-                (let ((last-index (- tuple-length level)))
-                  (let next-tuple ((index 0) (count 0))
-                    (if (<= index last-index)
-                      (next-tuple (+ index 1)
-                        (+ count (vector-complexity-count-one index level tuple tuple-length)))
-                      count)))
-                duplicates))
-            (- (tuple-complexity-maximum max-width min-width) duplicates)))))))
+    (let* ((a-length (vector-length a)) (width (or max-width a-length)))
+      (if (> min-width width) 0
+        (if (= min-width width) 1
+          (let loop
+            ( (known (vector-distinct-set-create a-length width)) (width width) (index 0)
+              (last-index (- a-length width)) (width-is-one (= 1 width)))
+            (if (<= index last-index)
+              (let
+                (sub-vector
+                  (if width-is-one (vector-ref a index)
+                    (vector-range a index (- (+ width index) 1))))
+                (if (set-contains? known sub-vector)
+                  (loop known width (+ 1 index) last-index width-is-one)
+                  (begin (set-add! known sub-vector)
+                    (+ 1 (loop known width (+ 1 index) last-index width-is-one)))))
+              (if (< min-width width)
+                (let (width (- width 1))
+                  (loop (vector-distinct-set-create a-length width) width
+                    0 (- a-length width) (= 1 width)))
+                0)))))))
+
+  (define* (vector-distinct-stream a #:optional (min-width 1) max-width)
+    "vector [integer integer] -> stream
+    return a stream of all distinct sub-vectors in a vector with lengths from min-width to max-width.
+    top to bottom.
+    distinctness is defined as with vector-distinct-count"
+    ; implementation is almost identical to vector-distinct
+    (let* ((a-length (vector-length a)) (width (or max-width a-length)))
+      (stream-let next
+        ( (known (vector-distinct-set-create a-length width)) (width width) (index 0)
+          (last-index (- a-length width)) (width-is-one (= 1 width)))
+        (if (<= index last-index)
+          (let
+            (sub-vector
+              (if width-is-one (vector-ref a index) (vector-range a index (- (+ width index) 1))))
+            (if (set-contains? known sub-vector)
+              (next known width (+ 1 index) last-index width-is-one)
+              (begin (set-add! known sub-vector)
+                (stream-cons sub-vector (next known width (+ 1 index) last-index width-is-one)))))
+          (if (< min-width width)
+            (let (width (- width 1))
+              (next (vector-distinct-set-create a-length width) width
+                0 (- a-length width) (= 1 width)))
+            stream-null))))))

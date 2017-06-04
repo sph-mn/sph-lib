@@ -20,6 +20,7 @@
     hashtable
     hashtable->alist
     hashtable->indent-tree-string
+    hashtable-bind
     hashtable-copy-empty
     hashtable-each
     hashtable-each-key
@@ -33,7 +34,6 @@
     hashtable-map!
     hashtable-merge
     hashtable-merge!
-    hashtable-bind
     hashtable-q-ref
     hashtable-q-set-multiple
     hashtable-ref

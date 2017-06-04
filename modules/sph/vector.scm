@@ -11,6 +11,7 @@
 ; GNU General Public License for more details.
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
+
 (library (sph vector)
   (export
     alist-values->vector
@@ -24,7 +25,7 @@
     vector-index-value
     vector-map-with-index
     vector-produce
-    vector-range-ref
+    vector-range
     vector-second
     vector-select
     vector-shrink
@@ -103,12 +104,12 @@
     (#(1 2) #(4 5)) -> (proc 1 4) (proc 1 5) (proc 2 4) (proc 2 5)"
     (vector-map (l (a) (vector-map (l (b) (proc a b)) b)) a))
 
-  (define* (vector-range-ref a #:optional (start 0) (end (- (vector-length a) 1)))
+  (define* (vector-range a start #:optional (end (- (vector-length a) 1)))
     "vector [integer integer] -> vector
     start and end are inclusive"
     (let ((r (make-vector (+ 1 (- end start)))))
-      (let loop ((e start))
-        (begin (vector-set! r (- e start) (vector-ref a e)) (if (>= e end) r (loop (+ 1 e)))))))
+      (let loop ((b start))
+        (begin (vector-set! r (- b start) (vector-ref a b)) (if (>= b end) r (loop (+ 1 b)))))))
 
   (define (vector-extend a add-size)
     "vector integer -> vector
