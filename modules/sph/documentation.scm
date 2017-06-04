@@ -14,14 +14,15 @@
 (library (sph documentation)
   (export
     default-format-arguments
+    display-module-information-short
     docstring->lines
     docstring-split-signature
     documentation-display-formats
+    find-module-information
+    find-module-information-sorted
     format-module-documentation
-    get-all-module-information
     itpn-docstring-split-signature
     lines->docstring
-    list-module-information
     module-description
     sort-module-information
     sph-documentation-description)
@@ -153,11 +154,6 @@
       (module-ref (resolve-module name)
         (string->symbol (string-append (string-join (map symbol->string name) "-") "-description")))))
 
-  (define (get-all-module-information . search-path)
-    (map
-      (l (a) (alist-q name (first a) full-path (tail a) description (module-description (first a))))
-      (apply append (filter-map (l (a) (false-if-exception (find-modules a))) search-path))))
-
   (define (sort-module-information a)
     (let
       (b
@@ -168,10 +164,17 @@
           a))
       (map tail (list-sort (l (a b) (string<? (first a) (first b))) b))))
 
-  (define (list-module-information . search-path)
+  (define (find-module-information . search-path)
+    (map
+      (l (a) (alist-q name (first a) full-path (tail a) description (module-description (first a))))
+      (apply append (filter-map (l (a) (false-if-exception (find-modules a))) search-path))))
+
+  (define (find-module-information-sorted . search-path)
+    (sort-module-information (apply find-module-information search-path)))
+
+  (define (display-module-information-short a)
     (let
-      ( (info (sort-module-information (apply get-all-module-information search-path)))
-        (get-first-line
+      ( (get-first-line
           (l (a)
             (let (index (string-index a #\newline))
               (if index (string-trim-right (string-take a index) #\.) a)))))
@@ -181,4 +184,4 @@
             (display name)
             (if description (begin (display " - ") (display (get-first-line description)))))
           (newline))
-        info))))
+        a))))

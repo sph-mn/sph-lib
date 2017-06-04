@@ -1,5 +1,6 @@
 (library (sph time stream)
   (export
+    sph-time-stream-description
     time-date-stream)
   (import
     (guile)
@@ -9,6 +10,9 @@
     (sph time)
     (sph time gregorian)
     (srfi srfi-41))
+
+  (define sph-time-stream-description
+    "create an srfi-41 stream of calendar dates between two dates")
 
   (define (time-date-stream date-start date-end)
     "date date -> stream

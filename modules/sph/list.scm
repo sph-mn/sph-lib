@@ -1,4 +1,3 @@
-; (sph list) - list processing
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it

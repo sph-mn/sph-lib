@@ -1,0 +1,12 @@
+#!/usr/bin/guile
+!#
+
+(import (sph) (sph documentation) (sph read-write) (srfi srfi-1) (sph alist) (sph list))
+(define highlights (file->datums "other/highlights"))
+(define module-info (find-module-information-sorted "modules/sph"))
+
+(apply-values
+  (l (highlights other) (display-line "## highlights")
+    (display-module-information-short highlights) (display-line "\n## other")
+    (display-module-information-short other))
+  (partition (l (a) (list-index-value highlights (alist-ref a (q name)))) module-info))
