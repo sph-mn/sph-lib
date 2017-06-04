@@ -32,10 +32,10 @@
   (define (set-create . entries) (primitive-set-create (set-create-empty (length entries)) entries))
 
   (define (set-create-string . entries)
-    (primitive-set-create (set-create-empty-string (length entries)) entries))
+    (primitive-set-create (set-create-string-empty (length entries)) entries))
 
   (define (set-create-symbol . entries)
-    (primitive-set-create (set-create-empty-symbol (length entries)) entries))
+    (primitive-set-create (set-create-symbol-empty (length entries)) entries))
 
   (define (set-contains? a value) (hashtable-contains? a value))
   (define (set-add! a value) (hashtable-set! a value #t))

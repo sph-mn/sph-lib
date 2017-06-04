@@ -4,8 +4,8 @@
     docl-itml-env-shtml-module-names
     docl-itml-parsed->shtml
     docl-itml-port->shtml
-    docl-itml-string->shtml
     docl-itml-shtml-env-module-names
+    docl-itml-string->shtml
     itml-parsed->shtml
     process-lines)
   (import
@@ -40,7 +40,7 @@
   (define (string->sxml a nesting-level docl-state)
     "string -> sxml
     convert newlines in string to (br) and result in an sxml expression"
-    (let (a (string-split a #\newline)) (if (length-eq-one? a) (first a) (interleave a (ql br)))))
+    (let (a (string-split a #\newline)) (if (length-eq-one? a) (first a) (interleave a (q (br))))))
 
   (define (tag-element? a)
     "list:non-null-list -> boolean
@@ -48,8 +48,8 @@
     (and (list? a) (symbol? (first a))))
 
   (define html-tags-no-newline
-    (apply set-symbol-create
-      (ql span a object img script select button input label select textarea)))
+    (apply set-create-symbol
+      (q (span a object img script select button input label select textarea))))
 
   (define-syntax-rule (html-tag-no-newline? a) (hashtable-ref html-tags-no-newline a))
   (define-syntax-rule (handle-line a) (list (q p) a))
@@ -123,7 +123,7 @@
   (define (descend-expr->shtml a re-descend nesting-depth docl-state env)
     (expr->shtml descend-prefix->handler-ht a re-descend nesting-depth docl-state env))
 
-  (define (handle-top-level-terminal a . states) (if (eqv? (q line-empty) a) (ql br) a))
+  (define (handle-top-level-terminal a . states) (if (eqv? (q line-empty) a) (q (br)) a))
   (define (handle-terminal a . states) (pair (handle-top-level-terminal a) states))
 
   (define itml-parsed->shtml
@@ -134,6 +134,7 @@
 
   (define docl-itml-parsed->shtml (docl-itml-parsed->result-proc itml-parsed->shtml))
   (define docl-itml-port->shtml (docl-itml-port->result-proc itml-parsed->shtml))
+
   (define docl-itml-string->shtml
     ;same signature as docl-itml-port->result-proc
     (docl-itml-string->result-proc docl-itml-port->shtml)))
