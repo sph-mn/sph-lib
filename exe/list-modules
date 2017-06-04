@@ -7,6 +7,6 @@
 
 (apply-values
   (l (highlights other) (display-line "## highlights")
-    (display-module-information-short highlights) (display-line "\n## other")
-    (display-module-information-short other))
+    (display-module-information-short highlights #t) (display-line "\n## other")
+    (display-module-information-short other #t))
   (partition (l (a) (list-index-value highlights (alist-ref a (q name)))) module-info))

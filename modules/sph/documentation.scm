@@ -172,7 +172,7 @@
   (define (find-module-information-sorted . search-path)
     (sort-module-information (apply find-module-information search-path)))
 
-  (define (display-module-information-short a)
+  (define* (display-module-information-short a #:optional markdown?)
     (let
       ( (get-first-line
           (l (a)
@@ -181,7 +181,7 @@
       (each
         (l (a)
           (alist-bind a (name description)
-            (display name)
+            (if markdown? (display "* ")) (display name)
             (if description (begin (display " - ") (display (get-first-line description)))))
           (newline))
         a))))
