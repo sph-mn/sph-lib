@@ -4,7 +4,8 @@
     ac-compile->file
     ac-input-copy
     ac-lang-input
-    ac-output-copy)
+    ac-output-copy
+    sph-filesystem-asset-compiler-description)
   (import
     (guile)
     (rnrs base)
@@ -18,10 +19,12 @@
     (only (sph tree) flatten)
     (only (srfi srfi-1) find))
 
-  ;merges and processes files of various formats into one.
-  ;uses a configuration for processing different formats.
-  ;uses custom load-paths and can automatically create a target path.
-  ;example use case: mix of transcompiled and non-compiled files that are merged and optimised for the web
+  (define sph-filesystem-asset-compiler-description
+    "process and merge files of various formats into one.
+    uses a configuration for processing custom formats.
+    uses custom load-paths and can automatically create target paths.
+    example use case: mix of transcompiled and non-compiled files that are merged and optimised for the web")
+
   (define-record ac-lang-input name path? processor)
 
   (define (create-output-path path-directory format path-file input-spec)

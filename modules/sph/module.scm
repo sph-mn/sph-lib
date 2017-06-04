@@ -1,6 +1,7 @@
 (library (sph module)
   (export
     call-if-defined
+    sph-module-description
     collect-library-names
     current-bindings
     current-module-ref
@@ -41,7 +42,6 @@
     (sph)
     (sph filesystem)
     (only (ice-9 regex) string-match)
-    (only (rnrs sorting) list-sort)
     (only (sph conditional) if-pass)
     (only (sph read-write) file->datums)
     (only (sph string) string-longest-prefix string-drop-prefix)
@@ -49,6 +49,8 @@
       append-map
       last
       find))
+
+  (define sph-module-description "guile module system or rnrs library related procedures")
 
   (define module-interface->module (compose resolve-module module-name))
 

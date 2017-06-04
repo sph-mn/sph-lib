@@ -26,6 +26,7 @@
     es-set-nc!
     es-statement-nc
     es-string
+    sph-lang-ecmascript-expressions-description
     es-try-catch-finally-nc
     es-value
     es-vector
@@ -40,6 +41,8 @@
     (sph list)
     (sph string)
     (only (rnrs hashtables) hashtable?))
+
+  (define sph-lang-ecmascript-expressions-description "create ecmascript syntax strings")
 
   ;generating ecmascript expressions as strings.
   ;by default, the functions convert input values from scheme datatypes,

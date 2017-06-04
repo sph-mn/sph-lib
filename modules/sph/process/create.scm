@@ -5,13 +5,17 @@
     process-chain-paths/pipes
     process-chain-pipes->string
     process-create
-    process-primitive-create-chain-with-pipes)
+    process-primitive-create-chain-with-pipes
+    sph-process-create-description)
   (import
     (guile)
     (sph)
     (sph read-write)
     (only (sph list) any->list first-or-false)
     (only (sph one) search-env-path begin-first))
+
+  (define sph-process-create-description
+    "create child processes and process chains")
 
   (load-extension "libguile-sph-lib" "init_sph_lib")
 

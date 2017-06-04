@@ -1,6 +1,4 @@
-; (sph string) - string processing
-; written for the guile scheme interpreter
-; Copyright (C) 2010-2016 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -24,6 +22,7 @@
     parenthesise
     regexp-match-replace
     regexp-replace
+    sph-string-description
     string-ascii->utf8
     string-camelcase->dash
     string-camelcase->underscore
@@ -70,6 +69,9 @@
     (sph)
     (only (rnrs bytevectors) u8-list->bytevector utf8->string)
     (only (sph list) fold-multiple))
+
+  (define sph-string-description
+    "string processing. includes string-replace-string, a fast replacer")
 
   (define string-equal? string=)
 

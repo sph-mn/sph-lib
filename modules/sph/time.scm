@@ -1,5 +1,6 @@
 (library (sph time)
   (export
+    sph-time-description
     time->date
     time->days
     time->hours
@@ -62,7 +63,9 @@
     (sph time gregorian)
     (sph time utc))
 
-  ;time as integers of tai nanoseconds since the unix epoch. selected conversions for the gregorian calendar, utc and iso8601
+  (define sph-time-description
+    "time as integers of international atomic time (tai) nanoseconds since the unix epoch and a vector date object. conversions for utc and the gregorian calendar")
+
   (define (time-seconds->nanoseconds a) (* 1000000000 a))
   (define (time-nanoseconds->seconds a) (floor (/ a 1000000000)))
   (define time-ns->s time-nanoseconds->seconds)
@@ -217,8 +220,7 @@
 
   (define (time->week a) "integer -> integer"
     (let*
-      ( (year (time->year a))
-        (first-week (time-start-first-week a)) (difference (- a first-week)))
+      ((year (time->year a)) (first-week (time-start-first-week a)) (difference (- a first-week)))
       (if (= 0 difference) 1
         (if (< difference 0) (if (greg-year-weeks-53? (- year 1)) 53 52)
           (let (last-week (time-start-last-week a))

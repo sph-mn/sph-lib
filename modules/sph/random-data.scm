@@ -7,7 +7,8 @@
     random-bytevector
     random-list
     random-string
-    random-weighted-boolean)
+    random-weighted-boolean
+    sph-random-data-description)
   (import
     (rnrs base)
     (rnrs bytevectors)
@@ -16,6 +17,9 @@
     (only (sph char-set-vector) char-set-vector:designated)
     (only (sph list) map-integers)
     (rename (guile) (random primitive-random)))
+
+  (define sph-random-data-description
+    "generate random data. strings, booleans, lists, bytevectors, characters, ...")
 
   (define random-state (random-state-from-platform))
   (define (random-boolean) "-> boolean" (= (random 2) 0))

@@ -6,7 +6,8 @@
     sph-read
     sph-read-sharp-token-readers
     sph-read-token-readers
-    sph-read-with-upper-case-symbols)
+    sph-read-with-upper-case-symbols
+    sph-system-reader-description)
   (import
     (ice-9 peg)
     (rnrs base)
@@ -17,6 +18,8 @@
     (only (ice-9 rdelim) read-line)
     (only (sph read-write) read-until-string-proc)
     (only (srfi srfi-1) reverse))
+
+  (define sph-system-reader-description "a scheme reader that can include comments")
 
   (define (read-range-expr->string port start end)
     "calls proc for all characters that are not start or end and builds a nested list with the results of proc.
@@ -89,13 +92,14 @@
 
   (define (sph-read-sharp-token-readers)
     (pairs hash-bang boolean
-      (map standard-token-reader (ql srfi62-sexp-comment character number+radix keyword vector))))
+      (map standard-token-reader (q (srfi62-sexp-comment character number+radix keyword vector)))))
 
   (define (sph-read-token-readers)
     (pair read-paren-expr
       (map standard-token-reader
-        (ql whitespace guile-symbol-lower-case
-          guile-symbol-misc-chars string guile-number semicolon-comment))))
+        (q
+          (whitespace guile-symbol-lower-case guile-symbol-misc-chars
+            string guile-number semicolon-comment)))))
 
   (define sph-read
     (make-reader
@@ -123,6 +127,6 @@
       (pairs read-paren-expr string-literal
         semicolon-comment (default-sharp-token-reader-with-comments)
         (map standard-token-reader
-          (ql whitespace guile-symbol-lower-case
-            guile-symbol-misc-chars
-            guile-number quote-quasiquote-unquote guile-symbol-upper-case))))))
+          (q
+            (whitespace guile-symbol-lower-case guile-symbol-misc-chars
+              guile-number quote-quasiquote-unquote guile-symbol-upper-case)))))))

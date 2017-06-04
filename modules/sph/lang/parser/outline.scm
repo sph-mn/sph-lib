@@ -1,13 +1,16 @@
 (library (sph lang parser outline)
   (export
     primitive-read-outline
-    read-outline)
+    read-outline
+    sph-lang-parser-outline-description)
   (import
     (guile)
     (ice-9 rdelim)
     (rnrs base)
     (sph)
     (sph list))
+
+  (define sph-lang-parser-outline-description "parse text with nested headings")
 
   (define (parse-heading-repeated-char-proc char) "char -> procedure"
     (l (line) "string -> (integer:nesting-depth/false string:heading/false)"

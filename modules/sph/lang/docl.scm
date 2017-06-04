@@ -6,7 +6,8 @@
     docl-state-add-parameters
     docl-state-empty
     docl-translate-any
-    docl-translate-port)
+    docl-translate-port
+    sph-lang-docl-description)
   (import
     (rnrs base)
     (rnrs io ports)
@@ -21,7 +22,10 @@
     (only (sph list) contains?)
     (only (sph one) begin-first))
 
-  (define docl-default-env-module-names (ql (sph lang docl env default)))
+  (define sph-lang-docl-description
+    "evaluate templates with a specific scheme environment, state values and circular inclusion protection")
+
+  (define docl-default-env-module-names (q ((sph lang docl env default))))
   ;(call-hierachy-information . alist)
   (define docl-state-empty (list (list)))
 

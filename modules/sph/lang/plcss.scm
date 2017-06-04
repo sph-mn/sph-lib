@@ -4,7 +4,8 @@
     css-style
     plcss->css
     plcss->css-string
-    plcss-element-style->css-string)
+    plcss-element-style->css-string
+    sph-lang-plcss-description)
   (import
     (rnrs base)
     (sph)
@@ -14,7 +15,10 @@
     (only (sph tree) flatten)
     (only (srfi srfi-1) break))
 
-  ;a scheme-datum to css/cascading-stylesheets transcompiler that can also be used inline with other scheme code.
+  (define sph-lang-plcss-description
+    "s-expression language that compiles to css
+    can also be used inline with other scheme code")
+
   ;the name is an abbreviation of prefixed-list-css
   (define (symbol?->string a) (if (symbol? a) (symbol->string a) a))
   (define-syntax-rule (at-prefix? a) (eqv? #\@ (string-ref a 0)))

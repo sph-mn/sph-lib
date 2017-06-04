@@ -1,5 +1,6 @@
 (library (sph time string)
   (export
+    sph-time-string-description
     time->iso8601-date-and-day-ks-string
     time->iso8601-date-and-day-s-string
     time->iso8601-ymd
@@ -17,6 +18,8 @@
     (sph time utc)
     (only (guile) string-split)
     (only (sph number) simple-format-number))
+
+  (define sph-time-string-description "time string conversions")
 
   (define (military-time->hm a) "-> (hours . minutes)"
     (pair (string->number (substring a 0 2)) (string->number (substring a 2 4))))

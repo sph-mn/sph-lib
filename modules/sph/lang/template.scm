@@ -2,6 +2,7 @@
   (export
     template-bindings-proc
     template-compose
+    sph-lang-template-description
     template-datum->template-proc
     template-fold
     template-get)
@@ -14,9 +15,10 @@
     (only (sph list) fold-multiple)
     (only (sph read-write) rw-file->list rw-port->list))
 
-  ;alternative name: s-template.
-  ;a template engine using implicitly quasiquoted s-expressions.
-  ;creates template procedures from source data read from files or ports
+  (define sph-lang-template-description "generic s-expression template processor
+    a template engine using implicitly quasiquoted s-expressions.
+    creates template procedures from source data read from files or ports.
+    alternative name: s-template")
 
   (define (template-datum->template-proc a env)
     "any:scheme-datum environment -> procedure:template-proc

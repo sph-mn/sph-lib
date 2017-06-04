@@ -5,21 +5,24 @@
     interface-format-create-message
     interface-format-object->type
     interface-format-objects->port
-    interface-format-writers)
+    interface-format-writers
+    sph-interface-format-description)
   (import
-    (sph common))
+    (sph common)
+    (sph error))
 
-  ;for programs that offer textual input/output in multiple formats.
-  ;uses an intermediate data-structure.
-  ;example object types: user-messages, errors, data.
-  ;example use case: command-line interfaces that offer both serialised and natural language output.
+  (define sph-interface-format-description
+    "for programs that offer textual input/output in multiple formats. experimental
+    uses an intermediate data-structure.
+    example use case: command-line interfaces that offer both serialised and natural language output
+    example objects: user-messages, errors, data")
 
   (define indent " ")
   (define (any->string-exclude-unspecified a) (if (unspecified? a) a (any->string a)))
 
   (define (interface-format-text-write-error a port)
     (display-line
-      (string-append "error: " (any->string (error-name a))
+      (string-append "error: " (any->string (error-id a))
         (let (data (error-data a))
           (if data
             (string-append "\n" indent
@@ -38,7 +41,8 @@
   (define (interface-format-scm-write-data a port) (if (not (unspecified? a)) (write a)))
 
   (define (interface-format-text-write-data a port)
-    (if (not (unspecified? a)) (begin (display a) (if (not (and (string? a) (string-suffix? "\n" a))) (newline)))))
+    (if (not (unspecified? a))
+      (begin (display a) (if (not (and (string? a) (string-suffix? "\n" a))) (newline)))))
 
   (define-as interface-format-writers symbol-hashtable
     text
@@ -50,7 +54,7 @@
       message interface-format-scm-write-message
       lines interface-format-scm-write-lines data interface-format-scm-write-data))
 
-  (define object-types (ql error message lines data))
+  (define object-types (q (error message lines data)))
 
   (define (interface-format-object->type a) "any -> symbol"
     (if (error? a) (q error)

@@ -1,5 +1,3 @@
-;redefines guiles preset char-sets that are special objects as vectors
-
 (library (sph char-set-vector)
   (export
     char-set-vector:ascii
@@ -19,7 +17,8 @@
     char-set-vector:symbol
     char-set-vector:title-case
     char-set-vector:upper-case
-    char-set-vector:whitespace)
+    char-set-vector:whitespace
+    sph-char-set-vector-description)
   (import
     (rnrs base)
     (sph)
@@ -46,6 +45,9 @@
         char-set->list
         list->vector)
       guile-))
+
+  (define sph-char-set-vector-description
+    "redefines guiles preset char-sets that are special objects as vectors. experimental")
 
   (define-syntax-rule (define-char-set-vector name variable)
     (define name (guile-list->vector (guile-char-set->list variable))))

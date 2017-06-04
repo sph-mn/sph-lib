@@ -14,6 +14,7 @@
 
 (library (sph base91)
   (export
+    sph-base91-description
     base91-decode
     base91-encode)
   (import
@@ -24,6 +25,8 @@
     (sph)
     (only (guile) modulo reverse!)
     (only (sph vector) vector-each-with-index))
+
+  (define sph-base91-description "encoder/decoder")
 
   (define chars-encode
     (vector #\A #\B #\C #\D #\E #\F #\G #\H #\I #\J #\K #\L #\M #\N

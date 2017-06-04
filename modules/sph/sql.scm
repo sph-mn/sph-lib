@@ -1,5 +1,3 @@
-; (sph sql) - create sql expressions from scheme data structures
-; written for the guile scheme interpreter
 ; Copyright (C) 2010-2015 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
@@ -14,6 +12,7 @@
 
 (library (sph sql)
   (export
+    sph-sql-description
     sql-columns
     sql-columns-list
     sql-create-index
@@ -53,6 +52,8 @@
       flatten
       tree-map-lists-with-level
       prefix-tree-map-with-continue-with-level))
+
+  (define sph-sql-description "create sql-statements from scheme data")
 
   (define (sql-ele-data->filter expr) "((column-name . value) ...) -> ((column-name value) ...)"
     (if (list? expr) (map (l (e) (if (list? e) e (list (first e) (tail e)))) expr)

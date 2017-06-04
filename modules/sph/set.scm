@@ -1,18 +1,20 @@
 (library (sph set)
   (export
-    set-create
-    set-string-create
-    set-symbol-create
     set-add!
     set-add-multiple
     set-contains?
+    set-create
+    set-string-create
+    set-symbol-create
+    sph-set-description
     (rename (hashtable-delete! set-delete!)))
   (import
     (rnrs base)
     (rnrs hashtables)
     (sph)
     (sph string))
-  ;hashtable based sets
+
+  (define sph-set-description "hashtables as sets")
 
   (define-syntax-rule (primitive-set-create entries hash-proc equiv)
     (let (r (make-hashtable hash-proc equiv)) (each (l (e) (hashtable-set! r e #t)) entries) r))

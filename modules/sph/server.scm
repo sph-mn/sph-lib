@@ -8,7 +8,8 @@
     server-listen-queue-length
     server-protocol-family->address-family
     server-receive-buffer-size
-    server-send-buffer-size)
+    server-send-buffer-size
+    sph-server-description)
   (import
     (guile)
     (rnrs base)
@@ -18,6 +19,10 @@
     (only (sph filesystem) ensure-directory-structure)
     (only (sph list) contains?)
     (only (sph string) string-equal?))
+
+  (define sph-server-description
+    "a generic socket based server
+    uses a thread-pool for parallel request processing and can use as many cpu cores as there are available. the thread-pool pattern is not a bad design")
 
   (define server-listen-queue-length 1024)
   (define server-send-buffer-size 8096)

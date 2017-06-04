@@ -1,12 +1,15 @@
 (library (sph linux)
   (export
     inotify-watch
+    sph-linux-description
     utsname:parsed-linux-version)
   (import
     (linux inotify)
     (rnrs base)
     (sph)
     (only (guile) string-split utsname:release))
+
+  (define sph-linux-description "linux specific features")
 
   (define (utsname:parsed-linux-version sys-info)
     "uname-result -> (number number number)

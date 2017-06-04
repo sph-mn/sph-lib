@@ -1,5 +1,6 @@
 (library (sph thread-pool)
   (export
+    sph-thread-pool-description
     thread-pool-create
     thread-pool-destroy)
   (import
@@ -10,7 +11,8 @@
     (sph)
     (only (sph list) map-integers))
 
-  ; a generic thread-pool that uses signal-conditions and has a customisable queue type
+  (define sph-thread-pool-description
+    "generic thread-pool that uses signal-conditions and has a customisable queue type")
 
   (define-as thread-pool-queue-lifo list
     list null?

@@ -3,7 +3,8 @@
     log-default-formatter
     log-default-route
     log-message
-    log-routes)
+    log-routes
+    sph-log-description)
   (import
     (rnrs base)
     (sph)
@@ -23,7 +24,8 @@
       any->string
       string-replace-chars))
 
-  ;diagnostic logging with routing
+  (define sph-log-description
+    "diagnostic logging with routing by category to none or many configurable output-targets")
 
   (define (apply-log-route a categories arguments)
     (let (message ((vector-ref a 1) categories arguments))

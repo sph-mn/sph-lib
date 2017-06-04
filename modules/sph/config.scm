@@ -1,7 +1,7 @@
-;persisted program configuration loaded into a configuration object. config can be read, writing is not completely implemented
 
 (library (sph config)
   (export
+    sph-config-description
     config-clear!
     config-load
     config-loaders
@@ -24,6 +24,9 @@
     (sph tree)
     (except (rnrs hashtables) hashtable-ref)
     (only (sph filesystem) ensure-trailing-slash))
+
+  (define sph-config-description "program configuration file management
+    writing is not completely implemented")
 
   (define (parse-config-file path)
     "string -> list"

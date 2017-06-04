@@ -1,4 +1,3 @@
-; (sph test) - automated code testing
 ; written for the guile scheme interpreter
 ; Copyright (C) 2015-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -20,6 +19,7 @@
     define-procedure-tests
     define-test
     define-test-module
+    sph-test-description
     test-create-result
     test-execute-module
     test-execute-modules
@@ -53,6 +53,7 @@
     (except (srfi srfi-1) map)
     (only (sph filesystem) path->full-path))
 
+  (define sph-test-description "automated code testing with composable modules")
   ;data-structures:
   ;  test-result: ([group-name] test-result ...)/test-result-record
 
@@ -384,9 +385,9 @@
           (l (settings) "list -> (procedure:hook-before hook-after report-before report-after)"
             (append
               (alist-select (alist-q-ref settings hook)
-                (ql procedure-before procedure-after procedure-data-before procedure-data-after))
+                (q (procedure-before procedure-after procedure-data-before procedure-data-after)))
               (alist-select (tail (settings->reporter settings))
-                (ql procedure-before procedure-after procedure-data-before procedure-data-after))))))
+                (q (procedure-before procedure-after procedure-data-before procedure-data-after)))))))
       (l (settings source)
         "list ((symbol:name procedure:test-proc any:data-in/out ...) ...) -> test-result"
         ( (get-executor settings) settings (test-procedures-apply-settings settings source)

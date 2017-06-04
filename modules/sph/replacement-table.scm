@@ -4,7 +4,8 @@
     replacement-table-from-file
     replacement-table-from-port
     replacement-table-merge-from-file!
-    replacement-table-merge-from-port!)
+    replacement-table-merge-from-port!
+    sph-replacement-table-description)
   (import
     (rnrs base)
     (sph)
@@ -13,7 +14,8 @@
     (only (rnrs hashtables) hashtable-set!)
     (only (sph read-write) port-lines-each))
 
-  ;uses a hash table to apply and store loaded replacements
+  (define sph-replacement-table-description
+    "replacement tables like (key replacement ...) loaded from files or ports")
 
   (define (hashtable-associate-words! hashtable string)
     "hashtable string ->

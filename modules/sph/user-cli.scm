@@ -1,7 +1,6 @@
-;text based user interaction
-
 (library (sph user-cli)
   (export
+    sph-user-cli-description
     user-cli-choice
     user-cli-confirm)
   (import
@@ -12,6 +11,9 @@
     (only (ice-9 rdelim) read-line)
     (only (sph number) increment-one decrement-one)
     (only (srfi srfi-1) remove))
+
+  (define sph-user-cli-description
+    "text based user interaction. for example choices or confirmations")
 
   (define* (user-cli-choice proposition names #:optional (max-choices 1) (min-choices 1))
     "string (string:name ...) -> (string:chosen-name ...)" (display proposition)
@@ -26,12 +28,10 @@
         (display
           (string-join
             (map-with-index
-              (l (index ele) (string-append (number->string (increment-one index)) " " ele))
-              names)
+              (l (index ele) (string-append (number->string (increment-one index)) " " ele)) names)
             "  "))
         (newline)
-        (let
-          (choice (map string->number (remove string-null? (string-split (read-line) #\space))))
+        (let (choice (map string->number (remove string-null? (string-split (read-line) #\space))))
           (if (any not choice) #f (list-select names (map decrement-one choice)))))))
 
   (define (user-cli-confirm proposition) (display proposition)

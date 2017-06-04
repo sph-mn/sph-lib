@@ -19,7 +19,8 @@
     greg-year-weeks-53?
     greg-years->days
     greg-years->leap-days
-    greg-years->year)
+    greg-years->year
+    sph-time-gregorian-description)
   (import
     (guile)
     (rnrs base)
@@ -29,7 +30,10 @@
       modulo
       truncate/))
 
-  ;iso8601 is supposed to be followed, which uses a year 0. a year 0 supposedly keeps leap-day calculations simpler
+  (define sph-time-gregorian-description
+    "gregorian calendar calculations
+    uses a year 0 like iso8601. a year 0 supposedly keeps leap-day calculations simpler")
+
   (define-as greg-month-days vector 31 28 31 30 31 30 31 31 30 31 30 31)
   (define-as greg-month-days-leap-year vector 31 29 31 30 31 30 31 31 30 31 30 31)
   (define greg-number-of-months 12)
@@ -73,7 +77,7 @@
     (if (negative? a) (+ (if leap-year? greg-year-days-leap-year greg-year-days) a) a))
 
   (define (days-cycles& days c)
-    "integer procedure -> any
+    "integer procedure:{cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4 -> any} -> any
     gets the number of 400, 100 and 4 year cycles that occur in given days and their remainders.
     the full leap year cycle is 400 years long and contains 97 leap days.
     the algorithm counts different cycles from bigger to smaller while subtracting
@@ -111,14 +115,14 @@
         (l (cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4)
           (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
             (abs cycles-4)
-            ;check if the last day falls into centurial 4-year range, which does not include a leap day.
-            ;(+ years-100-days rest-100) are the days after the last contained 100 year cycle
+            ;check if the last day falls into the centurial 4-year range, which does not include a leap day.
+            ;(+ years-100-days rest-100) are the days after the last included 100 year cycle
             (if (< (- years-100-days rest-100) years-4-days) 0
               (if (< rest-4 years-3-month-2-29-days) 0 1)))))))
 
   (define (greg-days->years a)
     "integer -> integer
-    the number of years the given number days fill completely"
+    the number of years the given number of days fill"
     (truncate-quotient ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days))
 
   (define (greg-days->year a)
@@ -126,7 +130,9 @@
     (let (years (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days))
       (if (and (negative? a) (zero? years)) 0 (greg-years->year (floor years)))))
 
-  (define (greg-year-leap-year? a) "integer:year-number -> boolean"
+  (define (greg-year-leap-year? a)
+    "integer:year-number -> boolean
+    check if the given year is a leap year"
     (and (= 0 (modulo a 4)) (or (not (= 0 (modulo a 100))) (= 0 (modulo a 400)))))
 
   (define-syntax-rule (greg-month-days-get leap-year?)
@@ -141,7 +147,8 @@
         (if (< index end) (loop (+ 1 index) (+ days (vector-ref month-days index))) days))))
 
   (define (greg-year-days->month-and-day& a greg-month-days c)
-    "get the month and month day after given days have passed from the beginning of the year"
+    "integer #(days-of-month ...) procedure:{month day -> any} -> any
+    get the month and month day after the given number of days have passed starting from the beginning of the year"
     (let loop ((index 0) (days 0))
       (if (< index greg-number-of-months)
         (let (days (+ days (vector-ref greg-month-days index)))
@@ -152,6 +159,8 @@
   (define (week-day-start-sunday->monday week-day) (if (= 0 week-day) 6 (- week-day 1)))
 
   (define (greg-week-day year month day)
+    "integer integer integer -> integer
+    0 being monday"
     (week-day-start-sunday->monday
       (let* ((a (truncate-quotient (- 14 month) 12)) (y (- year a)) (m (- (+ month (* 12 a)) 2)))
         (modulo
@@ -160,7 +169,7 @@
             (truncate-quotient (* 31 m) 12))
           7))))
 
-  (define (greg-year-first-week-day a) "integer:year-number -> week-day-number:0-6"
+  (define (greg-year-first-week-day a) "integer:year-number -> integer:0-6:week-day-number"
     ;could be solved with greg-week-day but this seems more efficient
     (week-day-start-sunday->monday
       (let ((a (greg-year->years a)))
@@ -171,6 +180,6 @@
 
   (define (greg-year-weeks-53? a)
     "integer:year-number -> boolean
-    check if the given year number corresponds to a year with 53 weeks according to the iso8601 standard"
+    check if the given year number corresponds to a year with 53 instead of 52 weeks according to the iso8601 standard"
     (let (week-day (greg-year-first-week-day a))
       (or (= 3 week-day) (and (= 2 week-day) (greg-year-leap-year? a))))))

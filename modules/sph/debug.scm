@@ -1,6 +1,7 @@
 (library (sph debug)
   (export
     pass
+    sph-debug-description
     trace
     trace-in)
   (import
@@ -13,6 +14,8 @@
     (system vm vm)
     (only (guile) basename simple-format)
     (only (sph one) pass))
+
+  (define sph-debug-description "debugging helpers. experimental")
 
   (define (trace . procs)
     (each (l (ele) (trace-calls-to-procedure ele #:width 200 #:prefix "")) procs))

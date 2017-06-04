@@ -1,5 +1,6 @@
 (library (sph time rfc3339)
   (export
+    sph-time-rfc3339-description
     time->rfc3339
     time-from-rfc3339
     time-ns-from-rfc3339
@@ -10,18 +11,23 @@
     (guile)
     (ice-9 peg)
     (sph)
-    (only (sph time) time-nanoseconds->seconds time-from-date time-make-date time-seconds->nanoseconds)
-    (only (sph time utc) utc-duration->hms)
     (only (sph alist) alist-ref alist-q)
     (only (sph conditional) if-pass)
     (only (sph string) string-fill-left string-equal?)
+    (only (sph time)
+      time-nanoseconds->seconds
+      time-from-date
+      time-make-date
+      time-seconds->nanoseconds)
+    (only (sph time utc) utc-duration->hms)
     (only (sph tree) splice-lists-without-prefix-symbol)
     (only (srfi srfi-1) drop-right))
 
-  ;parse and create strings in the rfc3339 time format.
-  ;rfc3339 is a subset of iso8601 and is used for example in the atom syndication format.
-  ;this is a comprehensive implementation that uses a parsing expression grammar.
-  ;ns: nanoseconds
+  (define sph-time-rfc3339-description
+    "parse and create strings in the rfc3339 time format
+    rfc3339 is a subset of iso8601 and is used for example in the atom syndication format.
+    this is a comprehensive implementation that uses a parsing expression grammar.
+    ns: nanoseconds")
 
   (define-peg-pattern digit body (range #\0 #\9))
   (define-peg-pattern year all (and digit digit digit digit))

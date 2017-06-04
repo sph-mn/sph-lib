@@ -1,8 +1,7 @@
-;bindings to the libmagic library from the "file" utility that guesses file types
-
 (library (sph libmagic)
   (export
     path->mime-type
+    sph-libmagic-description
     string->mime-type)
   (import
     (rnrs base)
@@ -10,6 +9,9 @@
     (system foreign)
     (only (guile) dynamic-link dynamic-func)
     (only (sph string) string-octet-length))
+
+  (define sph-libmagic-description
+    "binding to the libmagic library from the \"file\" utility that guesses file types")
 
   (define libmagic (dynamic-link "libmagic"))
   ;MAGIC_* values are copied from include/magic.h

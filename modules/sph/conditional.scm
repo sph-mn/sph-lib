@@ -16,6 +16,8 @@
     (rnrs base)
     (sph))
 
+  (define sph-conditional-description "branching")
+
   (define-syntax-rule (any->list a) (if (list? a) a (list a)))
 
   (define-syntax-rule (identity-if result-if-true else ...)

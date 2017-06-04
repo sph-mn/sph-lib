@@ -1,5 +1,3 @@
-; (sph one) - various procedures.
-; written for the guile scheme interpreter
 ; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
@@ -35,6 +33,7 @@
     limit
     limit-max
     limit-min
+    par-let
     pass
     procedure->cached-procedure
     procedure->temporarily-cached-procedure
@@ -48,6 +47,7 @@
     rnrs-exception->object
     search-env-path
     socket-bind
+    sph-one-description
     values->list)
   (import
     (guile)
@@ -78,6 +78,11 @@
       unfold-right
       filter
       unfold))
+
+  (define sph-one-description "various")
+
+  (define-syntax-rule (par-let ((v e) ...) b0 b1 ...)
+    (call-with-values (lambda () (parallel e ...)) (lambda (v ...) b0 b1 ...)))
 
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
   (define (ignore . a) "any ... ->" (if #f #t))

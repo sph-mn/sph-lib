@@ -31,12 +31,15 @@
 
 (library (sph base64)
   (export
+    sph-base64-description
     base64-decode
     base64-decode-port
     base64-encode
     base64-encode-port)
   (import
     (rnrs))
+
+  (define sph-base64-description "encoder/decoder")
 
   (define *table*
     (quote

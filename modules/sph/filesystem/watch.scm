@@ -1,7 +1,6 @@
-;call a procedure when filesystem events like file modification happen. uses inotify or polling as a fall-back
-
 (library (sph filesystem watch)
   (export
+    sph-filesystem-watch-description
     watch-path)
   (import
     (linux inotify)
@@ -25,6 +24,9 @@
       stat:ctime)
     (only (sph tree) flatten)
     (only (srfi srfi-1) delete-duplicates filter-map))
+
+  (define sph-filesystem-watch-description "observing and acting on file-system changes
+    uses inotify if available or polling as a fall-back")
 
   (define watch-path-events (q (mtime atime attrib)))
 

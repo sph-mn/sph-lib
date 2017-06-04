@@ -2,12 +2,13 @@
   (export
     exception-always
     exception-intercept
-    exception-intercept-if)
+    exception-intercept-if
+    sph-exception-description)
   (import
     (rnrs exceptions)
     (sph)))
 
-;dealing with rnrs exceptions
+(define sph-exception-description "rnrs exception helpers. experimental")
 
 (define-syntax-rule (exception-intercept on-exception expression)
   ;"evaluate \"on-exception\" only when an exception occurs in expression.

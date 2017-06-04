@@ -1,4 +1,3 @@
-; (sph documentation) - retrieve or display documentation for guile scheme libraries
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -23,7 +22,9 @@
     itpn-docstring-split-signature
     lines->docstring
     list-module-information
-    module-description)
+    module-description
+    sort-module-information
+    sph-documentation-description)
   (import
     (guile)
     (ice-9 peg)
@@ -39,6 +40,8 @@
     (only (sph list) fold-multiple)
     (only (sph string) string-multiply string-equal?)
     (only (srfi srfi-1) remove filter-map))
+
+  (define sph-documentation-description "extract and display guile scheme code documentation")
 
   (define (docstring->lines a) "string -> (string ...)"
     (let (a (regexp-substitute/global #f " +" a (q pre) " " (q post)))
@@ -155,10 +158,27 @@
       (l (a) (alist-q name (first a) full-path (tail a) description (module-description (first a))))
       (apply append (filter-map (l (a) (false-if-exception (find-modules a))) search-path))))
 
+  (define (sort-module-information a)
+    (let
+      (b
+        (map
+          (l (a)
+            (alist-bind a (name)
+              (pair (if name (apply string-append (map symbol->string name)) "") a)))
+          a))
+      (map tail (list-sort (l (a b) (string<? (first a) (first b))) b))))
+
   (define (list-module-information . search-path)
-    (let (info (apply get-all-module-information search-path))
+    (let
+      ( (info (sort-module-information (apply get-all-module-information search-path)))
+        (get-first-line
+          (l (a)
+            (let (index (string-index a #\newline))
+              (if index (string-trim-right (string-take a index) #\.) a)))))
       (each
         (l (a)
           (alist-bind a (name description)
-            (display name) (if description (begin (display " - ") (display description))) (newline)))
+            (display name)
+            (if description (begin (display " - ") (display (get-first-line description)))))
+          (newline))
         info))))

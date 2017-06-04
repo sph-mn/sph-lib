@@ -12,7 +12,8 @@
     atom-person
     atom-text
     atom-text-xhtml
-    atom-title)
+    atom-title
+    sph-web-atom-description)
   (import
     (rnrs base)
     (sph)
@@ -20,6 +21,7 @@
     (only (guile) filter identity)
     (only (sph one) remove-keyword-associations))
 
+  (define sph-web-atom-description "create atom syndication feeds with sxml")
   ;for creating the sxml for atom syndication feeds
   ;https://en.wikipedia.org/wiki/Atom_%28standard%29#Atom_compared_to_RSS_2.0
   ;http://atomenabled.org/developers/syndication/

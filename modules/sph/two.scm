@@ -1,4 +1,3 @@
-; (sph two) - various procedures. deemed less useful than procedures in (sph one). system dependent, new or more experimental.
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -32,6 +31,7 @@
     create-newline-indent
     create-quote
     debug-log-file
+    define-multiple
     define-stack-fluid
     define-string
     define-syntax-identifier
@@ -54,6 +54,7 @@
     get-mime-extensions-cached
     guile-exception->string
     hash-select
+    identity-s
     if-guile-exception
     let-if
     let-if*
@@ -86,11 +87,15 @@
     primitive-eval-port
     process-unique-integer
     prog-sync-with-root
+    ql
+    quoted-list
     read-line-crlf
     read-line-crlf-trim
     read-mime.types
     seconds->short-kiloseconds-string
     set-multiple-from-list!
+    sort-symbol-lists
+    sph-two-description
     srfi-19-date->seconds
     string->datum
     string-remove-leading-zeros
@@ -111,12 +116,14 @@
     (guile)
     (ice-9 match)
     (ice-9 popen)
+    (ice-9 pretty-print)
     (ice-9 rdelim)
     (ice-9 regex)
     (ice-9 threads)
     (rnrs base)
     (rnrs bytevectors)
     (rnrs io ports)
+    (rnrs sorting)
     (sph)
     (sph alist)
     (sph cli)
@@ -141,6 +148,19 @@
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
 
+  (define sph-two-description
+    "various bindings deemed less useful than the ones in (sph one). system dependent, new or more experimental")
+
+  (define (sort-symbol-lists a)
+    "((symbol ...) ...) -> list
+    sort-module-names"
+    (let (b (map (l (a) (pair (apply string-append (map symbol->string a)) a)) a))
+      (map tail (list-sort (l (a b) (string<? (first a) (first b))) b))))
+
+  (define-syntax-rule (quoted-list a ...) (q (a ...)))
+  (define-syntax-rule (ql a ...) (quoted-list a ...))
+  (define-syntax-rule (identity-s a) a)
+
   (define (guile-exception->string key . a)
     "symbol any ... -> string
     create a space separated string from exception key and arguments.
@@ -154,6 +174,22 @@
     "procedure any ... -> any
     apply procedure \"proc\" with arguments \"a\""
     (apply proc a))
+
+  (define-syntax-rules define-multiple
+    ;define multiple variables at once from a list. example: (define-multiple (a b c) (list 1 2 3))
+    ;generated code looks similar to this:
+    ;  (define a expr)
+    ;  (define b (tail expr))
+    ;  (define b (first b))
+    ;  (define a (first a))
+    ((() expr) (if #f #f))
+    ( ( (identifier . identifiers) expr)
+      (begin
+        ; first binds identifier to the result of expr
+        ; then recurses without the first of all values
+        ; then re-binds identifier to the values for the first variable
+        (define identifier expr) (define-multiple identifiers (tail identifier))
+        (define identifier (first identifier)))))
 
   (define-syntax-rule (values-bind producer lambda-formals body ...)
     (call-with-values (thunk producer) (lambda lambda-formals body ...)))

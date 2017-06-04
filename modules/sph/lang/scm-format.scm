@@ -1,5 +1,6 @@
 (library (sph lang scm-format)
   (export
+    sph-lang-scm-format-description
     ascend-prefix->format-proc
     default-format-ascend
     descend-prefix->format-proc
@@ -25,7 +26,8 @@
       string-multiply)
     (only (sph tree) tree-transform-with-state))
 
-  ;scheme source code formatting
+  (define sph-lang-scm-format-description "format scheme code")
+
   (define default-format-ascend format-application)
 
   (define-as scm-format-default-config symbol-hashtable

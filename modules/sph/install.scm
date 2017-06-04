@@ -32,7 +32,8 @@
     (sph string))
 
   (define sph-install-description
-    "# features
+    "program and library installer
+     # features
      * installation with specific file mode. using \"cp\" or the like usually uses owner and permissions for the current user, which might be root
      * dry-run for listing what is to be done
      * command line interface with --help and other options

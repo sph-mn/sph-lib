@@ -15,6 +15,7 @@
     port-copy-some
     port-lines-each
     port-lines-fold
+    sph-read-write-description
     port-lines-map
     port-lines-map->port
     read-until-string-proc
@@ -51,6 +52,8 @@
     (sph)
     (sph filesystem)
     (only (srfi srfi-1) drop))
+
+  (define sph-read-write-description "generic port reading/writing")
 
   (define (each-u8 proc port)
     "procedure:{octet -> any} port -> unspecified

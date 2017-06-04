@@ -21,7 +21,7 @@
     (sph record)
     (only (ice-9 session) procedure-arguments))
 
-  (define sph-binding-info-description "get information about bindings in module")
+  (define sph-binding-info-description "get information about bindings in modules")
   ;specifies if the current values of the variables should be included in the documentation.
   ;might be interesting but can be a security issue for publicly accessible documentation
   (define bi-include-variable-values #f)

@@ -28,163 +28,106 @@ this is unfortunately necessary because guile does not come with a generic proce
 * /usr/lib/libguile-sph-lib.so
 
 # included libraries
-* (sph)
-* (csv csv)
-* (sph process create)
-* (sph user-cli)
-* (sph thread-pool)
-* (sph exception)
-* (sph vector selection)
-* (sph stream)
-* (sph record)
-* (sph linux)
-* (sph libmagic)
-* (sph ice-9-stream)
-* (sph char-set-vector)
-* (sph system reader)
-* (sph base64)
-* (sph deprecation)
-* (sph threads)
-* (sph time stream)
-* (sph time utc)
-* (sph time gregorian)
-* (sph time rfc3339)
-* (sph time string)
-* (sph lang plcss)
-* (sph lang template)
-* (sph lang docl)
-* (sph lang docl env itml-to-plaintext)
-* (sph lang docl env default)
-* (sph lang docl env itml-to-shtml)
-* (sph lang docl itml-to-plaintext)
-* (sph lang docl itml)
-* (sph lang docl itml-to-shtml)
-* (sph lang itml)
-* (sph lang indent-syntax)
-* (sph lang sxml-element-style-css)
-* (sph lang scm-format transform)
-* (sph lang scm-format base)
-* (sph lang scm-format format)
-* (sph lang itpn)
-* (sph lang scm-format)
-* (sph lang itml read)
-* (sph lang itml write)
-* (sph lang parser outline)
-* (sph lang parser type-signature)
-* (sph lang ecmascript expressions)
-* (sph hashtable one)
-* (sph debug)
-* (sph common)
-* (sph one)
-* (sph set)
-* (sph process)
-* (sph time)
-* (sph documentation shtml)
-* (sph documentation display-format-signature)
-* (sph documentation display-format-plist)
-* (sph documentation itpn)
-* (sph documentation display-format-itpn)
-* (sph filesystem watch)
-* (sph filesystem asset-compiler)
-* (sph filesystem versioning)
-* (sph sql)
-* (sph filesystem)
-* (sph error)
-* (sph list)
-* (sph hashtable)
-* (sph install)
-* (sph two)
-* (sph server)
-* (sph git)
-* (sph number)
-* (sph json)
-* (sph tree)
-* (sph string)
-* (sph random-data)
-* (sph test)
-* (sph log)
-* (sph conditional)
-* (sph read-write)
-* (sph tree two)
-* (sph cli)
-* (sph scgi)
-* (sph replacement-table)
-* (sph list one)
-* (sph module)
-* (sph base91)
-* (sph interface-format)
-* (sph vector)
-* (sph guile-dbi lib)
-* (sph guile-dbi sql)
-* (sph vhash)
-* (sph config)
-* (sph scrypt)
-* (sph web shtml)
-* (sph web http)
-* (sph web atom)
-* (sph web html)
-* (sph uniform-vector)
-* (sph documentation)
-* (sph binding-info)
-* (sph alist)
-
-
-
-* (sph alist) association list processing utilities
-* (sph base64) encoder/decoder
-* (sph base91) encoder/decoder
-* (sph cli) quickly initialise a command-line interface
-* (sph common) includes commonly used modules
-* (sph conditional)
-* (sph config) program configuration file management
-* (sph documentation) extracting and formatting guile scheme code documentation
-* (sph filesystem versioning) gives a path to the next version of a file and automatically archives the old version
-* (sph filesystem watch) observing and acting on file-system changes
-* (sph filesystem)
-* (sph hashtable) hashtable processing
-* (sph install) program installer
-* (sph json) a basic but fast scheme-datum to json writer
-* (sph lang docl itml-to-sxhtml)
-* (sph lang docl) generic document language processor
-* (sph lang ecmascript expressions) creating ecmascript syntax strings
-* (sph lang indent-syntax)
-* (sph lang parser itml)
-* (sph lang parser outline)
-* (sph lang parser type-signature)
-* (sph lang scm-format) formats scheme-code
-* (sph lang template) generic s-expression template processor
-* (sph libmagic) a binding to the libmagic file-type guessing library that is used by the common "file" utility
-* (sph list) list processing
-* (sph log) routing log-messages with categories to none or many output-targets
-* (sph module) guile module system or r6rs-library related procedures
-* (sph number)
-* (sph one) example implementations of various procedures
-* (sph process) create processes and process chains like bash with pipes
-* (sph random-data)
-* (sph read-write) generic port reading/writing
-* (sph record) vectors as records
-* (sph scgi)
-* (sph scrypt)
-* (sph server) a generic socket-based server
-* (sph set) hashtables as sets
-* (sph sql) create sql-statements from scheme data structures
-* (sph string) string processing. includes string-replace-string - a fast replacer procedure
-* (sph system reader) a scheme-datum reader that can include comments
-* (sph test performance) adaptive performance comparisons of procedures with command-line result display
-* (sph test) automated code testing
-* (sph thread-pool) generic thread-pool that uses signal-conditions and has a customisable queue
-* (sph time gregorian) gregorian calendar calculations
-* (sph time rfc3339) parse and create strings in the rfc3339 time format
-* (sph time string) time string conversions
-* (sph time utc) utc related time calculations
-* (sph time) time as integers of international atomic time (tai) nanoseconds since the unix epoch and a vector date object. selected conversions for utc and the gregorian calendar
-* (sph tree) processing tree-like list structures
-* (sph two)
-* (sph uniform-vector)
-* (sph user-cli) procedures for user-oriented/interactive command-line interfaces
-* (sph vector) vector processing
-* (sph web atom) create atom syndication feeds with sxml
-* (sph web html)
-* (sph web http) procedures for working with http
-* (sph) bindings fundamental to all sph libraries
-* plcss s-expression language that compiles to css
+(sph) - bindings that are fundamental to all sph libraries
+(sph alist) - association list processing
+(sph base64) - encoder/decoder
+(sph base91) - encoder/decoder
+(sph binding-info) - get information about bindings in modules
+(sph char-set-vector) - redefines guiles preset char-sets that are special objects as vectors. experimental
+(sph cli) - create command-line interfaces
+(sph conditional) - branching
+(sph config) - program configuration file management
+(sph debug) - debugging helpers. experimental
+(sph deprecation) - display a deprecation warning when specific procedures are used. experimental
+(sph documentation) - extract and display guile scheme code documentation
+(sph documentation display-format-itpn)
+(sph documentation display-format-plist)
+(sph documentation display-format-signature)
+(sph documentation itpn)
+(sph documentation shtml)
+(sph error) - an error object type
+(sph exception) - rnrs exception helpers. experimental
+(sph filesystem)
+(sph filesystem asset-compiler) - process and merge files of various formats into one
+(sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
+(sph filesystem watch) - observing and acting on file-system changes
+(sph git)
+(sph guile-dbi lib)
+(sph guile-dbi sql)
+(sph hashtable)
+(sph hashtable one)
+(sph ice-9-stream)
+(sph install) - program and library installer
+(sph interface-format) - for programs that offer textual input/output in multiple formats. experimental
+(sph json) - a basic but fast json writer
+(sph lang docl) - evaluate templates with a specific scheme environment, state values and circular inclusion protection
+(sph lang docl env default)
+(sph lang docl env itml-to-plaintext)
+(sph lang docl env itml-to-shtml)
+(sph lang docl itml)
+(sph lang docl itml-to-plaintext)
+(sph lang docl itml-to-shtml)
+(sph lang ecmascript expressions) - create ecmascript syntax strings
+(sph lang indent-syntax)
+(sph lang itml)
+(sph lang itml read)
+(sph lang itml write)
+(sph lang itpn)
+(sph lang parser outline) - parse text with nested headings
+(sph lang parser type-signature)
+(sph lang plcss) - s-expression language that compiles to css
+(sph lang scm-format) - format scheme code
+(sph lang scm-format base)
+(sph lang scm-format format)
+(sph lang scm-format transform)
+(sph lang sxml-element-style-css)
+(sph lang template) - generic s-expression template processor
+(sph libmagic) - binding to the libmagic library from the "file" utility that guesses file types
+(sph linux) - linux specific features
+(sph list)
+(sph list one)
+(sph log) - diagnostic logging with routing by category to none or many configurable output-targets
+(sph module) - guile module system or rnrs library related procedures
+(sph number)
+(sph one) - various
+(sph process) - execute programs and evaluate shell or scheme code
+(sph process create) - create child processes and process chains
+(sph random-data) - generate random data. strings, booleans, lists, bytevectors, characters, ...
+(sph read-write) - generic port reading/writing
+(sph record) - vectors as records
+(sph replacement-table) - replacement tables like (key replacement ...) loaded from files or ports
+(sph scgi) - scgi interface. a server that accepts and parses scgi requests
+(sph scrypt) - use the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt
+(sph server) - a generic socket based server
+(sph set) - hashtables as sets
+(sph sql) - create sql-statements from scheme data
+(sph stream)
+(sph string) - string processing. includes string-replace-string, a fast replacer
+(sph system reader) - a scheme reader that can include comments
+(sph test) - automated code testing with composable modules
+(sph test base)
+(sph test cli)
+(sph test performance) - adaptive performance testing and comparison of procedures with formatted result display
+(sph test report)
+(sph thread-pool) - generic thread-pool that uses signal-conditions and has a customisable queue type
+(sph threads)
+(sph time) - time as integers of international atomic time (tai) nanoseconds since the unix epoch and a vector date object. conversions for utc and the gregorian calendar
+(sph time gregorian) - gregorian calendar calculations
+(sph time rfc3339) - parse and create strings in the rfc3339 time format
+(sph time stream)
+(sph time string) - time string conversions
+(sph time utc) - utc related time calculations
+(sph tree) - processing tree-like list structures
+(sph tree two)
+(sph two) - various bindings deemed less useful than the ones in (sph one). system dependent, new or more experimental
+(sph uniform-vector)
+(sph user-cli) - text based user interaction. for example choices or confirmations
+(sph vector)
+(sph vector selection) - create and analyse selections from sets: permutations, combinations, n-tuples
+(sph vhash)
+(sph web atom) - create atom syndication feeds with sxml
+(sph web html)
+(sph web http)
+(sph web shtml)
+(test helper sph lang docl env test)
+(test sph documentation)

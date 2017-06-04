@@ -16,7 +16,8 @@
   (export
     cli-command-match
     cli-create
-    cli-option-spec->list)
+    cli-option-spec->list
+    sph-cli-description)
   (import
     (guile)
     (ice-9 receive)
@@ -45,6 +46,8 @@
       remove
       append-map
       partition))
+
+  (define sph-cli-description "create command-line interfaces")
 
   (define (typecheck+conversion type a)
     (cond ((eqv? (q string) type) a) ((eqv? (q number) type) (string->number a))
@@ -196,8 +199,7 @@
       (exit 0)))
 
   (define (display-about-proc text config)
-    (l (opt name a r)
-      (display (string-append (if (procedure? text) (text) text) "\n")) (exit 0)))
+    (l (opt name a r) (display (string-append (if (procedure? text) (text) text) "\n")) (exit 0)))
 
   (define (add-typecheck type c)
     (if type
@@ -245,12 +247,14 @@
       (l (options)
         (if-pass (alist-q-ref a version)
           (l (version-spec)
-            (pair (ql version #:names #\v #:processor (display-version-proc version-spec)) options))))
+            (pair (q (version #:names #\v #:processor (display-version-proc version-spec))) options))))
       (l (options)
         (if-pass (alist-q-ref a about)
-          (l (text) (pair (qq (about #:names #\a #:processor (unquote (display-about-proc text a)))) options))))
+          (l (text)
+            (pair (qq (about #:names #\a #:processor (unquote (display-about-proc text a))))
+              options))))
       (l (options)
-        (let ((help-option (ql help #:names #\h)) (cli-option (ql interface)))
+        (let ((help-option (q (help #:names #\h))) (cli-option (q (interface))))
           (let*
             ( (options-temp (pairs cli-option help-option options))
               (options

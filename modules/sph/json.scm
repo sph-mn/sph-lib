@@ -1,7 +1,6 @@
-;a json writer. converts scheme-data to json. particularly fast
-
 (library (sph json)
   (export
+    sph-json-description
     scm->json
     scm->json-string)
   (import
@@ -11,6 +10,8 @@
     (sph)
     (sph vector)
     (only (sph hashtable) hashtable-each))
+
+  (define sph-json-description "a basic but fast json writer")
 
   (define (list->json a port) "list port ->"
     (display "[" port)

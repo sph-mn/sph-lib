@@ -1,6 +1,7 @@
 (library (sph test performance)
   (export
-    evaluate-performance)
+    evaluate-performance
+    sph-test-performance-description)
   (import
     (guile)
     (ice-9 format)
@@ -11,19 +12,19 @@
     (sph list)
     (sph number)
     (sph string)
+    (sph time)
     (only (guile)
       current-time
       ceiling
       exact->inexact
       inexact->exact
       string-join)
-    (only (sph one)
-      number->integer-string
-      each-integer
-      pass)
-    (sph time))
+    (only (sph one) each-integer pass)
+    (only (sph two) number->integer-string))
 
-  "compare performance of procedures with adapting the number of applications until a meaningful run time difference is found"
+  (define sph-test-performance-description
+    "adaptive performance testing and comparison of procedures with formatted result display.
+    adapts the number of calls until a meaningful run time difference is found")
 
   (define (multiply-until proc base factor)
     (if (proc base factor) base (multiply-until proc (* base factor) factor)))

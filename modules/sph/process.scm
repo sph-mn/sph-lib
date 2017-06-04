@@ -1,5 +1,3 @@
-; (sph process) - process creation, management and inter-process communication.
-; written for the guile scheme interpreter
 ; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
@@ -32,7 +30,8 @@
     process-replace-pe
     shell-eval
     shell-eval+check-result
-    shell-eval->string)
+    shell-eval->string
+    sph-process-description)
   (import
     (guile)
     (ice-9 popen)
@@ -45,6 +44,7 @@
     (sph read-write)
     (srfi srfi-31))
 
+  (define sph-process-description "execute programs and evaluate shell or scheme code")
   (define execute system*)
   (define shell-eval system)
 

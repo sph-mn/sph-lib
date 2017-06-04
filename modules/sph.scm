@@ -1,4 +1,3 @@
-; (sph) - fundamental bindings for sph-lib
 ; written for the guile scheme interpreter
 ; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
@@ -23,7 +22,6 @@
     debug-log
     define*
     define-as
-    define-multiple
     define-syntax-case
     define-syntax-cases
     define-syntax-rule
@@ -35,7 +33,6 @@
     fold
     fold-right
     identifier?
-    identity-s
     l
     l*
     lambda*
@@ -47,11 +44,10 @@
     par-map
     parallel
     q
-    ql
     qq
     quasisyntax
-    quoted-list
     second
+    sph-description
     syntax
     syntax->datum
     syntax-rule
@@ -72,8 +68,6 @@
       cons*
       current-output-port
       datum->syntax
-      debug-disable
-      debug-set!
       define-syntax
       display
       exit
@@ -85,8 +79,6 @@
       newline
       quasisyntax
       read-disable
-      read-set!
-      resolve-interface
       setlocale
       string=
       syntax
@@ -110,43 +102,44 @@
       fold-right)
     (only (srfi srfi-2) and-let*))
 
-  ;export (rnrs base). exclude let because it is redefined here
+  (define sph-description
+    "bindings that are fundamental to all sph libraries
+    includes (rnrs base)")
 
   (module-re-export! (current-module)
+    ;export (rnrs base). exclude let because it is redefined here
     (filter (lambda (e) (not (or (eq? e (quote %module-public-interface)) (eq? e (quote let)))))
       (module-map (lambda a (car a)) (resolve-interface (q (rnrs base))))))
 
   ;affects port\string encodings
-  ;  initialise all locale categories based on standard system environment variables
+  ;  initialise all locale categories based on system environment variables
   (setlocale LC_ALL "")
   (read-disable (quote square-brackets))
 
   (define (debug-log . a)
-    "writes all arguments to standard-output and results in the first argument"
+    "any-1 any-n ... -> any-1
+    writes all arguments to standard output and returns the first argument"
     (pretty-print (cons (q --) a)) (first a))
 
   (define-syntax syntax-rule
+    ;like syntax-rules but only for one syntax-rule and without keyword support
     (syntax-rules () ((_ (pattern ...) expansion) (syntax-rules () ((_ pattern ...) expansion)))))
 
   (define-syntax syntax-rules_
+    ;like syntax-rules but without keyword support
     (syntax-rules ()
       ((_ ((pattern ...) expansion) ...) (syntax-rules () ((_ pattern ...) expansion) ...))))
 
   (define-syntax define-syntax-rule
-    ;removes possibility to define keywords
-    ;removes possibility to define multiple clauses
+    ;removes option to define multiple clauses
+    ;removes option to define keywords
     (syntax-rule ((name pattern ...) expansion)
       (define-syntax name (syntax-rule (pattern ...) expansion))))
 
   (define-syntax define-syntax-rules
-    ;removes possibility to define keywords
+    ;removes option to define keywords
     (syntax-rule (name ((pattern ...) expansion) ...)
       (define-syntax name (syntax-rules () ((_ pattern ...) expansion) ...))))
-
-  (define-syntax-rules define-multiple ((() expr) (quote unspecified))
-    ( ( (identifier . identifiers) expr)
-      (begin (define identifier expr) (define-multiple identifiers (tail identifier))
-        (define identifier (first identifier)))))
 
   (define-syntax-rules define-syntax-case
     ;removes possibility to define keywords
@@ -173,29 +166,29 @@
 
   (define-syntax-rule (l a ...) (lambda a ...))
   (define-syntax-rule (l* a ...) (lambda* a ...))
-  (define-syntax-rule (identity-s a) a)
   (define-syntax-rule (q a) (quote a))
-  (define-syntax-rule (quoted-list a ...) (q (a ...)))
-  (define-syntax-rule (ql a ...) (quoted-list a ...))
   (define-syntax-rule (qq a) (quasiquote a))
+  (define-syntax-rule (thunk body ...) (l () body ...))
+  (define-syntax-rule (apply-values proc producer) (call-with-values (thunk producer) proc))
   (define pair cons)
   (define pairs cons*)
   (define tail cdr)
   (define each for-each)
+  (define null (list))
 
   (define-syntax-rules let
-    ;let and named-let plus a simplified syntax for binding just one variable
+    ;let and named-let extended with a simplified syntax for binding just one variable
+    ;example: (let (a 3) a)
     ((((variable-name expr) ...) body ...) ((lambda (variable-name ...) body ...) expr ...))
     (((variable-name expr) body ...) (let ((variable-name expr)) body ...))
     ( (name ((variable-name expr) ...) body ...)
       ((lambda (name) (set! name (lambda (variable-name ...) body ...)) (name expr ...)) #f))
     ((name (variable-name expr) body ...) (let name ((variable-name expr)) body ...)))
 
-  (define-syntax-rule (par-let ((v e) ...) b0 b1 ...)
-    (call-with-values (lambda () (parallel e ...)) (lambda (v ...) b0 b1 ...)))
-
   (define-syntax-case (compose-s name expr ...) s
-    ;this does not fail in the case ((quasiquote list) expr ...)
+    ;(compose-s a (list 1 2)) -> (a (list 1 2))
+    ;(compose-s (a b) (list 1 2)) -> (a (b (list 1 2)))
+    ;this does not fail in the case (_ (quasiquote list) expr ...)
     (let (name-datum (syntax->datum (syntax name)))
       (if (list? name-datum)
         (let (name-datum (reverse name-datum))
@@ -204,14 +197,13 @@
               (tail name-datum))))
         (syntax (name expr ...)))))
 
-  (define null (list))
-
   (define-syntax-rules define-as
-    ;example: (define-as customname list 1 2 3)
-    ;example: (define-as customname quasiquote list 1 (unquote 3))
+    ;example: (define-as list 1 2 3)
+    ;example: (define-as (quasiquote list) 1 (unquote 3)
     ((name (wrap-name ...) expr ...) (define name (compose-s (wrap-name ...) expr ...)))
     ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
-  (define* (display-line a #:optional (port (current-output-port))) (display a port) (newline port))
-  (define-syntax-rule (thunk body ...) (l () body ...))
-  (define-syntax-rule (apply-values proc producer) (call-with-values (thunk producer) proc)))
+  (define* (display-line a #:optional (port (current-output-port)))
+    "any [port] -> unspecified
+    like \"display\" but emits a newline at the end"
+    (display a port) (newline port)))

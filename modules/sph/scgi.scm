@@ -1,6 +1,4 @@
-; (sph scgi) - scgi interface, a server that accepts and parses scgi requests
-; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -16,6 +14,7 @@
   (export
     scgi-default-address
     scgi-handle-requests
+    sph-scgi-description
     scgi-read-header)
   (import
     (rnrs base)
@@ -28,6 +27,7 @@
       set-port-encoding!)
     (only (rnrs io simple) eof-object? read-char))
 
+  (define sph-scgi-description "scgi interface. a server that accepts and parses scgi requests")
   (define binary-char-null (char->integer #\nul))
   (define binary-char-colon (char->integer #\:))
 

@@ -1,15 +1,16 @@
 (library (sph vector selection)
   (export
-    selection-complexity-maximum
-    selection-distinct-maximum
+    sph-vector-selection-description
+    tuple-complexity-maximum
+    tuple-distinct-maximum
     vector-complexity
     vector-numeric-increment-be
     vector-numeric-increment-be!
     vector-numeric-increment-le
     vector-numeric-increment-le!
     vector-selection
-    vector-selection-stream
-    vector-selections)
+    vector-selections
+    vector-selections-stream)
   (import
     (rnrs base)
     (rnrs sorting)
@@ -18,16 +19,12 @@
     (srfi srfi-41)
     (only (guile) vector-copy))
 
-  ;vectors as selections from a set. and creating vectors from sets
-
-  (define (vector-selection set-indices set)
-    "vector:#(integer ...) vector -> vector
-    set-indices is a list of indexes, set is a selection. reorders selection by indexes in set-indices"
-    (vector-map (l (index) (vector-ref set index)) set-indices))
+  (define sph-vector-selection-description
+    "create and analyse selections from sets: permutations, combinations, n-tuples")
 
   (define (vector-numeric-increment-le! a base)
     "vector integer -> true/false
-    like vector-numeric-increment-le but modifies the vector"
+    like \"vector-numeric-increment-le\" but modifies the input vector"
     (let (a-length (vector-length a))
       (let loop ((index 0))
         (if (>= index a-length) #f
@@ -37,7 +34,7 @@
 
   (define (vector-numeric-increment-be! a base)
     "vector integer -> true/false
-    like \"vector-numeric-increment-be\" but modifies the vector"
+    like \"vector-numeric-increment-be\" but modifies the input vector"
     (let loop ((index (- (vector-length a) 1)))
       (if (>= index 0)
         (if (< (vector-ref a index) base)
@@ -47,22 +44,27 @@
 
   (define (vector-numeric-increment-le a base)
     "vector integer -> vector
-    treat a vector of numbers as a whole like a number to \"base\" in little endian and increment it.
+    treat a vector of integers as a whole like one number to \"base\" in little endian and increment it.
     returns false if the maximum value has been reached"
     (let (r (vector-copy a)) (and (vector-numeric-increment-le! r base) r)))
 
   (define (vector-numeric-increment-be a base)
     "vector integer -> vector
-    treat a vector of numbers as a whole like a number to \"base\" in big endian and increment it
+    treat a vector of integers as a whole like one number to \"base\" in big endian and increment it
     returns false if the maximum value has been reached"
     (let (r (vector-copy a)) (and (vector-numeric-increment-be! r base) r)))
 
+  (define (vector-selection set-indices set)
+    "vector:#(integer ...) vector -> vector
+    return a new vector of values selected at indices in set"
+    (vector-map (l (index) (vector-ref set index)) set-indices))
+
   (define* (vector-selections set #:optional width)
     "vector integer -> (vector ...)
-    return a list of selections for vector \"set\" with duplicate elements allowed. set can contain any datatype.
-    the optional parameter width specifies the length of each resulting selection.
-    for example, width: 2 creates all two-element selections of set.
-    the default for width is the length of the set"
+    return a list of all possible arrangements of values from \"set\" with duplicate elements allowed. set can contain any datatype.
+    the optional parameter \"width\" specifies the length of selections.
+    for example, width: 2 creates all possible two element arrangements of set.
+    the default for \"width\" is the length of the set"
     (let*
       ( (last-index (- (vector-length set) 1))
         (set-indices-init (make-vector (+ (if width (- width 1) last-index) 1) 0)))
@@ -70,9 +72,9 @@
         (let (set-indices (vector-numeric-increment-le set-indices last-index))
           (if set-indices (loop set-indices (pair (vector-selection set-indices set) r)) r)))))
 
-  (define* (vector-selection-stream selection #:optional (width (vector-length selection)))
+  (define* (vector-selections-stream selection #:optional (width (vector-length selection)))
     "vector width -> stream
-    creates an srfi-41-stream of selections with duplicates of selection with a specific width"
+    like vector-selections but returns an srfi-41-stream and calculates next results on demand"
     (let ((v (make-vector width 0)) (selection-last-index (- (vector-length selection) 1)))
       (stream-let next ((v (vector-numeric-increment-le v selection-last-index)))
         (if v
@@ -80,46 +82,54 @@
             (next (vector-numeric-increment-le v selection-last-index)))
           stream-null))))
 
-  (define (selection-count-one-self start-p-index width selection start-index)
-    "integer integer vector integer -> integer
-    count one or zero occurences of a selection in vector selection specified by width and start-index"
-    (let ((selection-length (vector-length selection)) (end-index (+ start-p-index (- width 1))))
-      (let loop ((c-index start-index) (p-index start-p-index))
-        (if (< c-index selection-length)
-          (if (equal? (vector-ref selection p-index) (vector-ref selection c-index))
-            (if (= p-index end-index) 1 (loop (+ 1 c-index) (+ 1 p-index)))
-            (loop (if (eqv? p-index start-p-index) (+ 1 c-index) c-index) start-p-index))
-          0))))
-
-  (define* (selection-distinct-maximum set-length #:optional (selection-width set-length))
+  (define* (tuple-distinct-maximum set-length #:optional (selection-width set-length))
     "integer integer -> integer
-    calculate the maximum number of distinct selections of a set with length set-length and optional width which defaults to set-length"
+    calculate the maximum number of possible arrangements for a set with length \"set-length\" and optional \"width\" which defaults to \"set-length\""
     (if (= 0 set-length) 0 (expt set-length selection-width)))
 
-  (define* (selection-complexity-maximum width #:optional (min-width 1))
+  (define* (tuple-complexity-maximum width #:optional (min-width 1))
     "integer integer -> integer
-    calculate the maximum number of possible unique sub-selections in a selection up to width, optionally ignoring widths smaller than min-width"
-    (if (= width 0) width
-      (if (>= min-width width) 1
-        (+ (- (+ width 1) min-width) (selection-complexity-maximum width (+ min-width 1))))))
+    calculate the maximum number of possible distinct tuples in a tuple up to width, optionally ignoring widths smaller than min-width"
+    (if (or (= 0 width) (< width min-width)) 0
+      (if (= min-width width) 1
+        (+ (- (+ 1 width) min-width) (tuple-complexity-maximum width (+ 1 min-width))))))
 
-  (define* (vector-complexity selection #:optional (min-pw 1) max-pw)
+  (define (vector-complexity-count-one start-index width tuple tuple-length)
+    "integer integer vector integer -> integer
+    helper for \"vector-complexity\""
+    ; ???
+    (let (end-index (+ start-index (- width 1)))
+      (let loop ((index (+ 1 start-index)) (match-index start-index))
+        (debug-log (q index) index (q match-index) match-index)
+        (if (< index tuple-length)
+          (begin (debug-log (q equal?) (vector-ref tuple match-index) (vector-ref tuple index))
+            (if (equal? (vector-ref tuple match-index) (vector-ref tuple index))
+              (if (= match-index end-index) 1 (loop (+ 1 index) (+ 1 match-index)))
+              (loop (if (eqv? match-index start-index) (+ 1 index) index) start-index)))
+          0))))
+
+  (define* (vector-complexity tuple #:optional (min-width 1) max-width)
     "vector integer integer -> integer
-    find the number of distinct sub-selections in a selection.
-    a sub-selection is counted if its values, order or length are distinct"
-    ;pw: selection-width
-    (let*
-      ((selection-length (vector-length selection)) (max-pw (if max-pw max-pw selection-length)))
-      (if (> min-pw max-pw) #f
-        (let next-level ((level max-pw) (occurence 0))
-          (if (<= min-pw level)
+    count all distinct tuples in a tuple.
+    distinctness is defined by elements, order and length"
+    ; how sub-tuples are counted:
+    ; #([1 2 3] 4)
+    ; #(1 [2 3 4])
+    ; #([1 2] 3 4)
+    ; #(1 [2 3] 4)
+    ; #(1 2 [3 4])
+    (let* ((tuple-length (vector-length tuple)) (max-width (if max-width max-width tuple-length)))
+      (if (> min-width max-width) #f
+        (let next-level ((level max-width) (duplicates 0))
+          (debug-log (q level) level)
+          (if (<= min-width level)
             (next-level (- level 1)
               (+
-                (let ((max-length (- selection-length (- level 1))))
-                  (let next-selection ((index 0) (count 0))
-                    (if (< index max-length)
-                      (next-selection (+ 1 index)
-                        (+ (selection-count-one-self index level selection (+ index 1)) count))
+                (let ((last-index (- tuple-length level)))
+                  (let next-tuple ((index 0) (count 0))
+                    (if (<= index last-index)
+                      (next-tuple (+ index 1)
+                        (+ count (vector-complexity-count-one index level tuple tuple-length)))
                       count)))
-                occurence))
-            (- (selection-complexity-maximum max-pw min-pw) occurence)))))))
+                duplicates))
+            (- (tuple-complexity-maximum max-width min-width) duplicates)))))))

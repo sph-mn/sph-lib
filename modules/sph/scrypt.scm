@@ -1,11 +1,10 @@
-; depends on https://github.com/jkalbhenn/scrypt
-
 (library (sph scrypt)
   (export
     scrypt
     scrypt->string
     scrypt-check
-    scrypt-defaults)
+    scrypt-defaults
+    sph-scrypt-description)
   (import
     (rnrs base)
     (rnrs bytevectors)
@@ -15,6 +14,9 @@
       dynamic-link
       dynamic-func
       inexact->exact))
+
+  (define sph-scrypt-description
+    "use the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt")
 
   (define libscrypt (dynamic-link "libscrypt"))
 

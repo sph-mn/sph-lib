@@ -1,6 +1,4 @@
-; (sph tree) - nested-lists/arborescence/tree-like-structure processing
-; written for the guile scheme interpreter
-; Copyright (C) 2010-2016 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -38,6 +36,7 @@
     produce-tree-lists
     produce-tree-lists-with-levels
     produce-with-iterator-tree
+    sph-tree-description
     splice-lists-without-prefix-symbol
     tree->denoted-tree
     tree-contains-any-not?
@@ -86,6 +85,8 @@
       append-map
       fold-right
       last))
+
+  (define sph-tree-description "processing tree-like list structures")
 
   (define-syntax-rule (denoted-tree->tree-inner a depth-start r-2 r update-r ...)
     (first

@@ -15,14 +15,15 @@
     error-raise
     error-return
     error?
-    error?-s)
+    error?-s
+    sph-error-description)
   (import
     (guile)
     (rnrs base)
     (sph)
     (srfi srfi-9))
 
-  ;an error type
+  (define sph-error-description "an error object type")
 
   (define-record-type error (error-create-record id group data)
     error?-s (id error-id) (group error-group) (data error-data))
