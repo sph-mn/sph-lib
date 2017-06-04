@@ -19,7 +19,7 @@
     (sph lang itml)
     (sph lang itml read)
     (sph list)
-    (sph read-write)
+    (sph io)
     (sph set)
     (sph web shtml)
     (only (sph hashtable) hashtable-ref symbol-hashtable)

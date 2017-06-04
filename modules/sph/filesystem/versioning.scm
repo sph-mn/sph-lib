@@ -6,7 +6,12 @@
     versioning-restore)
   (import
     (guile)
-    (sph common))
+    (sph)
+    (sph process)
+    (sph io)
+    (sph hashtable)
+    (only (sph filesystem) ensure-directory-structure directory-list)
+ )
 
   (define sph-filesystem-versioning-description
     "gives a path to the next version of a file and automatically archives the old version

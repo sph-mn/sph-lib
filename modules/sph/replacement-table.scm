@@ -12,7 +12,7 @@
     (sph hashtable)
     (only (guile) string-split call-with-input-file)
     (only (rnrs hashtables) hashtable-set!)
-    (only (sph read-write) port-lines-each))
+    (only (sph io) port-lines-each))
 
   (define sph-replacement-table-description
     "replacement tables like (key replacement ...) loaded from files or ports")

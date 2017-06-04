@@ -2,7 +2,7 @@
   (import
     (sph process)
     (sph process create)
-    (sph read-write)
+    (sph io)
     (sph list)
     (sph one))
 

@@ -107,7 +107,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph module) - guile module system or rnrs library related procedures
 * (sph number)
 * (sph one) - various
-* (sph read-write) - generic port reading/writing
+* (sph io) - generic port reading/writing
 * (sph replacement-table) - replacement tables like (key replacement ...) loaded from files or ports
 * (sph set) - hashtables as sets
 * (sph sql) - create sql-statements from scheme data

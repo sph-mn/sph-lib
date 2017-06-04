@@ -41,7 +41,7 @@
     (sph)
     (sph filesystem)
     (sph one)
-    (sph read-write)
+    (sph io)
     (srfi srfi-31))
 
   (define sph-process-description "execute programs and evaluate shell or scheme code")

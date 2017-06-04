@@ -41,7 +41,7 @@
     stat-diff
     stat-diff->accessors
     stat-field-name->stat-accessor
-    string->file)
+ )
   (import
     (guile)
     (ice-9 ftw)
@@ -379,8 +379,6 @@
           (if (equal? value-1 value-2) #f (vector e value-1 value-2))))
       accessors))
 
-  (define (string->file a path) "write string into file at path, overwriting the file"
-    (call-with-output-file path (l (file) (display a file))))
 
   (define* (symbol-path->string symbol-path #:optional base-path) "symbol/(symbol ...) -> string"
     (let

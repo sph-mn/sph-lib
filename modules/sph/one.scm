@@ -18,12 +18,8 @@
     call-at-approximated-interval
     call-at-interval
     call-at-interval-w-state
-    call-with-pipe
-    call-with-pipes
     cli-option
     cli-option-join
-    create-fifo
-    create-temp-fifo
     each-integer
     guile-exception->key
     ignore
@@ -33,7 +29,6 @@
     limit
     limit-max
     limit-min
-    par-let
     pass
     procedure->cached-procedure
     procedure->temporarily-cached-procedure
@@ -51,7 +46,6 @@
     values->list)
   (import
     (guile)
-    (ice-9 popen)
     (ice-9 pretty-print)
     (ice-9 rdelim)
     (ice-9 regex)
@@ -64,10 +58,6 @@
     (sph number)
     (sph string)
     (except (rnrs base) map)
-    (only (ice-9 popen)
-      close-pipe
-      open-pipe
-      open-pipe*)
     (only (rnrs hashtables)
       make-hashtable
       equal-hash
@@ -80,10 +70,6 @@
       unfold))
 
   (define sph-one-description "various")
-
-  (define-syntax-rule (par-let ((v e) ...) b0 b1 ...)
-    (call-with-values (lambda () (parallel e ...)) (lambda (v ...) b0 b1 ...)))
-
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
   (define (ignore . a) "any ... ->" (if #f #t))
 
@@ -103,13 +89,6 @@
       (if (null? rest) rest
         (let (element (first rest))
           (if (keyword? element) (loop (list-tail rest 2)) (pair element (loop (tail rest))))))))
-
-  (define* (create-temp-fifo #:optional (permissions 438))
-    "[integer] -> string
-    create at fifo named pipe in the system-dependent temp-directory using an unique file-name created using \"tmpnam\""
-    (let (path (tmpnam)) (mknod path (q fifo) permissions 0) path))
-
-  (define* (create-fifo path #:optional (permissions 438)) (mknod path (q fifo) permissions 0))
 
   (define (search-env-path . a)
     "string -> string
@@ -261,18 +240,6 @@
                 (if (= last-match-index match-index) #t (loop (+ 1 index) (+ 1 match-index)))
                 (loop (+ 1 index) 0))
               #f))))))
-
-  (define (call-with-pipes count proc)
-    "integer procedure:{[pipe-n-in pipe-n-out] ... -> any} -> any
-    the pipes are closed after proc finished. they can also be closed by proc.
-    blocking: reading from the input side might block as long as the output side is not yet closed"
-    (let
-      (pipes
-        (fold-integers count (list)
-          (l (n result) (let (a (pipe)) (pairs (first a) (tail a) result)))))
-      (begin-first (apply proc pipes) (each (l (a) (if (not (port-closed? a)) (close a))) pipes))))
-
-  (define (call-with-pipe proc) "equivalent to (call-with-pipes 1 proc)" (call-with-pipes 1 proc))
 
   (define* (cli-option name #:optional value)
     "creates a string for one generic command-line option in the gnu format -{single-character} or --{word} or --{word}=.

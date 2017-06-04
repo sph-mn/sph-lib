@@ -16,7 +16,7 @@
     (except (rnrs io simple) read)
     (only (guile) unread-char char->integer)
     (only (ice-9 rdelim) read-line)
-    (only (sph read-write) read-until-string-proc)
+    (only (sph io) read-until-string-proc)
     (only (srfi srfi-1) reverse))
 
   (define sph-system-reader-description "a scheme reader that can include comments")

@@ -8,12 +8,11 @@
     template-get)
   (import
     (guile)
-    (rnrs base)
     (rnrs eval)
     (sph)
     (only (sph alist) alist-ref)
     (only (sph list) fold-multiple)
-    (only (sph read-write) rw-file->list rw-port->list))
+    (only (sph io read-write) rw-file->list rw-port->list))
 
   (define sph-lang-template-description "generic s-expression template processor
     a template engine using implicitly quasiquoted s-expressions.

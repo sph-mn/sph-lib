@@ -11,7 +11,7 @@
     (rnrs base)
     (sph)
     (sph list)
-    (sph read-write)
+    (sph io)
     (sph record)
     (only (rnrs hashtables) equal-hash)
     (only (sph filesystem) ensure-directory-structure ensure-trailing-slash)

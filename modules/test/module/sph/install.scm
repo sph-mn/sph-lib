@@ -1,6 +1,6 @@
 (define-test-module (test module sph install)
   (import
-    (sph read-write)
+    (sph io)
     (sph process)
     (sph install))
 

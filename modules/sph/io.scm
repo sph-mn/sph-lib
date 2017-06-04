@@ -1,12 +1,15 @@
-(library (sph read-write)
+(library (sph io)
   (export
     bytevector->file
+    call-with-pipe
+    call-with-pipes
     each-u8
     file->bytevector
     file->datums
     file->port
     file->string
     file-port->file-port
+    pipe-chain
     port->bytevector
     port->file
     port->lines
@@ -15,45 +18,29 @@
     port-copy-some
     port-lines-each
     port-lines-fold
-    sph-read-write-description
     port-lines-map
     port-lines-map->port
     read-until-string-proc
-    rw-any->file
-    rw-any->list
-    rw-any->port
-    rw-any->string
-    rw-file->file
-    rw-file->list
-    rw-file->port
-    rw-file->string
-    rw-file-indirect->file
-    rw-list->file
-    rw-list->port
-    rw-list->string
-    rw-pipe-chain
-    rw-port->file
-    rw-port->list
-    rw-port->port
-    rw-port->string
-    rw-port-indirect->file
-    rw-string->file
-    rw-string->list
-    rw-string->port
-    rw-string->string
-    rw-with-temporary-file-port->file
+    string->file
     temp-file-port
+    temporary-file-port->file
     (rename (read port->datum)))
   (import
     (guile)
     (ice-9 rdelim)
-    (rnrs base)
     (rnrs io ports)
     (sph)
-    (sph filesystem)
+    (sph list)
+    (only (sph filesystem) ensure-trailing-slash)
+    (only (sph one) begin-first)
     (only (srfi srfi-1) drop))
 
-  (define sph-read-write-description "generic port reading/writing")
+  (define (rw-port->port read write port port-2)
+    ;copied from io read-write to avoid circular dependency
+    (let loop ((e (read port))) (if (eof-object? e) e (begin (write e port-2) (loop (read port))))))
+
+  (define (string->file a path) "write string into file at path, overwriting the file"
+    (call-with-output-file path (l (file) (display a file))))
 
   (define (each-u8 proc port)
     "procedure:{octet -> any} port -> unspecified
@@ -67,8 +54,25 @@
       (l (in) (call-with-output-file path-output (l (out) (proc in out)) #:binary output-binary?))
       #:binary input-binary?))
 
-  (define (rw-pipe-chain first-input last-output . proc)
-    "port/true port/true procedure:{pipe-input pipe-output port/false:first-input port/false:last-output} ... -> (procedure-result ...)
+  (define (call-with-pipes count proc)
+    "integer procedure:{[pipe-n-in pipe-n-out] ... -> any} -> any
+    the pipes are closed after proc finished. they can also be closed by proc.
+    blocking: reading from the input side might block as long as the output side is not yet closed"
+    (let
+      (pipes
+        (fold-integers count (list)
+          (l (n result) (let (a (pipe)) (pairs (first a) (tail a) result)))))
+      (begin-first (apply proc pipes) (each (l (a) (if (not (port-closed? a)) (close a))) pipes))))
+
+  (define (call-with-pipe proc) "equivalent to (call-with-pipes 1 proc)" (call-with-pipes 1 proc))
+
+  (define* (named-pipe #:optional path (permissions 438))
+    "[string integer] -> string:path
+    create a named pipe (fifo)"
+    (let (path (or path (tmpnam))) (mknod path (q fifo) permissions 0) path))
+
+  (define (pipe-chain first-input last-output . proc)
+    "port/true port/true procedure:{pipe-input pipe-output -> false/any} ... -> (procedure-result ...)
     create a pipe for each procedure output and the next procedure input and call procedures with the respective input/output-ports.
     if any result is false then stop and return results up to that point"
     (if (null? proc) proc
@@ -83,11 +87,6 @@
     create a new unique file in the file system and return a new buffered port for reading and writing to the file"
     (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
 
-  (define* (rw-file-indirect->file read write path-1 #:optional (path-2 path-1))
-    "like rw-port->file but takes a path for reading from an input file"
-    (rw-with-temporary-file-port->file
-      (l (port-output) (rw-file->port read write path-1 port-output)) path-2))
-
   (define (file->string path\file)
     "string/file -> string
     open or use an opened file, read until end-of-file is reached and return a string of file contents"
@@ -101,81 +100,9 @@
   (define (bytevector->file a path)
     (call-with-output-file path (l (out) (put-bytevector out a)) #:binary #t))
 
-  (define (rw-with-temporary-file-port->file proc path)
+  (define (temporary-file-port->file proc path)
     (let* ((port-temp (temp-file-port (dirname path))) (path-temp (port-filename port-temp)))
       (proc port-temp) (rename-file path-temp path)))
-
-  (define (rw-port-indirect->file read write port path)
-    "like rw-port->file but uses a temporary file to buffer all written data before it is written to the target path.
-    use case: read from a file for processing and write to the same file.
-    also known as: late-write"
-    (rw-with-temporary-file-port->file
-      (l (port-output) (rw-port->port read write port port-output)) path))
-
-  (define (rw-port->list read port)
-    (let loop ((e (read port))) (if (eof-object? e) (list) (pair e (loop (read port))))))
-
-  (define (rw-port->port read write port port-2)
-    (let loop ((e (read port))) (if (eof-object? e) e (begin (write e port-2) (loop (read port))))))
-
-  (define (rw-port->string read write port)
-    (call-with-output-string
-      (l (string-port)
-        (let loop ((e (read port)))
-          (if (eof-object? e) (get-output-string string-port) (write e string-port))))))
-
-  (define (rw-port->file read write port path)
-    (call-with-output-file path
-      (l (file-port) (let loop ((e (read port))) (if (not (eof-object? e)) (write e file-port))))))
-
-  (define (rw-file->list read path)
-    (call-with-input-file path (l (port) (rw-port->list read port))))
-
-  (define (rw-file->port read write path port)
-    (call-with-input-file path (l (file-port) (rw-port->port read write file-port port))))
-
-  (define (rw-file->string read write path)
-    (call-with-input-file path (l (port) (rw-port->string read write port))))
-
-  (define (rw-file->file read write path path-2)
-    "the target file at \"path-2\" is truncated or created before the writing starts"
-    (call-with-output-file path-2 (l (port) (rw-file->port read write path port))))
-
-  (define (rw-string->list read a) (call-with-input-string a (l (port) (rw-port->list read port))))
-
-  (define (rw-string->port read write a port)
-    (call-with-input-string a (l (string-port) (rw-port->port read write string-port port))))
-
-  (define (rw-string->file read write a path)
-    (call-with-output-file path (l (port) (rw-string->port read write a port))))
-
-  (define (rw-string->string read write a)
-    (call-with-output-string (l (port) (rw-string->port read write a port))))
-
-  (define (rw-list->port write a port) (map (l (e) (write e port)) list))
-
-  (define (rw-list->string write a)
-    (call-with-output-string (l (port) (map (l (e) (write e port)) a))))
-
-  (define (rw-list->file write a path)
-    (call-with-output-file path (l (port) (map (l (e) (write a port)) a))))
-
-  (define (rw-any->file read write a path)
-    "except file->file
-    applies the appropriate rw- procedure depending on data-type of a"
-    (cond ((port? a) (rw-port->file read write a path))
-      ((string? a) (rw-string->file read write a path)) ((list? a) (rw-list->file write a path))))
-
-  (define (rw-any->string read write a) "except string->string"
-    (cond ((port? a) (rw-port->string read write a)) ((string? a) (rw-file->string read write a))
-      ((list? a) (rw-list->string write a))))
-
-  (define (rw-any->port read write a port) "except string->port"
-    (cond ((port? a) (rw-port->string read write a)) ((string? a) (rw-file->string read write a))
-      ((list? a) (rw-list->string write a))))
-
-  (define (rw-any->list read a) "except string->list and list->list"
-    (cond ((port? a) (rw-port->list read a)) ((string? a) (rw-file->list read a))))
 
   (define (port->file a path)
     "port string ->

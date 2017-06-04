@@ -133,7 +133,6 @@
     (sph number)
     (sph one)
     (sph process)
-    (sph read-write)
     (sph stream)
     (sph string)
     (sph time)

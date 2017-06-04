@@ -9,6 +9,6 @@
   (sph list) (sph list one)
   (sph number) (sph one)
   (sph process) (sph random-data)
-  (sph read-write) (sph string)
+  (sph io) (sph string)
   (sph time) (sph time string)
   (sph time utc) (sph time gregorian) (sph tree) (sph vector) (sph list one))

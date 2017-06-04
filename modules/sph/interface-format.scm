@@ -8,8 +8,12 @@
     interface-format-writers
     sph-interface-format-description)
   (import
-    (sph common)
-    (sph error))
+    (guile)
+    (sph)
+    (sph error)
+    (sph hashtable)
+    (sph list)
+    (sph string))
 
   (define sph-interface-format-description
     "for programs that offer textual input/output in multiple formats. experimental

@@ -17,7 +17,7 @@
     (sph stream)
     (srfi srfi-41)
     (only (sph conditional) if-pass)
-    (only (sph read-write) port->lines)
+    (only (sph io) port->lines)
     (only (sph string) string-multiply)
     (only (sph tree) denoted-tree->prefix-tree prefix-tree->denoted-tree)
     (only (srfi srfi-1) drop-while))

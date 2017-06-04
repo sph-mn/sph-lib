@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph documentation) (sph read-write) (srfi srfi-1) (sph alist) (sph list))
+(import (sph) (sph documentation) (sph io) (srfi srfi-1) (sph alist) (sph list))
 (define highlights (file->datums "other/highlights"))
 (define module-info (find-module-information-sorted "modules/sph"))
 

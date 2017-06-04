@@ -43,7 +43,7 @@
     (sph filesystem)
     (only (ice-9 regex) string-match)
     (only (sph conditional) if-pass)
-    (only (sph read-write) file->datums)
+    (only (sph io) file->datums)
     (only (sph string) string-longest-prefix string-drop-prefix)
     (only (srfi srfi-1)
       append-map

@@ -20,7 +20,7 @@
     (sph hashtable)
     (sph hashtable one)
     (sph one)
-    (only (sph read-write) file->datums)
+    (only (sph io) file->datums)
     (sph tree)
     (except (rnrs hashtables) hashtable-ref)
     (only (sph filesystem) ensure-trailing-slash))
