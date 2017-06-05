@@ -140,7 +140,7 @@
 
   (define (read-scm-expr a) (string->datum (any->string-display a) read))
   (define (string->datums a) "string -> list" (string->datum (parenthesise a) read))
-  (define (split-at& a index c) (call-with-values (thunk (split-at a index)) c))
+  (define (split-at& a index c) (call-with-values (nullary (split-at a index)) c))
 
   (define-as prefix->handler-ht symbol-hashtable
     inline-scm-expr (l (a) (pair (q inline-scm-expr) (simplify-list (read-scm-expr a))))

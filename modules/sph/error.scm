@@ -42,7 +42,7 @@
     ;converts exceptions to errors.
     ;"evaluate body like in a \"begin\" but if an exception occurs, result in an error with
     ;the error-id being the exception key, error-group being the current module name and error-data being the exception arguments".
-    (catch #t (thunk body ...)
+    (catch #t (nullary body ...)
       (l (key . a)
         (error-create key (module-name (current-module))
           (if (null? a) a (list (pair (q exception-data) a)))))))
@@ -84,4 +84,4 @@
 
   (define-syntax-rule (error-capture body ...)
     ;"experimental: errors created by "error-raise" in body will be converted to an error object"
-    (catch (q error) (thunk body ...) (l (key error) error))))
+    (catch (q error) (nullary body ...) (l (key error) error))))

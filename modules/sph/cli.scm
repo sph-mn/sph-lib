@@ -176,13 +176,21 @@
       (string-append "parameters\n" indent
         (if (null? arguments) options-parameter (string-join arguments (string-append "\n" indent))))))
 
+  (define (format-help-description a indent)
+    "string string -> string
+    multiline strings in scheme are often indented in code, but the whitespace is not intended to be part of the string.
+    this procedure removes existing indent and applies the given one"
+    (string-join (map (l (a) (string-trim a #\space)) (string-split a #\newline))
+      (string-append "\n" indent) (q prefix)))
+
   (define (display-help-proc text commands command-options config options)
     (l (opt name a r)
       (display
         (string-append
           (identity-if (alist-ref config (q help-parameters))
             (config->parameters-text config options))
-          (if (and text (not (string-null? text))) (string-append "\ndescription\n" indent text) "")
+          (if (and text (not (string-null? text)))
+            (string-append "\ndescription" (format-help-description text indent)) "")
           ;"options" can not be empty since it at least includes the "--help" option leading to this message
           "\noptions"
           (string-join-lines-with-indent
@@ -326,7 +334,7 @@
     "procedure/false list list/false procedure:{-> any} -> any:end-result-of-cli-application
     if a command from commands-spec is matched at the beginning of the given cli arguments, eventually calls an associated handler procedure,
     and in any case calls the command-handler if available.
-    if no command matches, proceeds with thunk \"c\""
+    if no command matches, proceeds with nullary \"c\""
     (if commands-spec
       (let (match (cli-command-match arguments commands-spec))
         (if match
@@ -409,7 +417,7 @@
               (no-command-cli
                 (let
                   (cli
-                    (thunk
+                    (nullary
                       (check-required
                         (process-unnamed-options
                           (reverse
@@ -420,7 +428,7 @@
                   (let
                     (cli
                       (if missing-arguments-handler
-                        (thunk (catch (q missing-arguments) cli missing-arguments-handler)) cli))
+                        (nullary (catch (q missing-arguments) cli missing-arguments-handler)) cli))
                     (if unsupported-option-handler
-                      (thunk (catch (q unsupported-option) cli unsupported-option-handler)) cli)))))
+                      (nullary (catch (q unsupported-option) cli unsupported-option-handler)) cli)))))
             (command-dispatch& command-handler arguments commands command-options no-command-cli)))))))

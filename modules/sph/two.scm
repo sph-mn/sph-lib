@@ -87,8 +87,6 @@
     primitive-eval-port
     process-unique-integer
     prog-sync-with-root
-    ql
-    quoted-list
     read-line-crlf
     read-line-crlf-trim
     read-mime.types
@@ -108,6 +106,7 @@
     true?
     values-bind
     variable-type
+    variadic
     while-do
     while-do-map
     while-store
@@ -149,14 +148,17 @@
 
   (define sph-two-description "various bindings deemed less useful than the ones in (sph one)")
 
+  (define-syntax-rule (variadic body ...)
+    ; create a procedure that accepts (and ignores) any number of arguments and evaluates body when called.
+    ; similar to guiles "const" but the result is not cached
+    (lambda a body ...))
+
   (define (sort-symbol-lists a)
     "((symbol ...) ...) -> list
     sort-module-names"
     (let (b (map (l (a) (pair (apply string-append (map symbol->string a)) a)) a))
       (map tail (list-sort (l (a b) (string<? (first a) (first b))) b))))
 
-  (define-syntax-rule (quoted-list a ...) (q (a ...)))
-  (define-syntax-rule (ql a ...) (quoted-list a ...))
   (define-syntax-rule (identity-s a) a)
 
   (define (guile-exception->string key . a)
@@ -166,7 +168,7 @@
     (string-join (map any->string a) " "))
 
   (define (list->values a) (apply values a))
-  (define-syntax-rule (with-values producer proc) (call-with-values (thunk producer) proc))
+  (define-syntax-rule (with-values producer proc) (call-with-values (nullary producer) proc))
 
   (define (call proc . a)
     "procedure any ... -> any
@@ -190,7 +192,7 @@
         (define identifier (first identifier)))))
 
   (define-syntax-rule (values-bind producer lambda-formals body ...)
-    (call-with-values (thunk producer) (lambda lambda-formals body ...)))
+    (call-with-values (nullary producer) (lambda lambda-formals body ...)))
 
   (define (fold-integers start end init proc)
     (let loop ((n start) (r init)) (if (< n end) (loop (+ 1 n) (proc n r)) r)))
@@ -318,7 +320,7 @@
   (define (plaintext->shtml a)
     "string -> list:sxml
     convert double newlines to paragraphs <p> and single newlines to breaks <br>."
-    (map (l (e) (list (q p) (interleave (string-split e #\newline) (ql br))))
+    (map (l (e) (list (q p) (interleave (string-split e #\newline) (q (br)))))
       (delete "" (string-split-regexp a "\n\n"))))
 
   (eval-when (expand load eval)
@@ -344,9 +346,9 @@
             (syntax->datum (syntax (body ...))))))))
 
   (define line-reverse-direction
-    ( (thunk (define (split-words a) (delete "" (map string-trim-both (string-split a #\space))))
+    ( (nullary (define (split-words a) (delete "" (map string-trim-both (string-split a #\space))))
         (define (replace-range-delimiters a)
-          (string-replace-chars a (ql (#\( #\)) (#\) #\() (#\[ #\]) (#\] #\[) (#\{ #\}) (#\} #\{))))
+          (string-replace-chars a (q ((#\( #\)) (#\) #\() (#\[ #\]) (#\] #\[) (#\{ #\}) (#\} #\{)))))
         (define (reverse-sentence-word a)
           (let
             ( (index-right (string-skip-right a char-set:punctuation))
@@ -450,7 +452,7 @@
           (define (name) (fluid-ref (unsyntax name.fluid)))))))
 
   (define-syntax-rule (swap! a b) ((l (temp-a) (set! a b) (set! b temp-a)) a))
-  (define process-unique-integer (let (value 0) (thunk (set! value (+ 1 value)) value)))
+  (define process-unique-integer (let (value 0) (nullary (set! value (+ 1 value)) value)))
 
   (define (bindings-select-prefix prefix bindings-hash)
     "string guile-hashtable -> (symbol ...)
@@ -638,7 +640,7 @@
     (let ((config.exec (command-line)))
       (if (null? (tail config.exec)) (begin (simple-format #t "not enough arguments\n") (exit)))
       (catch #t
-        (thunk
+        (nullary
           (let ((path (path->full-path (list-ref config.exec 1))))
             (copy-with-replaced-directory source-root target-root path)
             (simple-format #t "sync ~A ~A\n" path target-root)))

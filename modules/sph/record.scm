@@ -137,7 +137,7 @@
   (define (record-field-names record-layout)
     "hashtable:record-layout -> vector:#(symbol ...)
     result in the field-names of record in the same order as they were specified."
-    (call-with-values (thunk (hashtable-entries record-layout))
+    (call-with-values (nullary (hashtable-entries record-layout))
       (l (keys values)
         (let ((r (make-vector (vector-length keys))))
           (vector-each-with-index (l (e index) (vector-set! r (vector-ref values index) e)) keys) r))))

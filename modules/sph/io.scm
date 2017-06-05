@@ -1,15 +1,18 @@
 (library (sph io)
   (export
     bytevector->file
+    call-with-input-files
     call-with-pipe
     call-with-pipes
+    call-with-temp-file
     each-u8
     file->bytevector
     file->datums
-    named-pipe
+    file->file
     file->port
     file->string
-    file-port->file-port
+    named-pipe
+    named-pipe-chain
     pipe-chain
     port->bytevector
     port->file
@@ -25,7 +28,7 @@
     sph-io-description
     string->file
     temp-file-port
-    temporary-file-port->file
+    temp-file-port->file
     (rename (read port->datum)))
   (import
     (guile)
@@ -43,25 +46,53 @@
     ;copied from io read-write to avoid circular dependency
     (let loop ((e (read port))) (if (eof-object? e) e (begin (write e port-2) (loop (read port))))))
 
-  (define (string->file a path) "write string into file at path, overwriting the file"
+  (define (string->file a path)
+    "string string -> unspecified
+    write string into file at path, overwriting the file"
     (call-with-output-file path (l (file) (display a file))))
 
   (define (each-u8 proc port)
-    "procedure:{octet -> any} port -> unspecified
-    apply proc with each octet read from port until end-of-file is reached."
+    "procedure:{integer -> any} port -> unspecified
+    call proc with each eight bit integer read from port until end-of-file is reached."
     (let next ((octet (get-u8 port)))
       (if (eof-object? octet) #t (begin (proc octet) (next (get-u8 port))))))
 
   (define*
-    (file-port->file-port path-input path-output proc #:key (input-binary? #t) (output-binary? #t))
-    (call-with-input-file path-input
-      (l (in) (call-with-output-file path-output (l (out) (proc in out)) #:binary output-binary?))
-      #:binary input-binary?))
+    (file->file path-input path-output #:optional (proc port-copy-all) #:key (input-binary? #t)
+      (output-binary? #t)
+      (append? #f))
+    "string string procedure:{port port -> any} [#:input-binary boolean #:output-binary? boolean] -> any
+    open path-input for reading and path-output for writing and copy all contents of the input file or call proc with the ports.
+    the ports are closed when proc returns"
+    (let
+      ( (in (open-file path-output "r"))
+        (out
+          (open-file path-output
+            (if append? (if output-binary? "ab" "a") (if output-binary? "wb" "w")))))
+      (begin-first (proc in out) (close-port out) (close-port in))))
+
+  (define (call-with-input-files proc . paths)
+    (let (files (map (l (a) (open-file a "r")) paths))
+      (begin-first (apply proc files) (each close-port files))))
+
+  (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
+    "[string] [string:infix] -> port
+    create a new unique file in the file system and return a new buffered port for reading and writing to the file"
+    (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
+
+  (define* (call-with-temp-file proc #:optional (path "/tmp") (name-part "."))
+    "procedure:{port -> any} -> any
+    call proc with an output port to a temporary file.
+    the file is deleted after proc returns or the current process exits.
+    result is the result of calling proc"
+    (let (port (temp-file-port))
+      (let ((result (proc port)) (path (port-filename port))) (close-port port)
+        (delete-file path) result)))
 
   (define (call-with-pipes count proc)
     "integer procedure:{[pipe-n-in pipe-n-out] ... -> any} -> any
     the pipes are closed after proc finished. they can also be closed by proc.
-    blocking: reading from the input side might block as long as the output side is not yet closed"
+    reading from the input side might block as long as the output side is not yet closed"
     (let
       (pipes
         (fold-integers count (list)
@@ -72,13 +103,15 @@
 
   (define* (named-pipe #:optional path (permissions 438))
     "[string integer] -> string:path
-    create a named pipe (fifo)"
+    create a named pipe (fifo).
+    named pipes persist in the filesystem"
     (let (path (or path (tmpnam))) (mknod path (q fifo) permissions 0) path))
 
   (define (pipe-chain first-input last-output . proc)
     "port/true port/true procedure:{pipe-input pipe-output -> false/any} ... -> (procedure-result ...)
     create a pipe for each procedure output and the next procedure input and call procedures with the respective input/output-ports.
-    if any result is false then stop and return results up to that point"
+    if any result is false then stop and return results up to that point.
+    the pipe endpoints are not automatically closed to allow the use of threads in procedures"
     (if (null? proc) proc
       (let loop ((in first-input) (out #f) (proc (first proc)) (rest (tail proc)))
         (if (null? rest) (list (proc in last-output))
@@ -86,10 +119,18 @@
             (let (result (proc in (tail a)))
               (if result (pair result (loop (first a) #f (first rest) (tail rest))) (list))))))))
 
-  (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
-    "[string] [string:infix] -> port
-    create a new unique file in the file system and return a new buffered port for reading and writing to the file"
-    (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
+  (define (named-pipe-chain first-input last-output . proc)
+    "port/true port/true procedure:{pipe-input pipe-output -> false/any} ... -> (procedure-result ...)
+    creates a named pipe shared between a procedure output and the next procedure input.
+    procedure results are saved in a list which is returned unless a result is false
+    in which case it stops and results up to that point are returned.
+    the named pipes persist in the file system and are not automatically deleted"
+    (if (null? proc) proc
+      (let loop ((in first-input) (out #f) (proc (first proc)) (rest (tail proc)))
+        (if (null? rest) (list (proc in last-output))
+          (let (a (named-pipe))
+            (let (result (proc in a))
+              (if result (pair result (loop a #f (first rest) (tail rest))) (list))))))))
 
   (define (file->string path\file)
     "string/file -> string
@@ -104,7 +145,7 @@
   (define (bytevector->file a path)
     (call-with-output-file path (l (out) (put-bytevector out a)) #:binary #t))
 
-  (define (temporary-file-port->file proc path)
+  (define (temp-file-port->file proc path)
     (let* ((port-temp (temp-file-port (dirname path))) (path-temp (port-filename port-temp)))
       (proc port-temp) (rename-file path-temp path)))
 
@@ -114,7 +155,9 @@
     (call-with-output-file path (l (port) (port-copy-all a port))))
 
   (define (file->port path port)
-    (call-with-input-file path (l (port-file) (port-copy-all port-file port))))
+    "string port ->
+    copy all content of file at path to port"
+    (call-with-input-file path (l (file) (port-copy-all file port))))
 
   (define (port-copy-some port port-2 count)
     "port port integer ->

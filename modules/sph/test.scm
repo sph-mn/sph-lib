@@ -248,7 +248,7 @@
       ((load-path (settings->load-path! settings)) (search-type (alist-q-ref settings search-type)))
       (let
         (module-names
-          (every-map (l (e) (false-if-null (find-modules-by-name e search-type load-path))) name))
+          (every-map (l (a) (false-if-null (find-modules-by-name a search-type load-path))) name))
         (if module-names
           (test-modules-execute settings
             (test-modules-apply-settings settings (apply append module-names)))

@@ -917,7 +917,7 @@
     (if (= 0 rest-pattern-length) (list a (list))
       (let (a-len (length a))
         (if (< a-len rest-pattern-length) (list #f #f)
-          (call-with-values (thunk (split-at a (- a-len rest-pattern-length))) list)))))
+          (call-with-values (nullary (split-at a (- a-len rest-pattern-length))) list)))))
 
   (define (split-by-pattern-match-ellipsis rest-pattern expr cont)
     (apply (l (match rest-expr) (cont match rest-expr rest-pattern))
@@ -971,9 +971,9 @@
     splits the list into two lists, the first being a list of all beginning elements of \"a\" that consecutively matched
     \"proc\", the second being the rest.
     like srfi-1 span but the result is a list and not multiple return values"
-    (call-with-values (thunk (span proc a)) (l r r)))
+    (call-with-values (nullary (span proc a)) (l r r)))
 
-  (define (consecutive& proc a c) (call-with-values (thunk (span proc a)) c))
+  (define (consecutive& proc a c) (call-with-values (nullary (span proc a)) c))
 
   (define (group-split-at-matches start-group? a)
     "procedure:{any -> boolean} list -> (list ...)

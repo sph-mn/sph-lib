@@ -1,7 +1,6 @@
 (library (sph module)
   (export
     call-if-defined
-    sph-module-description
     collect-library-names
     current-bindings
     current-module-ref
@@ -33,7 +32,8 @@
     path->load-path
     path->module-name
     path->symbol-list
-    path-drop-load-path)
+    path-drop-load-path
+    sph-module-description)
   (import
     (guile)
     (ice-9 match)
@@ -51,7 +51,6 @@
       find))
 
   (define sph-module-description "guile module system or rnrs library related procedures")
-
   (define module-interface->module (compose resolve-module module-name))
 
   (define (module-dependencies module) "module -> (module ...)"
@@ -309,12 +308,13 @@
               (module-name->load-path-and-path& name filename-extension
                 load-paths
                 (l (load-path full-path) "string string -> list"
-                  (map first
-                    (find-modules full-path #:load-path
-                      (list load-path) #:file-content-match
-                      (l (file)
-                        (match (read file)
-                          (((quote define-test-module) ((? symbol? name) ...) _ ...) name) (_ #f)))))))
+                  (if (eq? (q regular) (stat:type (stat full-path))) (list name)
+                    (map first
+                      (find-modules full-path #:load-path
+                        (list load-path) #:file-content-match
+                        (l (file)
+                          (match (read file)
+                            (((quote define-test-module) ((? symbol? name) ...) _ ...) name) (_ #f))))))))
               (list))))
         (filename-extensions
           (append
@@ -322,4 +322,4 @@
               (list #f) (list))
             (if (or (eqv? (q prefix) search-type) (eqv? (q exact) search-type)) (list ".scm")
               (list)))))
-      (append-map (l (e) (search name e load-paths)) filename-extensions))))
+      (append-map (l (a) (search name a)) filename-extensions))))

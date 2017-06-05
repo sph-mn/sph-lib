@@ -112,7 +112,7 @@
       (vector-each-with-index (l (e index) (proc e (vector-ref values index))) keys)))
 
   (define (hashtable-values a) "hashtable -> vector"
-    (call-with-values (thunk (hashtable-entries a)) (l (keys values) values)))
+    (call-with-values (nullary (hashtable-entries a)) (l (keys values) values)))
 
   (define-syntax-rule (hashtable-each-key proc ht) (vector-each proc (hashtable-keys ht)))
 
@@ -147,7 +147,7 @@
     "hashtable -> procedure:{value -> key}
     results in a procedure that caches the preparations for creating its result
     so it is much more efficient for repeated calls."
-    (call-with-values (thunk (hashtable-entries ht))
+    (call-with-values (nullary (hashtable-entries ht))
       (l (keys values)
         (let (values-list (vector->list values))
           (l (a)
@@ -160,7 +160,7 @@
   (define (hashtable-merge! a b)
     "hashtable hashtable -> unspecified
     copy the values of hash b to hash a. key values are overwritten."
-    (call-with-values (thunk (hashtable-entries b))
+    (call-with-values (nullary (hashtable-entries b))
       (l (keys values)
         (vector-each-with-index (l (key index) (hashtable-set! a key (vector-ref values index)))
           keys))))
@@ -174,7 +174,7 @@
     "hashtable hashtable -> unspecified
     like hashtable-merge!, but for keys that occur in both hashtables and which have hashtables as value
     hashtable-tree-merge! is called to merge the hashtables instead of just overwriting the value in a."
-    (call-with-values (thunk (hashtable-entries b))
+    (call-with-values (nullary (hashtable-entries b))
       (l (keys values)
         (vector-each-with-index
           (l (key index)

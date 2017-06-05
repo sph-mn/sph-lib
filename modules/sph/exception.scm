@@ -11,16 +11,14 @@
 (define sph-exception-description "rnrs exception helpers. experimental")
 
 (define-syntax-rule (exception-intercept on-exception expression)
-  ;"evaluate \"on-exception\" only when an exception occurs in expression.
-  ;the result is the result of \"expression\" if no exception occurred"
-  (with-exception-handler (l (a) on-exception (raise a)) (thunk expression)))
+  ; evaluate "on-exception" if an exception occurred in expression
+  (with-exception-handler (l (a) on-exception (raise a)) (nullary expression)))
 
-(define-syntax-rule (exception-intercept-if expression exception no-exception)
-  ;"evaluate \"exception\" when an exception occurs in expression. evaluate \"no-exception\" if no exception occurred.
-  ;the result is the result of \"expression\" if no exception occurred"
-  (let (r (exception-intercept exception expression)) no-exception r))
+(define-syntax-rule (exception-intercept-if expression on-exception no-exception)
+  ; evaluate "on-exception" if an exception occurred in expression.
+  ; evaluate "no-exception" if no exception occurred and return the result of expression
+  (begin-first (exception-intercept on-exception expression) no-exception))
 
 (define-syntax-rule (exception-always always expression)
-  ;"evaluate \"always\" after expression even when an an exception occurs.
-  ;the result is the result of \"expression\" if no exception occurred"
-  (let (r (exception-intercept always expression)) always r))
+  ; evaluate nullary "always" after expression even if an exception occurred
+  (let (a (nullary always)) (exception-intercept-if expression (a) (a))))

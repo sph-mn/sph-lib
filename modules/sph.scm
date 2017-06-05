@@ -16,7 +16,6 @@
     and-let*
     any
     apply-values
-    catch
     compose-s
     datum->syntax
     debug-log
@@ -38,6 +37,7 @@
     lambda*
     let
     null
+    nullary
     pair
     pairs
     par-let
@@ -53,8 +53,6 @@
     syntax-rule
     syntax-rules_
     tail
-    throw
-    thunk
     unsyntax
     unsyntax-splicing
     with-syntax)
@@ -64,7 +62,6 @@
     (except (rnrs base) let)
     (only (guile)
       LC_ALL
-      catch
       cons*
       current-output-port
       datum->syntax
@@ -168,8 +165,7 @@
   (define-syntax-rule (l* a ...) (lambda* a ...))
   (define-syntax-rule (q a) (quote a))
   (define-syntax-rule (qq a) (quasiquote a))
-  (define-syntax-rule (thunk body ...) (l () body ...))
-  (define-syntax-rule (apply-values proc producer) (call-with-values (thunk producer) proc))
+  (define-syntax-rule (apply-values proc producer) (call-with-values (lambda () producer) proc))
   (define pair cons)
   (define pairs cons*)
   (define tail cdr)
@@ -206,4 +202,9 @@
   (define* (display-line a #:optional (port (current-output-port)))
     "any [port] -> unspecified
     like \"display\" but emits a newline at the end"
-    (display a port) (newline port)))
+    (display a port) (newline port))
+
+  (define-syntax-rule (nullary body ...)
+    ; create a procedure that accepts zero arguments and evaluates body when called.
+    ; often used for thunks.
+    (lambda () body ...)))

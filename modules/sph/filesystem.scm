@@ -1,8 +1,6 @@
 (library (sph filesystem)
   (export
     call-with-directory
-    call-with-input-files
-    call-with-temporary-file
     directory-delete-content
     directory-fold
     directory-list
@@ -59,7 +57,7 @@
       any->list
       length-greater-one?
       length-eq-one?)
-    (only (sph one) call-at-approximated-interval)
+    (only (sph one) call-at-approximated-interval begin-first)
     (only (sph string) string-replace-string)
     (only (srfi srfi-1)
       append-map
@@ -70,18 +68,6 @@
       fold-right
       map!
       last))
-
-  (define (call-with-input-files proc . paths)
-    (let* ((files (map (l (e) (open-file e "r")) paths)) (r (apply proc files))) (each close files)
-      r))
-
-  (define (call-with-temporary-file proc)
-    "procedure:{port -> any} -> any
-    call proc with an input/output port to a temporary file.
-    the file is deleted after proc or the current process exits.
-    result is the result of calling proc"
-    (let* ((name (tmpnam)) (file (open-file (tmpnam) "w+")) (result (proc file))) (close file)
-      result))
 
   (define directory-read-all scandir)
 
@@ -112,7 +98,7 @@
     (let ((name (basename file-path))) (if (or (string= name ".") (string= name "..")) #t #f)))
 
   (define (call-with-directory path proc) "string procedure:{directory-port -> any} -> any"
-    (let* ((d (opendir path)) (r (proc d))) (closedir d) r))
+    (let (d (opendir path)) (begin-first (proc d) (closedir d))))
 
   (define (directory-list path . include?)
     "path procedure:{filename -> boolean} ... -> (string ...)

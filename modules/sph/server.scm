@@ -63,9 +63,9 @@
     setup sigint and sigterm signals for stopping the listening, and reset to original handlers on any kind of exit"
     (let
       ((signal-numbers (list SIGPIPE SIGINT SIGTERM)) (handlers #f) (stop (l (n) (close-port s))))
-      (dynamic-wind (thunk (set! handlers (map sigaction signal-numbers (list SIG_IGN stop stop))))
+      (dynamic-wind (nullary (set! handlers (map sigaction signal-numbers (list SIG_IGN stop stop))))
         proc
-        (thunk
+        (nullary
           (map (l (n handler) (sigaction n (first handler) (tail handler))) signal-numbers handlers)))))
 
   (define (call-with-exception-handling exception-keys exception-handler loop-listen socket proc)
@@ -77,7 +77,7 @@
       (proc)))
 
   (define (call-with-epipe-and-ebadf-handling loop-listen proc)
-    "procedure:continue-listening procedure:thunk -> any
+    "procedure:continue-listening procedure:nullary -> any
     handle broken pipe errors and the accept error when the socket is closed"
     (catch (q system-error) proc
       (l exc
@@ -89,13 +89,13 @@
   (define-syntax-rule
     (loop-listen exception-keys exception-handler socket connection-identifier body ...)
     (call-with-signal-handling socket
-      (thunk
+      (nullary
         (let loop-listen ()
           (call-with-exception-handling exception-keys exception-handler
             loop-listen socket
-            (thunk
+            (nullary
               (call-with-epipe-and-ebadf-handling loop-listen
-                (thunk
+                (nullary
                   (let loop-process (connection-identifier (first (accept socket)))
                     (setvbuf connection-identifier _IONBF 0) body
                     ... (loop-process (first (accept socket))))))))))))
@@ -122,7 +122,7 @@
         (apply
           (l (queue-add! . thread-pool)
             (loop-listen exception-keys exception-handler
-              socket c (queue-add! (thunk (proc c) (close-port c))))
+              socket c (queue-add! (nullary (proc c) (close-port c))))
             (thread-pool-destroy thread-pool))
           (thread-pool-create (or worker-count cpu-count)
             (thread-pool-handle-sigpipe exception-handler exception-keys) #t))))))

@@ -20,10 +20,10 @@
   (define-test (required)
     (assert-and
       (assert-true "named"
-        (catch (q missing-arguments) (thunk (test-env-cli (list)))
+        (catch (q missing-arguments) (nullary (test-env-cli (list)))
           (l (key count missing) (equal? (q (input)) missing)))))
     (assert-true "unnamed"
-      (catch (q missing-arguments) (thunk (test-env-cli (list "-i" "1")))
+      (catch (q missing-arguments) (nullary (test-env-cli (list "-i" "1")))
         (l (key count missing) (eqv? 1 count)))))
 
   (test-execute-procedures-lambda

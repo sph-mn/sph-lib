@@ -40,8 +40,8 @@
     (rnrs io ports)
     (sph)
     (sph filesystem)
-    (sph one)
     (sph io)
+    (sph one)
     (srfi srfi-31))
 
   (define sph-process-description "execute programs and evaluate shell or scheme code")
@@ -81,13 +81,13 @@
     "procedure integer string list -> any
     execute a program with a pipe connected to its standard-output and/or standard-input and pass it as one port to \"proc\".
     mode can be one of the guile variables OPEN_READ OPEN_WRITE OPEN_BOTH"
-    (let* ((port (apply open-pipe* mode path arguments)) (r (proc port))) (close-pipe port) r))
+    (let (port (apply open-pipe* mode path arguments)) (begin-first (proc port) (close-pipe port))))
 
   (define (process-eval code proc)
     "(scheme-expression ...) procedure:{process-output-port -> any} -> any
     evaluate code in a new guile process, independent from the current process (no shared environment)
     and pass a port for the standard output of the process to proc"
-    (call-with-temporary-file
+    (call-with-temp-file
       (l (file) (map (l (a) (write a file)) code)
         (fsync file)
         (execute-with-pipe proc OPEN_READ "guile" "--no-auto-compile" (port-filename file)))))

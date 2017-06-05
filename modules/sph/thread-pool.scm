@@ -27,13 +27,13 @@
       (let
         (t
           (call-with-new-thread
-            (thunk (lock-mutex queue-mutex)
+            (nullary (lock-mutex queue-mutex)
               (if (and exception-handler exception-keys)
                 (let loop ()
                   (catch exception-keys process-queue
                     (l (key . args) (apply exception-handler key loop args))))
                 (process-queue)))))
-        (set-thread-cleanup! t (thunk (unlock-mutex queue-mutex))) t)))
+        (set-thread-cleanup! t (nullary (unlock-mutex queue-mutex))) t)))
 
   (define* (thread-pool-create #:optional count exception-handler exception-keys queue-type)
     "[integer] procedure true/symbol/(symbol ...) list/symbol:lifo/fifo -> (procedure:{procedure:{->} ->}:queue-add! thread ...)
@@ -54,7 +54,7 @@
             (map-integers (or (and (integer? count) count) (current-processor-count))
               (letrec
                 ( (process-queue
-                    (thunk
+                    (nullary
                       (if (q-empty? queue) (wait-condition-variable queue-not-empty queue-mutex))
                       (or (q-empty? queue) ((deq! queue))) (process-queue))))
                 (thread-pool-create-thread-proc queue-mutex process-queue

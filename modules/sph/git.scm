@@ -21,7 +21,7 @@
     (not
       (string-null?
         (call-with-working-directory path-repository
-          (thunk (execute->string "git" "rev-parse" "--quiet" "--verify" name))))))
+          (nullary (execute->string "git" "rev-parse" "--quiet" "--verify" name))))))
 
   (define*
     (git-archive path-repository #:optional (branch "master") #:rest additional-git-arguments)
@@ -47,7 +47,7 @@
     (string->number
       (string-trim-right
         (call-with-working-directory path-repository
-          (thunk (execute->string "git" "log" "-1" "--format=%ct" "--quiet" branch))))))
+          (nullary (execute->string "git" "log" "-1" "--format=%ct" "--quiet" branch))))))
 
   (define*
     (git-last-commit-date-iso8601-ymd path-repository #:optional (branch "master") #:rest
@@ -61,7 +61,7 @@
 
   (define (git-revision-count path-repository)
     (call-with-working-directory path-repository
-      (thunk
+      (nullary
         (string->number (string-trim-right (execute->string "git" "rev-list" "--count" "HEAD"))))))
 
   (define*

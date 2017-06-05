@@ -281,7 +281,7 @@
     (let (matches (list-matches regexp str))
       (if (null? matches) (list str)
         (call-with-values
-          (thunk
+          (nullary
             (if (eqv? (q discard) handle-delim)
               (values (l (e prev) (substring str (match:end prev) (match:start e)))
                 (substring str 0 (match:start (first matches))))

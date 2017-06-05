@@ -25,6 +25,7 @@
     ignore
     in-between?
     in-range?
+    list-q
     integer->bytevector
     limit
     limit-max
@@ -71,7 +72,11 @@
 
   (define sph-one-description "various")
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
-  (define (ignore . a) "any ... ->" (if #f #t))
+  (define-syntax-rule (list-q a ...) (q (a ...)))
+
+  (define (ignore . a) "any ... -> unspecified
+    ignores all arguments and returns unspecified"
+    (if #f #t))
 
   (define (rnrs-exception->object proc) "procedure -> procedure"
     (l a (guard (exc (#t exc)) (apply proc a))))
@@ -79,7 +84,7 @@
   (define (guile-exception->key proc)
     "procedure -> procedure
     guard catches guile exceptions, but it seems impossible to get the key"
-    (l a (catch #t (thunk (apply proc a)) (l (key . a) key))))
+    (l a (catch #t (l () (apply proc a)) (l (key . a) key))))
 
   (define (remove-keyword-associations a)
     "list -> list

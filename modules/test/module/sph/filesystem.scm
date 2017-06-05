@@ -11,12 +11,8 @@
   (define-test (set-up-realpath*) (ensure-directory-structure (temp-path* "b"))
     (symlink (temp-path* "b") (temp-path* "c")) (symlink ".." (temp-path* "c/d")) #t)
 
-  (define-test (tear-down-realpath*)
-    ;(delete-file (temp-path* "c/d"))
-    ;(delete-file (temp-path* "c"))
-    ;(rmdir (temp-path* "b"))
-    ;(rmdir temp-path)
-    #t)
+  (define-test (tear-down-realpath*) (delete-file (temp-path* "c/d"))
+    (delete-file (temp-path* "c")) (rmdir (temp-path* "b")) (rmdir temp-path) #t)
 
   (define-test (realpath*)
     (assert-and (equal? ".." (readlink* (temp-path* "c/d")))

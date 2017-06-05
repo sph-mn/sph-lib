@@ -39,7 +39,7 @@
       (if (and source-name (contains? (first docl-state) source-name)) ""
         (let (docl-state (pair (pair source-name (first docl-state)) (tail docl-state)))
           (begin-first
-            (catch #t (thunk (proc input docl-state))
+            (catch #t (nullary (proc input docl-state))
               (l (key . args)
                 (error-create key args
                   (pair source-name (and get-source-position (get-source-position input))))))
