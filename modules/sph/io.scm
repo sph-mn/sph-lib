@@ -6,6 +6,7 @@
     each-u8
     file->bytevector
     file->datums
+    named-pipe
     file->port
     file->string
     file-port->file-port
@@ -21,6 +22,7 @@
     port-lines-map
     port-lines-map->port
     read-until-string-proc
+    sph-io-description
     string->file
     temp-file-port
     temporary-file-port->file
@@ -34,6 +36,8 @@
     (only (sph filesystem) ensure-trailing-slash)
     (only (sph one) begin-first)
     (only (srfi srfi-1) drop))
+
+  (define sph-io-description "port and file input output")
 
   (define (rw-port->port read write port port-2)
     ;copied from io read-write to avoid circular dependency

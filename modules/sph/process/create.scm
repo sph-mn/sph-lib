@@ -73,7 +73,7 @@
   (define (process-chain-finish process-chain-result)
     "false/(integer:pid ...) -> integer
     wait for the termination of the processes and return the exit status"
-    (and process-chain-result (every process-finish? process-chain-result)))
+    (and process-chain-result (every process-finish process-chain-result)))
 
   (define (process-chain-finish-success? process-chain-result)
     "false/(integer:pid ...) -> boolean

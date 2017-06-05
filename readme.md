@@ -83,6 +83,8 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph hashtable one)
 * (sph ice-9-stream)
 * (sph interface-format) - for programs that offer textual input/output in multiple formats. experimental
+* (sph io) - port and file input output
+* (sph io read-write) - port io with specifying a read and write procedure
 * (sph json) - a basic but fast json writer
 * (sph lang docl) - evaluate templates with a specific scheme environment, state values and circular inclusion protection
 * (sph lang docl env default)
@@ -107,7 +109,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph module) - guile module system or rnrs library related procedures
 * (sph number)
 * (sph one) - various
-* (sph io) - generic port reading/writing
 * (sph replacement-table) - replacement tables like (key replacement ...) loaded from files or ports
 * (sph set) - hashtables as sets
 * (sph sql) - create sql-statements from scheme data

@@ -40,8 +40,7 @@
     stat-accessor->stat-field-name
     stat-diff
     stat-diff->accessors
-    stat-field-name->stat-accessor
- )
+    stat-field-name->stat-accessor)
   (import
     (guile)
     (ice-9 ftw)
@@ -65,6 +64,7 @@
     (only (srfi srfi-1)
       append-map
       delete!
+      remove
       unfold
       filter-map
       fold-right
@@ -286,10 +286,8 @@
     an empty string as the first element in the list stands for the root directory.
     removes unnecessary slashes"
     (if (string-null? path) (list)
-      (let
-        ( (full? (eqv? (string-ref path 0) #\/))
-          (result (filter (l (e) (not (string-null? e))) (string-split path #\/))))
-        (if full? (pair "" result) result))))
+      (let (result (remove string-null? (string-split path #\/)))
+        (if (eqv? (string-ref path 0) #\/) (pair "" result) result))))
 
   (define* (list->path a)
     "(string ...) -> string
@@ -309,25 +307,21 @@
     the foreign function interface could be an alternative"
     ;/.. = /
     (and-let* ((path (path->full-path path)) (path-list (path->list path)))
-      (let loop ((rest (reverse path-list)) (result (list)))
-        (if (null? rest) (list->path result)
+      (let loop ((rest (tail path-list)) (result (list "")))
+        (if (null? rest) (list->path (reverse result))
           (let (a (first rest))
             (cond ((string-equal? "." a) (loop (tail rest) result))
-              ( (string-equal? ".." a)
-                (let* ((rest (reverse (path->list (loop (tail rest) (list))))))
-                  (loop
-                    (if (null? rest) rest (tail rest)) result)))
+              ((string-equal? ".." a) (loop (tail rest) (tail result)))
               (else
                 (let*
-                  ((path (list->path (reverse rest))) (stat-info (false-if-exception (lstat path))))
+                  ( (path (list->path (reverse (pair a result))))
+                    (stat-info (false-if-exception (lstat path))))
                   (and stat-info
                     (if (eq? (q symlink) (stat:type stat-info))
-                      (let*
-                        ( (link-target (readlink* path))
-                          (path
-                            (if (string-prefix? "/" link-target) link-target
-                              (string-append (list->path (reverse (tail rest))) "/" link-target))))
-                        (string-append (realpath* path) "/" (list->path result)))
+                      (let (link-target (readlink* path))
+                        (if (string-prefix? "/" link-target)
+                          (loop (append (tail (path->list link-target)) (tail rest)) (list ""))
+                          (loop (append (path->list link-target) (tail rest)) result)))
                       (loop (tail rest) (pair a result))))))))))))
 
   (define* (path->full-path path #:optional realpath?)
@@ -335,8 +329,7 @@
     uses \"getcwd\" to complete relative paths.
     with \"getcwd\" the basename can be a symlink but all other parts have symlinks resolved.
     the environment variable PWD is not used because it is not automatically updated when the process changes directory"
-    (if (string-null? path) #f
-      (if (eqv? #\/ (string-ref path 0)) path (string-append (getcwd) "/" path))))
+    (if (string-prefix? "/" path) path (string-append (getcwd) "/" path)))
 
   (define remove-filename-extension
     (let
@@ -378,7 +371,6 @@
         (let ((value-1 (e stat-info-1)) (value-2 (e stat-info-2)))
           (if (equal? value-1 value-2) #f (vector e value-1 value-2))))
       accessors))
-
 
   (define* (symbol-path->string symbol-path #:optional base-path) "symbol/(symbol ...) -> string"
     (let
