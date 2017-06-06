@@ -1,4 +1,3 @@
-; written for the guile scheme interpreter
 ; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
@@ -15,6 +14,7 @@
   (export
     any->list
     any->list-s
+    list-q
     compact
     complement
     complement-both
@@ -167,6 +167,7 @@
   ;this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
   ;copied from (sph conditional)
   (define-syntax-rule (identity-if test else ...) ((lambda (r) (if r r (begin else ...))) test))
+  (define-syntax-rule (list-q a ...) (q (a ...)))
 
   (define-syntax-rule (list-bind a lambda-formals body ...)
     ;bind elements of list "a" to "lambda-formals"

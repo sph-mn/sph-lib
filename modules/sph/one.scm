@@ -25,7 +25,6 @@
     ignore
     in-between?
     in-range?
-    list-q
     integer->bytevector
     limit
     limit-max
@@ -72,7 +71,6 @@
 
   (define sph-one-description "various")
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
-  (define-syntax-rule (list-q a ...) (q (a ...)))
 
   (define (ignore . a) "any ... -> unspecified
     ignores all arguments and returns unspecified"

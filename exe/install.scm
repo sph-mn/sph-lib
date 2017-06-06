@@ -5,7 +5,7 @@
 
 (define install-spec-extension
   (let ((source "temp/libguile-sph-lib.so"))
-    (if (file-exists? source) (list "/usr/lib" source) (list))))
+    (if (file-exists? source) (list (list "/usr/lib" source)) (list))))
 
 (install-cli-guile (path-lib-scheme "modules/sph" "modules/sph.scm")
-  (unquote install-spec-extension))
+  (unquote-splicing install-spec-extension))

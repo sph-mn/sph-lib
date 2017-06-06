@@ -1,4 +1,3 @@
-; written for the guile scheme interpreter
 ; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
@@ -123,6 +122,7 @@
     (rnrs bytevectors)
     (rnrs io ports)
     (rnrs sorting)
+    (sph io)
     (sph)
     (sph alist)
     (sph cli)
@@ -402,12 +402,13 @@
     "display the bash escape sequence for clearing the screen - which usually means to scroll until the current line is at the top"
     (display #\esc) (display "c"))
 
-  (define (paths-find-file-size-sum . args)
+  (define (paths-find-file-size-sum . a)
     "string:path ... -> integer:bits
     uses the \"find\" and \"file-size-sum\" program to display the sum of bits of the files specified as paths"
-    (call-with-pipe
-      (l (in out) (process-create-chain-with-pipes #f out (pair "find" args) "file-size-sum")
-        (close out) (string->number (string-trim-right (get-string-all in))))))
+    (if (defined? process-chain)
+      (call-with-pipe
+        (l (in out) (process-chain #f out ((pair "find" a) (list "file-size-sum")))
+          (close out) (string->number (string-trim-right (get-string-all in)))))))
 
   (define (list->string-list a)
     "(any ...) -> (string ...)

@@ -12,10 +12,9 @@
     shtml-section
     shtml-text->sxml)
   (import
-    (rnrs base)
     (sph)
     (only (guile) string-split make-list)
-    (only (sph list) interleave pair->list)
+    (sph list)
     (only (sph string) any->string))
 
   (define html-headings (q #(h1 h2 h3 h4 h5 h6)))
@@ -33,14 +32,14 @@
               (if (symbol? (first content)) (list content) (list (pair (q div) content))))
             (list (list (q div) content)))))))
 
-  (define shtml-indent (ql (*ENTITY* "#160") (*ENTITY* "#160")))
+  (define shtml-indent (list-q (*ENTITY* "#160") (*ENTITY* "#160")))
   (define (shtml-indent-create indent-level) (apply append (make-list indent-level shtml-indent)))
   (define (shtml-text->sxml a) (interleave (string-split a #\newline) (q (br))))
 
   (define* (shtml-include-javascript path #:optional is-async) "string boolean -> sxml"
     (qq
       (script
-        (@ (src (unquote path)) (unquote-splicing (if is-async (list (ql async async)) (list)))) "")))
+        (@ (src (unquote path)) (unquote-splicing (if is-async (list (list-q async async)) (list)))) "")))
 
   (define (shtml-include-css path) "string -> sxml"
     (qq (link (@ (rel "stylesheet") (type "text/css") (href (unquote path))))))
