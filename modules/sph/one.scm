@@ -72,7 +72,8 @@
   (define sph-one-description "various")
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
 
-  (define (ignore . a) "any ... -> unspecified
+  (define (ignore . a)
+    "any ... -> unspecified
     ignores all arguments and returns unspecified"
     (if #f #t))
 

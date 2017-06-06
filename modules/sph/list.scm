@@ -14,7 +14,6 @@
   (export
     any->list
     any->list-s
-    list-q
     compact
     complement
     complement-both
@@ -50,6 +49,7 @@
     first-or-false
     first-or-null
     flat?
+    fold-integers
     fold-multiple
     fold-multiple-right
     fold-multiple-with-continue
@@ -78,6 +78,7 @@
     list-index-value
     list-indices
     list-prefix?
+    list-q
     list-replace-last
     list-replace-last-n
     list-select
@@ -85,7 +86,6 @@
     list-set-eqv?
     list-set-match-condition?
     list-set-match-contains?
-    union
     list-sort-by-list
     list-sort-by-list-with-accessor
     list-sort-with-accessor
@@ -93,6 +93,7 @@
     map-apply
     map-consecutive
     map-first
+    map-integers
     map-map
     map-one
     map-segments
@@ -103,8 +104,6 @@
     map-with-continue
     map-with-index
     map-with-state
-    fold-integers
-    map-integers
     pair->list
     pair-bind
     pair-fold-multiple
@@ -127,6 +126,7 @@
     tail-or-null
     true->list
     true->list-s
+    union
     (rename (lset-adjoin list-set-add)
       (list-tail list-tail-ref)
       (lset-difference complement-p)
