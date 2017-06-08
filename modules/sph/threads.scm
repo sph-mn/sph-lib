@@ -11,4 +11,4 @@
     (ice-9 threads))
 
   (define sph-threads-description
-    "re-exports and renames parallel processing bindings from (ice-9 threads)"))
+    "re-exports some and renames parallel processing bindings from (ice-9 threads)"))
