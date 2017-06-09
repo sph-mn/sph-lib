@@ -1,6 +1,7 @@
 (library (sph io path-pipe-chain)
   (export
-    path-pipe-chain)
+    path-pipe-chain
+    sph-io-path-pipe-chain-description)
   (import
     (guile)
     (ice-9 threads)
@@ -8,6 +9,10 @@
     (sph io)
     (sph one)
     (sph vector))
+
+  (define sph-io-path-pipe-chain-description
+    "call procedures with input output arguments set up in a chained manner to allow data flow between them.
+    procedures can request paths or ports as arguments and the links are made compatible automatically")
 
   (define path-pipe-chain
     (let-syntax
@@ -29,13 +34,12 @@
             (map-first-input
               (l (previous current in c)
                 "symbol symbol any procedure:{current-input procedure:transfer} -> any"
-                (case (join-symbols previous current) ((path-port) (c (open-file previous "r") #f))
+                (case (join-symbols previous current) ((path-port) (c (open previous O_RDONLY) #f))
                   ( (port-path)
                     (let (path (named-pipe))
                       (c path
                         (nullary
-                          (let (file (open path (logior O_WRONLY O_NONBLOCK)))
-                            (port-copy-all in file) (close file))))))
+                          (let (file (open path O_WRONLY)) (port-copy-all in file) (close file))))))
                   (else (c in #f)))))
             (map-last-output
               (l (current next out c)
@@ -45,13 +49,8 @@
                 procedure might be passed for transferring data from the last procedures output to the given
                 last output"
                 (case (join-symbols current next)
-                  ((path-port)
-                    (let (path (named-pipe))
-                      (c path (nullary
-                          (debug-log out "her")
-                          (file->port path out)))))
-                  ((port-path)
-                    (c (nullary (open out O_WRONLY)) #f)) (else (c out #f)))))
+                  ((path-port) (let (path (named-pipe)) (c path (nullary (file->port path out)))))
+                  ((port-path) (c (nullary (open out O_WRONLY)) #f)) (else (c out #f)))))
             (map-output-input
               (l (current next c)
                 "symbol symbol procedure:{current-output next-input} -> any
@@ -68,9 +67,9 @@
             first-input last-output (path/port/nothing path/port/nothing procedure:{in out -> result}) ... -> (result ...)
             like pipe-chain but additionally supports specifying the type of port between procedures.
             procedures can take file paths or ports for input or output. input output combinations between procedures are automatically made compatible.
-            caveats
-            * if output and next output are path-port, then the input passed to the subsequent procedure is a procedure with no arguments that returns the port.
-              it will block, therefore open it in another thread or process. the same applies for a port-path combination, where the preceding output will be a procedure
+            caveats:
+            * in path-port or port-path combinations, either input or output can be a nullary procedure that returns the port.
+              it blocks unless the next procedure has opened its part, therefore a new thread or process should be created to call it in so processing can proceed to the next procedure
             * ports are not automatically closed, even when an exception occurs, and temporary files are stored in the systems temporary directory.
             * to make it possible to read while a previous procedure is writing a user might want to create threads or processes.
             * named pipes are used when paths are requested. they block for each end until the other end is connected, and they do not emit end of file until they are closed
@@ -91,11 +90,7 @@
                           (map-last-output current next
                             last-output
                             (l (out transfer-out)
-                              (pair
-                                (begin-first
-                                  (proc in out)
-                                  (if transfer-out (begin-thread (transfer-out)))
-                                  )
+                              (pair (begin-first (proc in out) (if transfer-out (transfer-out)))
                                 result)))
                           (map-output-input current next
                             (l (out next-in) (if transfer-in (begin-thread (transfer-in)))
