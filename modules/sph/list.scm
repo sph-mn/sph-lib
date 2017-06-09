@@ -79,6 +79,7 @@
     list-indices
     list-prefix?
     list-q
+    list-qq
     list-replace-last
     list-replace-last-n
     list-select
@@ -168,6 +169,7 @@
   ;copied from (sph conditional)
   (define-syntax-rule (identity-if test else ...) ((lambda (r) (if r r (begin else ...))) test))
   (define-syntax-rule (list-q a ...) (q (a ...)))
+  (define-syntax-rule (list-qq a ...) (qq (a ...)))
 
   (define-syntax-rule (list-bind a lambda-formals body ...)
     ;bind elements of list "a" to "lambda-formals"

@@ -8,11 +8,18 @@
     format-library
     format-list
     format-list-assoc
+    format-quasiquote
+    format-quasisyntax
+    format-quote
     format-range-comment
     format-scsh-block-comment
     format-semicolon-comment
     format-string
+    format-syntax
     format-test-module
+    format-unquote
+    format-unsyntax
+    format-vector
     string-join-with-vertical-spacing)
   (import
     (guile)
@@ -277,6 +284,20 @@
             (_ a)))
         a)
       #f))
+
+  (define (format-read-syntax-quote prefix a recurse config current-indent)
+    (list
+      (if (hashtable-ref config (q use-read-syntax-quote))
+        (string-append prefix (first (recurse (second a) current-indent)))
+        (format-application (map-recurse recurse a current-indent) config current-indent))
+      #f))
+
+  (define (format-quote . a) (apply format-read-syntax-quote "'" a))
+  (define (format-quasiquote . a) (apply format-read-syntax-quote "`" a))
+  (define (format-unquote . a) (apply format-read-syntax-quote "," a))
+  (define (format-syntax . a) (apply format-read-syntax-quote "#'" a))
+  (define (format-quasisyntax . a) (apply format-read-syntax-quote "#`" a))
+  (define (format-unsyntax . a) (apply format-read-syntax-quote "#," a))
 
   (define (format-list a config current-indent start middle end)
     (format-application a

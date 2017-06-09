@@ -1,9 +1,8 @@
-;transformations on the abstract syntax tree
-
 (library (sph lang scm-format transform)
   (export
     is-library?
-    scm-format-transform-tree)
+    scm-format-transform-tree
+    sph-lang-scm-format-transform-description)
   (import
     (guile)
     (ice-9 match)
@@ -15,7 +14,10 @@
     (sph lang scm-format base)
     (sph list)
     (sph string)
+    (sph tree)
     (only (srfi srfi-1) delete-duplicates))
+
+  (define sph-lang-scm-format-transform-description "transformations on the abstract syntax tree")
 
   (define (definition? a)
     (and (list? a) (not (null? a))
