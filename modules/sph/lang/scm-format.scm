@@ -39,7 +39,7 @@
       max-exprs-per-line-start 3
       max-exprs-per-line-middle 2
       max-exprs-per-line-end (inf)
-      use-read-syntax-quote #t
+      use-read-syntax-quote #f
       multiple-leading-parenthesis-spacing #t
       toplevel-vertical-spacing 1 toplevel-vertical-spacing-oneline 0)
     transform
