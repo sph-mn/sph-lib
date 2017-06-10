@@ -132,10 +132,10 @@
             (let (result (proc in a))
               (if result (pair result (loop a #f (first rest) (tail rest))) (list))))))))
 
-  (define (file->string path\file)
+  (define (file->string path/file)
     "string/file -> string
     open or use an opened file, read until end-of-file is reached and return a string of file contents"
-    (if (string? path\file) (call-with-input-file path\file port->string) (port->string path\file)))
+    (if (string? path/file) (call-with-input-file path/file port->string) (port->string path/file)))
 
   (define (file->bytevector path\file)
     "string -> bytevector

@@ -34,12 +34,9 @@
             (map-first-input
               (l (previous current in c)
                 "symbol symbol any procedure:{current-input procedure:transfer} -> any"
-                (case (join-symbols previous current) ((path-port) (c (open previous O_RDONLY) #f))
-                  ( (port-path)
-                    (let (path (named-pipe))
-                      (c path
-                        (nullary
-                          (let (file (open path O_WRONLY)) (port-copy-all in file) (close file))))))
+                (case (join-symbols previous current)
+                  ((path-port) (c (open in O_RDONLY) #f))
+                  ((port-path) (let (path (named-pipe)) (c path (nullary (port->file in path)))))
                   (else (c in #f)))))
             (map-last-output
               (l (current next out c)
@@ -49,8 +46,11 @@
                 procedure might be passed for transferring data from the last procedures output to the given
                 last output"
                 (case (join-symbols current next)
-                  ((path-port) (let (path (named-pipe)) (c path (nullary (file->port path out)))))
-                  ((port-path) (c (nullary (open out O_WRONLY)) #f)) (else (c out #f)))))
+                  ( (path-port)
+                    (let (path (named-pipe))
+                      (c path (nullary (call-with-input-file path (l (in) (port-copy-all in out)))))))
+                  ((port-path) (c (nullary (open out (logior O_WRONLY O_CREAT))) #f))
+                  (else (c out #f)))))
             (map-output-input
               (l (current next c)
                 "symbol symbol procedure:{current-output next-input} -> any
@@ -60,7 +60,7 @@
                 (case (join-symbols current next)
                   ((path-port) (let (path (named-pipe)) (c path (nullary (open path O_RDONLY)))))
                   ((port-path) (let (path (named-pipe)) (c (nullary (open path O_WRONLY)) path)))
-                  ((port-port) (call-with-pipe (l a (apply c (reverse a)))))
+                  ((port-port) (let (pipe-ends (pipe)) (c (tail pipe-ends) (first pipe-ends))))
                   ((path-path) (let (path (named-pipe)) (c path path))) (else (c #f #f))))))
           (l (first-input last-output . config)
             "string/port/any string/port/any #(symbol symbol procedure:{string/port string/port -> any}) ... -> (any ...)
@@ -68,9 +68,11 @@
             like pipe-chain but additionally supports specifying the type of port between procedures.
             procedures can take file paths or ports for input or output. input output combinations between procedures are automatically made compatible.
             caveats:
-            * in path-port or port-path combinations, either input or output can be a nullary procedure that returns the port.
+            * in path-port or port-path links, either input or output can be a nullary procedure that returns the port.
               it blocks unless the next procedure has opened its part, therefore a new thread or process should be created to call it in so processing can proceed to the next procedure
-            * ports are not automatically closed, even when an exception occurs, and temporary files are stored in the systems temporary directory.
+            * intermediate ports must be closed after read/write finished
+            * intermediate paths should be deleted after read/write finished. otherwise they accumulate in the systems temporary directory
+            * ports are not automatically closed when an exception occurs
             * to make it possible to read while a previous procedure is writing a user might want to create threads or processes.
             * named pipes are used when paths are requested. they block for each end until the other end is connected, and they do not emit end of file until they are closed
             example:
@@ -80,18 +82,24 @@
                 (map-first-input (any->type first-input) (vector-ref types 0)
                   first-input
                   (l (in transfer-in)
-                    (let loop
-                      ((in in) (types-index 0) (rest (get-procedures config)) (result (list)))
+                    (let loop ((in in) (types-index 0) (rest (get-procedures config)))
                       (let
                         ( (current (vector-ref types (+ 1 types-index)))
                           (next (vector-ref types (+ 2 types-index))) (proc (first rest))
                           (rest (tail rest)))
                         (if (null? rest)
-                          (map-last-output current next
-                            last-output
-                            (l (out transfer-out)
-                              (pair (begin-first (proc in out) (if transfer-out (transfer-out)))
-                                result)))
+                          (list
+                            (map-last-output current next
+                              last-output
+                              (l (out transfer-out)
+                                (let
+                                  ( (transfer-in-thread (if transfer-in (begin-thread (transfer-in)) #f))
+                                    (transfer-out-thread
+                                      (if transfer-out (begin-thread (transfer-out)) #f)))
+                                  (begin-first (proc in out)
+                                    (if transfer-in-thread (join-thread transfer-in-thread))
+                                    (if transfer-out-thread (join-thread transfer-out-thread)))))))
                           (map-output-input current next
-                            (l (out next-in) (if transfer-in (begin-thread (transfer-in)))
-                              (loop next-in (+ 2 types-index) rest (pair (proc in out) result)))))))))))))))))
+                            (l (out next-in)
+                              (if transfer-in (begin-thread (transfer-in)))
+                              (pair (proc in out) (loop next-in (+ 2 types-index) rest)))))))))))))))))
