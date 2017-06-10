@@ -23,8 +23,8 @@
     (only (sph two) number->integer-string))
 
   (define sph-test-performance-description
-    "adaptive performance testing and comparison of procedures with formatted result display.
-    adapts the number of calls until a meaningful run time difference is found")
+    "adaptive performance testing with formatted result display.
+    adapts the number of calls until a meaningful run time difference has been found")
 
   (define (multiply-until proc base factor)
     (if (proc base factor) base (multiply-until proc (* base factor) factor)))

@@ -31,7 +31,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 ## highlights
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
-* (sph documentation) - extract and display guile scheme code documentation
 * (sph filesystem asset-compiler) - process and merge files of various formats into one
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph install) - program and library installer
@@ -68,6 +67,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph config) - program configuration file management
 * (sph debug) - debugging helpers. experimental
 * (sph deprecation) - display a deprecation warning when specific procedures are used. experimental
+* (sph documentation) - extract and display guile scheme code documentation
 * (sph documentation display-format-itpn)
 * (sph documentation display-format-plist)
 * (sph documentation display-format-signature)

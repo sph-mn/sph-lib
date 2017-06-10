@@ -27,7 +27,7 @@
       set-port-encoding!)
     (only (rnrs io simple) eof-object? read-char))
 
-  (define sph-scgi-description "scgi interface. a server that accepts and parses scgi requests")
+  (define sph-scgi-description "scgi interface. a server that accepts scgi requests and passes them to a custom procedure")
   (define binary-char-null (char->integer #\nul))
   (define binary-char-colon (char->integer #\:))
 

@@ -1,7 +1,6 @@
 (sph)
 (sph base91)
 (sph cli)
-(sph documentation)
 (sph filesystem asset-compiler)
 (sph filesystem versioning)
 (sph install)

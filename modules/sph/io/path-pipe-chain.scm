@@ -34,8 +34,7 @@
             (map-first-input
               (l (previous current in c)
                 "symbol symbol any procedure:{current-input procedure:transfer} -> any"
-                (case (join-symbols previous current)
-                  ((path-port) (c (open in O_RDONLY) #f))
+                (case (join-symbols previous current) ((path-port) (c (open in O_RDONLY) #f))
                   ((port-path) (let (path (named-pipe)) (c path (nullary (port->file in path)))))
                   (else (c in #f)))))
             (map-last-output
@@ -49,16 +48,17 @@
                   ( (path-port)
                     (let (path (named-pipe))
                       (c path (nullary (call-with-input-file path (l (in) (port-copy-all in out)))))))
-                  ((port-path) (c (nullary (open out (logior O_WRONLY O_CREAT))) #f))
-                  (else (c out #f)))))
+                  ((port-path) (c (open out (logior O_WRONLY O_CREAT)) #f)) (else (c out #f)))))
             (map-output-input
               (l (current next c)
                 "symbol symbol procedure:{current-output next-input} -> any
                 map the current output type to the next input type and create the appropriate input output arguments.
-                opening a named pipe blocks until the other end is open. while there may be alternative ways using O_RDWR (less portable) or O_NONBLOCK,
-                we have not been able to make them work reliably. that is why procedures are passed"
+                just opening a named pipe normally blocks until the other end is open.
+                this is problematic if it is to be set as standard input for the next process because it would require the open to be made in an extra new thread.
+                the O_NONBLOCK allows the read end to be opened first. this does not work for opening the write end first, as does O_RDWR"
                 (case (join-symbols current next)
-                  ((path-port) (let (path (named-pipe)) (c path (nullary (open path O_RDONLY)))))
+                  ( (path-port)
+                    (let (path (named-pipe)) (c path (open path (logior O_RDONLY O_NONBLOCK)))))
                   ((port-path) (let (path (named-pipe)) (c (nullary (open path O_WRONLY)) path)))
                   ((port-port) (let (pipe-ends (pipe)) (c (tail pipe-ends) (first pipe-ends))))
                   ((path-path) (let (path (named-pipe)) (c path path))) (else (c #f #f))))))
@@ -68,8 +68,8 @@
             like pipe-chain but additionally supports specifying the type of port between procedures.
             procedures can take file paths or ports for input or output. input output combinations between procedures are automatically made compatible.
             caveats:
-            * in path-port or port-path links, either input or output can be a nullary procedure that returns the port.
-              it blocks unless the next procedure has opened its part, therefore a new thread or process should be created to call it in so processing can proceed to the next procedure
+            * in port-path links, output is a nullary procedure that is to be called in a separate thread to return the port.
+              it blocks unless the next procedure has opened the other end.
             * intermediate ports must be closed after read/write finished
             * intermediate paths should be deleted after read/write finished. otherwise they accumulate in the systems temporary directory
             * ports are not automatically closed when an exception occurs
@@ -93,13 +93,13 @@
                               last-output
                               (l (out transfer-out)
                                 (let
-                                  ( (transfer-in-thread (if transfer-in (begin-thread (transfer-in)) #f))
+                                  ( (transfer-in-thread
+                                      (if transfer-in (begin-thread (transfer-in)) #f))
                                     (transfer-out-thread
                                       (if transfer-out (begin-thread (transfer-out)) #f)))
                                   (begin-first (proc in out)
                                     (if transfer-in-thread (join-thread transfer-in-thread))
                                     (if transfer-out-thread (join-thread transfer-out-thread)))))))
                           (map-output-input current next
-                            (l (out next-in)
-                              (if transfer-in (begin-thread (transfer-in)))
+                            (l (out next-in) (if transfer-in (begin-thread (transfer-in)))
                               (pair (proc in out) (loop next-in (+ 2 types-index) rest)))))))))))))))))

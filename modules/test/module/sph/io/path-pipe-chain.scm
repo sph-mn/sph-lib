@@ -16,8 +16,7 @@
     (assert-equal "nothing-nothing-port-path" message
       (let (out (tmpnam))
         (path-pipe-chain #f out
-          (vector (q nothing) (q port)
-            (l (in out) (let (out (out)) (display message out) (close out)))))
+          (vector (q nothing) (q port) (l (in out) (display message out) (close out))))
         (file->string out)))
     (assert-equal "nothing-nothing-path-port" message
       (call-with-output-string
@@ -56,8 +55,7 @@
     (assert-equal "nothing-path-port-nothing" message
       (path-pipe-chain-links-call
         (vector (q nothing) (q path) (l (in out) (begin-thread (string->file message out))))
-        (vector (q port) (q port)
-          (l (in out) (begin-thread (let (in (in)) (port-copy-all in out) (close in)))))))
+        (vector (q port) (q port) (l (in out) (begin-thread (port-copy-all in out) (close in))))))
     (assert-equal "nothing-path-path-nothing" message
       (path-pipe-chain-links-call
         (vector (q nothing) (q path) (l (in out) (begin-thread (string->file message out))))
