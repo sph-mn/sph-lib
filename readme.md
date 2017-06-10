@@ -35,6 +35,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph filesystem asset-compiler) - process and merge files of various formats into one
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph install) - program and library installer
+* (sph io path-pipe-chain) - call procedures with input output arguments set up in a chained manner to allow data flow between them
 * (sph lang itml)
 * (sph lang itpn)
 * (sph lang parser type-signature)
@@ -100,7 +101,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph lang parser outline) - parse text with nested headings
 * (sph lang scm-format base)
 * (sph lang scm-format format)
-* (sph lang scm-format transform)
+* (sph lang scm-format transform) - transformations on the abstract syntax tree
 * (sph lang sxml-element-style-css)
 * (sph linux) - linux specific features
 * (sph list)
@@ -118,7 +119,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph test base)
 * (sph test cli)
 * (sph test report)
-* (sph threads)
+* (sph threads) - re-exports some and renames parallel processing bindings from (ice-9 threads)
 * (sph time stream) - create an srfi-41 stream of calendar dates between two dates
 * (sph time string) - time string conversions
 * (sph time utc) - utc related time calculations
