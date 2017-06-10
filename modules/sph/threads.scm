@@ -8,6 +8,7 @@
       (n-par-map map-par-n)
       (n-par-for-each each-par-n)))
   (import
+    (rnrs bash)
     (ice-9 threads))
 
   (define sph-threads-description
