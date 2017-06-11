@@ -54,7 +54,10 @@
 (pre-define (move-fd a) (do-while (= errno EINTR) (set a (dup a))))
 (pre-define (dup2-fd old new) (do-while (= errno EINTR) (dup2 old new)) (close old))
 (pre-define (close-fd scm a) (if (= scm SCM-BOOL-F) (close a)))
-(pre-define (ensure-fd a open-flags) (if (= -1 a) (set a (open "/dev/null" open-flags))))
+
+(pre-define (ensure-fd a open-flags path)
+  (if (= -1 a) (set a (open (if* path path "/dev/null") open-flags))))
+
 (define (free-env a) (void char**) (define a-temp char** a) (while a-temp (free a-temp)) (free a))
 
 (define (scm-list->imht-set scm-a result) (int SCM imht-set-t**)
@@ -78,9 +81,10 @@
       result-pointer (+ 1 result-pointer) scm-a (SCM-CDR scm-a)))
   (return result))
 
-(pre-define (port-argument->fd a)
-  (if* (scm-is-true (scm-port? a)) (scm->int (scm-fileno a))
-    (if* (scm-is-integer a) (scm->int a) -1)))
+(pre-define (port-argument-set-fd a fd path)
+  (if (scm-is-true (scm-port? a)) (set fd (scm->int (scm-fileno a)))
+    (if (scm-is-integer a) (set fd (scm->int a))
+      (begin (set fd -1) (if (scm-is-string a) (set path (scm->locale-string a)))))))
 
 (pre-define (set-standard-streams input output error)
   (if (> input 0)
@@ -92,15 +96,20 @@
   (scm-primitive-process-create scm-executable scm-arguments scm-input-port scm-output-port
     scm-error-port
     scm-env
-    scm-keep-descriptors)
-  (SCM SCM SCM SCM SCM SCM SCM SCM)
+    scm-keep-descriptors
+    scm-path-open-flags)
+  (SCM SCM SCM SCM SCM SCM SCM SCM SCM)
+  (define path-open-flags int
+    (if* (scm-is-true scm-path-open-flags) (scm->int scm-path-open-flags) 0))
   (define arguments char** (scm-string-list->string-pointer-array scm-arguments))
   (define env char**
     (if* (= SCM-BOOL-F scm-env) environ (scm-string-list->string-pointer-array scm-env)))
   (define executable char* (scm->locale-string scm-executable)) (define keep imht-set-t*)
-  (define input int (port-argument->fd scm-input-port))
-  (define output int (port-argument->fd scm-output-port))
-  (define error int (port-argument->fd scm-error-port))
+  (define input int output int error int) (define input-path char* 0)
+  (define output-path char* 0) (define error-path char* 0)
+  (port-argument-set-fd scm-input-port input input-path)
+  (port-argument-set-fd scm-output-port output output-path)
+  (port-argument-set-fd scm-error-port error error-path)
   (if (scm-list->imht-set scm-keep-descriptors (address-of keep)) (return SCM-BOOL-F))
   (define process-id int (fork))
   (if (not (= 0 process-id))
@@ -108,8 +117,9 @@
       (imht-set-destroy keep) (if (not (= SCM-BOOL-F scm-env)) (free-env env))
       (return (scm-from-int process-id))))
   ;after fork
-  (ensure-fd input O_RDONLY) (ensure-fd output O_WRONLY)
-  (ensure-fd error O_WRONLY) (imht-set-add keep input)
+  (ensure-fd input O_RDONLY input-path)
+  (ensure-fd output (bit-or O_WRONLY O_CREAT path-open-flags) output-path)
+  (ensure-fd error (bit-or O_WRONLY O_CREAT path-open-flags) error-path) (imht-set-add keep input)
   (imht-set-add keep output) (imht-set-add keep error)
   (close-file-descriptors-from 3 keep) (set-standard-streams input output error)
   (execve executable arguments env)
@@ -117,4 +127,16 @@
   (_exit 127) (return SCM-UNSPECIFIED))
 
 (define (init-sph-lib) void
-  (scm-c-define-gsubr "primitive-process-create" 7 0 0 scm-primitive-process-create))
+  (define primitive-process-create SCM
+    (scm-c-define-gsubr "primitive-process-create" 8 0 0 scm-primitive-process-create))
+  (scm-set-procedure-property! primitive-process-create (scm-from-locale-symbol "documentation")
+    (scm-from-locale-string
+      "string (string ...) false/port/string/integer false/port/string/integer false/port/string/integer (string ...) (integer ...) integer -> integer
+      executable (argument ...) input output error environ-result keep-file-descriptors path-open-flags -> child-process-id
+      input/output/error:
+      * false: /dev/null
+      * string: path
+      * integer: file descriptor
+      * port: port
+      async safe fork/exec.
+      uses execve and does not search in directories of the PATH environment variable")))

@@ -49,7 +49,7 @@
   (define (string->file a path)
     "string string -> unspecified
     write string into file at path, overwriting the file"
-    (call-with-output-file path (l (file) (display a file))))
+    (call-with-output-file path (l (b) (display a b))))
 
   (define (each-u8 proc port)
     "procedure:{integer -> any} port -> unspecified
@@ -190,9 +190,9 @@
   (define port->string get-string-all)
   (define port->bytevector get-bytevector-all)
 
-  (define* (port-copy-all port port-2 #:optional (buffer-size 4096))
-    (if (not (eof-object? (port-copy-some port port-2 buffer-size)))
-      (port-copy-all port port-2 buffer-size)))
+  (define* (port-copy-all a b #:optional (buffer-size 4096))
+    (if (not (eof-object? (port-copy-some a b buffer-size)))
+      (port-copy-all a b buffer-size)))
 
   (define-syntax-rule (table-match-or-update char table)
     ;"character (#(current-index max-index string) ...) -> string:match/list:updated-table"

@@ -1,12 +1,16 @@
 (define-test-module (test module sph io path-pipe-chain)
   (import
     (sph io)
+    (rnrs io ports)
     (sph list)
     (sph one)
     (ice-9 threads)
     (sph io path-pipe-chain))
 
-  (define (join-threads a) (each join-thread a))
+  (define (join-threads a)
+    ;(each join-thread a)
+    (each (l (a) (and (thread? a) (join-thread a))) a))
+
   (define message "test")
 
   (define-test (path-pipe-chain-ends) "test conversion of first-input and last-output"
@@ -45,7 +49,8 @@
     (assert-equal "nothing-port-path-nothing" message
       (path-pipe-chain-links-call
         (vector (q nothing) (q port)
-          (l (in out) (begin-thread (let (out (out)) (display message out) (close out)))))
+          (l (in out)
+            (begin-thread (let (out (open out O_WRONLY)) (display message out) (close out)))))
         (vector (q path) (q port)
           (l (in out) (begin-thread (call-with-input-file in (l (in) (port-copy-all in out))))))))
     (assert-equal "nothing-port-port-nothing" message
@@ -55,7 +60,9 @@
     (assert-equal "nothing-path-port-nothing" message
       (path-pipe-chain-links-call
         (vector (q nothing) (q path) (l (in out) (begin-thread (string->file message out))))
-        (vector (q port) (q port) (l (in out) (begin-thread (port-copy-all in out) (close in))))))
+        (vector (q port) (q port)
+          (l (in out)
+            (begin-thread (let (in (open in O_RDONLY)) (port-copy-all in out) (close in)))))))
     (assert-equal "nothing-path-path-nothing" message
       (path-pipe-chain-links-call
         (vector (q nothing) (q path) (l (in out) (begin-thread (string->file message out))))

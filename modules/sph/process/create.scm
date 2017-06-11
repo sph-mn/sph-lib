@@ -24,13 +24,15 @@
       #:key
       env
       (keep-descriptors (list))
-      (search-path? #t))
-    "string:path/file-name [(string ...) port/integer/false ... #:key (env (environ)) (keep-descriptors (list)) search-path?] -> process-id
+      (search-path? #t)
+      path-open-flags)
+    "string:path/file-name [(string ...) port/string/integer/false ... #:key (env (environ)) (keep-descriptors (list)) search-path? (path-open-flags integer)] -> process-id
     \"executable\" is the path or file name of a file to execute to become the new process.
     if the given string for \"executable\" does not start with a slash and search-path? is true (default is false), it is searched in the directories in the PATH environment variable.
     the optional parameters are to set the standard streams.
     with the key parameters the environment variables for the new process can be set in the format (environ) returns.
     no file descriptors from the parent process are transferred to the child except if listed in keep-descriptors or given using the input/output/error-port parameters.
+    when a string is given as port argument, it is interpreted as a filesystem path and #:path-open-flags can be used to add to O_WRONLY|O_CREAT.
     returns the process id of the newly created child process or false if the process could not be created"
     (if search-path?
       (let
@@ -39,10 +41,10 @@
             (first-or-false (search-env-path executable))))
         (and executable (file-exists? executable)
           (primitive-process-create executable (pair (basename executable) arguments)
-            input-port output-port error-port env keep-descriptors)))
+            input-port output-port error-port env keep-descriptors path-open-flags)))
       (and (file-exists? executable)
         (primitive-process-create executable (pair (basename executable) arguments)
-          input-port output-port error-port env keep-descriptors))))
+          input-port output-port error-port env keep-descriptors path-open-flags))))
 
   ; the following definitions are not directly dependent on the loaded extension
   ;
@@ -105,25 +107,24 @@
         (pids
           (apply path-pipe-chain first-input
             last-output
-            (debug-log
-              (map
-                (l (a)
-                  (vector (vector-ref a 0) (vector-ref a 1)
+            (map
+              (l (a)
+                (let ((input-type (vector-ref a 0)) (output-type (vector-ref a 1)))
+                  (vector input-type output-type
                     (let (b (vector-ref a 2))
                       (l (in out)
                         (let
                           (executable-and-arguments
                             (any->list
-                              (if (procedure? b) (b (and (string? in) in) (and (string? out) out))
+                              (if (procedure? b)
+                                (b (and (eq? (q path) input-type) in)
+                                  (and (eq? (q path) output-type) out))
                                 b)))
-                          (if (procedure? out)
-
-                            )
                           (begin-first
                             (process-create (first executable-and-arguments)
-                              (tail executable-and-arguments) (and (port? in) in)
-                              (and (port? out) out) error #:search-path? search-path?)
+                              (tail executable-and-arguments) in
+                              out error #:search-path? search-path?)
                             (if (and (port? in) (not (eq? first-input in))) (close in))
-                            (if (and (port? out) (not (eq? last-output out))) (close out))))))))
-                config)))))
+                            (if (and (port? out) (not (eq? last-output out))) (close out)))))))))
+              config))))
       (if (= (length pids) config-length) pids (begin (each (l (a) (kill a SIGTERM)) pids) (list))))))
