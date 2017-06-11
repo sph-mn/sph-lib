@@ -19,7 +19,8 @@
   "defines and registers a c routine as a scheme procedure with documentation.
   like scm-c-define-gsubr but also sets documentation.
   scm-c-define-procedure-c-init must have been called in scope"
-  f (set scm-c-define-procedure-c-temp (scm-c-define-gsubr name required optional rest c-function))
+  f
+  (set scm-c-define-procedure-c-temp (scm-c-define-gsubr name required optional rest c-function))
   (scm-set-procedure-property! scm-c-define-procedure-c-temp
     (scm-from-locale-symbol "documentation") (scm-from-locale-string documentation)))
 
@@ -27,7 +28,8 @@
   "try to close all used file descriptors greater than start-fd.
   tries to use /proc/{process-id}/fd, sysconf and getdtablesize.
   if none of those is available, closes file descriptors from sart-fd to 1024"
-  (define fd long maxfd long) (define-array path-proc-fd char (PATH_MAX))
+  (define fd long maxfd long)
+  (define-array path-proc-fd char (PATH_MAX))
   (define directory DIR* path-length int entry (struct dirent*) first-invalid char*)
   (set path-length
     (snprintf path-proc-fd (sizeof path-proc-fd) "/proc/%ld/fd" (convert-type (getpid) long)))
@@ -39,14 +41,16 @@
         (set fd (strtol (struct-pointer-get entry d-name) (address-of first-invalid) 10))
         (if
           (and (not (= (struct-pointer-get entry d-name) first-invalid))
-            (= (deref first-invalid) 0) (>= fd 0)
-            (< fd INT_MAX) (>= fd start-fd)
-            (not (= fd (dirfd directory))) (not (imht-set-contains? keep fd)))
+            (= (deref first-invalid) 0)
+            (>= fd 0)
+            (< fd INT_MAX)
+            (>= fd start-fd) (not (= fd (dirfd directory))) (not (imht-set-contains? keep fd)))
           (convert-type (close (convert-type fd int)) void)))
       (convert-type (closedir directory) void))
     ; fallback
     (begin (pre-if HAVE-SYSCONF (set maxfd (sysconf _SC-OPEN-MAX)) (set maxfd (getdtablesize)))
-      (if (< maxfd 0) (set maxfd OPEN-MAX)) (set fd start-fd)
+      (if (< maxfd 0) (set maxfd OPEN-MAX))
+      (set fd start-fd)
       (while (< fd maxfd)
         (if (not (imht-set-contains? keep fd)) (convert-type (close (convert-type fd int)) void))
         (set fd (+ 1 fd))))))
@@ -70,8 +74,10 @@
   (return 0))
 
 (define (scm-string-list->string-pointer-array scm-a) (char** SCM)
-  "returns a null pointer terminated char**" (define a-length int (scm->int (scm-length scm-a)))
-  (define result char** (malloc (* (sizeof char*) (+ 1 a-length)))) (set (deref result a-length) 0)
+  "returns a null pointer terminated char**"
+  (define a-length int (scm->int (scm-length scm-a)))
+  (define result char** (malloc (* (sizeof char*) (+ 1 a-length))))
+  (set (deref result a-length) 0)
   (define result-pointer char** result)
   (while (not (scm-is-null scm-a)) (define b char* b-length size-t)
     (set b (scm->locale-stringn (SCM-CAR scm-a) (address-of b-length))
@@ -104,9 +110,12 @@
   (define arguments char** (scm-string-list->string-pointer-array scm-arguments))
   (define env char**
     (if* (= SCM-BOOL-F scm-env) environ (scm-string-list->string-pointer-array scm-env)))
-  (define executable char* (scm->locale-string scm-executable)) (define keep imht-set-t*)
-  (define input int output int error int) (define input-path char* 0)
-  (define output-path char* 0) (define error-path char* 0)
+  (define executable char* (scm->locale-string scm-executable))
+  (define keep imht-set-t*)
+  (define input int output int error int)
+  (define input-path char* 0)
+  (define output-path char* 0)
+  (define error-path char* 0)
   (port-argument-set-fd scm-input-port input input-path)
   (port-argument-set-fd scm-output-port output output-path)
   (port-argument-set-fd scm-error-port error error-path)
@@ -114,14 +123,17 @@
   (define process-id int (fork))
   (if (not (= 0 process-id))
     (begin (free arguments) (free executable)
-      (imht-set-destroy keep) (if (not (= SCM-BOOL-F scm-env)) (free-env env))
-      (return (scm-from-int process-id))))
+      (imht-set-destroy keep)
+      (if (not (= SCM-BOOL-F scm-env)) (free-env env)) (return (scm-from-int process-id))))
   ;after fork
   (ensure-fd input O_RDONLY input-path)
   (ensure-fd output (bit-or O_WRONLY O_CREAT path-open-flags) output-path)
-  (ensure-fd error (bit-or O_WRONLY O_CREAT path-open-flags) error-path) (imht-set-add keep input)
-  (imht-set-add keep output) (imht-set-add keep error)
-  (close-file-descriptors-from 3 keep) (set-standard-streams input output error)
+  (ensure-fd error (bit-or O_WRONLY O_CREAT path-open-flags) error-path)
+  (imht-set-add keep input)
+  (imht-set-add keep output)
+  (imht-set-add keep error)
+  (close-file-descriptors-from 3 keep)
+  (set-standard-streams input output error)
   (execve executable arguments env)
   ; terminates the program immediately with neither scheme-level nor c-level cleanups
   (_exit 127) (return SCM-UNSPECIFIED))

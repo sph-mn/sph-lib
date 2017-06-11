@@ -50,7 +50,7 @@
       (path-pipe-chain-links-call
         (vector (q nothing) (q port)
           (l (in out)
-            (begin-thread (let (out (open out O_WRONLY)) (display message out) (close out)))))
+            (begin-thread (let (out (open (out) O_WRONLY)) (display message out) (close out)))))
         (vector (q path) (q port)
           (l (in out) (begin-thread (call-with-input-file in (l (in) (port-copy-all in out))))))))
     (assert-equal "nothing-port-port-nothing" message
@@ -62,7 +62,7 @@
         (vector (q nothing) (q path) (l (in out) (begin-thread (string->file message out))))
         (vector (q port) (q port)
           (l (in out)
-            (begin-thread (let (in (open in O_RDONLY)) (port-copy-all in out) (close in)))))))
+            (begin-thread (let (in (open (in) O_RDONLY)) (port-copy-all in out) (close in)))))))
     (assert-equal "nothing-path-path-nothing" message
       (path-pipe-chain-links-call
         (vector (q nothing) (q path) (l (in out) (begin-thread (string->file message out))))

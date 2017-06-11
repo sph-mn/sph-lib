@@ -109,22 +109,20 @@
             last-output
             (map
               (l (a)
-                (let ((input-type (vector-ref a 0)) (output-type (vector-ref a 1)))
-                  (vector input-type output-type
-                    (let (b (vector-ref a 2))
-                      (l (in out)
-                        (let
-                          (executable-and-arguments
-                            (any->list
-                              (if (procedure? b)
-                                (b (and (eq? (q path) input-type) in)
-                                  (and (eq? (q path) output-type) out))
-                                b)))
-                          (begin-first
-                            (process-create (first executable-and-arguments)
-                              (tail executable-and-arguments) in
-                              out error #:search-path? search-path?)
-                            (if (and (port? in) (not (eq? first-input in))) (close in))
-                            (if (and (port? out) (not (eq? last-output out))) (close out)))))))))
+                (vector (vector-ref a 0) (vector-ref a 1)
+                  (let (b (vector-ref a 2))
+                    (l (in out)
+                      (let
+                        (executable-and-arguments
+                          (any->list
+                            (if (procedure? b) (b (and (string? in) in) (and (string? out) out)) b)))
+                        (begin-first
+                          (process-create (first executable-and-arguments)
+                            (tail executable-and-arguments)
+                            (if (port? in) in (and (procedure? in) (in)))
+                            (if (port? out) out (and (procedure? out) (out))) error
+                            #:search-path? search-path?)
+                          (if (and (port? in) (not (eq? first-input in))) (close in))
+                          (if (and (port? out) (not (eq? last-output out))) (close out))))))))
               config))))
       (if (= (length pids) config-length) pids (begin (each (l (a) (kill a SIGTERM)) pids) (list))))))

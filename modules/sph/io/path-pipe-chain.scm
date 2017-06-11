@@ -55,8 +55,8 @@
                 this is problematic if it is to be set as standard input for the next process because it would require the open to be made in an extra new thread.
                 the O_NONBLOCK allows the read end to be opened first. this does not work for opening the write end first, as does O_RDWR"
                 (case (join-symbols current next)
-                  ((path-port) (let (path (named-pipe)) (c path path)))
-                  ((port-path) (let (path (named-pipe)) (c path path)))
+                  ((path-port) (let (path (named-pipe)) (c path (nullary path))))
+                  ((port-path) (let (path (named-pipe)) (c (nullary path) path)))
                   ((port-port) (let (pipe-ends (pipe)) (c (tail pipe-ends) (first pipe-ends))))
                   ((path-path) (let (path (named-pipe)) (c path path))) (else (c #f #f))))))
           (l (first-input last-output . config)
@@ -65,7 +65,7 @@
             like pipe-chain but additionally supports specifying the type of port between procedures.
             procedures can take file paths or ports for input or output. input output combinations between procedures are automatically made compatible.
             caveats:
-            * in port-path and path-port links, input or output are not ports but paths that have to be opened for read or write in a separate thread or process.
+            * in port-path and path-port links, input or output are not ports but procedures that return the path that has to be opened for read or write in a separate thread or process.
               it blocks until the next procedure has opened the other end. this is typical behaviour of named pipes and there does not seem to be any applicable way around it
             * intermediate ports must be closed after read/write finished
             * intermediate paths should be deleted after read/write finished. otherwise they accumulate in the systems temporary directory
