@@ -132,6 +132,28 @@
             (let (result (proc in a))
               (if result (pair result (loop a #f (first rest) (tail rest))) (list))))))))
 
+  (define (named-pipe-ports)
+    "-> (port:input . port:output)
+    \"port-filename\" can be used to get the path"
+    ;open reader before writer. there does not seem to be a way to do it at the same time or the other way round, even with O_RDWR
+    (let* ((path (named-pipe)) (in (open path (logior O_RDONLY O_NONBLOCK))))
+      (pair in (open path O_WRONLY))))
+
+  (define (call-with-named-pipe-ports count proc)
+    "integer procedure:{[in out] ... -> any} -> any
+    call proc with count number of input and output ports of named pipes.
+    ports are automatically closed and their filesystem entries deleted unless already closed by proc"
+    (let
+      (pipes
+        (fold-integers count (list)
+          (l (a r) (let (ports (named-pipe-ports)) (pairs (first ports) (tail ports) r)))))
+      (begin-first (apply proc pipes)
+        (each
+          (l (a)
+            (if (not (port-closed? a))
+              (let (path (port-filename a)) (close-port a) (delete-file a))))
+          pipes))))
+
   (define (file->string path/file)
     "string/file -> string
     open or use an opened file, read until end-of-file is reached and return a string of file contents"

@@ -116,8 +116,9 @@
                             (any->list
                               (if (procedure? b) (b (and (string? in) in) (and (string? out) out))
                                 b)))
-                          ; if in or out are procedures for named pipe ports, opening blocks until the other end is connected.
-                          ; but blocking this thread prevents the process from being created.
+                          (if (procedure? out)
+
+                            )
                           (begin-first
                             (process-create (first executable-and-arguments)
                               (tail executable-and-arguments) (and (port? in) in)
