@@ -31,14 +31,14 @@
 
   (define* (rw-file-indirect->file read write path-1 #:optional (path-2 path-1))
     "like rw-port->file but takes a path for reading from an input file"
-    (temporary-file-port->file (l (port-output) (rw-file->port read write path-1 port-output))
+    (temp-file-port->file (l (port-output) (rw-file->port read write path-1 port-output))
       path-2))
 
   (define (rw-port-indirect->file read write port path)
     "like rw-port->file but uses a temporary file to buffer all written data before it is written to the target path.
     use case: read from a file for processing and write to the same file.
     also known as: late-write"
-    (temporary-file-port->file (l (port-output) (rw-port->port read write port port-output)) path))
+    (temp-file-port->file (l (port-output) (rw-port->port read write port port-output)) path))
 
   (define (rw-port->list read port)
     (let loop ((e (read port))) (if (eof-object? e) (list) (pair e (loop (read port))))))
