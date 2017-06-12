@@ -6,13 +6,14 @@
     sph-exception-description)
   (import
     (rnrs exceptions)
+    (only (sph one) begin-first)
     (sph)))
 
 (define sph-exception-description "rnrs exception helpers. experimental")
 
 (define-syntax-rule (exception-intercept on-exception expression)
   ; evaluate "on-exception" if an exception occurred in expression
-  (with-exception-handler (l (a) on-exception (raise a)) (nullary expression)))
+  (guard (a (#t on-exception (raise a))) expression))
 
 (define-syntax-rule (exception-intercept-if expression on-exception no-exception)
   ; evaluate "on-exception" if an exception occurred in expression.
