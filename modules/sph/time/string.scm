@@ -39,10 +39,10 @@
   (define (time-current-iso8601-ymd) (time->iso8601-ymd (time-current)))
 
   (define (time->iso8601-date-and-day-ks-string a)
-    (string-append (time->iso8601-ymd a) ":" (time-elapsed-day-string a 0 0)))
+    (string-append (time->iso8601-ymd a) "_" (time-elapsed-day-string a 0 0)))
 
   (define (time->iso8601-date-and-day-s-string a)
-    (string-append (time->iso8601-ymd a) ":" (time-elapsed-day-string a 0 0)))
+    (string-append (time->iso8601-ymd a) "_" (time-elapsed-day-string a 0 0)))
 
   (define (time-current-iso8601-date-and-day-ks-string)
     (time->iso8601-date-and-day-ks-string (time-current)))
