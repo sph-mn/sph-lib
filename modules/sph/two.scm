@@ -19,6 +19,7 @@
     apply*
     apply-without-arguments
     bash-escape-clear
+    begin-first-values
     bindings-select-prefix
     bindings-select-regexp
     boolean->integer
@@ -122,13 +123,13 @@
     (rnrs bytevectors)
     (rnrs io ports)
     (rnrs sorting)
-    (sph io)
     (sph)
     (sph alist)
     (sph cli)
     (sph conditional)
     (sph filesystem)
     (sph hashtable)
+    (sph io)
     (sph number)
     (sph one)
     (sph process)
@@ -145,6 +146,10 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
+
+  (define-syntax-rule (begin-first-values a b ...)
+    ; like begin but returns the values created by the first expression
+    (apply-values (l result b ... (apply values result)) a))
 
   (define sph-two-description "various bindings deemed less useful than the ones in (sph one)")
 

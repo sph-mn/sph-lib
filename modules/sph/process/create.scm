@@ -1,5 +1,6 @@
 (library (sph process create)
   (export
+    execute-with-pipes
     process-chain
     process-chain->string
     process-chain-finish
@@ -10,14 +11,21 @@
   (import
     (guile)
     (sph)
+    (sph exception)
     (sph io)
     (sph io path-pipe-chain)
     (sph process)
-    (only (sph list) any->list first-or-false)
+    (only (sph alist) list->alist)
+    (only (sph list)
+      any->list
+      compact
+      first-or-false
+      pair-reverse)
     (only (sph one) search-env-path begin-first))
 
   (define sph-process-create-description "create child processes and process chains")
   (load-extension "libguile-sph-lib" "init_sph_lib")
+  (define-syntax-rule (boolean->integer a) (if a 1 0))
 
   (define*
     (process-create executable #:optional (arguments (list)) input-port output-port error-port
@@ -90,6 +98,40 @@
       (l (in out)
         (let (pids (apply process-chain first-input out process-chain-arguments)) (close out)
           (begin-first (port->string in) (process-chain-finish pids))))))
+
+  (define*
+    (execute-with-pipes proc path arguments #:optional input? output? error? #:key search-path?)
+    "procedure:{port ... -> any} string list boolean boolean boolean -> any:proc-result integer:exit-status
+    executes a program and calls proc with pipes to or from the standard streams depending on if input/output/error are true.
+    path is a filesystem path to an executable.
+    example:
+    (execute-with-pipes (l (input error) #t) \"/usr/bin/echo\" (list \"test\") #t #f #t)"
+    (call-with-pipes
+      (+ (boolean->integer input?) (boolean->integer output?) (boolean->integer error?))
+      (l* pipes
+        (let*
+          ( (ports
+              (let loop
+                ((pipes (list->alist pipes)) (ports (list input? output? error?)) (first? #t))
+                ; ((in . out) ...) (boolean boolean boolean) -> ((child-port . proc-port) ...)
+                (if (null? ports) (list)
+                  (if (first ports)
+                    (pair
+                      (if first?
+                        ; the first of ports is an child-in/proc-out combination
+                        (first pipes) (pair-reverse (first pipes)))
+                      (loop (tail pipes) (tail ports) #f))
+                    (pair (pair #f #f) (loop pipes (tail ports) #f))))))
+            (child-ports (map first ports)) (proc-ports (compact (map tail ports)))
+            (close-ports (nullary (each close-port proc-ports)))
+            (pid
+              (apply process-create path
+                arguments (append child-ports (list #:search-path? search-path?)))))
+          (each close-port (compact child-ports))
+          (if pid
+            (exception-always (close-ports)
+              (let (result (apply proc proc-ports)) (values result (process-finish pid))))
+            (begin (close-ports) (values #f #f)))))))
 
   (define* (process-chain-path-pipe first-input last-output config #:key (search-path? #t))
     "port/string/any port/string/any (#(symbol symbol string/(string:executable string ...)/procedure:{false/string false/string -> string/(string:executable string ...)}) ...) -> (integer:pid ...)

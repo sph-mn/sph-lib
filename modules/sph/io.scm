@@ -91,13 +91,13 @@
 
   (define (call-with-pipes count proc)
     "integer procedure:{[pipe-n-in pipe-n-out] ... -> any} -> any
-    the pipes are closed after proc finished. they can also be closed by proc.
+    the pipes are not automatically closed.
     reading from the input side might block as long as the output side is not yet closed"
     (let
       (pipes
         (fold-integers count (list)
           (l (n result) (let (a (pipe)) (pairs (first a) (tail a) result)))))
-      (begin-first (apply proc pipes) (each (l (a) (if (not (port-closed? a)) (close a))) pipes))))
+      (apply proc pipes)))
 
   (define (call-with-pipe proc) "equivalent to (call-with-pipes 1 proc)" (call-with-pipes 1 proc))
 
@@ -191,8 +191,7 @@
   (define port->bytevector get-bytevector-all)
 
   (define* (port-copy-all a b #:optional (buffer-size 4096))
-    (if (not (eof-object? (port-copy-some a b buffer-size)))
-      (port-copy-all a b buffer-size)))
+    (if (not (eof-object? (port-copy-some a b buffer-size))) (port-copy-all a b buffer-size)))
 
   (define-syntax-rule (table-match-or-update char table)
     ;"character (#(current-index max-index string) ...) -> string:match/list:updated-table"

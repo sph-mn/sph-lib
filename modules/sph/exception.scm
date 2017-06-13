@@ -6,8 +6,8 @@
     sph-exception-description)
   (import
     (rnrs exceptions)
-    (only (sph one) begin-first)
-    (sph)))
+    (sph)
+    (only (sph two) begin-first-values)))
 
 (define sph-exception-description "rnrs exception helpers. experimental")
 
@@ -18,7 +18,7 @@
 (define-syntax-rule (exception-intercept-if expression on-exception no-exception)
   ; evaluate "on-exception" if an exception occurred in expression.
   ; evaluate "no-exception" if no exception occurred and return the result of expression
-  (begin-first (exception-intercept on-exception expression) no-exception))
+  (begin-first-values (exception-intercept on-exception expression) no-exception))
 
 (define-syntax-rule (exception-always always expression)
   ; evaluate nullary "always" after expression even if an exception occurred
