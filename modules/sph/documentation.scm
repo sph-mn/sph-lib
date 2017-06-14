@@ -109,10 +109,12 @@
                     (string-append (replace-underscore (symbol->string rest) state) " ..."))))
               (let
                 (signature-string
-                  (string-join
-                    (filter (l (a) (not (string-null? a)))
-                      (list required-string keyword-string optional-string rest-string))
-                    " "))
+                  (string-append
+                    (string-join
+                      (filter (l (a) (not (string-null? a)))
+                        (list required-string keyword-string optional-string rest-string))
+                      " ")
+                    " ->"))
                 signature-string)))))
       (if (equal? (q syntax) type)
         (let ((r (simple-format #f "~S" arguments)))

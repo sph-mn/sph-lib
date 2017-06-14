@@ -1,10 +1,9 @@
 (library (sph libmagic)
   (export
-    path->mime-type
+    file->mime-type
     sph-libmagic-description
     string->mime-type)
   (import
-    (rnrs base)
     (sph)
     (system foreign)
     (only (guile) dynamic-link dynamic-func)
@@ -14,7 +13,7 @@
     "binding to the libmagic library from the \"file\" utility that guesses file types")
 
   (define libmagic (dynamic-link "libmagic"))
-  ;MAGIC_* values are copied from include/magic.h
+  ; MAGIC_* values are copied from include/magic.h
   (define MAGIC_MIME_TYPE 16)
   (define MAGIC_DEBUG 1)
   (define pointer (q *))
@@ -43,16 +42,15 @@
       (foreign-magic-load magic-handle magic-file-path)
       (let (res (proc magic-handle)) (foreign-magic-close magic-handle) res)))
 
-  (define (path->mime-type . arg) "string:path ... -> (string:mime-type ...)"
+  (define (file->mime-type . a) "string:path ... -> (string:mime-type ...)"
     (call-with-magic-database
-      (l (handle)
-        (map (l (ele) (pointer->string (foreign-magic-file handle (string->pointer ele)))) arg))))
+      (l (handle) (map (l (b) (pointer->string (foreign-magic-file handle (string->pointer b)))) a))))
 
-  (define (string->mime-type . arg) "string:content ... -> (string:mime-type ...)"
+  (define (string->mime-type . a) "string:content ... -> (string:mime-type ...)"
     (call-with-magic-database
       (l (handle)
         (map
-          (l (ele)
+          (l (b)
             (pointer->string
-              (foreign-magic-buffer handle (string->pointer ele) (string-octet-length ele))))
-          arg)))))
+              (foreign-magic-buffer handle (string->pointer b) (string-octet-length b))))
+          a)))))

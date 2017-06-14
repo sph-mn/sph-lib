@@ -14,10 +14,11 @@
   (export
     scgi-default-address
     scgi-handle-requests
-    sph-scgi-description
-    scgi-read-header)
+    scgi-read-header
+    sph-scgi-description)
   (import
     (rnrs base)
+    (rnrs exceptions)
     (rnrs io ports)
     (sph)
     (sph server)
@@ -27,7 +28,9 @@
       set-port-encoding!)
     (only (rnrs io simple) eof-object? read-char))
 
-  (define sph-scgi-description "scgi interface. a server that accepts scgi requests and passes them to a custom procedure")
+  (define sph-scgi-description
+    "scgi interface. a server that accepts scgi requests and passes them to a custom procedure")
+
   (define binary-char-null (char->integer #\nul))
   (define binary-char-colon (char->integer #\:))
 
@@ -36,7 +39,7 @@
     get the length of the header"
     ;reason for an error here can be a connection closed too soon
     (let loop ((octet (get-u8 port)) (octet-buffer (list)))
-      (if (eof-object? octet) (throw (quote scgi-invalid-header))
+      (if (eof-object? octet) (raise (quote scgi-invalid-header))
         (if (eq? binary-char-colon octet) (string->number (list->string (reverse octet-buffer)))
           (loop (get-u8 port) (pair (integer->char octet) octet-buffer))))))
 

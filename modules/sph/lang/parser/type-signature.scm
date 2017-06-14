@@ -88,7 +88,7 @@
       a))
 
   (define (string->parsed-type-signature a) "string -> list/boolean"
-    (type-signature-simplify-tree (peg:tree (match-pattern sig a))))
+    (type-signature-simplify-tree (debug-log (peg:tree (match-pattern sig a)))))
 
   (define* (parsed-type-signature->string a #:optional line-prefix)
     "list [string] -> string
@@ -97,16 +97,18 @@
       (let (line-delimiter (if line-prefix (string-append "\n" line-prefix) "\n"))
         (first
           (tree-map-lists
-            (l (e)
-              (case (first e) ((alternatives) (first (tail e)))
-                ((arguments) (string-join (flatten (tail e)) " "))
-                ((sig-line) (string-join (tail e) " -> "))
-                ((sig-multiline) (string-append "::\n" (string-join (tail e) "\n->\n")))
-                ((sig-multiline-part) (string-join (tail e) "\n"))
-                ((sig-procedure) (string-append "{" (second e) "}"))
-                ((sig) (string-join (flatten (tail e)) line-delimiter))
-                ((repetition-argument) (string-append (second e) " ..."))
-                ((association) (string-join (flatten (tail e)) ":"))
-                ((optional-arguments) (string-append "[" (string-join (flatten (tail e)) " ") "]"))
-                (else e)))
+            (l (a)
+              (case (first a) ((alternatives) (first (tail a)))
+                ((arguments) (string-join (flatten (tail a)) " "))
+                ( (sig-line)
+                  (let (a (tail a))
+                    (if (= 1 (length a)) (string-append (first a) " ->") (string-join a " -> "))))
+                ((sig-multiline) (string-append "::\n" (string-join (tail a) "\n->\n")))
+                ((sig-multiline-part) (string-join (tail a) "\n"))
+                ((sig-procedure) (string-append "{" (second a) "}"))
+                ((sig) (string-join (flatten (tail a)) line-delimiter))
+                ((repetition-argument) (string-append (second a) " ..."))
+                ((association) (string-join (flatten (tail a)) ":"))
+                ((optional-arguments) (string-append "[" (string-join (flatten (tail a)) " ") "]"))
+                (else a)))
             (list a)))))))
