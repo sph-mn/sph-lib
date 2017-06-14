@@ -253,8 +253,8 @@
                 e))
             (list) field-spec)))))
 
-  (define (record-list-find-value record-list value match-field retrieve-field)
+  (define (record-list-find-value record-list value match-accessor retrieve-accessor)
     "list procedure:accessor procedure:accessor -> false/(any ...)
-    gets field \"to\" for records that match value in field \"from\""
-    (let (r (filter-map (l (a) (and (equal? value (from a)) (to a))) record-list))
+    find a record list entry that matches value and match-accessor and return a value using retrieve-accessor"
+    (let (r (filter-map (l (a) (and (equal? value (match-accessor a)) (retrieve-accessor a))) record-list))
       (if (null? r) #f r))))
