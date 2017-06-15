@@ -24,16 +24,11 @@
   (import
     (guile)
     (ice-9 match)
-    (rnrs base)
-    (sph)
-    (sph hashtable)
+    (sph base)
     (sph lang scm-format base)
-    (sph list)
-    (sph string)
-    (sph tree)
-    (only (srfi srfi-1) last))
+    (sph tree))
 
-  ;formatters for expressions
+  (define sph-lang-scm-format-format-description "formatters for individual expressions")
 
   (define (round-even a)
     "number -> integer
@@ -197,7 +192,7 @@
                     (map
                       (l (a)
                         (let*
-                          ( (a (string-replace-string a indent-to-remove ""))
+                          ( (a (string-drop-prefix-if-exists indent-to-remove a))
                             (space-count (string-skip a #\space)))
                           (if (even? space-count) (string-append indent " " a)
                             (string-append indent a))))

@@ -2,9 +2,11 @@
   (export
     ac-compile
     ac-compile->file
+    ac-config-input
+    ac-config-valid?
     ac-input-copy
-    ac-lang-input
     ac-output-copy
+    ac-source-files-updated?
     sph-filesystem-asset-compiler-description)
   (import
     (guile)
@@ -18,9 +20,26 @@
      uses custom load-paths and can automatically create target paths.
      example use case: mix of transcompiled and non-compiled files that are merged and optimised for the web")
 
-  (define-record ac-lang-input name path? processor)
+  (define-record ac-config-input name path? processor)
 
-  (define (create-output-path path-directory format path-file input-spec)
+  (define (config-output->config-input config-output path)
+    (find (l (a) ((ac-config-input-path? a) path)) (tail config-output)))
+
+  (define (config-output->output-processor a mode)
+    "gets the output processor from a config-output configuration"
+    (or (and (list? a) (hashtable-ref (first a) mode)) ac-output-copy))
+
+  (define (source->input-processor config-output processor-config a)
+    (let*
+      ((a (any->list-s a)) (config-input (config-output->config-input config-output (first a))))
+      (if config-input
+        (l (port) ((ac-config-input-processor config-input) processor-config a port))
+        (l (port) (ac-input-copy processor-config a port)))))
+
+  (define (ac-input-copy config sources port) (each (l (a) (file->port a port)) sources))
+  (define (ac-output-copy config sources port) (each (l (a) (a port)) sources))
+
+  (define (ac-destination path-directory format path-file input-spec)
     "string symbol string list -> string
      create a string for an output path relative to \"path-directory\".
      format:
@@ -32,7 +51,7 @@
         (string-append "_" (first (string-split (basename (first input-spec)) #\.))
           "-" (number->string (equal-hash input-spec) 32)))))
 
-  (define (input-files-updated? path-destination paths-input)
+  (define (ac-source-files-updated? path-destination paths-input)
     "string (string ...) -> boolean
      * destination does not exist: true
      * destination path older than any input file: true"
@@ -43,67 +62,64 @@
         (> paths-input-mtime path-destination-mtime))
       #t))
 
-  (define (lang-output->lang-input lang-output path)
-    (find (l (a) ((ac-lang-input-path? a) path)) (tail lang-output)))
-
-  (define (ac-input-copy config sources port) (each (l (a) (file->port a port)) sources))
-  (define (ac-output-copy config sources port) (each (l (a) (a port)) sources))
-
-  (define (source->input-processor lang-output processor-config a)
-    (let* ((a (any->list-s a)) (lang-input (lang-output->lang-input lang-output (first a))))
-      (if lang-input (l (port) ((ac-lang-input-processor lang-input) processor-config a port))
-        (l (port) (ac-input-copy processor-config a port)))))
-
-  (define (lang-output->output-processor a mode)
-    "gets the output processor from a lang-output configuration"
-    (or (and (list? a) (hashtable-ref (first a) mode)) ac-output-copy))
-
-  (define (ac-config-lang-valid? a)
+  (define (ac-config-valid? a)
     "any -> boolean
-     true if input is a valid config-lang object"
+     true if input is a valid config object"
     (and (hashtable? a)
-      (let (keys (vector->list (hashtable-keys a))) (or (null? keys) (every symbol? keys)))))
+      (apply-values
+        (l (keys values)
+          (let (keys (vector->list keys))
+            (or (null? keys)
+              (and (every symbol? keys)
+                (every
+                  (l (a)
+                    (and (list? a) (= 2 (length a)) (hashtable? (first a)) (vector? (second a))))
+                  (vector->list values))))))
+        (hashtable-entries a))))
 
-  (define*
-    (ac-compile config-lang mode port-output output-format input-spec #:optional processor-config)
+  (define* (ac-compile config mode output-port output-format sources #:optional processor-config)
     "hashtable symbol port symbol (string ...) (string/list ...) ->
-     compile to port. mode is for example development or production.
+     maps all sources via input processors to a list and passes it to an output processor that writes to output-port.
+     \"mode\" is for example development or production.
      data structures:
-     * config-lang: hashtable:{format-name -> (hashtable:{mode -> processor} vector:ac-lang-input ...)}
-     * ac-lang-input: vector:(symbol:name procedure:{string:path -> boolean} procedure:processor)
-     * mode: symbol/key-in-output-format-processors
-     * processor: procedure:{string/list:sources port ->}
-     * input-spec: (string/input-spec:processor-dependent ...)
-     example config-lang:
-       (define client-ac-config
-     (symbol-hashtable
-       javascript
-       (list
-     (symbol-hashtable production javascript-output-compress development javascript-output-format)
-     (record ac-lang-input (q sescript) (has-suffix-proc \".sjs\") s-template-sescript->javascript))
-       html
-       (list (symbol-hashtable)
-     (record ac-lang-input \"sxml\" (has-suffix-proc \".sxml\") s-template-sxml->html))))"
-    (let (lang-output (hashtable-ref config-lang output-format))
-      ( (lang-output->output-processor lang-output mode) processor-config
-        (map (l (a) (source->input-processor lang-output processor-config a)) input-spec) port-output)))
+     * config: hashtable:{format-name -> }
+     * config-format: (hashtable:config-output vector:config-input ...)
+     * config-output: hashtable:{mode -> processor}
+     * config-input: vector:(symbol:name procedure:{string:path -> boolean} procedure:processor)
+     * mode: symbol
+     * processor: procedure:{string/(string ...):sources port:port-output ->}
+     * sources: (any:processor-dependent ...)
+     example config:
+     (define client-ac-config
+       (symbol-hashtable
+         javascript
+         (list
+           (symbol-hashtable production javascript-output-compress development javascript-output-format)
+           (record ac-config-input (q sescript) (has-suffix-proc \".sjs\") s-template-sescript->javascript))
+         html
+         (list
+           (symbol-hashtable)
+           (record ac-config-input \"sxml\" (has-suffix-proc \".sxml\") s-template-sxml->html))))"
+    (let (config-format (hashtable-ref config output-format))
+      ( (config-output->output-processor config-format mode) processor-config
+        (map (l (a) (source->input-processor config-format processor-config a)) sources) output-port)))
 
   (define*
-    (ac-compile->file config-lang mode output-directory output-format input-spec #:key
-      processor-config
+    (ac-compile->file config mode dest-directory output-format sources #:key processor-config
       only-if-newer
-      output-file-name)
-    "-> string:path-destination"
+      dest-file-name)
+    "-> string:path-destination
+     if \"only-if-newer\" is true, checks the modification times of files and only copies if any source is newer than the destination.
+     \"dest-file-name\" sets the destination file name to use instead of an automatically generated one"
     (let*
-      ( (input-spec-flat (flatten input-spec))
-        (path-destination
-          (create-output-path output-directory output-format output-file-name input-spec-flat)))
+      ( (sources-flat (flatten sources))
+        (path-destination (ac-destination dest-directory output-format dest-file-name sources-flat)))
       (if
         (or (not only-if-newer)
-          (and (every string? input-spec-flat)
-            (input-files-updated? path-destination input-spec-flat)))
+          (and (every string? sources-flat)
+            (ac-source-files-updated? path-destination sources-flat)))
         (and (ensure-directory-structure (dirname path-destination))
           (call-with-output-file path-destination
-            (l (port) (ac-compile config-lang mode port output-format input-spec processor-config)))
+            (l (port) (ac-compile config mode port output-format sources processor-config)))
           path-destination)
         path-destination))))

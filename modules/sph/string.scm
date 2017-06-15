@@ -88,8 +88,8 @@
 
   (define (string-slice-at-words a slice-length)
     "string integer -> (string ...)
-    split line into slices/chunks of size slice-length, unless it would split words (subsequent characters without the space character),
-    in which case the word is moved to the next slice. ignores newlines. can be used for single lines. can be used for \"text-wrapping\""
+     split line into slices/chunks of size slice-length, unless it would split words (subsequent characters without the space character),
+     in which case the word is moved to the next slice. ignores newlines. can be used for single lines. can be used for \"text-wrapping\""
     ;splits string at spaces, then uses the parts to build lines while checking if the line length with spaces would exceed slice-length.
     ;if yes, the exceeding part is moved to the next line.
     (let
@@ -110,12 +110,12 @@
 
   (define (string-join-tree a delimiter)
     "(list/string ...) string -> string
-    same as (string-join (flatten a) delimiter)"
+     same as (string-join (flatten a) delimiter)"
     (string-join (map (l (e) (if (list? e) (string-join-tree e delimiter) e)) a) delimiter))
 
   (define (regexp-replace str regexp replacement)
     "string string/regexp string/procedure:{match-structure -> string} -> string
-    replace all occurences of regexp in string with replacement"
+     replace all occurences of regexp in string with replacement"
     (regexp-substitute/global #f regexp str (q pre) replacement (q post)))
 
   (define (string-matches-any-regexp? a regexp-list) "string (regexp-object ...) -> boolean"
@@ -131,42 +131,42 @@
 
   (define (string-camelcase->underscore a)
     "string -> string
-    aA -> a-a
-    aa aAa -> aa a-aa"
+     aA -> a-a
+     aa aAa -> aa a-aa"
     (string-camelcase-replace a
       (l (match) (string-append "_" (string-downcase (match:substring match))))))
 
   (define (string-camelcase->dash a)
     "string -> string
-    aA -> a-a
-    aa aAa -> aa a-aa"
+     aA -> a-a
+     aa aAa -> aa a-aa"
     (string-camelcase-replace a
       (l (match) (string-append "-" (string-downcase (match:substring match))))))
 
   (define (string-downcase-first a)
     "string -> string
-    AA -> aA
-    Aa -> aa"
+     AA -> aA
+     Aa -> aa"
     (if (string-null? a) a
       (let (a (string->list a)) (list->string (pair (char-downcase (first a)) (tail a))))))
 
   (define (any->string a)
     "any -> string
-    generalized string conversion function.
-    get the string representation for the value of an object.
-    symbols like \".\" are converted to \"#{.}\" using display."
+     generalized string conversion function.
+     get the string representation for the value of an object.
+     symbols like \".\" are converted to \"#{.}\" using display."
     (if (string? a) a
       (if (symbol? a) (symbol->string a) (call-with-output-string (l (port) (display a port))))))
 
   (define (string-last-index a)
     "string -> integer
-    get the last possible index of a string"
+     get the last possible index of a string"
     (if (string-null? a) 0 (- (string-length a) 1)))
 
   (define* (list->string-columns a #:key (justify (q left)) (separator "") (max-width 78))
     "(string ...) #:justify symbol:left/right #:separator string #:max-width integer -> string
-    create a string of equally sized columns containing elements of the string list \"a\", separated
-    by #:separator"
+     create a string of equally sized columns containing elements of the string list \"a\", separated
+     by #:separator"
     (string-join
       (map
         (let
@@ -178,20 +178,20 @@
 
   (define* (string-list-append-each a before #:optional after)
     "(string ...) string/boolean-false [string/boolean-false] -> (string ...)
-    append strings before and after respectively to every element of string list a.
-    may return a unmodified"
+     append strings before and after respectively to every element of string list a.
+     may return a unmodified"
     (if before
       (map (if after (l (e) (string-append before e after)) (l (e) (string-append before e))) a)
       (if after (map (l (e) (string-append e after)) a) a)))
 
   (define (parenthesise a)
     "string -> string
-    surround string with an open and a closing parenthesis"
+     surround string with an open and a closing parenthesis"
     (string-append "(" a ")"))
 
   (define (string-ascii->utf8 a)
     "string -> string
-    convert an ascii string that has incorrectly coded utf8 chars to an utf8 string"
+     convert an ascii string that has incorrectly coded utf8 chars to an utf8 string"
     (utf8->string (u8-list->bytevector (map char->integer (string->list a)))))
 
   (define-syntax-case (string-case-condition a a-n)
@@ -206,12 +206,12 @@
 
   (define (string-contains-any? a patterns)
     "string (string ...) -> boolean
-    result in a boolean indicating if string contains any of the patterns"
+     result in a boolean indicating if string contains any of the patterns"
     (any (l (e) (string-contains a e)) patterns))
 
   (define (string-contains-every? a patterns)
     "string (string ...) -> boolean
-    result in a boolean indicating if string contains all of the patterns"
+     result in a boolean indicating if string contains all of the patterns"
     (every (l (e) (string-contains a e)) patterns))
 
   (define string-each string-for-each)
@@ -222,7 +222,7 @@
 
   (define (string-longest-prefix a prefix-list)
     "string (string ...) -> string/boolean
-    result in the element of prefix-list that is the longest prefix from prefix-list in string \"a\""
+     result in the element of prefix-list that is the longest prefix from prefix-list in string \"a\""
     (fold
       (l (e prev)
         (if (string-prefix? e a) (if prev (if (> (string-length e) (string-length prev)) e prev) e)
@@ -234,12 +234,12 @@
 
   (define (string-drop-prefix-if-exists prefix a)
     "string string -> string
-    remove prefix if string has prefix"
+     remove prefix if string has prefix"
     (if (string-prefix? prefix a) (string-drop-prefix prefix a) a))
 
   (define (string-drop-suffix-if-exists suffix a)
     "string string -> string
-    remove suffix if string has suffix"
+     remove suffix if string has suffix"
     (if (string-suffix? suffix a) (string-drop-suffix suffix a) a))
 
   (define (string-lowercase? a) "test if a string contains no uppercase characters"
@@ -249,12 +249,12 @@
 
   (define (string-numeric? a)
     "string -> boolean
-    check if string is a valid scheme representation of a number"
+     check if string is a valid scheme representation of a number"
     (if (string->number a) #t #f))
 
   (define (string-replace-chars a spec)
     "string ((char [replacements] ...) ...) -> string
-    replace chars in string with none, one or multiple chars"
+     replace chars in string with none, one or multiple chars"
     (list->string
       (string-fold-right
         (l (e prev)
@@ -264,7 +264,7 @@
 
   (define (string-compress-space a)
     "string -> string
-    replace multiple subsequent space characters with one space"
+     replace multiple subsequent space characters with one space"
     (regexp-replace a " {2,}" " "))
 
   (define (string-quote a) "string -> string"
@@ -275,7 +275,7 @@
 
   (define* (string-split-regexp str regexp #:optional (handle-delim (q discard)))
     "string string [symbol:discard/concat] -> (string ...)
-    split string into a list of substrings delimited by a regular expression."
+     split string into a list of substrings delimited by a regular expression."
     ;1. all regexp matches are collected
     ;2. substrings between matches are extracted
     (let (matches (list-matches regexp str))
@@ -296,8 +296,8 @@
 
   (define (string-skip-string a skip)
     "string string -> integer
-    skip over string \"skip\" at the beginning of a string and return the first index afterwards,
-    or the first index 0 if skip string is not a prefix"
+     skip over string \"skip\" at the beginning of a string and return the first index afterwards,
+     or the first index 0 if skip string is not a prefix"
     (let (skip-length (string-length skip))
       (let loop ((r #f) (prev (string-contains a skip)))
         (if (and prev (or (not r) (= (- prev skip-length) r)))
@@ -306,19 +306,19 @@
 
   (define (string-trim-string a trim)
     "string string -> string
-    remove all occurences of string \"trim\" from the beginning of a string.
-    like string-trim but with a trim-string instead of a character"
+     remove all occurences of string \"trim\" from the beginning of a string.
+     like string-trim but with a trim-string instead of a character"
     (let (skip-index (string-skip-string a trim))
       (if skip-index (string-drop a (if (= 0 skip-index) skip-index (- skip-index 1))) a)))
 
   (define (string-octet-length a)
     "string -> integer
-    the number of bytes of string, regardless of the character encoding, without terminator like \"null\""
+     the number of bytes of string, regardless of the character encoding, without terminator like \"null\""
     (* (string-bytes-per-char a) (string-length a)))
 
   (define (string-indices a search-string)
     "string string -> (integer ...)
-    result in a list of indices at which search-string occurs in a string"
+     result in a list of indices at which search-string occurs in a string"
     (let ((search-string-length (string-length search-string)) (a-length (string-length a)))
       (let loop ((index (string-contains a search-string)))
         (if index
@@ -329,7 +329,7 @@
 
   (define (string-indices-char a search-char)
     "string char -> (integer ...)
-    create a list of indices at which search-char occurs in a string"
+     create a list of indices at which search-char occurs in a string"
     (let (a-length (string-length a))
       (let loop ((index 0))
         (if (< index a-length)
@@ -339,8 +339,8 @@
 
   (define (string-replace-string a replace replacement)
     "string string string -> string
-    replace all occurences of string \"replace\" inside string \"a\" with string \"replacement\".
-    tests with guile 2.06 have shown it to be 22x faster than regexp-substitute/global"
+     replace all occurences of string \"replace\" inside string \"a\" with string \"replacement\".
+     tests with guile 2.06 have shown it to be 22x faster than regexp-substitute/global"
     ;; this procedure is quite nice to debug - comment out one or all string-copy! applications,
     ;; and the result string will be a partial result.
     ;get match positions
@@ -369,7 +369,7 @@
 
   (define (string-replace-char a char replacement)
     "string character character -> string
-    replace all occurences of \"char\" in a string"
+     replace all occurences of \"char\" in a string"
     (string-map (l (e) (if (eqv? e char) replacement e)) a))
 
   (define (string-drop-suffix suffix a) "string string -> string"
@@ -377,7 +377,7 @@
 
   (define (symbol?->string a)
     "any -> any
-    converts \"a\" to string only if it is a symbol, otherwise results in \"a\""
+     converts \"a\" to string only if it is a symbol, otherwise results in \"a\""
     (if (symbol? a) (symbol->string a) a))
 
   (define (string-fill-right a target-length character)
@@ -386,17 +386,17 @@
 
   (define (string-fill-left a target-length character)
     "string character integer -> string
-    prepend character to the given string until the string length equals target-length.
-    examples
-        (string-fill-left \"1\" #\0 2) -> \"01\"
-        (string-fill-left \"10\" #\0 2) -> \"10\"
-    string-fill-left-zeros"
+     prepend character to the given string until the string length equals target-length.
+     examples
+         (string-fill-left \"1\" #\0 2) -> \"01\"
+         (string-fill-left \"10\" #\0 2) -> \"10\"
+     string-fill-left-zeros"
     (let (count (- target-length (string-length a)))
       (if (> count 0) (string-append (list->string (make-list count character)) a) a)))
 
   (define (regexp-match-replace a replacements)
     "string ((regexp . string:replacement)/(regexp string:search-string . string:replacement) ...) -> string
-    replace strings inside string portions matched by regular expressions"
+     replace strings inside string portions matched by regular expressions"
     (fold
       (l (e r)
         (fold-matches (first e) r

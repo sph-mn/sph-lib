@@ -11,6 +11,7 @@
     file->file
     file->port
     file->string
+    files->port
     named-pipe
     named-pipe-chain
     pipe-chain
@@ -48,12 +49,12 @@
 
   (define (string->file a path)
     "string string -> unspecified
-    write string into file at path, overwriting the file"
+     write string into file at path, overwriting the file"
     (call-with-output-file path (l (b) (display a b))))
 
   (define (each-u8 proc port)
     "procedure:{integer -> any} port -> unspecified
-    call proc with each eight bit integer read from port until end-of-file is reached."
+     call proc with each eight bit integer read from port until end-of-file is reached."
     (let next ((octet (get-u8 port)))
       (if (eof-object? octet) #t (begin (proc octet) (next (get-u8 port))))))
 
@@ -62,8 +63,8 @@
       (output-binary? #t)
       (append? #f))
     "string string procedure:{port port -> any} [#:input-binary boolean #:output-binary? boolean] -> any
-    open path-input for reading and path-output for writing and copy all contents of the input file or call proc with the ports.
-    the ports are closed when proc returns"
+     open path-input for reading and path-output for writing and copy all contents of the input file or call proc with the ports.
+     the ports are closed when proc returns"
     (let
       ( (in (open-file path-output "r"))
         (out
@@ -71,28 +72,31 @@
             (if append? (if output-binary? "ab" "a") (if output-binary? "wb" "w")))))
       (begin-first (proc in out) (close-port out) (close-port in))))
 
+  (define (files->port paths output) "(string ...) port ->"
+    (each (l (a) (file->port a output)) paths))
+
   (define (call-with-input-files proc . paths)
     (let (files (map (l (a) (open-file a "r")) paths))
       (begin-first (apply proc files) (each close-port files))))
 
   (define* (temp-file-port #:optional (path "/tmp") (name-part "."))
     "[string] [string:infix] -> port
-    create a new unique file in the file system and return a new buffered port for reading and writing to the file"
+     create a new unique file in the file system and return a new buffered port for reading and writing to the file"
     (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
 
   (define* (call-with-temp-file proc #:optional (path "/tmp") (name-part "."))
     "procedure:{port -> any} -> any
-    call proc with an output port to a temporary file.
-    the file is deleted after proc returns or the current process exits.
-    result is the result of calling proc"
+     call proc with an output port to a temporary file.
+     the file is deleted after proc returns or the current process exits.
+     result is the result of calling proc"
     (let (port (temp-file-port))
       (let ((result (proc port)) (path (port-filename port))) (close-port port)
         (delete-file path) result)))
 
   (define (call-with-pipes count proc)
     "integer procedure:{[pipe-n-in pipe-n-out] ... -> any} -> any
-    the pipes are not automatically closed.
-    reading from the input side might block as long as the output side is not yet closed"
+     the pipes are not automatically closed.
+     reading from the input side might block as long as the output side is not yet closed"
     (let
       (pipes
         (fold-integers count (list)
@@ -103,15 +107,15 @@
 
   (define* (named-pipe #:optional path (permissions 438))
     "[string integer] -> string:path
-    create a named pipe (fifo).
-    named pipes persist in the filesystem"
+     create a named pipe (fifo).
+     named pipes persist in the filesystem"
     (let (path (or path (tmpnam))) (mknod path (q fifo) permissions 0) path))
 
   (define (pipe-chain first-input last-output . proc)
     "port/true port/true procedure:{pipe-input pipe-output -> false/any} ... -> (procedure-result ...)
-    create a pipe for each procedure output and the next procedure input and call procedures with the respective input/output-ports.
-    if any result is false then stop and return results up to that point.
-    the pipe endpoints are not automatically closed to allow the use of threads in procedures"
+     create a pipe for each procedure output and the next procedure input and call procedures with the respective input/output-ports.
+     if any result is false then stop and return results up to that point.
+     the pipe endpoints are not automatically closed to allow the use of threads in procedures"
     (if (null? proc) proc
       (let loop ((in first-input) (out #f) (proc (first proc)) (rest (tail proc)))
         (if (null? rest) (list (proc in last-output))
@@ -121,10 +125,10 @@
 
   (define (named-pipe-chain first-input last-output . proc)
     "port/true port/true procedure:{pipe-input pipe-output -> false/any} ... -> (procedure-result ...)
-    creates a named pipe shared between a procedure output and the next procedure input.
-    procedure results are saved in a list which is returned unless a result is false
-    in which case it stops and results up to that point are returned.
-    the named pipes persist in the file system and are not automatically deleted"
+     creates a named pipe shared between a procedure output and the next procedure input.
+     procedure results are saved in a list which is returned unless a result is false
+     in which case it stops and results up to that point are returned.
+     the named pipes persist in the file system and are not automatically deleted"
     (if (null? proc) proc
       (let loop ((in first-input) (out #f) (proc (first proc)) (rest (tail proc)))
         (if (null? rest) (list (proc in last-output))
@@ -134,15 +138,15 @@
 
   (define (named-pipe-ports)
     "-> (port:input . port:output)
-    \"port-filename\" can be used to get the path"
+     \"port-filename\" can be used to get the path"
     ;open reader before writer. there does not seem to be a way to do it at the same time or the other way round, even with O_RDWR
     (let* ((path (named-pipe)) (in (open path (logior O_RDONLY O_NONBLOCK))))
       (pair in (open path O_WRONLY))))
 
   (define (call-with-named-pipe-ports count proc)
     "integer procedure:{[in out] ... -> any} -> any
-    call proc with count number of input and output ports of named pipes.
-    ports are automatically closed and their filesystem entries deleted unless already closed by proc"
+     call proc with count number of input and output ports of named pipes.
+     ports are automatically closed and their filesystem entries deleted unless already closed by proc"
     (let
       (pipes
         (fold-integers count (list)
@@ -156,12 +160,12 @@
 
   (define (file->string path/file)
     "string/file -> string
-    open or use an opened file, read until end-of-file is reached and return a string of file contents"
+     open or use an opened file, read until end-of-file is reached and return a string of file contents"
     (if (string? path/file) (call-with-input-file path/file port->string) (port->string path/file)))
 
   (define (file->bytevector path\file)
     "string -> bytevector
-    open or use an opened file, read until end-of-file is reached and return a bytevector of file contents"
+     open or use an opened file, read until end-of-file is reached and return a bytevector of file contents"
     (call-with-input-file path\file port->bytevector #:binary #t))
 
   (define (bytevector->file a path)
@@ -173,17 +177,17 @@
 
   (define (port->file a path)
     "port string ->
-    read all available data from port and write it to a file specified by path"
+     read all available data from port and write it to a file specified by path"
     (call-with-output-file path (l (port) (port-copy-all a port))))
 
   (define (file->port path port)
     "string port ->
-    copy all content of file at path to port"
+     copy all content of file at path to port"
     (call-with-input-file path (l (file) (port-copy-all file port))))
 
   (define (port-copy-some port port-2 count)
     "port port integer ->
-    copy \"count\" number of bytes from \"port\" to \"port-2\""
+     copy \"count\" number of bytes from \"port\" to \"port-2\""
     (rw-port->port (l (port) (let (r (get-bytevector-n port 512)) (or r (eof-object))))
       (l (data port) (put-bytevector port data)) port port-2))
 
@@ -205,7 +209,7 @@
 
   (define (read-until-string-proc . strings)
     "string ... -> procedure:{port -> (string:before-string . matched-string)}
-    returns a procedure that reads from a port until one of the given strings has been found"
+     returns a procedure that reads from a port until one of the given strings has been found"
     (let (table-init (map (l (e) (vector 0 (- (string-length e) 1) e)) strings))
       (l (port)
         "port (string ...) -> (string:before-string . matched-string)
@@ -225,7 +229,7 @@
 
   (define* (file->datums path #:optional (port->datum read))
     "string procedure:reader -> list
-    read all scheme datums of a file specified by path"
+     read all scheme datums of a file specified by path"
     (call-with-input-file path
       (l (port)
         (let loop ((e (port->datum port)))
@@ -240,14 +244,14 @@
 
   (define* (port-lines-fold proc init #:optional (port (current-input-port)))
     "procedure:{string:line any} any [port] -> any
-    fold over lines read from port"
+     fold over lines read from port"
     (let loop ((line (read-line port)) (r init))
       (if (eof-object? line) r (loop (read-line port) (proc line r)))))
 
   (define* (port-lines-map proc #:optional (port (current-input-port)))
     "procedure:{string:line -> any} [port] -> list
-    map each line of port to a list.
-    port is the current input port by default"
+     map each line of port to a list.
+     port is the current input port by default"
     (reverse (port-lines-fold (l (a b) (pair (proc a) b)) (list) port)))
 
   (define*
@@ -256,12 +260,12 @@
       #:key
       (handle-delim (q concat)))
     "procedure [port port symbol:concat/trim/peek/split] ->
-    map lines from port to port. the trailing newline is included by default but this behaviour can be set like for read-line.
-    the default ports are the current input and output ports"
+     map lines from port to port. the trailing newline is included by default but this behaviour can be set like for read-line.
+     the default ports are the current input and output ports"
     (rw-port->port (l (port) (read-line port handle-delim)) (l (e port) (display (proc e) port))
       port-input port-output))
 
   (define (port->lines a)
     "port -> (string ...)
-    read all lines from port and return them as strings in a list"
+     read all lines from port and return them as strings in a list"
     (let loop ((line (get-line a))) (if (eof-object? line) (list) (pair line (loop (get-line a)))))))
