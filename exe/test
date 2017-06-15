@@ -8,8 +8,7 @@
     (list (q (test module sph process create)))))
 
 (define settings
-  (test-settings-default-custom
-    ;only (q ((test module sph io path-pipe-chain)))
+  (test-settings-default-custom only (q ((test module sph filesystem asset-compiler)))
     exclude exclusions path-search "modules" reporter-name (q compact)))
 
 (test-execute-modules-by-prefix #:settings settings (q (test module sph)))
