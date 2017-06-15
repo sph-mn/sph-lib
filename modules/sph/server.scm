@@ -1,5 +1,3 @@
-; a generic socket-based server that uses a thread-pool for request processing
-
 (library (sph server)
   (export
     server-address-string->protocol-family
@@ -12,8 +10,9 @@
     sph-server-description)
   (import
     (guile)
-    (rnrs base)
+    (ice-9 threads)
     (rnrs bytevectors)
+    (rnrs exceptions)
     (sph)
     (sph thread-pool)
     (only (sph filesystem) ensure-directory-structure)
@@ -22,7 +21,9 @@
 
   (define sph-server-description
     "a generic socket based server
-    uses a thread-pool for parallel request processing and can use as many cpu cores as there are available. the thread-pool pattern is not a bad design")
+     uses a thread-pool for parallel request processing and can use as many cpu cores as there are available. the thread-pool pattern is not a bad design.
+     basic use case: starting the server makes it listen on an existing or newly created socket. if there is a connection,
+     a custom user procedure is called with the connection object and a port to receive and send data")
 
   (define server-listen-queue-length 1024)
   (define server-send-buffer-size 8096)
@@ -38,11 +39,11 @@
     (server-create-bound-socket address #:optional (port-number 6500) (type SOCK_STREAM)
       (protocol 0))
     "string [integer integer integer] -> socket
-    create a socket, bind, and result in the socket object.
-    defaults:
-    - if address is a path starting with \"/\" then a local unix socket is created (no port necessary)
-    - if address contains \":\" then an ip6 tcp socket is created
-    - else an ip4 tcp socket is created"
+     create a socket, bind, and result in the socket object.
+     defaults:
+     - if address is a path starting with \"/\" then a local unix socket is created (no port necessary)
+     - if address contains \":\" then an ip6 tcp socket is created
+     - else an ip4 tcp socket is created"
     (let (protocol-family (server-address-string->protocol-family address))
       (let
         ( (r (socket protocol-family type protocol))
@@ -60,25 +61,31 @@
 
   (define (call-with-signal-handling s proc)
     "socket procedure -> any
-    setup sigint and sigterm signals for stopping the listening, and reset to original handlers on any kind of exit"
+     setup sigint and sigterm signals for stopping the listening, and reset to original handlers on any kind of exit"
     (let
       ((signal-numbers (list SIGPIPE SIGINT SIGTERM)) (handlers #f) (stop (l (n) (close-port s))))
-      (dynamic-wind (nullary (set! handlers (map sigaction signal-numbers (list SIG_IGN stop stop))))
-        proc
+      (dynamic-wind
+        (nullary (set! handlers (map sigaction signal-numbers (list SIG_IGN stop stop)))) proc
         (nullary
           (map (l (n handler) (sigaction n (first handler) (tail handler))) signal-numbers handlers)))))
 
   (define (call-with-exception-handling exception-keys exception-handler loop-listen socket proc)
     "boolean/(symbol ...) false/procedure:{key procedure:resume exception-arguments ... -> any} procedure:resume procedure -> any
-    if exception-handler or -keys is not false then install given these handlers for the inner request processing.
-    the exception-handler receives a procedure to resume listening"
+     if exception-handler or -keys is not false then install given these handlers for the inner request processing.
+     the exception-handler receives a procedure to resume listening"
     (if (and exception-handler exception-keys)
-      (catch exception-keys proc (l (key . a) (apply exception-handler key loop-listen socket a)))
+      (guard
+        (obj
+          ( (or (boolean? exception-keys) (and (symbol? obj) (contains? exception-keys obj))
+              (and (list? obj) (not (null? obj))
+                (symbol? (first obj)) (contains? exception-keys (first obj))))
+            (apply exception-handler obj loop-listen socket)))
+        (proc))
       (proc)))
 
   (define (call-with-epipe-and-ebadf-handling loop-listen proc)
     "procedure:continue-listening procedure:nullary -> any
-    handle broken pipe errors and the accept error when the socket is closed"
+     handle broken pipe errors and the accept error when the socket is closed"
     (catch (q system-error) proc
       (l exc
         (let (errno (system-error-errno exc))
@@ -97,7 +104,7 @@
               (call-with-epipe-and-ebadf-handling loop-listen
                 (nullary
                   (let loop-process (connection-identifier (first (accept socket)))
-                    (setvbuf connection-identifier _IONBF 0) body
+                    (setvbuf connection-identifier (q none) 0) body
                     ... (loop-process (first (accept socket))))))))))))
 
   (define (thread-pool-handle-sigpipe exception-handler exception-keys)
@@ -111,10 +118,10 @@
 
   (define* (server-listen proc socket #:optional worker-count exception-handler exception-keys)
     "procedure:{port ->} socket procedure:{resume key a ... ->} symbol/(symbol ...)/boolean-true ->
-    worker-count is the number of separate processing threads. 1 means no separate threads and single-thread operation.
-    the default is equal to the current processor count or 1 if less than 3 processors are available.
-    with only 2 processors (cores) the overhead of using multiple workers could likely diminish performance (it did so in tests).
-    the default exception handler catches all exceptions and resumes"
+     worker-count is the number of separate processing threads. 1 means no separate threads and single-thread operation.
+     the default is equal to the current processor count or 1 if less than 3 processors are available.
+     with only 2 processors (cores) the overhead of using multiple workers could likely diminish performance (it did so in tests).
+     the default exception handler catches all exceptions and resumes"
     (listen socket server-listen-queue-length)
     (let (cpu-count (current-processor-count))
       (if (if worker-count (= 1 worker-count) (< cpu-count 3))
