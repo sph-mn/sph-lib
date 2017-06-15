@@ -37,7 +37,7 @@
 
   (define (round-even a)
     "number -> integer
-    floor to the nearest even integer"
+     floor to the nearest even integer"
     (let (a (inexact->exact (round a))) (+ a (modulo a 2))))
 
   (define (add-multiple-leading-parenthesis-spacing config lines) "( (content ..."
@@ -145,7 +145,7 @@
 
   (define (consecutive-parentheses-indentation a indent-string)
     "string string -> string
-    offsets leading parentheses on one line by the level of idendation. example: ( ("
+     offsets leading parentheses on one line by the level of idendation. example: ( ("
     (let (index (string-skip a #\())
       (if (and index (> index 1))
         (string-append
@@ -156,7 +156,7 @@
 
   (define (format-application a config current-indent)
     "list hashtable integer -> string
-    format the standard list application form. example (append a b)"
+     format the standard list application form. example (append a b)"
     (let*
       ((indent (create-indent config current-indent)) (line-spacing (string-append "\n" indent)))
       (apply
@@ -174,29 +174,38 @@
 
   (define (format-docstring a config current-indent)
     "string hashtable integer -> string
-    parse a string and separate syntax required indent from custom string indent and add current indent"
+     parses a string and removes outside string indent from using newlines in a continuous string that is indented.
+     adds current indent to all lines except the first.
+     since old-indent is not available here, old-indent is guessed from the second line.
+     if the second line is indented relative to the first line, this indent will unfortunately be removed for all lines"
     (let*
-      ( (indent-string (hashtable-ref config (q indent-string)))
+      ( (a (string-trim-both a)) (indent-string (hashtable-ref config (q indent-string)))
         (indent (string-multiply indent-string current-indent))
-        (lines
-          (map
-            (l (e)
-              (pair
-                (let (skip-index (string-skip-string e indent-string))
-                  (if skip-index (round-even (/ skip-index (string-length indent-string)))
-                    current-indent))
-                (string-trim-string e indent-string)))
-            (string-split a #\newline)))
-        (min-indent (if (null? (tail lines)) 0 (apply min (map first (tail lines)))))
-        ;remove syntax indent
-        (lines
-          (pair (tail (first lines))
-            (map
-              (l (e)
-                (string-append indent (string-multiply indent-string (- (first e) min-indent))
-                  (tail e)))
-              (tail lines)))))
-      (format-string (string-join lines "\n"))))
+        (second-line-index (string-index a #\newline)))
+      (format-string
+        (if second-line-index
+          (let*
+            ( (indent-to-remove
+                (substring a (+ 1 second-line-index)
+                  (+ second-line-index
+                    (string-skip-string (substring a (+ 1 second-line-index)) indent-string)))))
+            (if (hashtable-ref config (q docstring-offset-doublequote))
+              (let (lines (string-split a #\newline))
+                ; add one extra space to offset the initial doublequote
+                (string-append (first lines) "\n"
+                  (string-join
+                    (map
+                      (l (a)
+                        (let*
+                          ( (a (string-replace-string a indent-to-remove ""))
+                            (space-count (string-skip a #\space)))
+                          (if (even? space-count) (string-append indent " " a)
+                            (string-append indent a))))
+                      (tail lines))
+                    "\n")))
+              (string-replace-string a (string-append "\n" indent-to-remove)
+                (string-append "\n" indent))))
+          a))))
 
   (define (format-hash-bang a recurse config current-indent)
     (list (string-append "#!" (first (tail a)) "\n!#") #f))

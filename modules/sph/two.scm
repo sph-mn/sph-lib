@@ -594,7 +594,7 @@
   (define (list-symbols->string a)
     "list -> list
     convert symbols in list to string"
-    (map (l (e) (if (symbol? e) (symbol->string e) e)) a))
+    (map (l (a) (if (symbol? a) (symbol->string a) a)) a))
 
   (define (listener-on-port-local? port-number)
     "integer -> boolean

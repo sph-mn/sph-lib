@@ -90,7 +90,7 @@
   (define (process-chain-finish-success? process-chain-result)
     "false/(integer:pid ...) -> boolean
     wait for the termination of the processes and check if its exit status is 0"
-    (and process-chain-result (every process-finish-success? process-chain-result)))
+    (and (not (null? process-chain-result)) (every process-finish-success? process-chain-result)))
 
   (define (process-chain->string first-input . process-chain-arguments)
     "false/port any ... -> string"

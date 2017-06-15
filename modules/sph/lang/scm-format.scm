@@ -40,6 +40,7 @@
       max-exprs-per-line-middle 2
       max-exprs-per-line-end (inf)
       use-read-syntax-quote #f
+      docstring-offset-doublequote #t
       multiple-leading-parenthesis-spacing #t
       toplevel-vertical-spacing 1 toplevel-vertical-spacing-oneline 0)
     transform
