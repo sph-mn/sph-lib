@@ -180,15 +180,17 @@
       (format-string
         (if second-line-index
           (let*
-            ( (indent-to-remove
-                (substring a (+ 1 second-line-index)
-                  (+ second-line-index
-                    (string-skip-string (substring a (+ 1 second-line-index)) indent-string)))))
+            ( (indent-length
+                (or (string-skip-string (substring a (+ 1 second-line-index)) indent-string) 0))
+              (indent-end-index (+ second-line-index indent-length))
+              (indent-to-remove
+                (if (= second-line-index indent-end-index) ""
+                  (substring a (+ 1 second-line-index) indent-end-index))))
             (if (hashtable-ref config (q docstring-offset-doublequote))
               (let (lines (string-split a #\newline))
                 ; add one extra space to offset the initial doublequote
-                (string-append (first lines) "\n"
-                  (string-join
+                (string-join
+                  (pair (first lines)
                     (map
                       (l (a)
                         (let*
@@ -196,8 +198,8 @@
                             (space-count (string-skip a #\space)))
                           (if (even? space-count) (string-append indent " " a)
                             (string-append indent a))))
-                      (tail lines))
-                    "\n")))
+                      (tail lines)))
+                  "\n"))
               (string-replace-string a (string-append "\n" indent-to-remove)
                 (string-append "\n" indent))))
           a))))
