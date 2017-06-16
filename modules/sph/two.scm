@@ -95,7 +95,6 @@
     sort-symbol-lists
     sph-two-description
     srfi-19-date->seconds
-    string->datum
     string-remove-leading-zeros
     sxml->xml-string
     system-cat-merge-files
@@ -160,7 +159,7 @@
 
   (define (sort-symbol-lists a)
     "((symbol ...) ...) -> list
-    sort-module-names"
+     sort-module-names"
     (let (b (map (l (a) (pair (apply string-append (map symbol->string a)) a)) a))
       (map tail (list-sort (l (a b) (string<? (first a) (first b))) b))))
 
@@ -168,8 +167,8 @@
 
   (define (guile-exception->string key . a)
     "symbol any ... -> string
-    create a space separated string from exception key and arguments.
-    uses \"any->string\" with the format of \"display\" to convert non-string arguments"
+     create a space separated string from exception key and arguments.
+     uses \"any->string\" with the format of \"display\" to convert non-string arguments"
     (string-join (map any->string a) " "))
 
   (define (list->values a) (apply values a))
@@ -177,7 +176,7 @@
 
   (define (call proc . a)
     "procedure any ... -> any
-    apply procedure \"proc\" with arguments \"a\""
+     apply procedure \"proc\" with arguments \"a\""
     (apply proc a))
 
   (define-syntax-rules define-multiple
@@ -204,7 +203,7 @@
 
   (define* (integer->integer-string a #:optional (radix 10))
     "integer -> string
-    return integer as a string without a radix point or fractional value."
+     return integer as a string without a radix point or fractional value."
     (number->string (inexact->exact a) radix))
 
   (define (apply-without-arguments procedure) (procedure))
@@ -214,9 +213,6 @@
     "automatically converts strings at the prefix position to regular expressions"
     (map (l (e) (pair (if (string? (first e)) (make-regexp (first e)) (first e)) (tail e))) a))
 
-  (define* (string->datum a #:optional (reader read))
-    "get the first scheme expression from a string" (call-with-input-string a reader))
-
   (define-syntax-rule (if-guile-exception expr consequent)
     ;example: (if-guile-exception (throw (q test)) "return this on exception")
     (catch #t (l () expr) (l exc consequent)))
@@ -225,7 +221,7 @@
 
   (define (move-and-link target-path source-path)
     "string ... -> (boolean ...)
-    move source-path to target-path and replace original source-path"
+     move source-path to target-path and replace original source-path"
     (let (target-path (path->full-path target-path))
       (and (ensure-directory-structure target-path)
         (execute+check-result "mv" "-t" target-path source-path)
@@ -237,11 +233,11 @@
     ;see *-any?/every? definitions
     (lambda (a b)
       "any/list any/list -> boolean
-      check if there is either equality or inclusion between the arguments.
-      examples
-      eqv-any? (4 2 6) (3 1 2) -> true
-      eqv-any? (3 1 2) 2 -> true
-      eqv-any? 4 (3 1 2) -> false"
+       check if there is either equality or inclusion between the arguments.
+       examples
+       eqv-any? (4 2 6) (3 1 2) -> true
+       eqv-any? (3 1 2) 2 -> true
+       eqv-any? 4 (3 1 2) -> false"
       (if (list? a) (if (list? b) (list-pred (l (e) (member-pred e b)) a) (member-pred b a))
         (if (list? b) (member-pred a b) (equality-pred a b)))))
 
@@ -260,7 +256,7 @@
 
   (define (define-string name value)
     "string any ->
-    define a variable by using a string for the name"
+     define a variable by using a string for the name"
     (primitive-eval (quasiquote (define (unquote (string->symbol name)) (unquote value)))))
 
   (define (boolean->integer a) (if a 1 0))
@@ -272,13 +268,13 @@
 
   (define (and-p . a)
     "any -> false/any
-    like the \"and\" syntax but as a procedure"
+     like the \"and\" syntax but as a procedure"
     (let loop ((rest a) (previous #t))
       (if (null? rest) previous (if (first rest) (loop (tail rest) (first rest)) #f))))
 
   (define (or-p . a)
     "any -> false/any
-    like the \"or\" syntax but as a procedure"
+     like the \"or\" syntax but as a procedure"
     (any identity a))
 
   (define (create-indent size) (list->string (make-list (* size 2) #\space)))
@@ -286,7 +282,7 @@
 
   (define (any-hashtable-keys->values ht a)
     "r6rs-hashtable any -> any
-    replace the given value or values in a list with values in hashtable for the given value as key"
+     replace the given value or values in a list with values in hashtable for the given value as key"
     (if (list? a) (map (l (b) (any-hashtable-keys->values ht b)) a)
       (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
 
@@ -324,7 +320,7 @@
 
   (define (plaintext->shtml a)
     "string -> list:sxml
-    convert double newlines to paragraphs <p> and single newlines to breaks <br>."
+     convert double newlines to paragraphs <p> and single newlines to breaks <br>."
     (map (l (e) (list (q p) (interleave (string-split e #\newline) (q (br)))))
       (delete "" (string-split-regexp a "\n\n"))))
 
@@ -376,9 +372,9 @@
 
   (define (port-each-line-alternate-direction port proc)
     "port procedure:{line ->}
-    alternates reading direction in lines read from port, with the exempt of lines
-    which do not only contain letters, digits or punctuation, which are passed as is.
-    it accounts for punctuation and parentheses and does not use utf-8 bidi capabilities"
+     alternates reading direction in lines read from port, with the exempt of lines
+     which do not only contain letters, digits or punctuation, which are passed as is.
+     it accounts for punctuation and parentheses and does not use utf-8 bidi capabilities"
     (define-as char-set:line char-set-union
       char-set:letter+digit char-set:whitespace
       char-set:punctuation (char-set #\( #\) #\[ #\] #\{ #\}))
@@ -409,7 +405,7 @@
 
   (define (paths-find-file-size-sum . a)
     "string:path ... -> integer:bits
-    uses the \"find\" and \"file-size-sum\" program to display the sum of bits of the files specified as paths"
+     uses the \"find\" and \"file-size-sum\" program to display the sum of bits of the files specified as paths"
     (if (defined? process-chain)
       (call-with-pipe
         (l (in out) (process-chain #f out ((pair "find" a) (list "file-size-sum")))
@@ -417,7 +413,7 @@
 
   (define (list->string-list a)
     "(any ...) -> (string ...)
-    convert every element of a list to a string using the format display would use"
+     convert every element of a list to a string using the format display would use"
     (map any->string a))
 
   (define-syntax-rules let-if
@@ -462,17 +458,17 @@
 
   (define (bindings-select-prefix prefix bindings-hash)
     "string guile-hashtable -> (symbol ...)
-    return a list of binding names as symbols beginning with prefix"
+     return a list of binding names as symbols beginning with prefix"
     (hash-select (lambda (cur-symbol) (string-prefix? prefix (symbol->string cur-symbol)))
       bindings-hash))
 
   (define (bindings-select-regexp regexp-str bindings-hash)
     "string guile-hashtable -> (symbol ...)
-    return a list of binding names as symbols matching regexp"
+     return a list of binding names as symbols matching regexp"
     (hash-select (l (cur-symbol) (string-match regexp-str (symbol->string cur-symbol)))
       bindings-hash))
 
-  (define* (cons-if-not-included any lis #:optional (contain-proc member)) "add "
+  (define* (cons-if-not-included any lis #:optional (contain-proc member)) "add"
     any " to the beginning of lis if an equal element does not already exist in lis"
     (if (contain-proc any lis) lis (cons any lis)))
 
@@ -483,7 +479,7 @@
 
   (define (copy-with-replaced-directory source-dir target-dir path)
     "! depends on the cp
-    command. replace the source-dir portion in path with target-dir and copy the resulting path."
+     command. replace the source-dir portion in path with target-dir and copy the resulting path."
     (if (string-prefix? source-dir path)
       (let*
         ( (target (substring path (string-length source-dir)))
@@ -519,26 +515,26 @@
 
   (define (port-append-one a b)
     "port port ->
-    append contents of port b to port a"
+     append contents of port b to port a"
     (each-u8 (l (octet) (put-u8 a octet)) b))
 
   (define (port-append target . ports)
     "port ... ->
-    append contents of ports to target"
+     append contents of ports to target"
     (each (l (e) (file-append-one target e)) (tail ports)))
 
   (define (generalised-length a)
     "any -> integer
-    - count of digits for numbers
-    - number of chars for strings
-    - number of elements for lists
-    - false for anything else"
+     - count of digits for numbers
+     - number of chars for strings
+     - number of elements for lists
+     - false for anything else"
     (if (string? a) (string-length a)
       (if (number? a) (string-length (number->string a)) (if (list? a) (length a) #f))))
 
   (define (generalised-less? a b)
     "works for strings with string<, numbers with <, length with lists.
-    if numbers are compared with a string it takes the string representation of the number"
+     if numbers are compared with a string it takes the string representation of the number"
     (cond ((and (string? a) (string? b)) (string< a b)) ((and (number? a) (number? b)) (< a b))
       ((and (string? a) (number? b)) (string< a (number->string b)))
       ((and (number? a) (string? b)) (string< (number->string a) b))
@@ -548,8 +544,8 @@
 
   (define (get-filesystem-root path)
     "string -> string
-    get the path to the root of the filesystem where path is pointing to, relative to the rootfs.
-    currently depends on procfs /proc/mounts"
+     get the path to the root of the filesystem where path is pointing to, relative to the rootfs.
+     currently depends on procfs /proc/mounts"
     (let*
       ( (path (system-realpath path))
         (matches
@@ -566,7 +562,7 @@
 
   (define* (get-mime-extensions #:optional (path "/etc/mime.types"))
     "[string] -> (string ...)
-    get all filename extensions from \"/etc/mime.types\""
+     get all filename extensions from \"/etc/mime.types\""
     (delete-duplicates
       (fold (l (e r) (if (null? e) r (let ((t (tail e))) (append t r)))) (list)
         (read-mime.types path))))
@@ -575,7 +571,7 @@
 
   (define (hash-select proc bindings-hash)
     "procedure guile-hashtable -> list
-    result in a list of bindings satisfying predicate proc"
+     result in a list of bindings satisfying predicate proc"
     (hash-fold (lambda (cur-symbol value r) (if (proc cur-symbol) (cons cur-symbol r) r)) (list)
       bindings-hash))
 
@@ -583,22 +579,22 @@
 
   (define (list->csv-line a)
     "(string ...) -> string
-    converts list to a comma-separated line"
+     converts list to a comma-separated line"
     (string-append (string-join a ",") "\n"))
 
   (define (list->nl-string a)
     "list -> string
-    convert elements of list to a newline separated string"
+     convert elements of list to a newline separated string"
     (string-join a "\n"))
 
   (define (list-symbols->string a)
     "list -> list
-    convert symbols in list to string"
+     convert symbols in list to string"
     (map (l (a) (if (symbol? a) (symbol->string a) a)) a))
 
   (define (listener-on-port-local? port-number)
     "integer -> boolean
-    probably system and linux dependent. checks using /proc/net/tcp if a process is listening on local network port port-number"
+     probably system and linux dependent. checks using /proc/net/tcp if a process is listening on local network port port-number"
     (let ((port-number (number->string port-number 16)))
       (call-with-input-file "/proc/net/tcp"
         (l (p)
@@ -613,36 +609,36 @@
 
   (define (md5sum a)
     "string -> string:md5sum
-    get the md5sum of string by using the \"md5sum\" and \"echo\" program"
+     get the md5sum of string by using the \"md5sum\" and \"echo\" program"
     (string-take (shell-eval->string (string-append "printf " (string-quote a) " |md5sum")) 32))
 
   (define (md5sum-file path)
     "string:path -> string:md5sum
-    get the md5sum of a file by using the \"md5sum\" program"
+     get the md5sum of a file by using the \"md5sum\" program"
     (string-take (shell-eval->string (string-append "md5sum " (string-quote path))) 32))
 
   (define (nl-string->list a)
     "string -> (string ...)
-    split a string at newlines. empty lines are discarded"
+     split a string at newlines. empty lines are discarded"
     (filter (l (e) (not (string-null? e)))
       (map (l (e) (string-trim-both (regexp-replace e "\n" ""))) (string-split a #\newline))))
 
   (define (not-scm-file? file-path)
     "string -> boolean
-    tests if a string has a .scm suffix"
+     tests if a string has a .scm suffix"
     (not (string-suffix? ".scm" file-path)))
 
   (define (system-path->mime-type path)
     "string -> string
-    get the mime-type of a file by using the \"file\" program.
-    see also (sph libmagic) for a more efficient variant"
+     get the mime-type of a file by using the \"file\" program.
+     see also (sph libmagic) for a more efficient variant"
     (string-trim-right
       (shell-eval->string (string-append "file --mime-type -b " (string-quote path)))))
 
   (define (prog-sync-with-root source-root target-root on-error)
     "string string procedure:{-> any}
-    take the first string from program-arguments and use it with copy-with-replaced-directory.
-    all exceptions are catched and on-error installed as a handler"
+     take the first string from program-arguments and use it with copy-with-replaced-directory.
+     all exceptions are catched and on-error installed as a handler"
     (let ((config.exec (command-line)))
       (if (null? (tail config.exec)) (begin (simple-format #t "not enough arguments\n") (exit)))
       (catch #t
@@ -654,7 +650,7 @@
 
   (define (read-mime.types path)
     "string -> list:((string:type-name string:extension ...) ...)
-    read a mime.types file into a list. path is for example /etc/mime.types"
+     read a mime.types file into a list. path is for example /etc/mime.types"
     (call-with-input-file path
       (l (file)
         (port-lines-fold
@@ -677,9 +673,9 @@
 
   (define* (system-cat-merge-files include-list target-path #:optional (buffer-size 2000000))
     "(string:source-path ...) string:target-path integer -> string:target-path
-    list string -> string
-    take a list of file-paths and append them to a new file.
-    requires the \"cat\" program"
+     list string -> string
+     take a list of file-paths and append them to a new file.
+     requires the \"cat\" program"
     (let
       ( (cat (apply open-pipe* OPEN_READ "cat" include-list))
         (target-file (open-output-file target-path)))
@@ -689,7 +685,7 @@
 
   (define (tail-symbols->string a)
     "list -> list
-    convert all symbols not in prefix position to strings"
+     convert all symbols not in prefix position to strings"
     (if (null? a) a
       (cons (first a)
         (let loop ((rest (tail a)))
@@ -702,7 +698,7 @@
 
   (define (variable-type a)
     "any -> symbol
-    return a symbol indicating the variable type"
+     return a symbol indicating the variable type"
     (cond ((list? a) (q list)) ((pair? a) (q pair))
       ((string? a) (q string)) ((number? a) (q number))
       ((boolean? a) (q boolean)) ((array? a) (q array))

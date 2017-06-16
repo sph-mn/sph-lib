@@ -40,7 +40,7 @@
   (define (string->sxml a nesting-level docl-state)
     "string -> sxml
     convert newlines in string to (br) and result in an sxml expression"
-    (let (a (string-split a #\newline)) (if (length-eq-one? a) (first a) (interleave a (q (br))))))
+    (let (a (string-split a #\newline)) (if (length-one? a) (first a) (interleave a (q (br))))))
 
   (define (tag-element? a)
     "list:non-null-list -> boolean

@@ -67,7 +67,14 @@
     records use less memory and less access time.
     this library is supposed to be simpler in definition and usage than existing record libraries (rnrs, srfi) and more flexible by being based on the less restricted interobability with vectors (for records) and hashtables (for layouts).
     any vector can be accessed as a record and records can be accessed like vectors.
-    if type information is desired then it has to be added manually by storing a type name in the first record field for example")
+    if type information is desired then it has to be added manually by storing a type name in the first record field for example.
+    usage:
+    (define-record my-record a b c)
+    (define-record my-other-record (a my-a-accessor-name my-a-setter-name) b (c my-c-accessor-n))
+    (define x (record my-record 1 2))
+    (my-record-a x) -> 1
+    (my-record-c x) -> #f
+    (my-record-c-set! x 3)")
 
   (define (any->symbol a)
     "any -> symbol/false
@@ -228,9 +235,6 @@
       a))
 
   (define-syntax-case (define-record name field-name/get/set ...) s
-    ;"examples
-    ;(define-record my-record a b c)
-    ;(define-record my-other-record (a my-a-accessor-name my-a-setter-name) b (c my-c-accessor-n))"
     (let
       ( (field-spec
           (define-record-prepare-field-spec (syntax->datum (syntax name))

@@ -68,7 +68,6 @@
     tree-transform-descend-identity
     tree-transform-with-state)
   (import
-    (rnrs base)
     (sph)
     (only (guile)
       1+
@@ -79,8 +78,7 @@
       contains?
       fold-integers
       fold-multiple
-      fold-segments
-      length-eq-one?)
+      fold-segments)
     (only (srfi srfi-1)
       append-map
       fold-right

@@ -45,7 +45,7 @@
       any->list
       contains?
       flat?
-      length-eq-one?)
+      length-one?)
     (only (sph one) in-between?)
     (only (sph string) parenthesise string-replace-chars)
     (only (sph tree)
@@ -117,7 +117,7 @@
                           (or (eq? (q equal) operator) (eq? (q isnot) operator)) (flat? values))))
                     (let
                       (combine-with-values
-                        (if (length-eq-one? values)
+                        (if (length-one? values)
                           ;optimisation
                           ( (l (v) (l (c) (join-column-value (column-name c) sql-operator v)))
                             (first values))
@@ -143,7 +143,7 @@
                 (l (columns column-state)
                   (let (column-combinator (state->combinator column-state))
                     ( (if (eq? 1 column-state) identity list)
-                      (if (length-eq-one? columns)
+                      (if (length-one? columns)
                         ;optimisation
                         (if (list? (first columns)) (first (first columns))
                           (join-values (first columns) values operator sql-operator))
@@ -163,7 +163,7 @@
     (let*
       ( (row-expr-binary
           (l (prefix suffix level)
-            ( (if (or (eqv? 1 level) (length-eq-one? suffix)) identity parenthesise)
+            ( (if (or (eqv? 1 level) (length-one? suffix)) identity parenthesise)
               (string-join suffix (if (eq? (q any) prefix) " or " " and ")))))
         (row-expr-unary (l (prefix suffix level) (string-append "not " (first suffix))))
         (state->combinator (l (state) (if (even? state) " and " " or ")))

@@ -387,6 +387,6 @@
         "(string ...) string string string -> string
         join expressions eventually with empty lines inbetween them"
         (if (null? a) ""
-          (if (length-eq-one? a) (first a)
+          (if (length-one? a) (first a)
             (join-multiline (join-oneline a indent vertical-spacing-oneline) indent
               vertical-spacing)))))))

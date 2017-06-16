@@ -43,6 +43,7 @@
     search-env-path
     socket-bind
     sph-one-description
+    string->datum
     values->list)
   (import
     (guile)
@@ -57,7 +58,6 @@
     (sph list)
     (sph number)
     (sph string)
-    (except (rnrs base) map)
     (only (rnrs hashtables)
       make-hashtable
       equal-hash
@@ -72,9 +72,12 @@
   (define sph-one-description "various")
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
 
+  (define* (string->datum a #:optional (reader read))
+    "get the first scheme expression from a string" (call-with-input-string a reader))
+
   (define (ignore . a)
     "any ... -> unspecified
-    ignores all arguments and returns unspecified"
+     ignores all arguments and returns unspecified"
     (if #f #t))
 
   (define (rnrs-exception->object proc) "procedure -> procedure"
@@ -82,13 +85,13 @@
 
   (define (guile-exception->key proc)
     "procedure -> procedure
-    guard catches guile exceptions, but it seems impossible to get the key"
+     guard catches guile exceptions, but it seems impossible to get the key"
     (l a (catch #t (l () (apply proc a)) (l (key . a) key))))
 
   (define (remove-keyword-associations a)
     "list -> list
-    removes keyword associations from an argument list passed for example to lamdba*
-    (3 #:a 1 2 #:b 4) -> (3 2)"
+     removes keyword associations from an argument list passed for example to lamdba*
+     (3 #:a 1 2 #:b 4) -> (3 2)"
     (let loop ((rest a))
       (if (null? rest) rest
         (let (element (first rest))
@@ -96,8 +99,8 @@
 
   (define (search-env-path . a)
     "string -> string
-    search for any match of paths \"a\" in the directories in the PATH environment variable and result in the full path.
-    similar to guiles %search-load-path but does not consider filename extensions"
+     search for any match of paths \"a\" in the directories in the PATH environment variable and result in the full path.
+     similar to guiles %search-load-path but does not consider filename extensions"
     (let*
       ( (path-parsed (parse-path (getenv "PATH")))
         (search-path
@@ -108,14 +111,14 @@
 
   (define (call-at-interval proc interval)
     "procedure:{current-interval procedure:continue:{next-interval -> any} -> any} microseconds -> unspecified
-    call proc after interval of length interval. proc receives the current interval and a procedure to
-    continue, with the option to change the interval"
+     call proc after interval of length interval. proc receives the current interval and a procedure to
+     continue, with the option to change the interval"
     (let next ((interval interval)) (usleep interval) (proc interval next)))
 
   (define (call-at-interval-w-state proc interval . init)
     "procedure:{current-interval continue any ...} microseconds any ...
-    like call-at-interval but accepting unlimited number of additional parameters
-    that are passed to proc and the continue procedure."
+     like call-at-interval but accepting unlimited number of additional parameters
+     that are passed to proc and the continue procedure."
     (letrec ((next (l (interval . state) (usleep interval) (apply proc interval next state))))
       (apply next interval init)))
 
@@ -126,8 +129,8 @@
       .
       state)
     "{states ... -> integer} microseconds microseconds rational rational any ... ->
-    like call-at-interval-w-state but without a continue procedure, automatically adjusting interval after each application of proc
-    depending on the result of proc: -1 increases the interval, 1 decreases it and 0 does not change it."
+     like call-at-interval-w-state but without a continue procedure, automatically adjusting interval after each application of proc
+     depending on the result of proc: -1 increases the interval, 1 decreases it and 0 does not change it."
     (apply call-at-interval-w-state
       (l (interval continue . state)
         (let ((change+state (apply proc state)))
@@ -144,7 +147,7 @@
 
   (define (integer->bytevector a)
     "integer:signed-integer -> bytevector
-    create a bytevector of minimum size storing the given signed integer"
+     create a bytevector of minimum size storing the given signed integer"
     (let*
       ( (size (bit->byte-length (+ 1 (number-container-length (abs a) 2))))
         (r (make-bytevector size)))
@@ -160,12 +163,12 @@
 
   (define (in-between? num num-start num-end)
     "number number number -> boolean
-    true if num is between and not equal to num-start and num-end"
+     true if num is between and not equal to num-start and num-end"
     (and (> num num-start) (< num num-end)))
 
   (define (in-range? num num-start num-end)
     "number number number -> boolean
-    true if num is between or equal to num-start and num-end"
+     true if num is between or equal to num-start and num-end"
     (and (>= num num-start) (<= num num-end)))
 
   (define (limit a min max)
@@ -177,10 +180,10 @@
 
   (define (procedure->cached-procedure proc)
     "procedure -> procedure
-    results in a new procedure with the same signature and which is an extended version of the given procedure,
-    where the extended procedure is only called once for a combination of arguments, and subsequent
-    calls with the same arguments return the previous result from a cache.
-    the cache is never cleared until the current process ends"
+     results in a new procedure with the same signature and which is an extended version of the given procedure,
+     where the extended procedure is only called once for a combination of arguments, and subsequent
+     calls with the same arguments return the previous result from a cache.
+     the cache is never cleared until the current process ends"
     (let (cache (make-hashtable equal-hash equal?))
       (l args
         (let (cached-result (hashtable-ref cache args (q --not-in-cache)))
@@ -189,7 +192,7 @@
 
   (define (procedure->temporarily-cached-procedure cache-duration proc)
     "integer:seconds procedure -> procedure
-    like procedure->cached-procedure but the cache is emptied after cache-duration the next time the procedure is called"
+     like procedure->cached-procedure but the cache is emptied after cache-duration the next time the procedure is called"
     (let ((cache (make-hashtable equal-hash equal?)) (last-time 0))
       (l args
         (let (time (current-time))
@@ -203,25 +206,25 @@
 
   (define (program-path)
     "-> string
-    return the full-path of the currently executed program file. uses the first argument of (program-arguments)"
+     return the full-path of the currently executed program file. uses the first argument of (program-arguments)"
     (let (part (first (program-arguments)))
       (if (string-null? part) part
         (if (eqv? #\/ (string-ref part 0)) part (string-append (getenv "PWD") "/" part)))))
 
   (define (program-name)
     "-> string
-    return the file-name of the currently executed program file. uses the first argument of (program-arguments)"
+     return the file-name of the currently executed program file. uses the first argument of (program-arguments)"
     (let (part (first (program-arguments)))
       (if (string-null? part) part (if (eqv? #\/ (string-ref part 0)) (basename part) part))))
 
   (define (procedure-append . proc)
     "procedure ... -> procedure:{any ... -> (any ...)}
-    creates a new procedure that applies each given procedure with its arguments and returns all results in a list"
+     creates a new procedure that applies each given procedure with its arguments and returns all results in a list"
     (l a (map (l (b) (apply b a)) proc)))
 
   (define (procedure-append-ignore-result . proc)
     "procedure ... -> procedure:{any ... -> unspecified}
-    like procedure-append but does not collect results and returns unspecified"
+     like procedure-append but does not collect results and returns unspecified"
     (l a (each (l (b) (apply b a)) proc)))
 
   (define-syntax-rules quote-odd
@@ -232,7 +235,7 @@
 
   (define (bytevector-contains? a search-bv)
     "bytevector bytevector -> boolean
-    true if bytevector \"a\" contains bytevector \"search-bv\""
+     true if bytevector \"a\" contains bytevector \"search-bv\""
     (let ((a-length (bytevector-length a)) (search-bv-length (bytevector-length search-bv)))
       (if (> search-bv-length a-length) #f
         (let
@@ -247,11 +250,11 @@
 
   (define* (cli-option name #:optional value)
     "creates a string for one generic command-line option in the gnu format -{single-character} or --{word} or --{word}=.
-    optionally with values.
-    \"name\"can be a:
-    character: short option
-    string: long option
-    value can be anything, non-strings will be converted to strings in \"display\" format"
+     optionally with values.
+     \"name\"can be a:
+     character: short option
+     string: long option
+     value can be anything, non-strings will be converted to strings in \"display\" format"
     (if value
       (if (char? name) (string-append (string #\- name #\space) (any->string value))
         (string-append "--" name "=" (any->string value)))
@@ -259,13 +262,13 @@
 
   (define (cli-option-join options)
     "((name value ...)/string ...) -> (string ...)
-    ((\"a\" 3)) -> -a 3
-    ((\"abc\" 3)) -> --abc 3
-    creates a command-line options string, automatically appending - or -- to option names.
-    - pairs with prefixes that are characters or single char strings become single char options
-    - pairs with prefixes that are multi char strings become multi char options
-    - the tail of pairs is string-joined with spaces and used as the value for the option
-    - strings become keyless arguments"
+     ((\"a\" 3)) -> -a 3
+     ((\"abc\" 3)) -> --abc 3
+     creates a command-line options string, automatically appending - or -- to option names.
+     - pairs with prefixes that are characters or single char strings become single char options
+     - pairs with prefixes that are multi char strings become multi char options
+     - the tail of pairs is string-joined with spaces and used as the value for the option
+     - strings become keyless arguments"
     (string-join
       (fold
         (l (e r)
@@ -298,14 +301,14 @@
 
   (define (each-integer count proc)
     "integer procedure:{integer ->} ->
-    call proc \"count\" times"
+     call proc \"count\" times"
     (let loop ((n 0)) (if (< n count) (begin (proc n) (loop (+ 1 n))))))
 
   (define (pass proc obj)
     "procedure any -> any
-    apply proc with obj, return obj.
-    example
-    (+ 2 (pass write (+ 1 3)))
-    writes 4 to standard output
-    results in 6"
+     apply proc with obj, return obj.
+     example
+     (+ 2 (pass write (+ 1 3)))
+     writes 4 to standard output
+     results in 6"
     (proc obj) obj))

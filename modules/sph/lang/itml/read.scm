@@ -1,13 +1,11 @@
-; itml -> syntax-tree
-
 (library (sph lang itml read)
   (export
     path->itml-parsed
     port->itml-parsed
+    sph-lang-itml-read-description
     string->itml-parsed)
   (import
     (ice-9 peg)
-    (rnrs base)
     (sph)
     (sph lang indent-syntax)
     (sph tree)
@@ -28,7 +26,7 @@
       simplify-list
       splice-last-list
       list-tail-ref)
-    (only (sph two) string->datum)
+    (only (sph one) string->datum)
     (only (sph string)
       parenthesise
       any->string
@@ -36,6 +34,7 @@
       any->string-write)
     (only (srfi srfi-1) remove split-at))
 
+  (define sph-lang-itml-read-description "itml -> syntax-tree")
   (define-peg-pattern double-backslash-body body (and ignored-backslash "\\"))
   (define-peg-pattern double-backslash all "\\\\")
   (define-peg-pattern association-infix all ": ")
@@ -173,7 +172,7 @@
 
   (define (port->itml-parsed a)
     "port -> list
-    reads an itml string from port, parses it and returns the abstract syntax tree"
+     reads an itml string from port, parses it and returns the abstract syntax tree"
     (let (a (denoted-tree->prefix-tree (read-space-indent-tree->denoted-tree a 2)))
       ;the top-level is not an itml-expression but a list of itml-expressions
       (map
@@ -184,10 +183,10 @@
 
   (define (path->itml-parsed a)
     "string -> list
-    like port->itml-parsed but takes a path to a file to read from"
+     like port->itml-parsed but takes a path to a file to read from"
     (call-with-input-file a port->itml-parsed))
 
   (define (string->itml-parsed a)
     "string -> list
-    like port->itml-parsed but takes a string to parse"
+     like port->itml-parsed but takes a string to parse"
     (port->itml-parsed (open-input-string a))))

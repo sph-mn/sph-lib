@@ -55,8 +55,7 @@
       symbol-hashtable)
     (only (sph list)
       any->list
-      length-greater-one?
-      length-eq-one?)
+      length-greater-one?)
     (only (sph one) call-at-approximated-interval begin-first)
     (only (sph string) string-replace-string)
     (only (srfi srfi-1)
