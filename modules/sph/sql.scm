@@ -1,4 +1,4 @@
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -30,8 +30,8 @@
     sql-where-expr)
   (import
     (ice-9 match)
-    (rnrs base)
     (sph)
+    (rnrs exceptions)
     (only (guile)
       identity
       object->string
@@ -71,12 +71,12 @@
 
   (define (sql-string a)
     "string -> string
-    escapes string values for sql"
+     escapes string values for sql"
     (string-append "'" (string-replace-chars a (q ((#\' #\' #\') (#\\ #\\ #\\)))) "'"))
 
   (define (sql-value a)
     "any -> string
-    convert types, escape and quote strings"
+     convert types, escape and quote strings"
     (if (number? a) (number->string a)
       (if (string? a) (sql-string a)
         (if (eq? (q null) a) "NULL"
@@ -100,7 +100,7 @@
       (else
         (if (string? a) a
           (if (symbol? a) (string-append " " (symbol->string a) " ")
-            (throw (q wrong-type-for-argument)))))))
+            (raise (q wrong-type-for-argument)))))))
 
   (define (sql-where-column-expr-produce-proc column-name state->combinator)
     ;this procedure may do too much at once, split it if you can
@@ -191,7 +191,7 @@
               (if (or (null? lis) (contains? row-expr-prefixes (first lis))) (continue lis level)
                 (column-expr (first lis) (tail lis))))
             expr)
-          (throw (q not-a-sql-where-filter))))))
+          (raise (q not-a-sql-where-filter))))))
 
   (define (sql-row-data? expr) "any -> boolean"
     (if (or (string? expr) (every (l (e) (or (and (pair? e) (not (list? e))) (string? e))) expr))
@@ -210,8 +210,8 @@
 
   (define (sql-where-expr expr)
     "for creating a \"where\" part sql separately.
-    \"not\" in row-expressions will always be in front of the column-condition in the resulting query. sqlite for example does not understand
-    \"not c=NULL\" as one might expect. use \"ISNULL\" instead of \"NULL\" in this case."
+     \"not\" in row-expressions will always be in front of the column-condition in the resulting query. sqlite for example does not understand
+     \"not c=NULL\" as one might expect. use \"ISNULL\" instead of \"NULL\" in this case."
     (if (list? expr)
       (if (null? expr) expr
         (primitive-sql-where-expr (if (pair? (first expr)) (pair (q every) expr) expr)))
@@ -240,9 +240,9 @@
 
   (define (sql-config config)
     "list:alist -> string:begin-part string:end-part
-    constructs the additional-options part of an sql-statement, usually some part
-    at the beginning of the statement or one at the end
-    alist keys can be: limit, add-1, add-2, order"
+     constructs the additional-options part of an sql-statement, usually some part
+     at the beginning of the statement or one at the end
+     alist keys can be: limit, add-1, add-2, order"
     ;order - string/(string ...)
     ;limit - string/(offset limit)
     (alist-bind config (limit add-1 add-2 order)
@@ -277,7 +277,7 @@
 
   (define (sql-columns columns)
     "pair/list/string/boolean -> string
-    construct the \"column\" part of an sql expression"
+     construct the \"column\" part of an sql expression"
     (if (pair? columns)
       (if (list? columns) (if (null? columns) #f (string-join (sql-columns-list columns) ","))
         (string-append (first columns) "." (tail columns)))
@@ -296,7 +296,7 @@
 
   (define* (sql-update table-name set #:optional where config)
     "string pair/list/string sql-where list -> string
-    example: (sql-update \"table-name\" ((a . 1) (b . 2))) -> \"update table-name set a=1 and b=2\""
+     example: (sql-update \"table-name\" ((a . 1) (b . 2))) -> \"update table-name set a=1 and b=2\""
     (let-values
       ( ( (set)
           (if (list? set)

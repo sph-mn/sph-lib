@@ -79,7 +79,7 @@
       #f
       (((1 2) 3 (4 5)))
       #f)
-    (count-occurence
+    (count-value
       (1 (2 1 1))
       2)
     (delete-duplicates-sorted
