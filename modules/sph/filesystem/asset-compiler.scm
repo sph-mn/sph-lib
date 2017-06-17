@@ -16,7 +16,7 @@
     (guile)
     (sph base)
     (sph record)
-    (only (sph tree) flatten))
+    )
 
   (define sph-filesystem-asset-compiler-description
     "process and merge files of various formats into one.

@@ -54,9 +54,6 @@
       ((unquote list) ()) ()
       ((unquote list) (a (c () b)))
       ((() (c a)) (b (c a))))
-    (flatten
-      ((1 (2 3 (4) (5 (6 7)) 8)))
-      (1 2 3 4 5 6 7 8))
     (prefix-tree-product
       ((1 2 3 4) #t)
       ((1 2) (1 3) (1 4))

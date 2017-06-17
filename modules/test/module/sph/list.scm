@@ -9,6 +9,9 @@
     (group-split-at-matches integer? arguments))
 
   (test-execute-procedures-lambda
+    (flatten
+      ((1 (2 3 (4) (5 (6 7)) 8)))
+      (1 2 3 4 5 6 7 8))
     (group-split-at-matches
       ("a" "b" 1 "c" "d" 2 "e")
       (("a" "b") (1 "c" "d") (2 "e"))

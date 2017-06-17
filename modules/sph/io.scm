@@ -43,6 +43,16 @@
 
   (define sph-io-description "port and file input output")
 
+  (module-re-export! (current-module)
+    ;export (rnrs base). exclude let because it is redefined here
+    (filter
+      (lambda (a)
+        (not
+          (or (eq? a (quote %module-public-interface)) (eq? a (quote i/o-error-position))
+            (string-prefix? "&" (symbol->string a)))))
+      (append (module-map (lambda a (car a)) (resolve-interface (q (rnrs io ports))))
+        (module-map (lambda a (car a)) (resolve-interface (q (rnrs io simple)))))))
+
   (define (rw-port->port read write port port-2)
     ;copied from io read-write to avoid circular dependency
     (let loop ((e (read port))) (if (eof-object? e) e (begin (write e port-2) (loop (read port))))))

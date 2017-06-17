@@ -49,6 +49,7 @@
     first-or-false
     first-or-null
     flat?
+    flatten
     fold-integers
     fold-multiple
     fold-multiple-right
@@ -70,8 +71,8 @@
     intersection-p
     iterate-three
     iterate-three-with-stop+end
-    length-one?
     length-greater-one?
+    length-one?
     list-bind
     list-distribute
     list-distribute-sorted
@@ -166,10 +167,18 @@
       take))
 
   ;this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
-  ;copied from (sph conditional)
-  (define-syntax-rule (identity-if test else ...) ((lambda (r) (if r r (begin else ...))) test))
+
+  (define-syntax-rule (identity-if test else ...)
+    ;copied from (sph conditional)
+    ((lambda (r) (if r r (begin else ...))) test))
+
   (define-syntax-rule (list-q a ...) (q (a ...)))
   (define-syntax-rule (list-qq a ...) (qq (a ...)))
+
+  (define (flatten a)
+    "list -> (non-list ...)
+     replace sublists with their content, resulting in a list that does not contain lists"
+    (fold-right (l (e r) (if (list? e) (append (flatten e) r) (pair e r))) (list) a))
 
   (define-syntax-rule (list-bind a lambda-formals body ...)
     ;bind elements of list "a" to "lambda-formals"

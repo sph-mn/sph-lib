@@ -1,5 +1,3 @@
-;generic bindings, building blocks, to evaluate itml expressions a and convert from itml to another language
-
 (library (sph lang docl itml)
   (export
     docl-itml-parsed->result-proc
@@ -14,7 +12,8 @@
     itml-eval-descend-inline-expr
     itml-eval-descend-inline-scm-expr
     itml-eval-descend-line-expr
-    itml-eval-descend-line-scm-expr)
+    itml-eval-descend-line-scm-expr
+    sph-lang-docl-itml-description)
   (import
     (ice-9 threads)
     (rnrs base)
@@ -31,14 +30,17 @@
       read
       open-input-string)
     (only (sph lang indent-syntax) prefix-tree->indent-tree-string)
-    (only (sph list) simplify-list)
+    (only (sph list) flatten simplify-list)
     (only (sph string) parenthesise)
-    (only (sph tree) flatten tree-transform-with-state))
+    (only (sph tree) tree-transform-with-state))
+
+  (define sph-lang-docl-itml-description
+    "helpers to evaluate itml expressions a and convert from itml to another language")
 
   (define (itml-adjust-nesting-depth a)
     "integer -> integer
-    level 0 and 1 are equivalent because content of nested-lists on the top-level in
-    itml-parsed is still considered belonging to the top-level"
+     level 0 and 1 are equivalent because content of nested-lists on the top-level in
+     itml-parsed is still considered belonging to the top-level"
     (max 0 (- a 1)))
 
   (define (itml-list-eval a env . proc-arguments)
@@ -58,7 +60,7 @@
 
   (define (itml-eval-1 a re-descend nesting-depth docl-state env)
     "list procedure integer list environment -> any
-    evaluate an inline-code expression when the arguments are strings"
+     evaluate an inline-code expression when the arguments are strings"
     (itml-list-string-eval a env nesting-depth docl-state))
 
   (define (itml-eval-2 a re-descend nesting-depth docl-state env)
@@ -66,7 +68,7 @@
 
   (define (descend->ascend-proc proc)
     "procedure -> procedure
-    change the type-signature of a descend procedure to be like an ascend procedure (without the re-descend parameter)"
+     change the type-signature of a descend procedure to be like an ascend procedure (without the re-descend parameter)"
     (l (a . rest) (apply proc a #f rest)))
 
   (define itml-eval-descend-line-scm-expr itml-eval-2)
@@ -80,7 +82,7 @@
 
   (define (docl-itml-port->result-proc create-result)
     "procedure:{list:itml-parsed integer:nesting-depth list:docl-state environment:eval-environment} -> any
-    create a procedure that reads itml from a port, reads itml expressions from it and parses it to \"create-result\""
+     create a procedure that reads itml from a port, reads itml expressions from it and parses it to \"create-result\""
     (l (a nesting-depth docl-state env)
       "any integer list environment -> any
       read itml from a port, parse it and create a result"
@@ -90,7 +92,7 @@
 
   (define (docl-itml-string->result-proc port->result)
     "procedure:{port any ... ->} -> procedure:{string any ... ->}
-    creates a procedure that accepts an itml string to transform with \"port->result\""
+     creates a procedure that accepts an itml string to transform with \"port->result\""
     (l (a . port->result-arguments)
       "string _ ... -> text
       accepts an itml string to transform"

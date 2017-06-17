@@ -24,7 +24,7 @@
     (sph web shtml)
     (only (sph hashtable) hashtable-ref symbol-hashtable)
     (only (sph string) string-equal?)
-    (only (sph tree) flatten tree-transform-with-state)
+    (only (sph tree) tree-transform-with-state)
     (only (srfi srfi-1) remove))
 
   (define (add-spaces a)

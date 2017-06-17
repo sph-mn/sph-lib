@@ -10,14 +10,13 @@
     (rnrs base)
     (sph)
     (only (guile) display string-join)
-    (only (sph list) map-slice)
+    (only (sph list) flatten map-slice)
     (only (sph string) any->string)
-    (only (sph tree) flatten)
     (only (srfi srfi-1) break))
 
   (define sph-lang-plcss-description
     "s-expression language that compiles to css
-    can also be used inline with other scheme code")
+     can also be used inline with other scheme code")
 
   ;the name is an abbreviation of prefixed-list-css
   (define (symbol?->string a) (if (symbol? a) (symbol->string a) a))

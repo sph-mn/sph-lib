@@ -19,7 +19,7 @@
     (sph lang indent-syntax)
     (sph lang itml)
     (sph string)
-    (only (sph tree) flatten))
+    )
 
   ;translates itml to a source similar indent-tree but with expressions evaluated
 

@@ -42,6 +42,7 @@
     (only (rnrs io simple) display)
     (only (sph alist) alist-bind)
     (only (sph list)
+      flatten
       any->list
       contains?
       flat?
@@ -49,7 +50,6 @@
     (only (sph one) in-between?)
     (only (sph string) parenthesise string-replace-chars)
     (only (sph tree)
-      flatten
       tree-map-lists-with-level
       prefix-tree-map-with-continue-with-level))
 

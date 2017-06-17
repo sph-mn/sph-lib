@@ -22,7 +22,7 @@
       stat:gid
       stat:nlink
       stat:ctime)
-    (only (sph tree) flatten)
+    
     (only (srfi srfi-1) delete-duplicates filter-map))
 
   (define sph-filesystem-watch-description "observing and acting on file-system changes

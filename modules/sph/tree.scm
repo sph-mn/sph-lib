@@ -14,7 +14,6 @@
   (export
     denoted-tree->prefix-tree
     denoted-tree->tree
-    flatten
     prefix-tree->denoted-tree
     prefix-tree->path-list
     prefix-tree-context-match
@@ -77,6 +76,7 @@
     (only (sph list)
       contains?
       fold-integers
+      flatten
       fold-multiple
       fold-segments)
     (only (srfi srfi-1)
@@ -202,11 +202,6 @@
     "procedure:{any ->} list ->
     call proc for every non-list element in tree"
     (each (l (e) (if (list? e) (tree-each-leaf proc e) (proc e))) a))
-
-  (define (flatten a)
-    "list -> (non-list ...)
-    replace sublists with their content, resulting in a list that does not contain lists"
-    (fold-right (l (e r) (if (list? e) (append (flatten e) r) (pair e r))) (list) a))
 
   (define (tree-fold p r t)
     "procedure:{any:element any:result -> any:result} any:result list:tree -> any

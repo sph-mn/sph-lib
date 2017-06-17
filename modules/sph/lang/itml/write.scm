@@ -18,10 +18,9 @@
     (sph lang itml)
     (sph lang itml read)
     (sph string)
-    (only (sph list) map-selected)
+    (only (sph list) flatten map-selected)
     (only (sph tree)
       tree-map-leafs
-      flatten
       tree-transform-with-state)
     (only (srfi srfi-1) remove))
 
