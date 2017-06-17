@@ -28,7 +28,7 @@
     test-execute-procedures-lambda
     test-lambda
     test-list
-    test-path->module-names
+    test-module-name-from-files
     test-result
     test-result-success?
     test-settings-default
@@ -107,16 +107,16 @@
     (let (load-path (path->load-path a))
       (if load-path (c load-path a) (let (a (string-append a ".scm")) (c (path->load-path a) a)))))
 
-  (define (test-path->module-names a) "string -> list/error"
+  (define (test-module-name-from-files a) "string -> list/error"
     (path->load-path-and-path& a
       (l (load-path a)
         (if load-path
           (case (stat:type (stat (string-append load-path "/" a)))
-            ((directory) (find-modules-by-name (path->module-name a) (q prefix) %load-path))
-            ((regular) (list (path->module-name a)))
+            ((directory) (module-find-by-name (module-name-from-file a) (q prefix) %load-path))
+            ((regular) (list (module-name-from-file a)))
             ( (symlink)
               ;assumes that readlink fails on circular symlinks
-              (test-path->module-names (readlink a))))
+              (test-module-name-from-files (readlink a))))
           (error-create (q file-not-found-in-load-path))))))
 
   (define-syntax-cases test-lambda s
@@ -216,9 +216,9 @@
       ( (settings (apply-settings-reporter+hook settings (q modules-before) module-names))
         (r
           (fold-multiple-with-continue
-            (l (e continue index r)
+            (l (a continue index r)
               (let*
-                ( (name (first e)) (module (tail e))
+                ( (name (first a)) (module (tail a))
                   (r-test (test-module-execute settings module index name))
                   (r-group (pair (any->string name) r-test)))
                 (if (test-module-success? r-test) (continue (+ 1 index) (pair r-group r))
@@ -248,7 +248,7 @@
       ((load-path (settings->load-path! settings)) (search-type (alist-q-ref settings search-type)))
       (let
         (module-names
-          (every-map (l (a) (false-if-null (find-modules-by-name a search-type load-path))) name))
+          (every-map (l (a) (false-if-null (module-find-by-name a search-type load-path))) name))
         (if module-names
           (test-modules-execute settings
             (test-modules-apply-settings settings (apply append module-names)))

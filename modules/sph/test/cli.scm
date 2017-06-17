@@ -65,5 +65,5 @@
     creates a command-line interface for executing tests in test module files"
     (let* ((arguments (test-cli)) (settings (test-execute-cli-get-settings arguments)))
       (alist-bind arguments (source)
-        (if source (test-execute-modules settings (append-map test-path->module-names source))
+        (if source (test-execute-modules settings (append-map test-module-name-from-files source))
           (list))))))

@@ -18,8 +18,8 @@
     docstring->lines
     docstring-split-signature
     documentation-display-formats
-    find-module-information
-    find-module-information-sorted
+    module-find-one-information
+    module-find-one-information-sorted
     format-module-documentation
     itpn-docstring-split-signature
     lines->docstring
@@ -166,13 +166,13 @@
           a))
       (map tail (list-sort (l (a b) (string<? (first a) (first b))) b))))
 
-  (define (find-module-information . search-path)
+  (define (module-find-one-information . search-path)
     (map
       (l (a) (alist-q name (first a) full-path (tail a) description (module-description (first a))))
-      (apply append (filter-map (l (a) (false-if-exception (find-modules a))) search-path))))
+      (apply append (filter-map (l (a) (false-if-exception (module-find a))) search-path))))
 
-  (define (find-module-information-sorted . search-path)
-    (sort-module-information (apply find-module-information search-path)))
+  (define (module-find-one-information-sorted . search-path)
+    (sort-module-information (apply module-find-one-information search-path)))
 
   (define* (display-module-information-short a #:optional markdown?)
     (let
