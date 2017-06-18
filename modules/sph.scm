@@ -156,10 +156,10 @@
   (define-syntax-rules define-syntax-cases
     ( (name ((pattern ...) expansion ...) ...)
       (define-syntax name
-        (lambda (syntax) (syntax-case syntax () ((_ pattern ...) expansion ...) ...))))
+        (lambda (syntax) (syntax-case syntax () ((_ pattern ...) (begin expansion ...)) ...))))
     ( (name syntax ((pattern ...) expansion ...) ...)
       (define-syntax name
-        (lambda (syntax) (syntax-case syntax () ((_ pattern ...) expansion ...) ...)))))
+        (lambda (syntax) (syntax-case syntax () ((_ pattern ...) (begin expansion ...)) ...)))))
 
   (define-syntax-rule (l a ...) (lambda a ...))
   (define-syntax-rule (l* a ...) (lambda* a ...))

@@ -277,7 +277,7 @@
     "string -> false/path
      returns the first found load-path where path can be found.
      works for full and relative paths.
-     does not check file name extensions or types"
+     does not check file types or file name extensions"
     (if (string-prefix? "/" path)
       (fold
         (l (a r)
