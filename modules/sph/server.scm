@@ -41,9 +41,9 @@
     "string [integer integer integer] -> socket
      create a socket, bind, and result in the socket object.
      defaults:
-     - if address is a path starting with \"/\" then a local unix socket is created (no port necessary)
-     - if address contains \":\" then an ip6 tcp socket is created
-     - else an ip4 tcp socket is created"
+     * if address is a path starting with \"/\" then a local unix socket is created (no port necessary)
+     * if address contains \":\" then an ip6 tcp socket is created
+     * else an ip4 tcp socket is created"
     (let (protocol-family (server-address-string->protocol-family address))
       (let
         ( (r (socket protocol-family type protocol))
@@ -108,28 +108,29 @@
                     ... (loop-process (first (accept socket))))))))))))
 
   (define (thread-pool-handle-sigpipe exception-handler exception-keys)
-    (l (key resume . args)
-      (if (and (eqv? (q system-error) key) (= EPIPE (system-error-errno (pair key args)))) (resume)
+    (l (key resume . a)
+      (if (and (eqv? (q system-error) key) (= EPIPE (system-error-errno (pair key a)))) (resume)
         (if
           (and exception-keys exception-handler
             (or (boolean? exception-keys) (and (symbol? exception-keys) (eqv? key exception-keys))
               (and (list? exception-keys) (contains? exception-keys key))))
-          (apply exception-handler key resume args) (apply throw key args)))))
+          (apply exception-handler key resume a) (apply throw key a)))))
 
   (define* (server-listen proc socket #:optional worker-count exception-handler exception-keys)
     "procedure:{port ->} socket procedure:{resume key a ... ->} symbol/(symbol ...)/boolean-true ->
      worker-count is the number of separate processing threads. 1 means no separate threads and single-thread operation.
-     the default is equal to the current processor count or 1 if less than 3 processors are available.
-     with only 2 processors (cores) the overhead of using multiple workers could likely diminish performance (it did so in tests).
+     the default is equal to the current processor count minus 1.
+     with only 2 processors cores, the overhead of using multiple workers could likely diminish performance.
      the default exception handler catches all exceptions and resumes"
     (listen socket server-listen-queue-length)
-    (let (cpu-count (current-processor-count))
-      (if (if worker-count (= 1 worker-count) (< cpu-count 3))
+    ; when worker-count is not given, leave one processor core free for request dispatching
+    (let (worker-count (or worker-count (max 1 (- (current-processor-count) 1))))
+      (if (= 1 worker-count)
         (loop-listen exception-keys exception-handler socket c (proc c) (close-port c))
         (apply
           (l (queue-add! . thread-pool)
             (loop-listen exception-keys exception-handler
               socket c (queue-add! (nullary (proc c) (close-port c))))
             (thread-pool-destroy thread-pool))
-          (thread-pool-create (or worker-count cpu-count)
+          (thread-pool-create worker-count
             (thread-pool-handle-sigpipe exception-handler exception-keys) #t))))))

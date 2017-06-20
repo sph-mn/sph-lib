@@ -17,7 +17,6 @@
     scgi-read-header
     sph-scgi-description)
   (import
-    (rnrs base)
     (rnrs exceptions)
     (rnrs io ports)
     (sph)
@@ -29,14 +28,15 @@
     (only (rnrs io simple) eof-object? read-char))
 
   (define sph-scgi-description
-    "scgi interface. a server that accepts scgi requests and passes them to a custom procedure")
+    "scgi interface. a server that accepts scgi requests and passes them to a custom procedure.
+    http://python.ca/scgi/protocol.txt")
 
   (define binary-char-null (char->integer #\nul))
   (define binary-char-colon (char->integer #\:))
 
   (define (get-netstring-length port)
     "socket -> integer
-    get the length of the header"
+     get the length of the header"
     ;reason for an error here can be a connection closed too soon
     (let loop ((octet (get-u8 port)) (octet-buffer (list)))
       (if (eof-object? octet) (raise (quote scgi-invalid-header))
@@ -45,8 +45,8 @@
 
   (define (get-content-length port count cont)
     "socket integer procedure:{integer integer} -> any
-    count is the count of chars of the offset between the begin of the scgi message and the begin of the body.
-    get the length of the body"
+     count is the count of chars of the offset between the begin of the scgi message and the begin of the body.
+     get the length of the body"
     (let loop ((count (- count 1)) (octet (get-u8 port)) (octet-buffer (list)) (delimiter-count 0))
       (if (= binary-char-null octet)
         (if (< delimiter-count 1)
@@ -82,11 +82,13 @@
     (scgi-handle-requests proc #:optional socket worker-count address port-number .
       server-listen-args)
     "procedure:{list:header:((string . string) ...) port:client-socket ->} socket/false false/integer string boolean ->
-    start listening on a socket and call proc for each incoming request.
-    the socket protocol-family depends on the address: if it starts with a slash a local unix socket is used, if it contains colons ip6, otherwise ip4.
-    if socket is false, a socket is created with (socket AF_UNIX SOCK_STREAM 0). default port for tcp sockets is 6500"
+     start listening on a socket and call proc for each incoming request.
+     the socket protocol-family depends on the address: if it starts with a slash a local unix socket is used, if it contains colons ip6, otherwise ip4.
+     if socket is false, a socket is created with (socket AF_UNIX SOCK_STREAM 0). default port for tcp sockets is 6500"
     (apply server-listen
-      (l (port) (set-port-encoding! port "ISO-8859-1")
+      (l (port)
+        ; set to an 8-bit encoding because we are dealing with octets
+        (set-port-encoding! port "ISO-8859-1")
         (scgi-read-header port (l (header) (proc header port))))
       (or socket
         (server-create-bound-socket (or address scgi-default-address) (or port-number 6500)))

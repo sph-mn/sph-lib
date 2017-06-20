@@ -216,9 +216,9 @@
 
   (define string-each string-for-each)
 
-  (define (string-enclose str enclose-str)
+  (define (string-enclose a enclose-str)
     "append enclose-str to beginning and end of argument string"
-    (string-append enclose-str str enclose-str))
+    (string-append enclose-str a enclose-str))
 
   (define (string-longest-prefix a prefix-list)
     "string (string ...) -> string/boolean
