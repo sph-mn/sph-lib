@@ -35,9 +35,11 @@
     hashtable-merge!
     hashtable-q-ref
     hashtable-q-set-multiple
+    hashtable-q-set-multiple!
     hashtable-ref
     hashtable-select
     hashtable-set-multiple
+    hashtable-set-multiple!
     hashtable-tree-merge
     hashtable-tree-merge!
     hashtable-update-multiple!
@@ -162,7 +164,7 @@
 
   (define (hashtable-merge! a b)
     "hashtable hashtable -> unspecified
-     copy the values of hash b to hash a. key values are overwritten."
+     copy the values of hash b to hash a. existing key values are overwritten"
     (call-with-values (nullary (hashtable-entries b))
       (l (keys values)
         (vector-each-with-index (l (key index) (hashtable-set! a key (vector-ref values index)))
@@ -192,13 +194,23 @@
      like hashtable-tree-merge! but not side-effecting. it instead works on a copy of hashtable and results in it"
     (let (r (hashtable-copy a #t)) (hashtable-tree-merge! r b) r))
 
+  (define (hashtable-set-multiple! ht . assoc)
+    "hashtable key/value ...
+     return a new hashtable with multiple values having been updated"
+    (map-slice 2 (l (key value) (hashtable-set! ht key value)) assoc))
+
   (define (hashtable-set-multiple ht . assoc)
-    (let (r (hashtable-copy ht #t))
-      (map-slice 2 (l (key value) (hashtable-set! r key value)) assoc) r))
+    "hashtable key/value ...
+     return a new hashtable with multiple values having been updated"
+    (let (r (hashtable-copy ht #t)) (apply hashtable-set-multiple! r assoc) r))
 
   (define-syntax-rule (hashtable-q-set-multiple a key/value ...)
     ;hashtable [any:unquoted-key any:value] ...
     (apply hashtable-set-multiple a (quote-odd key/value ...)))
+
+  (define-syntax-rule (hashtable-q-set-multiple! a key/value ...)
+    ;hashtable [any:unquoted-key any:value] ...
+    (apply hashtable-set-multiple! a (quote-odd key/value ...)))
 
   (define (hashtable-update-multiple! ht keys proc)
     "hashtable list procedure:{any:values ... -> (any:new-values ...)} -> hashtable
