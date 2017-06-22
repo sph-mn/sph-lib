@@ -29,7 +29,7 @@
 
   (define sph-scgi-description
     "scgi interface. a server that accepts scgi requests and passes them to a custom procedure.
-    http://python.ca/scgi/protocol.txt")
+     http://python.ca/scgi/protocol.txt")
 
   (define binary-char-null (char->integer #\nul))
   (define binary-char-colon (char->integer #\:))
@@ -79,12 +79,13 @@
   (define scgi-default-address (string-append "/tmp/" (number->string (getuid)) "/scgi"))
 
   (define*
-    (scgi-handle-requests proc #:optional socket worker-count address port-number .
+    (scgi-handle-requests proc #:optional socket thread-count address port-number .
       server-listen-args)
-    "procedure:{list:header:((string . string) ...) port:client-socket ->} socket/false false/integer string boolean ->
+    "procedure:{list:header:((string . string) ...) port:client-socket ->} socket/false false/integer string ->
      start listening on a socket and call proc for each incoming request.
      the socket protocol-family depends on the address: if it starts with a slash a local unix socket is used, if it contains colons ip6, otherwise ip4.
-     if socket is false, a socket is created with (socket AF_UNIX SOCK_STREAM 0). default port for tcp sockets is 6500"
+     if socket is false, a socket is created with (socket AF_UNIX SOCK_STREAM 0). default port for tcp sockets is 6500.
+     server-listen-args is passed to (sph server) server-listen"
     (apply server-listen
       (l (port)
         ; set to an 8-bit encoding because we are dealing with octets
@@ -92,4 +93,4 @@
         (scgi-read-header port (l (header) (proc header port))))
       (or socket
         (server-create-bound-socket (or address scgi-default-address) (or port-number 6500)))
-      worker-count server-listen-args)))
+      thread-count server-listen-args)))

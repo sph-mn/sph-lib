@@ -69,68 +69,49 @@
         (nullary
           (map (l (n handler) (sigaction n (first handler) (tail handler))) signal-numbers handlers)))))
 
-  (define (call-with-exception-handling exception-keys exception-handler loop-listen socket proc)
+  (define (call-with-exception-handling exception-handler loop-listen socket thunk)
     "boolean/(symbol ...) false/procedure:{key procedure:resume exception-arguments ... -> any} procedure:resume procedure -> any
      if exception-handler or -keys is not false then install given these handlers for the inner request processing.
      the exception-handler receives a procedure to resume listening"
-    (if (and exception-handler exception-keys)
-      (guard
-        (obj
-          ( (or (boolean? exception-keys) (and (symbol? obj) (contains? exception-keys obj))
-              (and (list? obj) (not (null? obj))
-                (symbol? (first obj)) (contains? exception-keys (first obj))))
-            (apply exception-handler obj loop-listen socket)))
-        (proc))
-      (proc)))
+    (if exception-handler (guard (obj (#t (exception-handler obj loop-listen socket))) (thunk))
+      (thunk)))
 
   (define (call-with-epipe-and-ebadf-handling loop-listen proc)
     "procedure:continue-listening procedure:nullary -> any
      handle broken pipe errors and the accept error when the socket is closed"
     (catch (q system-error) proc
-      (l exc
-        (let (errno (system-error-errno exc))
+      (l a
+        (let (errno (system-error-errno a))
           (if (= EPIPE errno) (loop-listen)
-            (if (and (= EBADF errno) (string-equal? "accept" (list-ref exc 1))) #f
-              (apply throw exc)))))))
+            (if (and (= EBADF errno) (string-equal? "accept" (list-ref a 1))) #f (raise a)))))))
 
-  (define-syntax-rule
-    (loop-listen exception-keys exception-handler socket connection-identifier body ...)
+  (define (server-listen-loop exception-handler socket on-connection)
     (call-with-signal-handling socket
       (nullary
         (let loop-listen ()
-          (call-with-exception-handling exception-keys exception-handler
-            loop-listen socket
+          (call-with-exception-handling exception-handler loop-listen
+            socket
             (nullary
               (call-with-epipe-and-ebadf-handling loop-listen
                 (nullary
-                  (let loop-process (connection-identifier (first (accept socket)))
-                    (setvbuf connection-identifier (q none) 0) body
-                    ... (loop-process (first (accept socket))))))))))))
+                  (let loop-accept (conn (first (accept socket)))
+                    (setvbuf conn (q none) 0) (on-connection conn)
+                    (loop-accept (first (accept socket))))))))))))
 
-  (define (thread-pool-handle-sigpipe exception-handler exception-keys)
-    (l (key resume . a)
-      (if (and (eqv? (q system-error) key) (= EPIPE (system-error-errno (pair key a)))) (resume)
-        (if
-          (and exception-keys exception-handler
-            (or (boolean? exception-keys) (and (symbol? exception-keys) (eqv? key exception-keys))
-              (and (list? exception-keys) (contains? exception-keys key))))
-          (apply exception-handler key resume a) (apply throw key a)))))
-
-  (define* (server-listen proc socket #:optional worker-count exception-handler exception-keys)
+  (define*
+    (server-listen proc socket #:optional thread-count exception-handler #:key dispatcher-thread?)
     "procedure:{port ->} socket procedure:{resume key a ... ->} symbol/(symbol ...)/boolean-true ->
-     worker-count is the number of separate processing threads. 1 means no separate threads and single-thread operation.
-     the default is equal to the current processor count minus 1.
-     with only 2 processors cores, the overhead of using multiple workers could likely diminish performance.
+     thread-count is the total number of threads to use for processing including the request dispatcher.
+     the default is equal to the current processor count.
      the default exception handler catches all exceptions and resumes"
-    (listen socket server-listen-queue-length)
-    ; when worker-count is not given, leave one processor core free for request dispatching
-    (let (worker-count (or worker-count (max 1 (- (current-processor-count) 1))))
-      (if (= 1 worker-count)
-        (loop-listen exception-keys exception-handler socket c (proc c) (close-port c))
+    ; no connections are accepted as long as server-listen-queue-length is full
+    (let (thread-count (or thread-count (current-processor-count)))
+      (listen socket server-listen-queue-length)
+      (if (<= thread-count 1)
+        (server-listen-loop exception-handler socket (l (conn) (proc conn) (close-port conn)))
         (apply
-          (l (queue-add! . thread-pool)
-            (loop-listen exception-keys exception-handler
-              socket c (queue-add! (nullary (proc c) (close-port c))))
-            (thread-pool-destroy thread-pool))
-          (thread-pool-create worker-count
-            (thread-pool-handle-sigpipe exception-handler exception-keys) #t))))))
+          (l (enqueue . threads)
+            (server-listen-loop exception-handler socket
+              (l (conn) (enqueue (nullary (proc conn) (close-port conn)))))
+            (thread-pool-destroy threads))
+          (thread-pool-create (if dispatcher-thread? (- thread-count 1) thread-count)))))))
