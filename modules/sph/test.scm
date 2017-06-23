@@ -53,9 +53,10 @@
     (except (srfi srfi-1) map)
     (only (sph filesystem) path->full-path))
 
-  (define sph-test-description "automated code testing with composable modules
-    data structures:
-      test-result: ([group-name] test-result ...)/test-result-record")
+  (define sph-test-description
+    "automated code testing with composable modules
+     data structures:
+       test-result: ([group-name] test-result ...)/test-result-record")
 
   (define-as test-settings-default alist-q
     reporters test-reporters-default
@@ -78,7 +79,7 @@
 
   (define (test-settings-default-custom-by-list key/value)
     "[key value] ... -> list
-    get the default test settings, with values possibly set to the values given with \"key/value\""
+     get the default test settings, with values possibly set to the values given with \"key/value\""
     (alist-merge test-settings-default (list->alist key/value)))
 
   (define (settings->hook a name) "list symbol -> procedure" (alists-ref a (q hook) name))
@@ -201,7 +202,7 @@
 
   (define (test-modules-apply-settings settings modules)
     "list ((symbol ...) ...) -> ((symbol ...) ...)
-    apply settings to a list of test-module names"
+     apply settings to a list of test-module names"
     (alist-bind settings (only exclude until)
       ( (if until test-modules-until (l (a b) a))
         (if only (test-modules-only modules only)
@@ -229,21 +230,21 @@
 
   (define (settings->load-path! a)
     "list -> (string ...)
-    adds the value for the \"path-search\" setting to the global load-path and returns the value in a list to be used as a load-path variable, if the path-search value is not false.
-    otherwise returns %load-path"
+     adds the value for the \"path-search\" setting to the global load-path and returns the value in a list to be used as a load-path variable, if the path-search value is not false.
+     otherwise returns %load-path"
     (let (path-search (alist-q-ref a path-search))
       (if path-search
         (let (path (path->full-path path-search)) (add-to-load-path path) (list path)) %load-path)))
 
   (define (test-modules-by-prefix-execute settings . name)
     "list (symbol ...) ... -> test-result
-    execute all test-modules whose names begin with name-prefix.
-    for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both
-    modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
-    this procedure is supposed to return a test-result, for example from calling \"test-execute\"
-    the implementation is depends on the following features:
-    - module names are mapped to filesystem paths
-    - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
+     execute all test-modules whose names begin with name-prefix.
+     for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both
+     modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
+     this procedure is supposed to return a test-result, for example from calling \"test-execute\"
+     the implementation is depends on the following features:
+     - module names are mapped to filesystem paths
+     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
     (let
       ((load-path (settings->load-path! settings)) (search-type (alist-q-ref settings search-type)))
       (let
@@ -332,9 +333,9 @@
     (let (wrap (alist-ref settings (q procedure-wrap)))
       (if (procedure? wrap) (wrap test-proc) test-proc)))
 
-  (define (test-exception->key settings test-proc)
-    (let (a (alist-ref settings (q exception->key)))
-      (if a (if (eq? (q guile) a) guile-exception->key rnrs-exception->object) test-proc)))
+  (define (test-exception->key settings test-proc) test-proc
+    #;(let (a (alist-ref settings (q exception->key)))
+      (if a ((if (eq? (q guile) a) guile-exception->key rnrs-exception->key) test-proc) test-proc)))
 
   (define (test-procedures-execute-one settings index hooks name test-proc . data)
     "procedure:{test-result -> test-result} procedure [arguments expected] ... -> vector:test-result"
@@ -359,12 +360,12 @@
 
   (define (test-procedures-execute-parallel settings a hooks)
     "list:alist list -> list
-    executes all tests even if some fail"
+     executes all tests even if some fail"
     (par-map (l (e) (apply test-procedures-execute-one settings 0 hooks e)) a))
 
   (define (test-procedures-execute-serial settings a hooks)
     "list:alist list -> list
-    executes tests one after another and stops if one fails"
+     executes tests one after another and stops if one fails"
     (let
       (r
         (fold-multiple-with-continue
@@ -402,8 +403,8 @@
   (define*
     (test-execute-modules-by-prefix #:key (settings test-settings-default) #:rest module-names)
     "execute all test modules whose module name has the one of the given module name prefixes.
-    \"path-search\" restricts the path where to search for test-modules.
-    \"search-type\" does not execute modules that exactly match the module name prefix (where the module name prefix resolves to a regular file)"
+     \"path-search\" restricts the path where to search for test-modules.
+     \"search-type\" does not execute modules that exactly match the module name prefix (where the module name prefix resolves to a regular file)"
     (apply test-modules-by-prefix-execute settings (remove-keyword-associations module-names)))
 
   (define (assert-failure-result result expected title arguments)

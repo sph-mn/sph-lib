@@ -39,6 +39,7 @@
     program-path
     quote-odd
     remove-keyword-associations
+    rnrs-exception->key
     rnrs-exception->object
     search-env-path
     socket-bind
@@ -85,8 +86,26 @@
      ignores all arguments and returns unspecified"
     (if #f #t))
 
-  (define (rnrs-exception->object proc) "procedure -> procedure"
-    (l a (guard (exc (#t exc)) (apply proc a))))
+  (define (rnrs-exception->object proc)
+    "procedure -> procedure
+     wraps the given procedure so that when called and an exception occurs in it,
+     the exception is catched and the object passed to raise is returned"
+    (l a (guard (obj (#t obj)) (apply proc a))))
+
+  (define* (rnrs-exception->key proc #:optional return-object?)
+    "procedure [boolean] -> symbol
+     wraps the given procedure so that when called and an exception occurs in it,
+     the exception is catched and if the exception object passed to raise is a symbol or list
+     with a symbol as the first argument, the symbol is returned. otherwise the exception
+     is re-raised or the object returned, depending on the boolean value of the second argument \"return-object?\""
+    (l a
+      (guard
+        (obj
+          (#t
+            (if (symbol? obj) obj
+              (if (and (list? obj) (not (null? obj)) (symbol? (first obj))) (first obj)
+                (if return-object? obj (raise obj))))))
+        (apply proc a))))
 
   (define (guile-exception->key proc)
     "procedure -> procedure
