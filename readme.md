@@ -18,7 +18,7 @@ see more options using
 ## extended
 if you intend to use (sph process create) also call the following before install:
 ```
-./exe/compile
+./exe/compile-c
 ```
 
 this is unfortunately necessary because guile does not come with a generic process creation procedure and it can not be adequately implemented in scheme.

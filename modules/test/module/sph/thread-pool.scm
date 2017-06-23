@@ -10,6 +10,6 @@
       (apply
         (l (queue-add! . threads) (queue-add! (nullary (raise (q test))))
           (each-integer count (l (a) (queue-add! (nullary #f)))) (thread-pool-finish threads) #t)
-        (thread-pool-create count (l (key retry) key) #t))))
+        (thread-pool-create count (l (key retry) key)))))
 
   (test-execute-procedures-lambda (thread-pool-create)))

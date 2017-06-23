@@ -7,7 +7,7 @@
 
 ; include imht-set to use for filtering file descriptors to keep after fork
 (pre-define imht-set-key-t int)
-(pre-define imht-set-can-contain-zero? 0)
+(pre-define imht-set-can-contain-zero? #f)
 (sc-include "foreign/imht-set")
 
 (pre-include "libguile.h" "sys/types.h"
@@ -15,21 +15,13 @@
 
 (pre-define-if-not-defined OPEN-MAX 1024)
 
-(pre-define (scm-c-define-procedure-c name required optional rest c-function documentation)
-  "defines and registers a c routine as a scheme procedure with documentation.
-  like scm-c-define-gsubr but also sets documentation.
-  scm-c-define-procedure-c-init must have been called in scope"
-  f
-  (set scm-c-define-procedure-c-temp (scm-c-define-gsubr name required optional rest c-function))
-  (scm-set-procedure-property! scm-c-define-procedure-c-temp
-    (scm-from-locale-symbol "documentation") (scm-from-locale-string documentation)))
-
 (define (close-file-descriptors-from start-fd keep) (void int imht-set-t*)
-  "try to close all used file descriptors greater than start-fd.
-  tries to use /proc/{process-id}/fd, sysconf and getdtablesize.
-  if none of those is available, closes file descriptors from sart-fd to 1024"
-  (define fd long maxfd long)
-  (define-array path-proc-fd char (PATH_MAX))
+  "integer imht-set ->
+  try to close all used file descriptors greater than or equal to start-fd.
+  tries to use one of /proc/{process-id}/fd, sysconf and getdtablesize.
+  if none of those is available, closes file descriptors from sart-fd
+  to 1024 or OPEN_MAX if that as defined at compile time"
+  (define fd long maxfd long) (define-array path-proc-fd char (PATH_MAX))
   (define directory DIR* path-length int entry (struct dirent*) first-invalid char*)
   (set path-length
     (snprintf path-proc-fd (sizeof path-proc-fd) "/proc/%ld/fd" (convert-type (getpid) long)))
@@ -41,17 +33,15 @@
         (set fd (strtol (struct-pointer-get entry d-name) (address-of first-invalid) 10))
         (if
           (and (not (= (struct-pointer-get entry d-name) first-invalid))
-            (= (deref first-invalid) 0)
-            (>= fd 0)
-            (< fd INT_MAX)
-            (>= fd start-fd) (not (= fd (dirfd directory))) (not (imht-set-contains? keep fd)))
+            (= (deref first-invalid) 0) (>= fd 0)
+            (< fd INT_MAX) (>= fd start-fd)
+            (not (= fd (dirfd directory))) (not (imht-set-contains? keep fd)))
           (convert-type (close (convert-type fd int)) void)))
       (convert-type (closedir directory) void))
     ; fallback
     (begin (pre-if HAVE-SYSCONF (set maxfd (sysconf _SC-OPEN-MAX)) (set maxfd (getdtablesize)))
-      (if (< maxfd 0) (set maxfd OPEN-MAX))
-      (set fd start-fd)
-      (while (< fd maxfd)
+      (if (< maxfd 0) (set maxfd OPEN-MAX)) (set fd start-fd)
+      (while (<= fd maxfd)
         (if (not (imht-set-contains? keep fd)) (convert-type (close (convert-type fd int)) void))
         (set fd (+ 1 fd))))))
 
@@ -60,9 +50,13 @@
 (pre-define (close-fd scm a) (if (= scm SCM-BOOL-F) (close a)))
 
 (pre-define (ensure-fd a open-flags path)
+  "variable integer null/path ->
+  if \"a\" is -1, set it to a newly opened filed descriptor for path or /dev/null"
   (if (= -1 a) (set a (open (if* path path "/dev/null") open-flags))))
 
-(define (free-env a) (void char**) (define a-temp char** a) (while a-temp (free a-temp)) (free a))
+(define (free-env a) (void char**)
+  "free a null pointer terminated char**" (define a-temp char** a)
+  (while a-temp (free a-temp)) (free a))
 
 (define (scm-list->imht-set scm-a result) (int SCM imht-set-t**)
   (define a-length int (scm->uint32 (scm-length scm-a)))
@@ -74,10 +68,8 @@
   (return 0))
 
 (define (scm-string-list->string-pointer-array scm-a) (char** SCM)
-  "returns a null pointer terminated char**"
-  (define a-length int (scm->int (scm-length scm-a)))
-  (define result char** (malloc (* (sizeof char*) (+ 1 a-length))))
-  (set (deref result a-length) 0)
+  "returns a null pointer terminated char**" (define a-length int (scm->int (scm-length scm-a)))
+  (define result char** (malloc (* (sizeof char*) (+ 1 a-length)))) (set (deref result a-length) 0)
   (define result-pointer char** result)
   (while (not (scm-is-null scm-a)) (define b char* b-length size-t)
     (set b (scm->locale-stringn (SCM-CAR scm-a) (address-of b-length))
@@ -88,11 +80,16 @@
   (return result))
 
 (pre-define (port-argument-set-fd a fd path)
+  "SCM int-variable char*-variable ->
+  set fd to a file descriptor from an SCM argument or -1.
+  if \"a\" is a path string, set \"path\""
   (if (scm-is-true (scm-port? a)) (set fd (scm->int (scm-fileno a)))
     (if (scm-is-integer a) (set fd (scm->int a))
       (begin (set fd -1) (if (scm-is-string a) (set path (scm->locale-string a)))))))
 
 (pre-define (set-standard-streams input output error)
+  "integer integer integer ->
+  to be called in a new process"
   (if (> input 0)
     (begin (if (= 0 output) (move-fd output)) (if (= 0 error) (move-fd error)) (dup2-fd input 0)))
   (if (> output 1) (begin (if (= 1 error) (move-fd error)) (dup2-fd output 1)))
@@ -104,18 +101,15 @@
     scm-env
     scm-keep-descriptors
     scm-path-open-flags)
-  (SCM SCM SCM SCM SCM SCM SCM SCM SCM)
+  (SCM SCM SCM SCM SCM SCM SCM SCM SCM) "see init-sph-lib for documentation"
   (define path-open-flags int
     (if* (scm-is-true scm-path-open-flags) (scm->int scm-path-open-flags) 0))
   (define arguments char** (scm-string-list->string-pointer-array scm-arguments))
   (define env char**
     (if* (= SCM-BOOL-F scm-env) environ (scm-string-list->string-pointer-array scm-env)))
-  (define executable char* (scm->locale-string scm-executable))
-  (define keep imht-set-t*)
-  (define input int output int error int)
-  (define input-path char* 0)
-  (define output-path char* 0)
-  (define error-path char* 0)
+  (define executable char* (scm->locale-string scm-executable)) (define keep imht-set-t*)
+  (define input int output int error int) (define input-path char* 0)
+  (define output-path char* 0) (define error-path char* 0)
   (port-argument-set-fd scm-input-port input input-path)
   (port-argument-set-fd scm-output-port output output-path)
   (port-argument-set-fd scm-error-port error error-path)
@@ -123,17 +117,14 @@
   (define process-id int (fork))
   (if (not (= 0 process-id))
     (begin (free arguments) (free executable)
-      (imht-set-destroy keep)
-      (if (not (= SCM-BOOL-F scm-env)) (free-env env)) (return (scm-from-int process-id))))
+      (imht-set-destroy keep) (if (not (= SCM-BOOL-F scm-env)) (free-env env))
+      (return (scm-from-int process-id))))
   ;after fork
   (ensure-fd input O_RDONLY input-path)
   (ensure-fd output (bit-or O_WRONLY O_CREAT path-open-flags) output-path)
-  (ensure-fd error (bit-or O_WRONLY O_CREAT path-open-flags) error-path)
-  (imht-set-add keep input)
-  (imht-set-add keep output)
-  (imht-set-add keep error)
-  (close-file-descriptors-from 3 keep)
-  (set-standard-streams input output error)
+  (ensure-fd error (bit-or O_WRONLY O_CREAT path-open-flags) error-path) (imht-set-add keep input)
+  (imht-set-add keep output) (imht-set-add keep error)
+  (close-file-descriptors-from 3 keep) (set-standard-streams input output error)
   (execve executable arguments env)
   ; terminates the program immediately with neither scheme-level nor c-level cleanups
   (_exit 127) (return SCM-UNSPECIFIED))
@@ -143,12 +134,12 @@
     (scm-c-define-gsubr "primitive-process-create" 8 0 0 scm-primitive-process-create))
   (scm-set-procedure-property! primitive-process-create (scm-from-locale-symbol "documentation")
     (scm-from-locale-string
-      "string (string ...) false/port/string/integer false/port/string/integer false/port/string/integer (string ...) (integer ...) integer -> integer
+      "string (string ...) false/port/string/integer false/port/string/integer false/port/string/integer false/(string ...) (integer ...) false/integer -> false/integer
       executable (argument ...) input output error environ-result keep-file-descriptors path-open-flags -> child-process-id
-      input/output/error:
+      values for input, output or error:
       * false: /dev/null
-      * string: path
+      * string: filesystem path
       * integer: file descriptor
       * port: port
-      async safe fork/exec.
+      creates a child process via an async safe fork/exec.
       uses execve and does not search in directories of the PATH environment variable")))

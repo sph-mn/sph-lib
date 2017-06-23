@@ -53,9 +53,9 @@
     (except (srfi srfi-1) map)
     (only (sph filesystem) path->full-path))
 
-  (define sph-test-description "automated code testing with composable modules")
-  ;data-structures:
-  ;  test-result: ([group-name] test-result ...)/test-result-record
+  (define sph-test-description "automated code testing with composable modules
+    data structures:
+      test-result: ([group-name] test-result ...)/test-result-record")
 
   (define-as test-settings-default alist-q
     reporters test-reporters-default
@@ -159,7 +159,7 @@
   (define-syntax-rule (test-list test-spec ...) (list (test-list-one test-spec) ...))
 
   (define-syntax-rule (define-procedure-tests name test-spec ...)
-    ;symbol symbol/list -> ((symbol procedure any ...) ...)
+    ;symbol symbol/list-literal -> ((symbol procedure any ...) ...)
     ;define procedure tests that can be executed with "test-execute-procedures".
     ;resolves procedures by name in test-specs and normalises the test specification
     (define name (test-list test-spec ...)))

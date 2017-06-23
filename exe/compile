@@ -1,16 +1,3 @@
-#!/bin/bash
+#!/bin/sh
 
-export SC_LOAD_PATH="$PWD/extensions"
-optimisation=0
-warnings="-Wunused-label -Wunused-value -Wunused-variable"
-gcc_options="-Wfatal-errors $warnings -std=c11 -O$optimisation -lguile-2.2 -lgc"
-
-compile_libsph_lib() {
-  sc extension/main.sc temp/main.c
-  if [ $1 ]; then astyle temp/main.c >/dev/null; fi
-  gcc -Wl,--version-script=extension/export -shared -fpic temp/main.c -o temp/libguile-sph-lib.so $gcc_options
-}
-
-mkdir -p temp
-compile_libsph_lib $*
-chmod -R 755 temp
+./exe/compile-sc && ./exe/compile-c

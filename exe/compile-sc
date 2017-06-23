@@ -1,0 +1,15 @@
+#!/bin/sh
+
+format_c() {
+  clang-format -i "$@"
+}
+
+export SC_LOAD_PATH="$PWD/extensions"
+dir=extension/c-precompiled
+file="$dir/main.c"
+
+mkdir -p "$dir" &&
+sc extension/main.sc "$file" &&
+format_c "$file" &&
+chmod -R 755 "$dir" &&
+chmod -R 644 "$file"

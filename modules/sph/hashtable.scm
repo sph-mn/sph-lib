@@ -234,9 +234,9 @@
     ((h k ... k-last v) (hashtable-set! (hashtable-ref h k ...) k-last v)))
 
   (define* (hashtable->alist ht #:optional (depth 0))
-    "rnrs-hashtable [integer] -> alist
+    "rnrs-hashtable [integer] -> list
      converts a hashtable to an alist. if depth is greater than 0 any other
-     hashtables being values up to this nesting depth will be converted too."
+     hashtables being values up to this nesting depth will be converted too"
     (hashtable-fold
       (l (key value r)
         (pair
