@@ -34,7 +34,7 @@
       any->string-write)
     (only (srfi srfi-1) remove split-at))
 
-  (define sph-lang-itml-read-description "itml -> syntax-tree")
+  (define sph-lang-itml-read-description "parse itml")
   (define-peg-pattern double-backslash-body body (and ignored-backslash "\\"))
   (define-peg-pattern double-backslash all "\\\\")
   (define-peg-pattern association-infix all ": ")

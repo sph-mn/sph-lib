@@ -35,7 +35,7 @@
     (only (sph tree) tree-transform-with-state))
 
   (define sph-lang-docl-itml-description
-    "helpers to evaluate itml expressions a and convert from itml to another language")
+    "helpers to evaluate itml expressions and translate itml to other formats")
 
   (define (itml-adjust-nesting-depth a)
     "integer -> integer

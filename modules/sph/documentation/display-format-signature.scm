@@ -25,7 +25,7 @@
                   ""))
               (docstring (string-join (remove string-null? text-lines) "\n  " (q prefix))))
             (string-append (symbol->string (bi-name bi))
-              (if (contains? (ql procedure syntax) (bi-type bi))
+              (if (contains? (list-q procedure syntax) (bi-type bi))
                 (string-append " :: " arguments-string) "")
               ;docstring
               )))))

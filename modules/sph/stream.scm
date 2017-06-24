@@ -23,7 +23,7 @@
     (only (sph conditional) identity-if))
 
   (define sph-stream-description
-    "srfi-41 stream utilities.
+    "srfi-41 stream helper.
      re-exports (srfi srfi-41)")
 
   (module-re-export-modules (except (srfi srfi-41) port->stream))

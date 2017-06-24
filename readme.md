@@ -36,7 +36,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph install) - program and library installer
 * (sph io path-pipe-chain) - call procedures with input output arguments set up in a chained manner to allow data flow between them
 * (sph lang itml)
-* (sph lang itpn)
+* (sph lang itpn) - helpers for working with parsed itpn
 * (sph lang parser type-signature)
 * (sph lang plcss) - s-expression language that compiles to css
 * (sph lang scm-format) - format scheme code
@@ -46,12 +46,12 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph process create) - create child processes and process chains
 * (sph random-data) - generate random data. strings, booleans, lists, bytevectors, characters, ...
 * (sph record) - vectors as records
-* (sph scgi) - scgi interface. a server that accepts and parses scgi requests
+* (sph scgi) - scgi interface. a server that accepts scgi requests and passes them to a custom procedure
 * (sph scrypt) - use the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt
 * (sph server) - a generic socket based server
 * (sph test) - automated code testing with composable modules
-* (sph test performance) - adaptive performance testing and comparison of procedures with formatted result display
-* (sph thread-pool) - generic thread-pool that uses signal-conditions and has a customisable queue type
+* (sph test performance) - adaptive performance testing with formatted result display
+* (sph thread-pool) - generic thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type
 * (sph time) - time as integers of international atomic time (tai) nanoseconds since the unix epoch and a vector date object. conversions for utc and the gregorian calendar
 * (sph time gregorian) - gregorian calendar calculations
 * (sph time rfc3339) - parse and create strings in the rfc3339 time format
@@ -76,50 +76,49 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph error) - an error object type
 * (sph exception) - rnrs exception helpers. experimental
 * (sph filesystem)
+* (sph filesystem stream)
 * (sph filesystem watch) - observing and acting on file-system changes
 * (sph git)
-* (sph guile-dbi lib)
-* (sph guile-dbi sql)
-* (sph hashtable)
+* (sph hashtable) - rnrs-hashtable processing
 * (sph hashtable one)
 * (sph ice-9-stream)
 * (sph interface-format) - for programs that offer textual input/output in multiple formats. experimental
-* (sph io) - port and file input output
+* (sph io) - port and file input/output
 * (sph io read-write) - port io with specifying a read and write procedure
 * (sph json) - a basic but fast json writer
 * (sph lang docl) - evaluate templates with a specific scheme environment, state values and circular inclusion protection
 * (sph lang docl env default)
 * (sph lang docl env itml-to-plaintext)
 * (sph lang docl env itml-to-shtml)
-* (sph lang docl itml)
-* (sph lang docl itml-to-plaintext)
+* (sph lang docl itml) - helpers to evaluate itml expressions and translate itml to other formats
+* (sph lang docl itml-to-plaintext) - translates itml to an indent-tree plaintext string with evaluated expressions
 * (sph lang docl itml-to-shtml)
 * (sph lang ecmascript expressions) - create ecmascript syntax strings
 * (sph lang indent-syntax)
-* (sph lang itml read)
+* (sph lang itml read) - parse itml
 * (sph lang itml write)
 * (sph lang parser outline) - parse text with nested headings
 * (sph lang scm-format base)
-* (sph lang scm-format format)
+* (sph lang scm-format format) - formatters for individual expressions
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
 * (sph lang sxml-element-style-css)
 * (sph linux) - linux specific features
 * (sph list)
 * (sph list one)
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
-* (sph module) - guile module system or rnrs library related procedures
+* (sph module) - guile module system and rnrs library related procedures
 * (sph number)
 * (sph one) - various
 * (sph replacement-table) - replacement tables like (key replacement ...) loaded from files or ports
 * (sph set) - hashtables as sets
 * (sph sql) - create sql-statements from scheme data
-* (sph stream)
+* (sph stream) - srfi-41 stream helper
 * (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph system reader) - a scheme reader that can include comments
 * (sph test base)
 * (sph test cli)
 * (sph test report)
-* (sph threads) - re-exports some and renames parallel processing bindings from (ice-9 threads)
+* (sph threads) - re-exports and renames some parallel processing bindings from (ice-9 threads). experimental
 * (sph time stream) - create an srfi-41 stream of calendar dates between two dates
 * (sph time string) - time string conversions
 * (sph time utc) - utc related time calculations

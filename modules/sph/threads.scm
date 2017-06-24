@@ -8,4 +8,4 @@
     (rnrs base))
 
   (define sph-threads-description
-    "re-exports some and renames parallel processing bindings from (ice-9 threads). experimental"))
+    "re-exports and renames some parallel processing bindings from (ice-9 threads). experimental"))
