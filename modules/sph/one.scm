@@ -60,6 +60,7 @@
     (sph list)
     (sph number)
     (sph string)
+    (only (rnrs base) set!)
     (only (rnrs hashtables)
       make-hashtable
       equal-hash

@@ -14,7 +14,6 @@
     sph-binding-info-description)
   (import
     (guile)
-    (rnrs base)
     (rnrs sorting)
     (sph)
     (sph module)
@@ -68,7 +67,7 @@
       (l (module-name)
         "(symbol ...) -> (vector ...)
         get information about all exported bindings of the given module"
-        (module-name-interface-map get-info module-name))))
+        (module-map get-info (resolve-interface module-name)))))
 
   (define (sort-module-binding-info a) "(binding-info ...)"
     (list-sort (l (a b) (string< (symbol->string (bi-name a)) (symbol->string (bi-name b)))) a)))

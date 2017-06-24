@@ -5,6 +5,8 @@
     merge-files)
   (import
     (sph)
+    (sph filesystem)
+    (guile)
     (sph stream))
 
   (define (directory-delete-content path)

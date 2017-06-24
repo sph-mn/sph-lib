@@ -41,6 +41,11 @@
     case
     ceiling
     char->integer
+    char<=?
+    char<?
+    char=?
+    char>=?
+    char>?
     char?
     complex?
     compose-s
@@ -100,6 +105,7 @@
     let
     let*
     let-syntax
+    let-values
     letrec
     letrec*
     letrec-syntax
@@ -115,6 +121,7 @@
     make-rectangular
     make-string
     make-vector
+    map
     max
     min
     mod
@@ -160,6 +167,11 @@
     string-copy
     string-length
     string-ref
+    string<=?
+    string<?
+    string=?
+    string>=?
+    string>?
     string?
     substring
     symbol->string
@@ -183,7 +195,6 @@
     vector-for-each
     vector-length
     vector-map
-    map
     vector-ref
     vector-set!
     vector?

@@ -3,7 +3,7 @@
     set-deprecated
     sph-deprecation-description)
   (import
-    (rnrs base)
+    (only (rnrs base) set!)
     (sph)
     (only (guile) current-error-port simple-format))
 

@@ -1,4 +1,4 @@
-(define-test-module (test module sph log) (import (sph list) (guile) (sph log))
+(define-test-module (test module sph log) (import (sph list) (only (rnrs base) set!) (guile) (sph log))
   (define output-string (open-output-string))
   (define output-string-route (vector (q (all b c)) log-default-formatter (list output-string)))
   (set! log-routes (list output-string-route))

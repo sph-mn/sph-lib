@@ -15,7 +15,8 @@
     (guile)
     (sph base)
     (sph hashtable one)
-    (sph tree))
+    (sph tree)
+    (only (rnrs base) set!))
 
   (define sph-config-description
     "program configuration file management

@@ -9,6 +9,7 @@
     (ice-9 q)
     (ice-9 threads)
     (sph)
+    (only (rnrs base) set!)
     (only (sph list) map-integers))
 
   (define sph-thread-pool-description

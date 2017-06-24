@@ -18,17 +18,18 @@
     docstring->lines
     docstring-split-signature
     documentation-display-formats
-    module-find-one-information
-    module-find-one-information-sorted
     format-module-documentation
     itpn-docstring-split-signature
     lines->docstring
     module-description
+    module-find-one-information
+    module-find-one-information-sorted
     sort-module-information
     sph-documentation-description)
   (import
     (guile)
     (ice-9 peg)
+    (ice-9 threads)
     (rnrs base)
     (sph)
     (sph alist)
@@ -50,7 +51,7 @@
 
   (define (docstring-split-signature a line-prefix continue)
     "string procedure:{string:type-signatures string:rest-of-docstring} -> any
-    if a string starts with a type-signature, split string at the end of it"
+     if a string starts with a type-signature, split string at the end of it"
     (if a
       (let (signature (match-pattern peg-type-signature a))
         (if signature
@@ -85,8 +86,8 @@
 
   (define (default-format-arguments arguments type)
     "pair/list:alist symbol:\"procedure\"/\"syntax\"/\"variable\" -> string
-    formats argumets in sph type-signature notation format.
-    arguments as retrieved by \"module-binding-info\", which uses (ice-9 session) \"procedure-arguments\""
+     formats argumets in sph type-signature notation format.
+     arguments as retrieved by \"module-binding-info\", which uses (ice-9 session) \"procedure-arguments\""
     ;syntax arguments can be pairs
     (if
       (and (eqv? (q procedure) type) (list? arguments)
@@ -126,9 +127,9 @@
 
   (define* (format-module-documentation module-names #:optional (format-handler-name (q default)))
     "((symbol ...) ...)/(symbol ...) symbol ->
-    output documentation for a list of module-names. format-handler-name can currently either be
-    default, itpn.
-    for just retrieving module documentation you might want to consider (sph binding-info)"
+     output documentation for a list of module-names. format-handler-name can currently either be
+     default, itpn.
+     for just retrieving module documentation you might want to consider (sph binding-info)"
     (let
       ( (format-handler
           (or (assoc-ref documentation-display-formats format-handler-name)
@@ -150,8 +151,8 @@
 
   (define (module-description name)
     "(symbol ...) -> false/string
-    get the module description from an exported variable with a specific name.
-    (a b c) -> a-b-c-description"
+     get the module description from an exported variable with a specific name.
+     (a b c) -> a-b-c-description"
     (false-if-exception
       (module-ref (resolve-module name)
         (string->symbol (string-append (string-join (map symbol->string name) "-") "-description")))))

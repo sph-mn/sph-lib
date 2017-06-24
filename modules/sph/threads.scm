@@ -2,11 +2,7 @@
   (export
     parallel
     sph-threads-description
-    (rename (letpar let-par)
-      (par-map map-par)
-      (par-for-each each-par)
-      (n-par-map map-par-n)
-      (n-par-for-each each-par-n)))
+    (rename (letpar par-let) (par-for-each par-each)))
   (import
     (ice-9 threads)
     (rnrs base))

@@ -46,7 +46,6 @@
     every-s
     file-append
     file-append-one
-    fold-integers
     generalised-length
     generalised-less?
     get-filesystem-root
@@ -77,6 +76,7 @@
     or-p
     os-seconds-at-boot
     os-seconds-since-boot
+    path->symbol-list
     paths-find-file-size-sum
     plaintext->shtml
     port-column-subtract!
@@ -88,7 +88,6 @@
     process-unique-integer
     prog-sync-with-root
     read-line-crlf
-    path->symbol-list
     read-line-crlf-trim
     read-mime.types
     seconds->short-kiloseconds-string
@@ -119,7 +118,6 @@
     (ice-9 rdelim)
     (ice-9 regex)
     (ice-9 threads)
-    (rnrs base)
     (rnrs bytevectors)
     (rnrs io ports)
     (rnrs sorting)
@@ -146,7 +144,6 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
-
 
   (define (path->symbol-list a)
     (let (a (string-trim-both a #\/))
@@ -203,9 +200,6 @@
 
   (define-syntax-rule (values-bind producer lambda-formals body ...)
     (call-with-values (nullary producer) (lambda lambda-formals body ...)))
-
-  (define (fold-integers start end init proc)
-    (let loop ((n start) (r init)) (if (< n end) (loop (+ 1 n) (proc n r)) r)))
 
   (define* (integer->integer-string a #:optional (radix 10))
     "integer -> string
@@ -408,14 +402,6 @@
   (define (bash-escape-clear)
     "display the bash escape sequence for clearing the screen - which usually means to scroll until the current line is at the top"
     (display #\esc) (display "c"))
-
-  (define (paths-find-file-size-sum . a)
-    "string:path ... -> integer:bits
-     uses the \"find\" and \"file-size-sum\" program to display the sum of bits of the files specified as paths"
-    (if (defined? process-chain)
-      (call-with-pipe
-        (l (in out) (process-chain #f out ((pair "find" a) (list "file-size-sum")))
-          (close out) (string->number (string-trim-right (get-string-all in)))))))
 
   (define (list->string-list a)
     "(any ...) -> (string ...)

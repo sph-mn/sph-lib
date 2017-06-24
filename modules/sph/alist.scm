@@ -51,8 +51,8 @@
     set-alist-bindings!
     sph-alist-description)
   (import
-    (rnrs base)
     (sph)
+    (only (rnrs base) set!)
     (only (sph list) fold-multiple)
     (only (sph one) quote-odd)
     (only (srfi srfi-1) alist-cons filter)
@@ -65,9 +65,9 @@
 
   (define (keyword-list->alist+keyless a)
     "list -> (list:alist any ...)
-    parses a list with arguments similar to lambda* arguments. it creates alist entries for keywords (#: notation, #:example) and subsequently following values (#:example 3 other ...).
-    if no value follows: (#:example . #t).
-    all values that do not directly follow a keyword are collected in the tail of the result"
+     parses a list with arguments similar to lambda* arguments. it creates alist entries for keywords (#: notation, #:example) and subsequently following values (#:example 3 other ...).
+     if no value follows: (#:example . #t).
+     all values that do not directly follow a keyword are collected in the tail of the result"
     (let loop ((rest a) (r (list)) (keyless (list)))
       (if (null? rest) (pair r keyless)
         (let (e (first rest))
@@ -81,8 +81,8 @@
     (let (proc (l (e alt prev r) (if alt (list #f #f (acons prev e r)) (list #t e r))))
       (lambda (lis)
         "-> alist
-        create an association list from the given arguments,
-        mapping each list element alternating to a key and value."
+         create an association list from the given arguments,
+         mapping each list element alternating to a key and value."
         (if (null? lis) lis
           (let (r (fold-multiple proc (tail lis) #t (first lis) (list)))
             (reverse!
@@ -91,10 +91,10 @@
 
   (define* (list->group-alist lis #:optional (accessor identity))
     "group elements in list by an attribute of its elements.
-    this is the equality of (accessor list-element) between elements and stored under (accessor list-element) as keys.
-    example
-        (list->group-alist (1 2 2 3) identity) -> ((1 . (1)) (2 . (2 2)) (3 . (3)))
-        (list->group-alist ((1 3) (2 5) (2 6)) first) -> ((1 . 3) (2 . (5 6)))"
+     this is the equality of (accessor list-element) between elements and stored under (accessor list-element) as keys.
+     example
+         (list->group-alist (1 2 2 3) identity) -> ((1 . (1)) (2 . (2 2)) (3 . (3)))
+         (list->group-alist ((1 3) (2 5) (2 6)) first) -> ((1 . 3) (2 . (5 6)))"
     (reverse!
       (fold
         (l (e groups)
@@ -123,9 +123,9 @@
 
   (define (alist . key/value)
     "key/value ... -> alist
-    create an association list from the given arguments,
-    mapping each argument alternatingly to key and value.
-    (alist (quote a) 1 \"b\" 2 (quote c) 3)"
+     create an association list from the given arguments,
+     mapping each argument alternatingly to key and value.
+     (alist (quote a) 1 \"b\" 2 (quote c) 3)"
     (list->alist key/value))
 
   (define-syntax-rule (alist-q key/value ...)
@@ -151,7 +151,7 @@
 
   (define (alist-cond a alist)
     "any ((procedure:{any -> any/false} alist-tail ...) ...) -> alist-tail/false
-    like a cond expression but with an alist for the test conditions where the tail of the alist is returned for which the test suceeds."
+     like a cond expression but with an alist for the test conditions where the tail of the alist is returned for which the test suceeds."
     (let next ((cur (first alist)) (rest (tail alist)))
       (if (null? rest) (if ((first cur) a) (tail cur) #f)
         (if ((first cur) a) (tail cur) (next (first rest) (tail rest))))))
@@ -165,13 +165,13 @@
 
   (define (alist-merge a b)
     "list list -> list
-    create a new alist with the associations of both alists, preferring entries of \"b\""
+     create a new alist with the associations of both alists, preferring entries of \"b\""
     (append (filter (l (e) (not (alist-ref b (first e)))) a) b))
 
   (define (alist-set-multiple a . key/value)
     "list [any:key any:value] ...
-    update or add values in alist for specific keys.
-    key and value are specified alternatingly"
+     update or add values in alist for specific keys.
+     key and value are specified alternatingly"
     (alist-merge a (list->alist key/value)))
 
   (define-syntax-rule (alist-q-set-multiple a key/value ...)
@@ -180,8 +180,8 @@
 
   (define (alist-update-multiple a . key/value)
     "list [any:key any:value] ...
-    update values in alist for specific keys.
-    key and value are specified alternatingly"
+     update values in alist for specific keys.
+     key and value are specified alternatingly"
     (alist-update a (list->alist key/value)))
 
   (define-syntax-rule (alist-q-update-multiple a key/value ...)
@@ -190,7 +190,7 @@
 
   (define (alist-update a b)
     "list list -> list
-    update existing entries of a with corresponding entries of b"
+     update existing entries of a with corresponding entries of b"
     (map
       (l (pair-1)
         ((l (value) (if value (pair (first pair-1) value) pair-1)) (alist-ref b (first pair-1))))
@@ -203,14 +203,14 @@
 
   (define (list-alist? a)
     "list -> boolean
-    return #t if list is an association list, #f otherwise. works only on lists"
+     return #t if list is an association list, #f otherwise. works only on lists"
     (every pair? a))
 
   (define (alist? a) "any -> boolean" (and (list? a) (list-alist? a)))
 
   (define (alist-select-apply a keys proc)
     "list list procedure:{any:key-value ...} -> any
-    applies proc with all alist values for keys in order"
+     applies proc with all alist values for keys in order"
     (apply proc (alist-select a keys)))
 
   (define-syntax-rule (alist-q-select-apply a (key ...) proc)
@@ -221,7 +221,7 @@
 
   (define (alist-set a key value)
     "list any any -> list
-    add or update an entry in an association list"
+     add or update an entry in an association list"
     (let loop ((rest a))
       (if (null? rest) (pair (pair key value) rest)
         (let (e (first rest))

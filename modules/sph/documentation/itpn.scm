@@ -4,7 +4,7 @@
     documentation-itpn-library)
   (import
     (guile)
-    (rnrs base)
+    (ice-9 threads)
     (rnrs sorting)
     (sph)
     (sph alist)
@@ -14,9 +14,9 @@
     (sph list)
     (sph module)
     (sph one)
-    (only (sph two) create-newline-indent)
     (sph string)
-    (except (srfi srfi-1) map))
+    (except (srfi srfi-1) map)
+    (only (sph two) create-newline-indent))
 
   (define (with-binding-info-title-and-lines-proc c)
     (l (binding-info)
@@ -46,14 +46,14 @@
 
   (define (documentation-itpn-library nesting-depth . library-names)
     "((symbol ...) ...) integer -> string
-    index of all bindings in a module and a listing of the available binding documentation"
+     index of all bindings in a module and a listing of the available binding documentation"
     (let
       ( (bindings (append-map get-binding-documentation library-names))
         (newline-indent-1 (create-newline-indent nesting-depth))
         (newline-indent-2 (create-newline-indent (+ 1 nesting-depth)))
         (newline-indent-3 (create-newline-indent (+ 2 nesting-depth)))
         (newline-indent-4 (create-newline-indent (+ 3 nesting-depth))))
-      (par-let
+      (letpar
         ( (index (map first bindings))
           (content
             (map
@@ -69,7 +69,7 @@
       (map-binding-name (l (name library-name) (symbol->string name)))
       (map-library-name any->string))
     "((symbol ...) ...) integer [{symbol list:library-name -> string} {list:library-name -> string}] -> string
-    list of binding and library name"
+     list of binding and library name"
     (let
       (binding-info
         ;((mapped-binding-name mapped-library-name) ...)
@@ -82,6 +82,6 @@
                     (list (symbol->string name) (map-binding-name name library-name)
                       (map-library-name library-name)))
                   names))
-              (module-names->exports library-names) library-names))))
+              (map (compose module-exports resolve-interface) library-names) library-names))))
       (string-join (map (l (e) (string-join e " ")) binding-info)
         (string-append "\n" (string-multiply "  " nesting-depth))))))

@@ -7,7 +7,6 @@
     list-replace-from-hashtable
     randomise)
   (import
-    (rnrs base)
     (rnrs sorting)
     (sph)
     (sph alist)
@@ -15,6 +14,7 @@
     (sph list)
     (sph random-data)
     (only (guile) identity)
+    (only (rnrs base) set!)
     (only (rnrs hashtables) hashtable-set!)
     (only (srfi srfi-1) delete-duplicates))
 
@@ -22,8 +22,8 @@
 
   (define (list-replace-from-hashtable a ht)
     "list rnrs-hashtable -> list
-    replaces elements in list that exist as key in a hashtable with the associated value.
-    if the value is a list, the element is either removed (empty list) or replaced with multiple elements"
+     replaces elements in list that exist as key in a hashtable with the associated value.
+     if the value is a list, the element is either removed (empty list) or replaced with multiple elements"
     (fold
       (l (e r)
         (let (value (hashtable-ref ht e))
@@ -32,12 +32,12 @@
 
   (define (group-equal a)
     "list -> ((any:group-value ...):group ...)
-    create a list with lists of equal elements"
+     create a list with lists of equal elements"
     (index-with-accessor identity a))
 
   (define (index-with-accessor accessor a)
     "procedure list -> ((any:group-key any:group-value ...):group ...)
-    create an association list entry with accessor result and element for every unique result of accessor"
+     create an association list entry with accessor result and element for every unique result of accessor"
     (let loop ((rest a) (groups (alist)))
       (if (null? rest) (map (l (a) (pair (first a) (reverse (tail a)))) groups)
         (let* ((e (first rest)) (key (accessor e)) (group (alist-ref groups key)))
@@ -45,13 +45,13 @@
 
   (define (list-ref-random a)
     "list -> any
-    retrieve a random element of a list. uses the default random-state of (sph random-data) which changes with every interpreter start"
+     retrieve a random element of a list. uses the default random-state of (sph random-data) which changes with every interpreter start"
     (list-ref a (random (length a))))
 
   (define (list-ref-cycle-randomise-proc a)
     "list -> procedure:{-> any}
-    gives a procedure that when called gives the next element from a randomised version of \"a\"
-    when the end of the list has been reached, the list is reset to a newly randomised version of \"a\""
+     gives a procedure that when called gives the next element from a randomised version of \"a\"
+     when the end of the list has been reached, the list is reset to a newly randomised version of \"a\""
     (let ((a-length (length a)) (new (randomise a)) (old (list)))
       (letrec
         ( (loop
@@ -62,8 +62,8 @@
 
   (define (randomise a)
     "list -> list
-    return a new list with the elements of list in random order.
-    algorithm: connect a random number to each element, re-sort list corresponding to the random numbers."
+     return a new list with the elements of list in random order.
+     algorithm: connect a random number to each element, re-sort list corresponding to the random numbers."
     (let (length-a (length a))
       (map tail
         (list-sort (l (a b) (< (first a) (first b))) (map (l (e) (pair (random length-a) e)) a))))))

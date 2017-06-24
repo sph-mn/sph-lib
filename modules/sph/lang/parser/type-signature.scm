@@ -7,8 +7,8 @@
   (import
     (guile)
     (ice-9 peg)
-    (rnrs base)
     (sph)
+    (sph list)
     (sph tree)
     (only (srfi srfi-1)
       second
