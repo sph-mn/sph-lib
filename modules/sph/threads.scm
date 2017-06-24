@@ -8,8 +8,8 @@
       (n-par-map map-par-n)
       (n-par-for-each each-par-n)))
   (import
-    (rnrs base)
-    (ice-9 threads))
+    (ice-9 threads)
+    (rnrs base))
 
   (define sph-threads-description
-    "re-exports some and renames parallel processing bindings from (ice-9 threads)"))
+    "re-exports some and renames parallel processing bindings from (ice-9 threads). experimental"))

@@ -13,52 +13,184 @@
 
 (library (sph)
   (export
+    *
+    +
+    -
+    /
+    <
+    <=
+    =
+    >
+    >=
+    abs
+    acos
+    and
     and-let*
+    angle
     any
+    append
+    apply
     apply-values
+    asin
+    atan
+    begin
+    boolean?
+    call-with-current-continuation
+    call-with-values
+    call/cc
+    case
+    ceiling
+    char->integer
+    char?
+    complex?
     compose-s
+    cond
+    cos
     datum->syntax
     debug-log
+    define
     define*
     define-as
+    define-syntax
     define-syntax-case
     define-syntax-cases
     define-syntax-rule
     define-syntax-rules
+    denominator
     display-line
+    div
+    div-and-mod
+    div0
+    div0-and-mod0
+    dynamic-wind
     each
+    eq?
+    equal?
+    eqv?
+    even?
     every
+    exact
+    exact-integer-sqrt
+    exact?
+    exp
+    expt
+    finite?
     first
+    floow
     fold
     fold-right
+    for-each
+    gcd
+    identifier-syntax
     identifier?
+    if
+    imag-part
+    inexact
+    inexact?
+    infinite?
+    integer->char
+    integer-valued?
+    integer?
     l
     l*
+    lambda
     lambda*
+    lcm
+    length
     let
+    let*
+    let-syntax
+    letrec
+    letrec*
+    letrec-syntax
+    list
+    list->string
+    list->vector
+    list-ref
+    list-tail
+    list?
+    log
+    magnitude
+    make-polar
+    make-rectangular
+    make-string
+    make-vector
+    max
+    min
+    mod
+    mod0
+    nan?
+    negative?
+    not
     null
+    null?
     nullary
+    number->string
+    number?
+    numerator
+    odd?
+    or
     pair
+    pair?
     pairs
-    par-let
-    par-map
-    parallel
+    positive?
+    procedure?
     q
     qq
+    quasiquote
     quasisyntax
+    quote
+    rational-valued?
+    rational?
+    rationalize
+    real-part
+    real-valued?
+    real?
+    reverse
+    round
     second
+    sin
     sph-description
+    sqrt
+    string
+    string->list
+    string->number
+    string->symbol
+    string-append
+    string-copy
+    string-length
+    string-ref
+    string?
+    substring
+    symbol->string
+    symbol?
     syntax
     syntax->datum
     syntax-rule
+    syntax-rules
     syntax-rules_
     tail
+    tan
+    truncate
+    unquote
+    unquote-splicing
     unsyntax
     unsyntax-splicing
-    with-syntax)
+    values
+    vector
+    vector->list
+    vector-fill!
+    vector-for-each
+    vector-length
+    vector-map
+    map
+    vector-ref
+    vector-set!
+    vector?
+    with-syntax
+    zero?)
   (import
     (ice-9 pretty-print)
-    (ice-9 threads)
     (except (rnrs base) let)
     (only (guile)
       LC_ALL
@@ -70,9 +202,6 @@
       exit
       filter
       identifier?
-      module-map
-      module-re-export!
-      module-uses
       newline
       quasisyntax
       read-disable
@@ -81,12 +210,9 @@
       syntax
       syntax->datum
       syntax-case
-      throw
       unsyntax
       unsyntax-splicing
       with-syntax
-      resolve-interface
-      current-module
       write)
     (only (ice-9 optargs) lambda* define*)
     (only (srfi srfi-1)
@@ -100,22 +226,17 @@
     (only (srfi srfi-2) and-let*))
 
   (define sph-description
-    "bindings that are fundamental to all sph libraries
-    includes (rnrs base)")
+    "bindings that are fundamental to all sph libraries.
+     exports almost all of (rnrs base)")
 
-  (module-re-export! (current-module)
-    ;export (rnrs base). exclude let because it is redefined here
-    (filter (lambda (e) (not (or (eq? e (quote %module-public-interface)) (eq? e (quote let)))))
-      (module-map (lambda a (car a)) (resolve-interface (q (rnrs base))))))
-
-  ;affects port\string encodings
-  ;  initialise all locale categories based on system environment variables
+  ; affects port\string encodings
+  ; initialise locale categories based on system environment variables
   (setlocale LC_ALL "")
   (read-disable (quote square-brackets))
 
   (define (debug-log . a)
     "any-1 any-n ... -> any-1
-    writes all arguments to standard output and returns the first argument"
+     writes all arguments to standard output and returns the first argument"
     (pretty-print (cons (q --) a)) (first a))
 
   (define-syntax syntax-rule
@@ -173,8 +294,8 @@
   (define null (list))
 
   (define-syntax-rules let
-    ;let and named-let extended with a simplified syntax for binding just one variable
-    ;example: (let (a 3) a)
+    ; let and named-let extended with a simplified syntax for binding just one variable
+    ; example: (let (a 3) a)
     ((((variable-name expr) ...) body ...) ((lambda (variable-name ...) body ...) expr ...))
     (((variable-name expr) body ...) (let ((variable-name expr)) body ...))
     ( (name ((variable-name expr) ...) body ...)
@@ -182,9 +303,9 @@
     ((name (variable-name expr) body ...) (let name ((variable-name expr)) body ...)))
 
   (define-syntax-case (compose-s name expr ...) s
-    ;(compose-s a (list 1 2)) -> (a (list 1 2))
-    ;(compose-s (a b) (list 1 2)) -> (a (b (list 1 2)))
-    ;this does not fail in the case (_ (quasiquote list) expr ...)
+    ; (compose-s a (list 1 2)) -> (a (list 1 2))
+    ; (compose-s (a b) (list 1 2)) -> (a (b (list 1 2)))
+    ; this does not fail in the case (_ (quasiquote list) expr ...)
     (let (name-datum (syntax->datum (syntax name)))
       (if (list? name-datum)
         (let (name-datum (reverse name-datum))
@@ -194,14 +315,14 @@
         (syntax (name expr ...)))))
 
   (define-syntax-rules define-as
-    ;example: (define-as list 1 2 3)
-    ;example: (define-as (quasiquote list) 1 (unquote 3)
+    ; example: (define-as list 1 2 3)
+    ; example: (define-as (quasiquote list) 1 (unquote 3)
     ((name (wrap-name ...) expr ...) (define name (compose-s (wrap-name ...) expr ...)))
     ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
   (define* (display-line a #:optional (port (current-output-port)))
     "any [port] -> unspecified
-    like \"display\" but emits a newline at the end"
+     like \"display\" but emits a newline at the end"
     (display a port) (newline port))
 
   (define-syntax-rule (nullary body ...)

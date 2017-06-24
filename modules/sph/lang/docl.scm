@@ -31,10 +31,10 @@
 
   (define (call-with-docl get-source-identifier get-source-position input proc docl-state)
     "{any:input -> any} {input -> any} any {input -> any} list -> any/string
-    installs a handler that amends exceptions with source information so that an exception-handler
-    receives the arguments (key source-name source-position other-exception-arguments ...) for exceptions matching exception-keys.
-    sets up the circular inclusion protection and bindings which are accessible with
-    the procedures from (sph lang docl env). then calls \"proc\" with \"input\""
+     installs a handler that amends exceptions with source information so that an exception-handler
+     receives the arguments (key source-name source-position other-exception-arguments ...) for exceptions matching exception-keys.
+     sets up the circular inclusion protection and bindings which are accessible with
+     the procedures from (sph lang docl env). then calls \"proc\" with \"input\""
     (let (source-name (get-source-identifier input))
       (if (and source-name (contains? (first docl-state) source-name)) ""
         (let (docl-state (pair (pair source-name (first docl-state)) (tail docl-state)))
@@ -47,16 +47,16 @@
 
   (define (docl-translate-any input proc docl-state)
     "calls proc with input and enables docl features as with call-with-docl.
-    input can be anything, and the source-position argument for exceptions will be false."
+     input can be anything, and the source-position argument for exceptions will be false."
     (call-with-docl equal-hash #f input proc docl-state))
 
   (define (docl-translate-port input proc docl-state)
     "port procedure:{port -> any} list -> any
-    calls proc with input and enables docl features as with call-with-docl.
-    input must be a port, and the source-identifier and source-position arguments for exceptions are set using port-filename and port-position"
+     calls proc with input and enables docl features as with call-with-docl.
+     input must be a port, and the source-identifier and source-position arguments for exceptions are set using port-filename and port-position"
     (call-with-docl port-filename port-position input proc docl-state))
 
   (define (docl-state-add-parameters docl-state a)
     "list false/([key value] ...) -> list
-    add parameters from a flat list"
+     add parameters from a flat list"
     (if a (pair (first docl-state) (append (list->alist a) (tail docl-state))) docl-state)))

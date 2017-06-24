@@ -88,6 +88,7 @@
     process-unique-integer
     prog-sync-with-root
     read-line-crlf
+    path->symbol-list
     read-line-crlf-trim
     read-mime.types
     seconds->short-kiloseconds-string
@@ -145,6 +146,11 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
+
+
+  (define (path->symbol-list a)
+    (let (a (string-trim-both a #\/))
+      (if (string-null? a) (list) (map string->symbol (string-split a #\/)))))
 
   (define-syntax-rule (begin-first-values a b ...)
     ; like begin but returns the values created by the first expression

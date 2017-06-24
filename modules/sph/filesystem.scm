@@ -1,13 +1,11 @@
 (library (sph filesystem)
   (export
     call-with-directory
-    directory-delete-content
     directory-fold
     directory-list
     directory-list-full-path
     directory-read-all
     directory-reference?
-    directory-stream
     directory-tree-each
     directory-tree-paths
     dotfile?
@@ -20,7 +18,6 @@
     get-unique-target-path
     last
     list->path
-    merge-files
     mtime-difference
     path->full-path
     path->list
@@ -42,17 +39,15 @@
   (import
     (guile)
     (ice-9 ftw)
-    (rnrs base)
     (rnrs bytevectors)
     (rnrs io ports)
     (sph)
-    (sph stream)
     (sph string)
-    (srfi srfi-41)
     (only (sph hashtable)
       hashtable
       hashtable-ref
       symbol-hashtable)
+    (ice-9 threads)
     (only (sph list)
       any->list
       length-greater-one?)
@@ -69,18 +64,6 @@
       last))
 
   (define directory-read-all scandir)
-
-  (define (directory-delete-content path)
-    "string ->
-    delete all files and directories under path.
-    a bit safer than \"rm -r\" because it only works on directories"
-    (let (path (ensure-trailing-slash path))
-      (stream-each
-        (l (e)
-          (let (e (string-append path e))
-            (if (file-path-directory? e) (begin (directory-delete-content e) (rmdir e))
-              (delete-file e))))
-        (directory-stream path))))
 
   (define (file-path-directory? path) "test if path exists and is a directory"
     (eqv? (q directory) (stat:type (stat path))))
@@ -113,15 +96,7 @@
     (let (path (ensure-trailing-slash path))
       (map (l (e) (path->full-path (string-append path e))) (apply directory-list path filter-proc))))
 
-  (define (directory-stream directory . filter-proc)
-    "string/directory-port [procedure ...] -> srfi-41-stream"
-    (let
-      ( (filter-proc (if (null? filter-proc) (list (negate directory-reference?)) filter-proc))
-        (port (if (string? directory) (opendir directory) directory)))
-      (stream-let loop ((e (readdir port)))
-        (if (eof-object? e) (begin (closedir port) stream-null)
-          (if (every (l (proc) (proc e)) filter-proc) (stream-cons e (loop (readdir port)))
-            (loop (readdir port)))))))
+
 
   (define* (directory-tree-paths path #:optional (select? (const #t)))
     "string [procedure:{any -> boolean}] -> (full-path ...)
@@ -224,18 +199,7 @@
           (if (file-exists? other-path) (loop (next-path count) (+ 1 count)) other-path)))
       target-path))
 
-  (define (merge-files target-path . source-paths)
-    "string string ... ->
-    creates or truncates \"target-path\" and appends the contents of all source-paths in order"
-    (call-with-output-file target-path
-      (l (target-file)
-        (each
-          (l (source-path)
-            (call-with-input-file source-path
-              (l (source-file)
-                (stream-each (l (block) (put-bytevector target-file block))
-                  (port->buffered-octet-stream source-file 200000)))))
-          source-paths))))
+
 
   (define (mtime-difference . paths)
     "string ... -> integer

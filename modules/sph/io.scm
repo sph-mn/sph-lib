@@ -38,20 +38,16 @@
     (sph)
     (sph list)
     (only (sph filesystem) ensure-trailing-slash)
+    (only (sph module) module-re-export-modules)
     (only (sph one) begin-first)
     (only (srfi srfi-1) drop))
 
-  (define sph-io-description "port and file input output")
+  (define sph-io-description
+    "port and file input/output
+     includes (rnrs io ports) and (rnrs io simple)")
 
-  (module-re-export! (current-module)
-    ;export (rnrs base). exclude let because it is redefined here
-    (filter
-      (lambda (a)
-        (not
-          (or (eq? a (quote %module-public-interface)) (eq? a (quote i/o-error-position))
-            (string-prefix? "&" (symbol->string a)))))
-      (append (module-map (lambda a (car a)) (resolve-interface (q (rnrs io ports))))
-        (module-map (lambda a (car a)) (resolve-interface (q (rnrs io simple)))))))
+  (module-re-export-modules (rnrs io ports)
+    (except (rnrs io simple) call-with-input-file call-with-output-file))
 
   (define (rw-port->port read write port port-2)
     ;copied from io read-write to avoid circular dependency
@@ -242,8 +238,8 @@
      read all scheme datums of a file specified by path"
     (call-with-input-file path
       (l (port)
-        (let loop ((e (port->datum port)))
-          (if (eof-object? e) (list) (pair e (loop (port->datum port))))))))
+        (let loop ((a (port->datum port)))
+          (if (eof-object? a) (list) (pair a (loop (port->datum port))))))))
 
   (define*
     (port-lines-each proc #:optional (port (current-input-port)) #:key (handle-delim (q trim)))

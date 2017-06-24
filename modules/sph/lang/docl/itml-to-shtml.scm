@@ -13,13 +13,13 @@
     (rnrs base)
     (rnrs eval)
     (sph)
+    (sph io)
     (sph lang docl)
     (sph lang docl env itml-to-shtml)
     (sph lang docl itml)
     (sph lang itml)
     (sph lang itml read)
     (sph list)
-    (sph io)
     (sph set)
     (sph web shtml)
     (only (sph hashtable) hashtable-ref symbol-hashtable)
@@ -29,7 +29,7 @@
 
   (define (add-spaces a)
     "list -> list
-    inserts a space before non-list elements (strings, numbers, etc) except the first and splices lists of expressions."
+     inserts a space before non-list elements (strings, numbers, etc) except the first and splices lists of expressions."
     (fold-right
       (l (e r)
         (if (list? e) (if (null? e) (pair e r) (if (symbol? (first e)) (pair e r) (append e r)))
@@ -39,12 +39,12 @@
 
   (define (string->sxml a nesting-level docl-state)
     "string -> sxml
-    convert newlines in string to (br) and result in an sxml expression"
+     convert newlines in string to (br) and result in an sxml expression"
     (let (a (string-split a #\newline)) (if (length-one? a) (first a) (interleave a (q (br))))))
 
   (define (tag-element? a)
     "list:non-null-list -> boolean
-    top-level-lines are everything on the top-level except lists with symbols as the first element"
+     top-level-lines are everything on the top-level except lists with symbols as the first element"
     (and (list? a) (symbol? (first a))))
 
   (define html-tags-no-newline
@@ -57,9 +57,9 @@
 
   (define (process-lines a)
     "list integer -> list
-    the top-level is interpreted as a list of lines. this procedure inserts line breaks between string or symbol elements.
-    removes empty lists and merges sub-lists that are not tag elements.
-    sub-expressions creators are supposed to handle line breaks themselves"
+     the top-level is interpreted as a list of lines. this procedure inserts line breaks between string or symbol elements.
+     removes empty lists and merges sub-lists that are not tag elements.
+     sub-expressions creators are supposed to handle line breaks themselves"
     (if (null? a) a
       (let ((e (first a)) (r (process-lines (tail a))))
         (if (list? e)
@@ -97,7 +97,7 @@
       (append (if (string? keyword) (list keyword) (re-descend* keyword))
         (pair ": " (re-descend* (tail a))))))
 
-  (define (descend-handle-escaped-association-infix a re-descend nesting-depth docl-state env) ": ")
+  (define (descend-handle-escaped-association-infix a re-descend nesting-depth docl-state env) ":")
 
   (define-as ascend-prefix->handler-ht symbol-hashtable
     line ascend-handle-line

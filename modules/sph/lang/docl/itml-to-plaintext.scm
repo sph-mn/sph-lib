@@ -6,7 +6,8 @@
     docl-itml-plaintext-env
     docl-itml-port->plaintext
     docl-itml-string->plaintext
-    itml-parsed->plaintext)
+    itml-parsed->plaintext
+    sph-lang-docl-itml-to-plaintext-description)
   (import
     (guile)
     (rnrs base)
@@ -18,10 +19,10 @@
     (sph lang docl itml)
     (sph lang indent-syntax)
     (sph lang itml)
-    (sph string)
-    )
+    (sph string))
 
-  ;translates itml to a source similar indent-tree but with expressions evaluated
+  (define sph-lang-docl-itml-to-plaintext-description
+    "translates itml to a source similar indent-tree but with expressions evaluated")
 
   (define docl-itml-env-plaintext-module-names
     (pair (q (sph lang docl env itml-to-plaintext)) docl-default-env-module-names))

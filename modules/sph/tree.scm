@@ -98,9 +98,9 @@
 
   (define (splice-lists-without-prefix-symbol a)
     "list -> list
-    merges all lists in list an sub-lists that do not have a symbol as the first element with its parent list.
-    (a 1 2 ((b 3 4) (c 5 ((d (6 7)) ())))) -> (a 1 2 (b 3 4) (c 5 (d 6 7)))
-    use-case: (ice-9 peg) parser results"
+     merges all lists in list an sub-lists that do not have a symbol as the first element with its parent list.
+     (a 1 2 ((b 3 4) (c 5 ((d (6 7)) ())))) -> (a 1 2 (b 3 4) (c 5 (d 6 7)))
+     use-case: (ice-9 peg) parser results"
     (fold-right
       (l (a r)
         (if (list? a)
@@ -114,22 +114,22 @@
 
   (define* (denoted-tree->prefix-tree a #:optional (depth-start 0))
     "list [integer] -> list
-    convert a tree representation like this ((0 a) (1 b) (2 c) (1 d)) to this (a (b c) d).
-    cases like ((0 a) (3 b) (0 c)) are converted to (a ((b)) c)"
+     convert a tree representation like this ((0 a) (1 b) (2 c) (1 d)) to this (a (b c) d).
+     cases like ((0 a) (3 b) (0 c)) are converted to (a ((b)) c)"
     (denoted-tree->tree-inner a depth-start
       r-2 r (if (null? r) (pair r-2 r) (pair (pair (first r) r-2) (tail r)))))
 
   (define* (denoted-tree->tree a #:optional (depth-start 0))
     "list:((integer any ...) ...) [integer] -> list
-    convert a tree representation like this ((0 a) (1 b) (2 c) (1 d)) to this (a (b (c) d))"
+     convert a tree representation like this ((0 a) (1 b) (2 c) (1 d)) to this (a (b (c) d))"
     (denoted-tree->tree-inner a depth-start r-2 r (pair r-2 r)))
 
   (define* (produce-prefix-context proc a #:optional ignore-prefixes?)
     "{context element -> any} list -> list
-    context is a list containing nested-list prefixes in reverse/upward order.
-    for example (a (d e f) k (g h i) j) leads to proc applied with each of the following arguments:
-    (d (a)), (e (d a)), (f (d a)),(k (a)), (g (a)), (h (g a)), (i (g a)), (j (a))
-    ignore-prefix-paths ignores elements that are prefixes and only considers sub-elements"
+     context is a list containing nested-list prefixes in reverse/upward order.
+     for example (a (d e f) k (g h i) j) leads to proc applied with each of the following arguments:
+     (d (a)), (e (d a)), (f (d a)),(k (a)), (g (a)), (h (g a)), (i (g a)), (j (a))
+     ignore-prefix-paths ignores elements that are prefixes and only considers sub-elements"
     (if (null? a) a
       (let*
         ( (map-to-result (l (e prefix context r) (pair (proc e (pair prefix context)) r)))
@@ -148,12 +148,11 @@
 
   (define (prefix-tree-context-match a pattern)
     "list list -> boolean
-    true if pattern exists in prefix-tree with the same tree interpretation as prefix-tree-context-produce.
-    example: (a b (d c)) contains patterns (a d c) and (a b) and (a d)"
+     true if pattern exists in prefix-tree with the same tree interpretation as prefix-tree-context-produce.
+     example: (a b (d c)) contains patterns (a d c) and (a b) and (a d)"
     (if (null? a) a
       (null?
         (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (pattern pattern))
-          ;(debug-log rest prefix context pattern)
           (if (or (null? pattern) (null? rest)) pattern
             (let*
               ( (e (first rest))
@@ -172,7 +171,7 @@
 
   (define (produce-prefix-context-mm proc a)
     "procedure:{any list -> any} list -> list
-    like produce-prefix-context but allowing many-to-many relations by usings lists the first element to lists"
+     like produce-prefix-context but allowing many-to-many relations by usings lists the first element to lists"
     (if (null? a) a
       (reverse
         (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (result (list)))
@@ -194,26 +193,26 @@
 
   (define (tree-each proc a)
     "procedure:{any ->} list ->
-    call proc for every element, lists and other elements, in tree.
-    leafs left-to-right lists bottom-to-top"
+     call proc for every element, lists and other elements, in tree.
+     leafs left-to-right lists bottom-to-top"
     (each (l (e) (if (list? e) (begin (tree-each proc e) (proc e)) (proc e))) a))
 
   (define (tree-each-leaf proc a)
     "procedure:{any ->} list ->
-    call proc for every non-list element in tree"
+     call proc for every non-list element in tree"
     (each (l (e) (if (list? e) (tree-each-leaf proc e) (proc e))) a))
 
   (define (tree-fold p r t)
     "procedure:{any:element any:result -> any:result} any:result list:tree -> any
-    fold over all lists and non-list elements in tree
-    non-lists from left-to-right, lists bottom-to-top"
+     fold over all lists and non-list elements in tree
+     non-lists from left-to-right, lists bottom-to-top"
     ;does perhaps not make much sense without an enter? predicate
     (fold (l (e r) (if (list? e) (p (tree-fold p (list) e) r) (p e r))) r t))
 
   (define (tree-fold-right p r t)
     "procedure:{any:element any:result -> any:result} any:result list:tree -> any
-    fold over all lists and non-list elements in tree
-    non-lists from left-to-right, lists bottom-to-top"
+     fold over all lists and non-list elements in tree
+     non-lists from left-to-right, lists bottom-to-top"
     (fold-right (l (e r) (if (list? e) (p (tree-fold-right p (list) e) r) (p e r))) r t))
 
   (define (tree-fold-lists-right enter? p r t)
@@ -222,20 +221,19 @@
       (l (e r) (if (list? e) (if (enter? e) (tree-fold-lists-right enter? p r e) (p e r)) r)) r t))
 
   (define (tree-fold-reverse p r t)
-    "
-    procedure:{any:element any:result -> list:result} list:result list:tree -> list
-    like tree-fold but reverses result lists"
+    "procedure:{any:element any:result -> list:result} list:result list:tree -> list
+     like tree-fold but reverses result lists"
     (reverse (fold (l (e r) (if (list? e) (p (tree-fold-reverse p (list) e) r) (p e r))) r t)))
 
   (define* (tree-fold-with-level p r t #:optional (n 1) (inc 1+))
     "procedure:{any:element any:result integer:nesting-depth} any tree integer:level-init procedure:{integer -> integer} -> any
-    like tree-fold but with additional arguments for keeping information about the nesting-depth of currently processed sub-lists"
+     like tree-fold but with additional arguments for keeping information about the nesting-depth of currently processed sub-lists"
     (fold (l (e r) (if (list? e) (p (tree-fold-with-level p (list) e (inc n) inc) r n) (p e r n)))
       r t))
 
   (define* (tree-fold-reverse-with-level p r t #:optional (n 1) (inc 1+))
     "procedure:{any:element any:result integer:nesting-depth} any tree integer:level-init procedure:{integer -> integer} -> any
-    like tree-fold-reverse but with additional arguments for keeping information about the nesting-depth of currently processed sub-lists"
+     like tree-fold-reverse but with additional arguments for keeping information about the nesting-depth of currently processed sub-lists"
     (reverse
       (fold
         (l (e r)
@@ -244,13 +242,13 @@
 
   (define (tree-map-leafs proc a)
     "procedure:{any -> any} list -> list
-    apply proc only with non-list elements, skipping but keeping list-type elements"
+     apply proc only with non-list elements, skipping but keeping list-type elements"
     (map (l (e) (if (list? e) (tree-map-leafs proc e) (proc e))) a))
 
   (define (tree-map-with-level->flat-list proc a . start-level)
     "procedure:{integer:nesting-depth any:element -> any:result-element} list [integer] -> (any ...)
-    map elements of tree to a flat list. apply proc with a number
-    stating how deeply the element is nested in other lists and the current element"
+     map elements of tree to a flat list. apply proc with a number
+     stating how deeply the element is nested in other lists and the current element"
     (reverse
       (let loop ((rest a) (level (if (null? start-level) 0 (first start-level))) (r (list)))
         (if (null? rest) r
@@ -260,7 +258,7 @@
 
   (define (produce-tree proc a b)
     "procedure:{any any -> any} list list -> any
-    apply proc with every possible ordered combination of elements between two lists. iterates like tree-map"
+     apply proc with every possible ordered combination of elements between two lists. iterates like tree-map"
     (tree-map (l (e-1) (tree-map (l (e-2) (proc e-1 e-2)) b)) a))
 
   (define (produce-tree-lists proc a b)
@@ -269,8 +267,8 @@
 
   (define (produce-with-iterator-tree iterator proc a b)
     "procedure:{proc list:elements -> any} procedure:{any:element-a any:element-b -> any}:proc list list -> any
-    call proc with each ordered combination between elements of two lists with an
-    iterator procedure that is called in a nested (each (lambda (e-1) (each (lambda (e-2) (proc e-1 e-2)) b)) a) way to create the argument combinations"
+     call proc with each ordered combination between elements of two lists with an
+     iterator procedure that is called in a nested (each (lambda (e-1) (each (lambda (e-2) (proc e-1 e-2)) b)) a) way to create the argument combinations"
     (iterator
       (l (e-1)
         (if (list? e-1) (produce-with-iterator-tree iterator proc e-1 b)
@@ -282,7 +280,7 @@
 
   (define (prefix-tree-replace-prefix a replacements)
     "list ((to-replace . replacement) ...) -> list
-    replace list prefixes, the first elements, in tree based on the given replacements specification"
+     replace list prefixes, the first elements, in tree based on the given replacements specification"
     (tree-map
       (l (e level)
         (if (list? e)
@@ -293,21 +291,21 @@
 
   (define (prefix-tree-produce proc a)
     "{any ... -> any} list:prefix-tree -> list
-    applies proc for each combination of a prefix and following, possibly further nested, tail-elements"
+     applies proc for each combination of a prefix and following, possibly further nested, tail-elements"
     (produce-prefix-context (l (context e) (apply proc (reverse (pair context e)))) a))
 
   (define (prefix-tree->path-list a)
     "list -> (string ...)
-    regard tree as a nested list representation
-    of a filesystem file and directory structure and result in a flat list of filesystem path strings.
-    example:
-    (prefix-tree->path-list (list \"/usr\" (list \"bin\" (list \"share\" \"guile\") \"include\") \"/var\"))
-    creates
-    (list
-        \"/usr/bin\"
-        \"/usr/share/guile\"
-        \"/usr/include\"
-        \"/var\")"
+     regard tree as a nested list representation
+     of a filesystem file and directory structure and result in a flat list of filesystem path strings.
+     example:
+     (prefix-tree->path-list (list \"/usr\" (list \"bin\" (list \"share\" \"guile\") \"include\") \"/var\"))
+     creates
+     (list
+         \"/usr/bin\"
+         \"/usr/share/guile\"
+         \"/usr/include\"
+         \"/var\")"
     (prefix-tree-produce (l e (string-join e "/")) a))
 
   (define* (prefix-tree-product a #:optional ignore-prefixes?) "list -> list"
@@ -322,27 +320,27 @@
 
   (define (tree-map proc a)
     "procedure:{any -> any} list -> list
-    maps lists bottom-to-top. does not map the topmost tree structure itself."
+     maps lists bottom-to-top. does not map the topmost tree structure itself."
     (map (l (e) (proc (if (list? e) (tree-map proc e) e))) a))
 
   (define (tree-map-lists proc a)
     "{list -> any} list -> list
-    like tree-map but pass only the lists in tree to proc, skipping and keeping non-list elements. bottom-to-top"
+     like tree-map but pass only the lists in tree to proc, skipping and keeping non-list elements. bottom-to-top"
     (map (l (e) (if (list? e) (proc (tree-map-lists proc e)) e)) a))
 
   (define (tree-map-lists-and-self proc a)
     "{list -> any} list -> list
-    like tree-map-lists but additionally passes the result to proc in the last call"
+     like tree-map-lists but additionally passes the result to proc in the last call"
     (proc (tree-map-lists proc a)))
 
   (define (tree-map-and-self proc a)
     "{any -> any} list -> list
-    like tree-map but additionally passes the result to proc in the last call"
+     like tree-map but additionally passes the result to proc in the last call"
     (proc (tree-map proc a)))
 
   (define* (tree-map-with-level proc a #:optional (start-level 0))
     "procedure:{any:element integer:nesting-depth} list [integer] -> list
-    like tree-map but with additional arguments for the current nesting-depth"
+     like tree-map but with additional arguments for the current nesting-depth"
     (let loop ((rest a) (level start-level) (r (list)))
       (if (null? rest) (proc (reverse r) level)
         (loop (tail rest) level
@@ -353,13 +351,13 @@
 
   (define* (tree-map-lists-with-level proc a #:optional (level-init 1) (map-level 1+))
     "{list integer:current-nesting-depth -> any} list [integer {integer -> integer:next-nesting-depth-value}] -> list
-    like tree-map-lists with additional arguments for the current nesting-depth"
+     like tree-map-lists with additional arguments for the current nesting-depth"
     (let loop ((e a) (level level-init))
       (map (l (e) (if (list? e) (proc (loop e (map-level level)) level) e)) e)))
 
   (define (tree-map-with-state proc a . init)
     "{any any:custom-state-value ... -> list:custom-state-values} -> (list:mapped-elements any:custom-state-value ...)
-    like tree-map but can carry and update a number of custom values per call, similar to fold"
+     like tree-map but can carry and update a number of custom values per call, similar to fold"
     (apply (l (r . state) (apply list (reverse r) state))
       (apply fold-multiple
         (l (e r . state)
@@ -369,7 +367,7 @@
 
   (define (prefix-tree-map proc a)
     "{any:prefix list:tail} list -> list
-    map only lists, split into prefix and tail"
+     map only lists, split into prefix and tail"
     (if (null? a) a
       (let (prefix (first a))
         (proc (if (list? prefix) (prefix-tree-map proc prefix) prefix)
@@ -377,7 +375,7 @@
 
   (define* (prefix-tree-map-with-level proc a #:optional (start-depth 0))
     "{any:prefix list:tail integer:nesting-depth -> any} list [integer] -> list
-    like prefix-tree-map but with an additional argument for the current nesting-depth"
+     like prefix-tree-map but with an additional argument for the current nesting-depth"
     (let loop ((rest a) (depth start-depth))
       (if (null? rest) rest
         (let (prefix (first rest))
@@ -386,7 +384,7 @@
 
   (define (produce-prefix-trees proc a b)
     "{any:prefix-1 any:prefix-2 any:tail-1 any:tail-2 -> any} list list -> list
-    produce two prefix-trees, that is, for every odered combination of element and sub-list element of \"a\" and \"b\""
+     produce two prefix-trees, that is, for every odered combination of element and sub-list element of \"a\" and \"b\""
     (prefix-tree-map
       (l (prefix-1 tail-1)
         (prefix-tree-map (l (prefix-2 tail-2) (proc prefix-1 prefix-2 tail-1 tail-2)) b))
@@ -394,7 +392,7 @@
 
   (define (produce-prefix-trees-with-level proc a b)
     "{any:prefix-1 any:prefix-2 any:tail-1 any:tail-2 integer:depth-1 integer:depth-2 -> any} list list -> list
-    like produce-prefix-trees but with an argument for the current nesting-depths"
+     like produce-prefix-trees but with an argument for the current nesting-depths"
     (prefix-tree-map-with-level
       (l (prefix-1 tail-1 level-1)
         (prefix-tree-map-with-level
@@ -403,8 +401,8 @@
 
   (define* (prefix-tree->infix-tree a #:optional (prefix->infix (l (p) p)))
     "list [procedure:{any -> any}] -> list
-    converts list structures like (or a b (and c d)) to (a or b or (c and d))
-    the optional procedure translates prefixes"
+     converts list structures like (or a b (and c d)) to (a or b or (c and d))
+     the optional procedure translates prefixes"
     (prefix-tree-map
       (l (prefix values)
         ( (l (prefix)
@@ -414,9 +412,9 @@
 
   (define (prefix-tree-map-with-continue proc continue& a)
     "procedure:{prefix tail} procedure:{list procedure:proc procedure:continue:{list ->}} list -> list
-    maps over only the lists, split into prefix and tail.
-    the procedure continue& gets a procedure argument that when called continues the iteration. if it is not called,
-    the iteration stops and the result of continue& is the main result"
+     maps over only the lists, split into prefix and tail.
+     the procedure continue& gets a procedure argument that when called continues the iteration. if it is not called,
+     the iteration stops and the result of continue& is the main result"
     (let loop ((rest a))
       (if (null? rest) rest
         (proc (first rest) (map (l (e) (if (list? e) (continue& e proc loop) e)) (tail rest))))))
@@ -425,7 +423,7 @@
     (prefix-tree-map-with-continue-with-level proc continue& a #:optional (level-proc 1+)
       (level-init 1))
     "{any:prefix list:tail any} {list procedure:proc {list ->} any}:continue list [{integer -> integer}] -> list
-    like prefix-tree-map-with-continue but with additional arguments for the current nesting-depth"
+     like prefix-tree-map-with-continue but with additional arguments for the current nesting-depth"
     (let loop ((rest a) (level level-init))
       (if (null? rest) rest
         (proc (first rest)
@@ -454,20 +452,20 @@
 
   (define (tree-replace-by-list a replace? replacements)
     "list {any -> boolean} (any ...) -> list
-    replace each non-list element in tree that matches replace? with the next element from replacements.
-    it is an error when there are replacements than matches"
+     replace each non-list element in tree that matches replace? with the next element from replacements.
+     it is an error when there are replacements than matches"
     (if (null? a) a
       (if (null? replacements) replacements
         (first
           (let loop ((rest a) (r (list)) (replacements replacements))
             (if (null? rest) (list (reverse r) replacements)
-              (let (e (first rest))
-                (if (list? e)
-                  (apply (l (e replacements) (loop (tail rest) (pair e r) replacements))
-                    (loop e (list) replacements))
-                  (if (replace? e)
+              (let (a (first rest))
+                (if (list? a)
+                  (apply (l (a replacements) (loop (tail rest) (pair a r) replacements))
+                    (loop a (list) replacements))
+                  (if (replace? a)
                     (loop (tail rest) (pair (first replacements) r) (tail replacements))
-                    (loop (tail rest) (pair e r) replacements))))))))))
+                    (loop (tail rest) (pair a r) replacements))))))))))
 
   (define (tree-transform-ascend rest leaf-list recurse-descend ascend-proc terminal-proc)
     (if (null? rest) (ascend-proc (reverse leaf-list))
@@ -478,15 +476,15 @@
 
   (define (tree-transform a descend-proc ascend-proc terminal-proc)
     "list {any procedure -> (any boolean)} {list -> any} {any -> any} -> any
-    input-list {element recurse-descend -> (result-element continue?)} {element -> result-element} {element -> result-element} -> result
-    transform tree by traversing top to bottom then bottom to top, applying descend-proc on lists when descending tree,
-    ascend-proc on lists when ascending, and terminal-proc for non-list elements.
-    descend-proc should return a list of two values - one for the result and a boolean indicating if the result
-    should further be passed to ascend-proc and terminal-proc.
-    descend-proc receives a procedure to recursively evaluate.
-    example use cases:
-    * compiling s-expression list trees into string output languages by mapping sub-expressions to strings
-    * applying transformations to s-expressions"
+     input-list {element recurse-descend -> (result-element continue?)} {element -> result-element} {element -> result-element} -> result
+     transform tree by traversing top to bottom then bottom to top, applying descend-proc on lists when descending tree,
+     ascend-proc on lists when ascending, and terminal-proc for non-list elements.
+     descend-proc should return a list of two values - one for the result and a boolean indicating if the result
+     should further be passed to ascend-proc and terminal-proc.
+     descend-proc receives a procedure to recursively evaluate.
+     example use cases:
+     * compiling s-expression list trees into string output languages by mapping sub-expressions to strings
+     * applying transformations to s-expressions"
     (let recurse-descend ((e a))
       (if (and (list? e) (not (null? e)))
         (apply
@@ -511,8 +509,8 @@
 
   (define (tree-transform-with-state a descend-proc ascend-proc terminal-proc . states)
     "list {any procedure -> any boolean} {list -> any} {any -> any} -> any
-    input-list {element recurse-descend -> result-element continue?} {element -> result-element} {element -> result-element} -> result
-    like tree-transform with additional custom state arguments"
+     input-list {element recurse-descend -> result-element continue?} {element -> result-element} {element -> result-element} -> result
+     like tree-transform with additional custom state arguments"
     (letrec
       ( (recurse-descend
           (lambda (e . states)
@@ -530,34 +528,34 @@
 
   (define (tree-transform-descend-identity . args)
     "any ... -> (#f #t)
-    a tree-transform descend-proc that does not apply transformations on descend"
+     a tree-transform descend-proc that does not apply transformations on descend"
     (list #f #t))
 
   (define (tree-replace-at-once match? proc a)
     "procedure:{element -> boolean} procedure:{list:matched-elements -> list} list -> list
-    searches through tree recursively, collecting all elements (including lists) that match collect-proc, then calls
-    proc with a list of matched elements. the result of proc must of length zero (no replacement) or matched-element-count (replaces all matches).
-    results in the tree with the matched elements are replaced in order by the result elements from calling proc"
+     searches through tree recursively, collecting all elements (including lists) that match collect-proc, then calls
+     proc with a list of matched elements. the result of proc must of length zero (no replacement) or matched-element-count (replaces all matches).
+     results in the tree with the matched elements are replaced in order by the result elements from calling proc"
     (tree-replace-by-list a match? (proc (tree-filter->flat-list match? a))))
 
   (define* (tree-contains? a search-value #:optional (equal-proc equal?))
     "list any [procedure:{any any -> boolean}] -> boolean
-    compares all (non-list and list) elements to search-value"
+     compares all (non-list and list) elements to search-value"
     (any (l (e) (or (equal-proc e search-value) (and (list? e) (tree-contains? e search-value)))) a))
 
   (define (tree-contains-any? a equal-proc . search-values)
     "list {any any -> boolean} any ... -> boolean
-    like tree-contains? and true if any of the search-values is found"
+     like tree-contains? and true if any of the search-values is found"
     (any (l (search-value) (tree-contains? a search-value equal-proc)) search-values))
 
   (define (tree-contains-every? a equal-proc . search-values)
     "list {any any -> boolean} any ... -> boolean
-    like tree-contains? but true only if every of the search-values has been found"
+     like tree-contains? but true only if every of the search-values has been found"
     (every (l (search-value) (tree-contains? a search-value equal-proc)) search-values))
 
   (define* (tree-contains-any-not? a equal-proc . search-values)
     "list {any any -> boolean} any ... -> boolean
-    like tree-contains? but true only if any of the search-values is not contained"
+     like tree-contains? but true only if any of the search-values is not contained"
     (any
       (l (e)
         (if (list? e) (apply tree-contains-any-not? e search-values)
@@ -566,15 +564,14 @@
 
   (define (tree->denoted-tree a . start-level)
     "list [integer] -> list
-    convert a tree to an association list where each element is a list having a nesting-depth number
-    as the first element. similar to this is the usage of indentation for nesting depth.
-    (a b (c (d e)) f) -> ((0 . a) (0 . b) (1 . c) (2 . d) (2 . e) (0 . f))
-      "
+     convert a tree to an association list where each element is a list having a nesting-depth number
+     as the first element. similar to this is the usage of indentation for nesting depth.
+     (a b (c (d e)) f) -> ((0 . a) (0 . b) (1 . c) (2 . d) (2 . e) (0 . f))"
     (apply tree-map-with-level->flat-list list a start-level))
 
   (define (prefix-tree-map-with-level->flat-list proc a . start-level)
     "{integer any -> any} list [integer] -> (any ...)
-    like tree->denoted-tree->flat-list but the nesting-depth number corresponds to prefix-tree interpretation"
+     like tree->denoted-tree->flat-list but the nesting-depth number corresponds to prefix-tree interpretation"
     (reverse
       (let loop
         ((rest a) (level (if (null? start-level) 0 (first start-level))) (is-prefix #t) (r (list)))
@@ -589,13 +586,13 @@
 
   (define (prefix-tree->denoted-tree a . start-level)
     "list [integer] -> list
-    like tree->denoted-tree but the nesting-depth number corresponds to prefix-tree interpretation. example
-    (a b (c (d e)) f) -> ((0 . a) (1 . b) (2 . c) (3 . d) (3 . e) (0 . 4))"
+     like tree->denoted-tree but the nesting-depth number corresponds to prefix-tree interpretation. example
+     (a b (c (d e)) f) -> ((0 . a) (1 . b) (2 . c) (3 . d) (3 . e) (0 . 4))"
     (apply prefix-tree-map-with-level->flat-list list a start-level))
 
   (define (tree-filter->flat-list proc a)
     "procedure:{any -> boolean} list -> list
-    results in a flat list of all elements (non-lists and lists) of tree that matched for which proc resulted in a true value"
+     results in a flat list of all elements (non-lists and lists) of tree that matched for which proc resulted in a true value"
     (let loop ((rest a) (r (list)))
       (if (null? rest) r
         (loop (tail rest)
@@ -603,5 +600,5 @@
 
   (define (tree-pair->list a)
     "list -> list
-    converts all non-list pairs in tree to lists"
+     converts all non-list pairs in tree to lists"
     (tree-map (l (e) (if (pair? e) (list (first e) (tail e)) e)) a)))

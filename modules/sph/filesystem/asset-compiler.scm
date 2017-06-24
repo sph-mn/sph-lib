@@ -15,8 +15,7 @@
   (import
     (guile)
     (sph base)
-    (sph record)
-    )
+    (sph record))
 
   (define sph-filesystem-asset-compiler-description
     "process and merge files of various formats into one.
@@ -50,7 +49,7 @@
   (define (config-format->output-processor a mode)
     "pair symbol/any -> false/procedure
      gets the output processor from a config-format configuration"
-    (hashtable-ref (first a) mode))
+    (hashtable-ref (first a) mode ac-output-copy))
 
   (define* (ac-destination path-directory format sources #:optional path-file)
     "string symbol string list -> string
@@ -116,8 +115,10 @@
          (pair
            (symbol-hashtable)
            (record ac-config-input \"sxml\" (has-suffix-proc \".sxml\") s-template-sxml->html))))"
-    (let (config-format (hashtable-ref config output-format))
-      ( (config-format->output-processor config-format mode)
+    (and-let*
+      ( (config-format (hashtable-ref config output-format))
+        (output-processor (config-format->output-processor config-format mode)))
+      (output-processor
         (map (l (a) (source->input-processor a config-format processor-options)) sources) port
         processor-options)))
 

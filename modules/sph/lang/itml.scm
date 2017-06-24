@@ -4,7 +4,7 @@
     itml-descend-proc
     itml-parsed->result-proc)
   (import
-    (rnrs base)
+    (ice-9 threads)
     (sph)
     (only (sph tree) tree-transform-with-state))
 

@@ -37,6 +37,7 @@
     test-success?)
   (import
     (guile)
+    (ice-9 threads)
     (rnrs eval)
     (sph)
     (sph alist)
@@ -113,8 +114,8 @@
       (l (load-path a)
         (if load-path
           (case (stat:type (stat (string-append load-path "/" a)))
-            ((directory) (module-find-by-name (module-name-from-file a) (q prefix) %load-path))
-            ((regular) (list (module-name-from-file a)))
+            ((directory) (module-find-by-name (module-file->name a) (q prefix) %load-path))
+            ((regular) (list (module-file->name a)))
             ( (symlink)
               ;assumes that readlink fails on circular symlinks
               (test-module-name-from-files (readlink a))))

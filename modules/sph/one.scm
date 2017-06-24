@@ -243,7 +243,7 @@
 
   (define (procedure-append . proc)
     "procedure ... -> procedure:{any ... -> (any ...)}
-     creates a new procedure that applies each given procedure with its arguments and returns all results in a list"
+     creates a new procedure that applies every appended procedure with all arguments and returns all results in a list"
     (l a (map (l (b) (apply b a)) proc)))
 
   (define (procedure-append-ignore-result . proc)
