@@ -56,7 +56,7 @@
 
   (define (vector-selection set-indices set)
     "vector:#(integer ...) vector -> vector
-    return a new vector of values selected at indices in set"
+    return a new vector of values at indices in set"
     (vector-map (l (index) (vector-ref set index)) set-indices))
 
   (define* (vector-selections set #:optional width)
@@ -134,7 +134,7 @@
     return a stream of all distinct sub-vectors in a vector with lengths from min-width to max-width.
     top to bottom.
     distinctness is defined as with vector-distinct-count"
-    ; implementation is almost identical to vector-distinct
+    ; implementation is almost identical to vector-distinct-count
     (let* ((a-length (vector-length a)) (width (or max-width a-length)))
       (stream-let next
         ( (known (vector-distinct-set-create a-length width)) (width width) (index 0)

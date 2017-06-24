@@ -13,17 +13,18 @@
     shtml-text->sxml)
   (import
     (sph)
-    (only (guile) string-split make-list)
     (sph list)
+    (only (guile) string-split make-list)
     (only (sph string) any->string))
 
-  (define html-headings (q #(h1 h2 h3 h4 h5 h6)))
+  (define html-headings #(h1 h2 h3 h4 h5 h6))
 
   (define (shtml-heading nesting-depth . content)
     (pair (vector-ref html-headings (min 5 nesting-depth)) content))
 
   (define (shtml-section nesting-depth title content . attributes)
-    "integer sxml sxml (string/symbol string/symbol) ... -> sxml"
+    "integer sxml sxml (string/symbol string/symbol) ... -> sxml
+     create the sxml corresponding to an html <section> tag with attributes, heading and content <div>"
     (pair (q section)
       (append (if (null? attributes) attributes (list (pair (q @) attributes)))
         (pair (shtml-heading nesting-depth title)
@@ -39,7 +40,8 @@
   (define* (shtml-include-javascript path #:optional is-async) "string boolean -> sxml"
     (qq
       (script
-        (@ (src (unquote path)) (unquote-splicing (if is-async (list (list-q async async)) (list)))) "")))
+        (@ (src (unquote path)) (unquote-splicing (if is-async (list (list-q async async)) (list))))
+        "")))
 
   (define (shtml-include-css path) "string -> sxml"
     (qq (link (@ (rel "stylesheet") (type "text/css") (href (unquote path))))))
