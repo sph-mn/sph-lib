@@ -63,6 +63,7 @@
     sph-hashtable-description)
   (import
     (sph)
+    (sph string)
     (only (sph list) map-slice)
     (only (sph vector) vector-each vector-each-with-index)
     (rename (rnrs hashtables)
