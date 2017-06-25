@@ -37,17 +37,17 @@
 
   (define (add-multiple-leading-parenthesis-spacing config lines) "( (content ..."
     (if
-      (and (hashtable-ref config (q multiple-leading-parenthesis-spacing))
+      (and (ht-ref config (q multiple-leading-parenthesis-spacing))
         (length-greater-one? lines))
       (map
         (l (e)
           (if (string-contains e "\n")
-            (consecutive-parentheses-indentation e (hashtable-ref config (q indent-string))) e))
+            (consecutive-parentheses-indentation e (ht-ref config (q indent-string))) e))
         lines)
       lines))
 
   (define-syntax-rule (create-indent config current-indent)
-    (string-multiply (hashtable-ref config (q indent-string)) current-indent))
+    (string-multiply (ht-ref config (q indent-string)) current-indent))
 
   (define-syntax-rule (create-vertical-spacing spacing-value)
     (string-multiply "\n" (+ 1 spacing-value)))
@@ -56,7 +56,7 @@
     (if (string? spacing) spacing (create-vertical-spacing spacing)))
 
   (define (format-application-expr-proc config current-indent) "hashtable integer -> list"
-    (hashtable-bind config
+    (ht-bind config
       (indent-string max-chars-per-line max-exprs-per-line-start
         max-exprs-per-line-middle max-exprs-per-line-end)
       (let (indent-length (* current-indent (string-length indent-string)))
@@ -160,7 +160,7 @@
             (string-join
               (add-multiple-leading-parenthesis-spacing config
                 ;add the last line
-                (reverse! (if (null? line) r (pair (string-join (reverse line) " ") r))))
+                (reverse (if (null? line) r (pair (string-join (reverse line) " ") r))))
               line-spacing)))
         (pair-fold-multiple (format-application-expr-proc config current-indent)
           (format-application-prepare-exprs a)
@@ -174,7 +174,7 @@
      since old-indent is not available here, old-indent is guessed from the second line.
      if the second line is indented relative to the first line, this indent will unfortunately be removed for all lines"
     (let*
-      ( (a (string-trim-both a)) (indent-string (hashtable-ref config (q indent-string)))
+      ( (a (string-trim-both a)) (indent-string (ht-ref config (q indent-string)))
         (indent (string-multiply indent-string current-indent))
         (second-line-index (string-index a #\newline)))
       (format-string
@@ -186,7 +186,7 @@
               (indent-to-remove
                 (if (= second-line-index indent-end-index) ""
                   (substring a (+ 1 second-line-index) indent-end-index))))
-            (if (hashtable-ref config (q docstring-offset-doublequote))
+            (if (ht-ref config (q docstring-offset-doublequote))
               (let (lines (string-split a #\newline))
                 ; add one extra space to offset the initial doublequote
                 (string-join
@@ -228,15 +228,15 @@
               ;probably not an evaluated lambda but data
               (tail a))))
         config current-indent
-        3 (hashtable-ref config (q max-exprs-per-line-middle))
-        (hashtable-ref config (q max-exprs-per-line-end)))
+        3 (ht-ref config (q max-exprs-per-line-middle))
+        (ht-ref config (q max-exprs-per-line-end)))
       #f))
 
   (define (format-let a recurse config current-indent)
     (list
       (format-application (map-recurse recurse a current-indent)
         (match a
-          ((let (? symbol?) _ ...) (hashtable-set-multiple config (q max-exprs-per-line-start) 3))
+          ((let (? symbol?) _ ...) (ht-copy* config (l (a) (ht-set-multiple! a (q max-exprs-per-line-start) 3))))
           (else config))
         current-indent)
       #f))
@@ -248,7 +248,7 @@
         (let
           ( (indent (create-indent config current-indent))
             (vertical-spacing
-              (create-vertical-spacing (hashtable-ref config (q toplevel-vertical-spacing)))))
+              (create-vertical-spacing (ht-ref config (q toplevel-vertical-spacing)))))
           (match (tail a)
             ( (name imports body ...)
               (apply string-append "("
@@ -259,7 +259,7 @@
                   (list vertical-spacing indent
                     (string-join-with-vertical-spacing
                       (map (l (e) (first (recurse e current-indent))) body) indent
-                      vertical-spacing (hashtable-ref config (q toplevel-vertical-spacing-oneline)))
+                      vertical-spacing (ht-ref config (q toplevel-vertical-spacing-oneline)))
                     ")"))))
             (_ a)))
         a)
@@ -272,7 +272,7 @@
         (let
           ( (indent (create-indent config current-indent))
             (vertical-spacing
-              (create-vertical-spacing (hashtable-ref config (q toplevel-vertical-spacing)))))
+              (create-vertical-spacing (ht-ref config (q toplevel-vertical-spacing)))))
           (match (tail a)
             ( (name exports imports body ...)
               (apply string-append "("
@@ -285,7 +285,7 @@
                   (list vertical-spacing indent
                     (string-join-with-vertical-spacing
                       (map (l (e) (first (recurse e current-indent))) body) indent
-                      vertical-spacing (hashtable-ref config (q toplevel-vertical-spacing-oneline)))
+                      vertical-spacing (ht-ref config (q toplevel-vertical-spacing-oneline)))
                     ")"))))
             (_ a)))
         a)
@@ -293,7 +293,7 @@
 
   (define (format-read-syntax-quote prefix a recurse config current-indent)
     (list
-      (if (hashtable-ref config (q use-read-syntax-quote))
+      (if (ht-ref config (q use-read-syntax-quote))
         (string-append prefix (first (recurse (second a) current-indent)))
         (format-application (map-recurse recurse a current-indent) config current-indent))
       #f))
@@ -307,10 +307,11 @@
 
   (define (format-list a config current-indent start middle end)
     (format-application a
-      (hashtable-set-multiple config
-        ;the line-char-length limitation has always precedence
-        (q max-exprs-per-line-start) start
-        (q max-exprs-per-line-middle) middle (q max-exprs-per-line-end) end)
+      (ht-copy* config (l (a)
+          (ht-set-multiple! a
+            ;the line-char-length limitation has always precedence
+            (q max-exprs-per-line-start) start
+            (q max-exprs-per-line-middle) middle (q max-exprs-per-line-end) end)))
       current-indent))
 
   (define (format-list-assoc a recurse config current-indent)
@@ -321,9 +322,9 @@
             (pairs (q let-macro)
               (format-application (map-recurse recurse assoc (+ 1 current-indent))
                 (let*
-                  ((n (hashtable-ref config (q max-exprs-per-line-start))) (n (- n (modulo n 2))))
-                  (hashtable-set-multiple config (q max-exprs-per-line-start)
-                    n (q max-exprs-per-line-end) n))
+                  ((n (ht-ref config (q max-exprs-per-line-start))) (n (- n (modulo n 2))))
+                  (ht-copy* config (l (a)(ht-set-multiple! a (q max-exprs-per-line-start)
+                        n (q max-exprs-per-line-end) n))))
                 (+ 1 current-indent))
               (map-recurse recurse body current-indent))
             config current-indent))
@@ -335,7 +336,7 @@
       (string-append "#;("
         (string-join (tail a)
           (string-append "\n"
-            (string-multiply (hashtable-ref config (q indent-string)) current-indent)))
+            (string-multiply (ht-ref config (q indent-string)) current-indent)))
         ")")
       #f))
 

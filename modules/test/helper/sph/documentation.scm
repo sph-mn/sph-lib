@@ -3,7 +3,7 @@
     a
     t
     f
-    hashtable-values)
+    ht-values)
   (import
     (guile)
     (rnrs base)
@@ -16,8 +16,8 @@
 
   (define-syntax-rule (f (g ...) h ...) #t)
 
-  (define (hashtable-values arg) "hashtable -> vector"
-    (call-with-values (l () (hashtable-entries arg)) (l (keys values) values)))
+  (define (ht-values arg) "hashtable -> vector"
+    (call-with-values (l () (ht-entries arg)) (l (keys values) values)))
 
   (define (t)
     #t))

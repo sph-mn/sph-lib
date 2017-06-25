@@ -9,18 +9,17 @@
     docl-translate-port
     sph-lang-docl-description)
   (import
-    (rnrs base)
     (rnrs io ports)
     (sph)
+    (sph hashtable)
     (sph error)
     (only (guile)
       current-thread
       port-filename
       catch)
-    (only (rnrs hashtables) equal-hash)
-    (only (sph alist) list->alist)
-    (only (sph list) contains?)
-    (only (sph one) begin-first))
+    (sph alist)
+    (sph list)
+    (sph one))
 
   (define sph-lang-docl-description
     "evaluate templates with a specific scheme environment, state values and circular inclusion protection")
@@ -48,7 +47,7 @@
   (define (docl-translate-any input proc docl-state)
     "calls proc with input and enables docl features as with call-with-docl.
      input can be anything, and the source-position argument for exceptions will be false."
-    (call-with-docl equal-hash #f input proc docl-state))
+    (call-with-docl ht-hash-equal #f input proc docl-state))
 
   (define (docl-translate-port input proc docl-state)
     "port procedure:{port -> any} list -> any

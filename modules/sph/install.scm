@@ -62,7 +62,7 @@
 
   (define (system-cp-proc path-destination symlink? dry-run?)
     (l (paths-source)
-      (apply (if dry-run? dry-run-log execute+check-result) "cp"
+      (apply (if dry-run? dry-run-log execute-and-check-result) "cp"
         (qq
           ("--recursive" "--remove-destination"
             (unquote-splicing (if symlink? (list "--symbolic-link") (list)))
@@ -74,10 +74,10 @@
       (mode-regular default-mode-regular)
       dry-run?)
     "automatically creates missing directories in target and sets permissions to mode-directory.
-    copies source files to target and sets permissions corresponding to mode-directory and mode-regular unless overridden in sources.
-    prepends path-destination-prefix to all target paths.
-    symlink source files to the destination instead of copying if \"symlink?\" is true.
-    currently depends on the \"cp\" utility"
+     copies source files to target and sets permissions corresponding to mode-directory and mode-regular unless overridden in sources.
+     prepends path-destination-prefix to all target paths.
+     symlink source files to the destination instead of copying if \"symlink?\" is true.
+     currently depends on the \"cp\" utility"
     (let*
       ( (destination (apply path-append path-destination-prefix (any->list destination)))
         (system-cp (system-cp-proc destination symlink? dry-run?)))
@@ -114,10 +114,10 @@
 
   (define (install-p install-one-arguments install-specs)
     "list list -> boolean
-    install multiple files or directory trees with files.
-    automatically creates missing directories in target and sets new directory permissions to default or custom specified values.
-    currently depends on the \"cp\" utility.
-    allows empty lists as install-spec"
+     install multiple files or directory trees with files.
+     automatically creates missing directories in target and sets new directory permissions to default or custom specified values.
+     currently depends on the \"cp\" utility.
+     allows empty lists as install-spec"
     (every (l (e) (or (null? e) (apply install-one (first e) (tail e) install-one-arguments)))
       install-specs))
 

@@ -6,7 +6,7 @@
     (sph lang scm-format transform))
 
   (define (format-docstring* a indent)
-    (format-docstring a (hashtable-ref scm-format-default-config (q format)) indent))
+    (format-docstring a (ht-ref scm-format-default-config (q format)) indent))
 
   (define (s n) (string-multiply " " n))
 

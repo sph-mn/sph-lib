@@ -13,259 +13,213 @@
 
 (library (sph hashtable)
   (export
-    alist->hashtable
-    eq-hashtable
-    eqv-hashtable
-    hashtable
-    hashtable->alist
-    hashtable->indent-tree-string
-    hashtable-bind
-    hashtable-copy-empty
-    hashtable-each
-    hashtable-each-key
-    hashtable-fold
-    hashtable-invert
-    hashtable-invert!
-    hashtable-key
-    hashtable-key-proc
-    hashtable-make-immutable
-    hashtable-map
-    hashtable-map!
-    hashtable-merge
-    hashtable-merge!
-    hashtable-q-ref
-    hashtable-q-set-multiple
-    hashtable-q-set-multiple!
-    hashtable-ref
-    hashtable-select
-    hashtable-set-multiple
-    hashtable-set-multiple!
-    hashtable-tree-merge
-    hashtable-tree-merge!
-    hashtable-update-multiple!
-    hashtable-values
-    hashtables-q-ref
-    hashtables-ref
-    hashtables-set!
-    list->hashtable
-    rnrs-hashtable-ref
-    sph-hashtable-description
-    string-hashtable
-    symbol-hashtable)
+    ht-alist
+    ht-bind
+    ht-clear!
+    ht-contains?
+    ht-copy
+    ht-copy*
+    ht-copy-deep
+    ht-copy-deep*
+    ht-copy-empty
+    ht-create
+    ht-create-eq
+    ht-create-eqv
+    ht-create-string
+    ht-create-symbol
+    ht-delete!
+    ht-each
+    ht-each-key
+    ht-entries
+    ht-equivalence-function
+    ht-fold
+    ht-from-alist
+    ht-from-list
+    ht-hash-equal
+    ht-hash-function
+    ht-hash-string
+    ht-hash-symbol
+    ht-invert!
+    ht-keys
+    ht-make
+    ht-make-eq
+    ht-make-eqv
+    ht-map!
+    ht-merge!
+    ht-ref
+    ht-ref-q
+    ht-select
+    ht-set!
+    ht-set-multiple!
+    ht-set-multiple-q!
+    ht-size
+    ht-tree-merge!
+    ht-tree-ref
+    ht-tree-ref-q
+    ht-tree-set!
+    ht-update-multiple!
+    ht-values
+    ht?
+    sph-hashtable-description)
   (import
-    (rnrs base)
     (sph)
-    (only (guile)
-      hashv
-      hashq
-      string-join)
-    (only (rnrs hashtables) make-hashtable)
-    (only (sph list) map-slice list-index-value)
-    (only (sph one) quote-odd)
-    (only (sph string)
-      any->string-write
-      string-multiply
-      string-equal?)
+    (only (sph list) map-slice)
     (only (sph vector) vector-each vector-each-with-index)
-    (rename (rnrs hashtables) (hashtable-ref rnrs-hashtable-ref)))
+    (rename (rnrs hashtables)
+      (hashtable-ref rnrs-ht-ref)
+      (hashtable-set! ht-set!)
+      (hashtable-equivalence-function ht-equivalence-function)
+      (hashtable-hash-function ht-hash-function)
+      (hashtable-size ht-size)
+      (hashtable-entries ht-entries)
+      (hashtable-keys ht-keys)
+      (hashtable-delete! ht-delete!)
+      (hashtable-clear! ht-clear!)
+      (string-hash ht-hash-string)
+      (symbol-hash ht-hash-symbol)
+      (equal-hash ht-hash-equal)
+      (hashtable-contains? ht-contains?)
+      (hashtable? ht?)
+      (hashtable-copy ht-copy)
+      (make-hashtable ht-make)
+      (make-eq-hashtable ht-make-eq)
+      (make-eqv-hashtable ht-make-eqv)))
 
   (define sph-hashtable-description "rnrs-hashtable processing")
 
-  (define* (alist->hashtable a #:optional (equal-proc equal?) (hash-proc equal-hash))
-    "convert assoc-list/alist \"a\" to an r6rs hashtable"
-    (let ((ht (make-hashtable hash-proc equal-proc)))
-      (each (l (alist-part) (hashtable-set! ht (first alist-part) (tail alist-part))) a) ht))
+  (define-syntax-rules ht-ref
+    ; ht-ref with an optional default argument
+    ; h:hashtable k:key d:default-if-not-found
+    ((h k d) (rnrs-ht-ref h k d)) ((h k) (rnrs-ht-ref h k #f)))
 
-  (define (hashtable . associations)
+  (define-syntax-rules ht-ref-q ((h k d) (ht-ref h (quote k) d)) ((h k) (ht-ref h (quote k) #f)))
+
+  (define-syntax-rules ht-tree-ref ((h k) (ht-ref h k #f))
+    ((h k ... k-last) (ht-ref (ht-ref h k ...) k-last #f)))
+
+  (define-syntax-rule (ht-tree-ref-q a key ...) (ht-tree-ref a (quote key) ...))
+
+  (define-syntax-rules ht-tree-set! ((h k v) (ht-set! h k v))
+    ((h k ... k-last v) (ht-set! (ht-ref h k ...) k-last v)))
+
+  (define-syntax-rules ht-create-symbol
+    ;like hashtable, but create a hashtable optimised for symbol keys
+    (() (ht-make ht-hash-symbol eqv?))
+    ((associations ...) (ht-from-list (quote-odd associations ...) eqv? ht-hash-symbol)))
+
+  (define-syntax-rules ht-create-string
+    ;like hashtable, but create a hashtable designated and optimised for string keys
+    (() (ht-make ht-hash-string string-equal?))
+    ((associations ...) (ht-from-list (quote-odd associations ...) string-equal? ht-hash-string)))
+
+  (define-syntax-rules ht-create-eq
+    ; like hashtable, but create a hashtable that uses eq? as a comparison function
+    (() (make-eq-hashtable))
+    ((associations ...) (ht-from-list (quote-odd associations ...) eq? ht-hash-symbol)))
+
+  (define-syntax-rules ht-create-eqv (() (make-eqv-hashtable))
+    ;not the best hash function
+    ((associations ...) (ht-from-list (quote-odd associations ...) eqv? ht-hash-equal)))
+
+  (define-syntax-rule (ht-bind ht (key ...) body ...)
+    ;selectively bind keys of hashtable to variables
+    ((lambda (key ...) body ...) (ht-ref ht (quote key)) ...))
+
+  (define-syntax-rule (ht-each-key proc ht) (vector-each proc (ht-keys ht)))
+
+  (define-syntax-rule (ht-set-multiple-q! a key/value ...)
+    ;hashtable [any:unquoted-key any:value] ...
+    (apply ht-set-multiple! a (quote-odd key/value ...)))
+
+  (define* (ht-from-alist a #:optional (equal-proc equal?) (hash-proc ht-hash-equal))
+    "convert assoc-list/alist \"a\" to an r6rs hashtable"
+    (let ((ht (ht-make hash-proc equal-proc)))
+      (each (l (alist-part) (ht-set! ht (first alist-part) (tail alist-part))) a) ht))
+
+  (define (ht-create . associations)
     "{key value} ... -> hashtable
      creates a hashtable.
      example: (hashtable 'a 1 'b 2 'c 3)"
-    (list->hashtable associations))
+    (ht-from-list associations))
 
-  (define-syntax-rules symbol-hashtable
-    ;like hashtable, but create a hashtable optimised for symbol keys
-    (() (make-hashtable symbol-hash eqv?))
-    ((associations ...) (list->hashtable (quote-odd associations ...) eqv? symbol-hash)))
-
-  (define-syntax-rules string-hashtable
-    ;like hashtable, but create a hashtable designated and optimised for string keys
-    (() (make-hashtable string-hash string-equal?))
-    ((associations ...) (list->hashtable (quote-odd associations ...) string-equal? string-hash)))
-
-  (define-syntax-rules eq-hashtable
-    ;like hashtable, but create a hashtable that uses eq? as a comparison function
-    (() (make-eq-hashtable))
-    ((associations ...) (list->hashtable (quote-odd associations ...) eq? symbol-hash)))
-
-  (define-syntax-rules eqv-hashtable (() (make-eqv-hashtable))
-    ;not the best hash function
-    ((associations ...) (list->hashtable (quote-odd associations ...) eqv? equal-hash)))
-
-  (define-syntax-rule (hashtable-bind ht (key ...) body ...)
-    ;selectively bind keys of hashtable to variables
-    ((lambda (key ...) body ...) (hashtable-ref ht (quote key)) ...))
-
-  (define (hashtable-copy-empty a)
-    "hashtable -> hashtable
-     creates a new empty hashtable with the same equivalence and hash function as the input hashtable."
-    (make-hashtable (hashtable-equivalence-function a) (hashtable-hash-function a)))
-
-  (define (hashtable-each proc ht)
+  (define (ht-each proc ht)
     "procedure:{key value ->} hashtable ->
      call proc for each key and value association in hashtable"
-    (let-values (((keys values) (hashtable-entries ht)))
+    (let-values (((keys values) (ht-entries ht)))
       (vector-each-with-index (l (e index) (proc e (vector-ref values index))) keys)))
 
-  (define (hashtable-values a) "hashtable -> vector"
-    (call-with-values (nullary (hashtable-entries a)) (l (keys values) values)))
+  (define (ht-values a) "hashtable -> vector"
+    (call-with-values (nullary (ht-entries a)) (l (keys values) values)))
 
-  (define-syntax-rule (hashtable-each-key proc ht) (vector-each proc (hashtable-keys ht)))
-
-  (define (hashtable-fold proc init a) "procedure:{key value state -> state} any hashtable -> list"
-    (let-values (((keys values) (hashtable-entries a)))
+  (define (ht-fold proc init a) "procedure:{key value state -> state} any hashtable -> list"
+    (let-values (((keys values) (ht-entries a)))
       (fold proc init (vector->list keys) (vector->list values))))
 
-  (define (hashtable-map! proc a) (hashtable-each (l (k v) (hashtable-set! a k (proc k v))) a))
+  (define (ht-map! proc a) (ht-each (l (k v) (ht-set! a k (proc k v))) a))
 
-  (define (hashtable-map proc a)
-    "procedure:{key value -> value} hashtable -> hashtable
-     set a new value for every key value association in hash"
-    (let (r (hashtable-copy a)) (hashtable-map! proc r) r))
-
-  (define (hashtable-make-immutable a)
-    "hashtable -> hashtable
-     results in a new hashtable that is an immutable version of the given one.
-     this does not affect nested hashtables"
-    (hashtable-copy a #f))
-
-  (define (hashtable-invert a)
+  (define (ht-invert! a)
     "hashtable -> hashtable
      use values as keys and keys as values"
-    (let (r (hashtable-copy-empty a)) (hashtable-each (l (k v) (hashtable-set! r v k)) a)))
+    (ht-each (l (k v) (ht-set! a v k)) a))
 
-  (define (hashtable-invert! a)
-    "hashtable -> hashtable
-     use values as keys and keys as values"
-    (hashtable-each (l (k v) (hashtable-set! a v k)) a))
-
-  (define (hashtable-key-proc ht)
-    "hashtable -> procedure:{value -> key}
-     results in a procedure that caches the preparations for creating its result
-     so it is much more efficient for repeated calls."
-    (call-with-values (nullary (hashtable-entries ht))
-      (l (keys values)
-        (let (values-list (vector->list values))
-          (l (a)
-            "any:value -> any:key
-            retrieves the key of a value in hashtable"
-            (let (index (list-index-value values-list a)) (if index (vector-ref keys index) index)))))))
-
-  (define (hashtable-key ht value) "any:value -> any:key" ((hashtable-key-proc ht) value))
-
-  (define (hashtable-merge! a b)
+  (define (ht-merge! a b)
     "hashtable hashtable -> unspecified
      copy the values of hash b to hash a. existing key values are overwritten"
-    (call-with-values (nullary (hashtable-entries b))
-      (l (keys values)
-        (vector-each-with-index (l (key index) (hashtable-set! a key (vector-ref values index)))
-          keys))))
+    (let-values (((keys values) (ht-entries b)))
+      (vector-each-with-index (l (key index) (ht-set! a key (vector-ref values index))) keys)))
 
-  (define (hashtable-merge a b)
-    "hashtable hashtable -> hashtable
-     like hashtable-merge! but not side-effecting. it instead works on a copy of hash a and results in it"
-    (let (r (hashtable-copy a #t)) (hashtable-merge! r b) r))
-
-  (define (hashtable-tree-merge! a b)
+  (define (ht-tree-merge! a b)
     "hashtable hashtable -> unspecified
-     like hashtable-merge!, but for keys that occur in both hashtables and which have hashtables as value
-     hashtable-tree-merge! is called to merge the hashtables instead of just overwriting the value in a."
-    (call-with-values (nullary (hashtable-entries b))
+     like ht-merge!, but for keys that occur in both hashtables and which have hashtables as value
+     ht-tree-merge! is called to merge the hashtables instead of just overwriting the value in a."
+    (call-with-values (nullary (ht-entries b))
       (l (keys values)
         (vector-each-with-index
           (l (key index)
-            (let ((a-value (hashtable-ref a key)) (b-value (vector-ref values index)))
-              (hashtable-set! a key
-                (if (and (hashtable? a-value) (hashtable? b-value))
-                  (begin (hashtable-tree-merge! a-value b-value) a-value) b-value))))
+            (let ((a-value (ht-ref a key)) (b-value (vector-ref values index)))
+              (ht-set! a key
+                (if (and (ht? a-value) (ht? b-value))
+                  (begin (ht-tree-merge! a-value b-value) a-value) b-value))))
           keys))))
 
-  (define (hashtable-tree-merge a b)
-    "hashtable hashtable -> hashtable
-     like hashtable-tree-merge! but not side-effecting. it instead works on a copy of hashtable and results in it"
-    (let (r (hashtable-copy a #t)) (hashtable-tree-merge! r b) r))
-
-  (define (hashtable-set-multiple! ht . assoc)
+  (define (ht-set-multiple! ht . assoc)
     "hashtable key/value ...
      return a new hashtable with multiple values having been updated"
-    (map-slice 2 (l (key value) (hashtable-set! ht key value)) assoc))
+    (map-slice 2 (l (key value) (ht-set! ht key value)) assoc))
 
-  (define (hashtable-set-multiple ht . assoc)
-    "hashtable key/value ...
-     return a new hashtable with multiple values having been updated"
-    (let (r (hashtable-copy ht #t)) (apply hashtable-set-multiple! r assoc) r))
-
-  (define-syntax-rule (hashtable-q-set-multiple a key/value ...)
-    ;hashtable [any:unquoted-key any:value] ...
-    (apply hashtable-set-multiple a (quote-odd key/value ...)))
-
-  (define-syntax-rule (hashtable-q-set-multiple! a key/value ...)
-    ;hashtable [any:unquoted-key any:value] ...
-    (apply hashtable-set-multiple! a (quote-odd key/value ...)))
-
-  (define (hashtable-update-multiple! ht keys proc)
+  (define (ht-update-multiple! ht keys proc)
     "hashtable list procedure:{any:values ... -> (any:new-values ...)} -> hashtable
      set values for \"keys\" in hashtable to new values by mapping using \"proc\""
-    (each (l (k v) (hashtable-set! ht k v)) keys
-      (apply proc (map (l (e) (hashtable-ref ht e)) keys))))
+    (each (l (k v) (ht-set! ht k v)) keys (apply proc (map (l (a) (ht-ref ht a)) keys))))
 
-  (define-syntax-rules hashtable-ref
-    ;h:hashtable k:key d:default-if-not-found
-    ((h k d) (rnrs-hashtable-ref h k d)) ((h k) (rnrs-hashtable-ref h k #f)))
-
-  (define-syntax-rules hashtable-q-ref ((h k d) (rnrs-hashtable-ref h (quote k) d))
-    ((h k) (rnrs-hashtable-ref h (quote k) #f)))
-
-  (define-syntax-rules hashtables-ref ((h k) (hashtable-ref h k #f))
-    ((h k ... k-last) (hashtable-ref (hashtable-ref h k ...) k-last #f)))
-
-  (define-syntax-rule (hashtables-q-ref a key ...) (apply hashtables-ref a (quote key) ...))
-
-  (define-syntax-rules hashtables-set! ((h k v) (hashtable-set! h k v))
-    ((h k ... k-last v) (hashtable-set! (hashtable-ref h k ...) k-last v)))
-
-  (define* (hashtable->alist ht #:optional (depth 0))
+  (define* (ht-alist ht #:optional (depth 0))
     "rnrs-hashtable [integer] -> list
      converts a hashtable to an alist. if depth is greater than 0 any other
      hashtables being values up to this nesting depth will be converted too"
-    (hashtable-fold
+    (ht-fold
       (l (key value r)
-        (pair
-          (pair key
-            (if (and (> depth 0) (hashtable? value)) (hashtable->alist value (- depth 1)) value))
-          r))
+        (pair (pair key (if (and (> depth 0) (ht? value)) (ht-alist value (- depth 1)) value)) r))
       (list) ht))
 
-  (define* (hashtable->indent-tree-string ht #:optional (indent 0) (indent-string "  "))
-    (string-join
-      (hashtable-fold
-        (l (key value r)
-          (pair
-            (string-append (string-multiply indent-string indent) (any->string-write key)
-              " "
-              (if (hashtable? value)
-                ( (l (r) (if (> indent 0) (string-append r "\n") (string-append "\n" r)))
-                  (hashtable->indent-tree-string value (+ indent 1)))
-                (any->string-write value)))
-            r))
-        (list) ht)
-      "\n"))
-
-  (define* (list->hashtable a #:optional (equal-proc equal?) (hash-proc equal-hash))
+  (define* (ht-from-list a #:optional (equal-proc equal?) (hash-proc ht-hash-equal))
     "convert a list to an r6rs standard library hashtable. nested lists are not converted to a hash.
      example
-     (hashtable-ref (list->hashtable (list 'a 1 'b 2)) 'b #f)
+     (ht-ref (ht-from-list (list 'a 1 'b 2)) 'b #f)
      -> 2"
-    (let ((ht (make-hashtable hash-proc equal-proc)))
-      (fold (l (e r) (if r (begin (hashtable-set! ht r e) #f) e)) #f a) ht))
+    (let ((ht (ht-make hash-proc equal-proc)))
+      (fold (l (e r) (if r (begin (ht-set! ht r e) #f) e)) #f a) ht))
 
-  (define (hashtable-select a . keys) (map (l (b) (hashtable-ref a b)) keys)))
+  (define (ht-select a . keys) (map (l (b) (ht-ref a b)) keys))
+
+  (define (ht-copy-empty a)
+    "hashtable -> hashtable
+     creates a new empty hashtable with the same equivalence and hash function as the input hashtable."
+    (ht-make (ht-hash-function a) (ht-equivalence-function a)))
+
+  (define (ht-copy* a proc) "call proc with a copy of hashtable and return it"
+    (let (r (ht-copy a #t)) (proc r) r))
+
+  (define (ht-copy-deep a)
+    (ht-fold (l (k v r) (ht-set! r k (if (ht? v) (ht-copy-deep v) v)) r) (ht-copy-empty a) a))
+
+  (define (ht-copy-deep* a proc) (let (r (ht-copy-deep a)) (proc r) r)))

@@ -54,7 +54,6 @@
     (sph)
     (only (rnrs base) set!)
     (only (sph list) fold-multiple)
-    (only (sph one) quote-odd)
     (only (srfi srfi-1) alist-cons filter)
     (rename (guile)
       (assq-ref alistq-ref)

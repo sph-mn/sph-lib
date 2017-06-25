@@ -4,22 +4,20 @@
   (import
     (guile)
     (ice-9 match)
-    (rnrs base)
     (sph)
     (sph hashtable)
     (sph lang plcss)
     (sph list)
     (sph string)
     (sph tree)
-    (except (rnrs hashtables) hashtable-ref)
     (except (srfi srfi-1) map))
 
   (define (sxml-element-style-css a class+style)
-    "sxml hashtable:(hashtable (string (plcss ...))) -> sxml
+    "sxml hashtable:(ht-create (string (plcss ...))) -> sxml
     adds element styles for classes in the class attributes or tags.
     classes with styles are removed.
     this can be used to apply styles to html for which external style sheets or <style>-tags are disallowed"
-    (define class+style-classes (vector->list (hashtable-keys class+style)))
+    (define class+style-classes (vector->list (ht-keys class+style)))
     (define (get-style a) (match a ((style b ...) b) (_ #f)))
     (define (get-class-names a) "(class _ ...) -> (string ...)"
       (string-split (apply string-append (map symbol?->string (tail a))) #\space))
@@ -41,7 +39,7 @@
       (apply string-append
         (filter-map
           (l (e)
-            (let (style-data (hashtable-ref class+style e))
+            (let (style-data (ht-ref class+style e))
               (if style-data (plcss-element-style->css-string style-data) #f)))
           a)))
     (define (insert-styles class-names attributes)

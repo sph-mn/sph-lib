@@ -23,10 +23,10 @@
      writing is not completely implemented")
 
   (define (parse-config-file path) "string -> list"
-    (tree-map-lists-and-self (compose alist->hashtable list->alist)
+    (tree-map-lists-and-self (compose ht-alist list->alist)
       (primitive-eval (list (q quasiquote) (file->datums path)))))
 
-  (define sph-config-object (symbol-hashtable))
+  (define sph-config-object (ht-create-symbol))
 
   (define (config-load-default-get-path path name)
     "string/false string -> string
@@ -52,11 +52,11 @@
 
   (define (config-save-default config options)
     (call-with-output-file
-      (config-save-default-get-path (alist-ref options (q path)) (hashtable-ref config (q name)))
-      (l (port) (write (hashtable->alist config 32) port))))
+      (config-save-default-get-path (alist-ref options (q path)) (ht-ref config (q name)))
+      (l (port) (write (ht-alist config 32) port))))
 
-  (define-as config-loaders symbol-hashtable default config-load-default)
-  (define-as config-savers symbol-hashtable default config-save-default)
+  (define-as config-loaders ht-create-symbol default config-load-default)
+  (define-as config-savers ht-create-symbol default config-save-default)
 
   (define* (config-load #:optional name/config (loader-key (q default)) loader-options)
     "symbol/hashtable:name/config [alist] -> config-object
@@ -65,24 +65,24 @@
      if name is a true value it is passed to a config loader selected by loader-key.
      the default config loader reads a \"flat-alist-tree\" from a file.
      if name/config is false, look for an environment variable sph-config-name and try to read a file $sph-config-name/default.scm"
-    (if (hashtable? name/config) (hashtable-tree-merge! sph-config-object name/config)
+    (if (hashtable? name/config) (ht-tree-merge! sph-config-object name/config)
       (let (name (or name/config (getenv "sph-config-name") "default"))
-        (hashtable-tree-merge! sph-config-object
-          ((hashtable-ref config-loaders loader-key) name loader-options))
-        (hashtable-set! sph-config-object (q config-name) name)))
+        (ht-tree-merge! sph-config-object
+          ((ht-ref config-loaders loader-key) name loader-options))
+        (ht-set! sph-config-object (q config-name) name)))
     sph-config-object)
 
   (define*
     (config-save #:optional (saver-key (q default)) saver-options (config sph-config-object))
-    ((hashtable-ref config-savers saver-key) config saver-options))
+    ((ht-ref config-savers saver-key) config saver-options))
 
-  (define (config-clear! name/config) (set! sph-config-object (symbol-hashtable)))
+  (define (config-clear! name/config) (set! sph-config-object (ht-create-symbol)))
 
   (define-syntax-rule (primitive-config-set! symbol ... value)
-    (hashtables-set! sph-config-object symbol ... value))
+    (ht-tree-set! sph-config-object symbol ... value))
 
   (define-syntax-rule (primitive-config-ref symbol ...)
-    (hashtables-ref sph-config-object symbol ...))
+    (ht-tree-ref sph-config-object symbol ...))
 
   (define-syntax-rule (config-set! unquoted-symbol ... value)
     (primitive-config-set! (q unquoted-symbol) ... value))

@@ -83,20 +83,20 @@
   (define (handle-ascend-indent-expr a nesting-depth)
     (pair (string-append prefix-expr (first a)) (list-string-char-escape (tail a))))
 
-  (define-as ascend-prefix->handler-ht symbol-hashtable
+  (define-as ascend-prefix->handler-ht ht-create-symbol
     line ascend-handle-line
     inline-expr handle-ascend-inline-expr
     line-expr handle-ascend-line-expr
     indent-expr handle-ascend-indent-expr association ascend-handle-association)
 
-  (define-as descend-prefix->handler-ht symbol-hashtable
+  (define-as descend-prefix->handler-ht ht-create-symbol
     inline-scm-expr handle-descend-inline-scm-expr
     line-scm-expr handle-descend-line-scm-expr
     indent-scm-expr handle-descend-indent-scm-expr
     indent-descend-expr handle-descend-indent-expr double-backslash descend-handle-double-backslash)
 
   (define-syntax-rule (expr->itml prefix->handler a proc-arguments ...)
-    (let (p (hashtable-ref prefix->handler (first a))) (and p (p (tail a) proc-arguments ...))))
+    (let (p (ht-ref prefix->handler (first a))) (and p (p (tail a) proc-arguments ...))))
 
   (define (ascend-expr->itml a nesting-depth)
     (or (expr->itml ascend-prefix->handler-ht a nesting-depth) a))

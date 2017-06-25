@@ -14,8 +14,8 @@
   (export
     alist->regexp-match-replacements
     and-p
-    any-hashtable-keys->values
-    any-hashtable-values->keys
+    any-ht-keys->values
+    any-ht-values->keys
     apply*
     apply-without-arguments
     bash-escape-clear
@@ -63,7 +63,7 @@
     list->nl-string
     list->string-list
     list->values
-    list-replace-from-hashtable-splice
+    list-replace-from-ht-splice
     list-symbols->string
     listener-on-port-local?
     md5sum
@@ -137,9 +137,7 @@
     (sph tree)
     (srfi srfi-69)
     (sxml simple)
-    (except (rnrs hashtables) hashtable-ref)
     (except (srfi srfi-1) map)
-    (only (rnrs io ports) get-bytevector-n put-bytevector)
     (only (sph list) interleave)
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
@@ -280,15 +278,15 @@
   (define (create-indent size) (list->string (make-list (* size 2) #\space)))
   (define (create-newline-indent size) (string-append "\n" (create-indent size)))
 
-  (define (any-hashtable-keys->values ht a)
+  (define (any-ht-keys->values ht a)
     "r6rs-hashtable any -> any
      replace the given value or values in a list with values in hashtable for the given value as key"
-    (if (list? a) (map (l (b) (any-hashtable-keys->values ht b)) a)
-      (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
+    (if (list? a) (map (l (b) (any-ht-keys->values ht b)) a)
+      (if (or (symbol? a) (integer? a)) (ht-ref ht a a) a)))
 
-  (define (any-hashtable-values->keys ht a) "r6rs-hashtable any -> any"
-    (if (list? a) (map (l (b) (any-hashtable-values->keys ht b)) a)
-      (if (or (symbol? a) (integer? a)) (hashtable-ref ht a a) a)))
+  (define (any-ht-values->keys ht a) "r6rs-hashtable any -> any"
+    (if (list? a) (map (l (b) (any-ht-values->keys ht b)) a)
+      (if (or (symbol? a) (integer? a)) (ht-ref ht a a) a)))
 
   (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
 

@@ -34,13 +34,13 @@
   (define (ascend-handle-association a nesting-depth docl-state env)
     (string-append (first a) ": " (string-join (tail a) " ")))
 
-  (define-as ascend-prefix->handler-ht symbol-hashtable
+  (define-as ascend-prefix->handler-ht ht-create-symbol
     line ascend-handle-line
     inline-expr itml-eval-ascend-inline-expr
     line-expr itml-eval-ascend-line-expr
     indent-expr itml-eval-ascend-indent-expr association ascend-handle-association)
 
-  (define-as descend-prefix->handler-ht symbol-hashtable
+  (define-as descend-prefix->handler-ht ht-create-symbol
     inline-scm-expr itml-eval-descend-inline-scm-expr
     line-scm-expr itml-eval-descend-line-scm-expr
     indent-scm-expr itml-eval-descend-indent-scm-expr
@@ -48,7 +48,7 @@
     double-backslash descend-handle-double-backslash)
 
   (define-syntax-rule (expr->plaintext prefix->handler a proc-arguments ...)
-    (let (handler (hashtable-ref prefix->handler (first a)))
+    (let (handler (ht-ref prefix->handler (first a)))
       (and handler (handler (tail a) proc-arguments ...))))
 
   (define (ascend-expr->plaintext a nesting-depth docl-state env)

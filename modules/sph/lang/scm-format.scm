@@ -9,7 +9,6 @@
     sph-lang-scm-format-description)
   (import
     (ice-9 streams)
-    (rnrs base)
     (rnrs bytevectors)
     (sph)
     (sph hashtable)
@@ -32,9 +31,9 @@
   (define sph-lang-scm-format-description "format scheme code")
   (define default-format-ascend format-application)
 
-  (define-as scm-format-default-config symbol-hashtable
+  (define-as scm-format-default-config ht-create-symbol
     format
-    (symbol-hashtable indent-string (string-multiply " " 2)
+    (ht-create-symbol indent-string (string-multiply " " 2)
       max-chars-per-line 100
       max-exprs-per-line-start 3
       max-exprs-per-line-middle 2
@@ -44,10 +43,10 @@
       multiple-leading-parenthesis-spacing #t
       toplevel-vertical-spacing 1 toplevel-vertical-spacing-oneline 0)
     transform
-    (symbol-hashtable sort-export #t
+    (ht-create-symbol sort-export #t
       sort-import #t sort-definitions #f separate-unexported-definitions #f))
 
-  (define-as descend-prefix->format-proc symbol-hashtable
+  (define-as descend-prefix->format-proc ht-create-symbol
     semicolon-comment format-semicolon-comment
     scsh-block-comment format-scsh-block-comment
     hash-bang format-hash-bang
@@ -66,19 +65,23 @@
     define-syntax-case format-lambda
     define* format-lambda library format-library define-test-module format-test-module)
 
-  (define ascend-prefix->format-proc (hashtable))
+  (define ascend-prefix->format-proc (ht-create))
 
   (define (config-add-defaults c) "r6rs-hashtable -> r6rs-hashtable"
     (let
-      ( (config-format (hashtable-ref c (q format)))
-        (config-transform (hashtable-ref c (q transform)))
-        (default-config-transform (hashtable-ref scm-format-default-config (q transform)))
-        (default-config-format (hashtable-ref scm-format-default-config (q format))))
-      (hashtable (q format)
-        (if config-format (hashtable-merge default-config-format config-format)
+      ( (config-format (ht-ref-q c format))
+        (config-transform (ht-ref-q c transform))
+        (default-config-transform (ht-ref-q scm-format-default-config transform))
+        (default-config-format (ht-ref-q scm-format-default-config format)))
+      (ht-create-symbol format
+        (if config-format
+          (ht-copy* default-config-format (l (a)
+              (ht-merge! a config-format)) )
           default-config-format)
-        (q transform)
-        (if config-transform (hashtable-merge default-config-transform config-transform)
+        transform
+        (if config-transform
+          (ht-copy* default-config-transform (l (a) (ht-merge! a config-transform)))
+
           default-config-transform))))
 
   (define (format-sequence a a-length ref current-indent config config-format)
@@ -94,10 +97,10 @@
       ((pair? a) (any->string-write* a)) (else (any->string-write* a))))
 
   (define (scm-format-list->string a nesting-depth config)
-    (let (config-format (hashtable-ref config (q format)))
+    (let (config-format (ht-ref config (q format)))
       (tree-transform-with-state a
         (l (expr recurse current-indent)
-          (let (format-proc (hashtable-ref descend-prefix->format-proc (first expr)))
+          (let (format-proc (ht-ref descend-prefix->format-proc (first expr)))
             (if format-proc
               (apply
                 (l (r continue?)
@@ -106,7 +109,7 @@
               (list #f #t (+ 1 current-indent)))))
         (l (expr current-indent)
           (list
-            ( (hashtable-ref ascend-prefix->format-proc (first expr) default-format-ascend) expr
+            ( (ht-ref ascend-prefix->format-proc (first expr) default-format-ascend) expr
               config-format current-indent)
             (- current-indent 1)))
         (l (expr current-indent)
@@ -118,11 +121,11 @@
     (apply
       (l (r is-library)
         (string-join-with-vertical-spacing r ""
-          (hashtables-ref config (q format) (q toplevel-vertical-spacing))
-          (hashtables-ref config (q format) (q toplevel-vertical-spacing-oneline))))
+          (ht-tree-ref config (q format) (q toplevel-vertical-spacing))
+          (ht-tree-ref config (q format) (q toplevel-vertical-spacing-oneline))))
       (list
         (map (l (e) (first (scm-format-list->string e current-indent config)))
-          (scm-format-transform-tree a (hashtable-ref config (q transform))))
+          (scm-format-transform-tree a (ht-ref-q config transform)))
         (any is-library? a))))
 
   (define* (scm-format a #:optional (current-indent 0) config) "any -> string"

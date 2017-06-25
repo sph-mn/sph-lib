@@ -14,7 +14,7 @@
   (export
     call-with-working-directory
     execute
-    execute+check-result
+    execute-and-check-result
     execute->file
     execute->port
     execute->string
@@ -29,14 +29,13 @@
     process-replace-p
     process-replace-pe
     shell-eval
-    shell-eval+check-result
+    shell-eval-and-check-result
     shell-eval->string
     sph-process-description)
   (import
     (guile)
     (ice-9 popen)
     (ice-9 threads)
-    (rnrs base)
     (rnrs io ports)
     (sph)
     (sph filesystem)
@@ -123,13 +122,13 @@
 
   (define (exit-value-zero? system-result) (zero? (status:exit-val system-result)))
 
-  (define (execute+check-result path . arguments)
+  (define (execute-and-check-result path . arguments)
     "string (string ...) -> boolean
     execute command with system*, check exit-status and return true if it is zero, false otherwise."
     (let ((status (status:exit-val (apply system* path arguments))))
       (not (not (and status (= status 0))))))
 
-  (define (shell-eval+check-result command-str)
+  (define (shell-eval-and-check-result command-str)
     "string -> boolean
     execute command with system, check exit-status and return true if it is zero, false otherwise."
     (let ((status (status:exit-val (system command-str)))) (not (not (and status (= status 0))))))

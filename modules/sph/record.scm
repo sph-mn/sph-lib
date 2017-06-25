@@ -44,22 +44,14 @@
     record?
     vector->record)
   (import
-    (rnrs base)
-    (rnrs hashtables)
     (sph)
-    (sph error)
     (sph vector)
     (except (guile)
       record?
-      record-accessor
-      symbol-hash)
-    (only (sph hashtable)
-      hashtable-each
-      hashtable-merge
-      hashtable-merge!)
-    (only (sph list) map-integers)
-    (only (sph one) quote-odd)
-    (only (srfi srfi-1) filter-map))
+      record-accessor)
+    (sph hashtable)
+    (sph list)
+    )
 
   (define sph-record-description
     "vectors as records
@@ -87,7 +79,7 @@
       (let loop ((b field-name/value))
         (if (null? b) a
           (let (b-tail (tail b))
-            (vector-set! a (hashtable-ref record-layout (first b) #f) (first b-tail))
+            (vector-set! a (ht-ref record-layout (first b) #f) (first b-tail))
             (loop (tail b-tail)))))))
 
   (define-syntax-rule (record-update record-layout a field-name/value ...)
@@ -107,23 +99,23 @@
     (begin (define identifier (record-setter record-layout field-name)) ...))
 
   (define (make-record record-layout) "record-layout -> record"
-    ;if calling hashtable-size is too slow, it could be cached in the layout under a non-symbol key.
+    ;if calling ht-size is too slow, it could be cached in the layout under a non-symbol key.
     ;except changing the layout data-type this seems to be the best possible without variable definitions
     ;for record metadata
-    (make-vector (hashtable-size record-layout)))
+    (make-vector (ht-size record-layout)))
 
   (define (make-record-layout field-spec)
     "(symbol ...) -> record-layout
      results in a new record-layout with the given field names"
-    (let (r (make-hashtable symbol-hash eqv? (length field-spec)))
-      (fold (l (e index) (hashtable-set! r e index) (+ index 1)) 0 field-spec) r))
+    (let (r (ht-make ht-hash-symbol eqv? (length field-spec)))
+      (fold (l (e index) (ht-set! r e index) (+ index 1)) 0 field-spec) r))
 
   (define (record record-layout . values)
     "record-layout (any ...) -> record
      create a new record by specifying the layout and the values in
      the same order as they are specified in layout field-spec. not all values have to be given, unspecified fields are set to <unspecified>"
     (apply vector
-      (let loop ((count (hashtable-size record-layout)) (v values))
+      (let loop ((count (ht-size record-layout)) (v values))
         (if (> count 0)
           (if (null? v) (pair #f (loop (- count 1) v)) (pair (first v) (loop (- count 1) (tail v))))
           (list)))))
@@ -131,39 +123,38 @@
   (define (record-accessor record-layout field-name)
     "record-layout symbol -> procedure {record -> field-value}
      returns an accessor procedure for the given record-layout and field-name."
-    (let (index (hashtable-ref record-layout field-name #f))
-      (if (integer? index) (l (record) (vector-ref record index)) (error-create (q no-such-field)))))
+    (let (index (ht-ref record-layout field-name #f))
+      (if (integer? index) (l (record) (vector-ref record index)) (raise (q no-such-field)))))
 
   (define* (record-accessors record-layout)
     "hashtable:record-layout -> (proc ...)
      returns all accessors for the given record-layout in a list"
-    (map-integers (hashtable-size record-layout) (l (index) (l (record) (vector-ref record index)))))
+    (map-integers (ht-size record-layout) (l (index) (l (record) (vector-ref record index)))))
 
   (define record-append vector-append)
 
   (define (record-field-names record-layout)
     "hashtable:record-layout -> vector:#(symbol ...)
      result in the field-names of record in the same order as they were specified."
-    (call-with-values (nullary (hashtable-entries record-layout))
+    (call-with-values (nullary (ht-entries record-layout))
       (l (keys values)
         (let ((r (make-vector (vector-length keys))))
           (vector-each-with-index (l (e index) (vector-set! r (vector-ref values index) e)) keys) r))))
 
-  (define record-field-names-unordered hashtable-keys)
+  (define record-field-names-unordered ht-keys)
 
   (define (record-layout-extend! layout-1 layout-2)
-    (let (layout-1-size (hashtable-size layout-1))
-      (hashtable-each
+    (let (layout-1-size (ht-size layout-1))
+      (ht-each
         (l (key value)
-          (if (hashtable-ref layout-1 key #f)
-            (error-create (q fail-record-layout-field-not-existant))
-            (hashtable-set! layout-1 key (+ value layout-1-size))))
+          (if (ht-ref layout-1 key #f)
+            (raise (q fail-record-layout-field-not-existant))
+            (ht-set! layout-1 key (+ value layout-1-size))))
         layout-2)))
 
-  (define record-layout-length hashtable-size)
-  (define record-layout-merge hashtable-merge)
-  (define record-layout-merge! hashtable-merge!)
-  (define record-layout? hashtable?)
+  (define record-layout-length ht-size)
+  (define record-layout-merge! ht-merge!)
+  (define record-layout? ht?)
   (define record-length vector-length)
 
   (define* (record-layout->predicate a #:optional type-prefix)
@@ -179,23 +170,23 @@
     "record record-layout symbol -> any
      get the value for field-name of the given record.
      record-ref is considerably slower than using an accessor procedure"
-    (vector-ref record (hashtable-ref record-layout field-name #f)))
+    (vector-ref record (ht-ref record-layout field-name #f)))
 
   (define (record-set! record record-layout field-name value)
     "record record-layout symbol any -> unspecified
      record-set! is considerably slower than using a setter procedure"
-    (vector-set! record (hashtable-ref record-layout field-name #f) value))
+    (vector-set! record (ht-ref record-layout field-name #f) value))
 
   (define (record-setter record-layout field-name)
     "record-layout symbol -> procedure {record value -> unspecified}
      returns a setter procedure for the given layout and field-name"
     ( (l (index) (l (record value) (vector-set! record index value)))
-      (hashtable-ref record-layout field-name #f)))
+      (ht-ref record-layout field-name #f)))
 
   (define (record-setters record-layout)
     "record-layout (symbol ...) -> proc ...
      returns all setters for the given layout in a list"
-    (map-integers (hashtable-size record-layout)
+    (map-integers (ht-size record-layout)
       (l (index) (l (record value) (vector-set! record index value)))))
 
   (define record? vector?)
@@ -203,7 +194,7 @@
   (define (vector->record record-layout a)
     "this adjusts the length of the given vector to match the length of the layout.
      extra fields in are left out if the layout is smaller"
-    (let ((record-layout-size (hashtable-size record-layout)) (vec-size (vector-length a)))
+    (let ((record-layout-size (ht-size record-layout)) (vec-size (vector-length a)))
       (if (eqv? record-layout-size vec-size) a
         (if (< vec-size record-layout-size) (vector-extend a (- record-layout-size vec-size))
           (vector-shrink a (- vec-size record-layout-size))))))
@@ -231,7 +222,7 @@
                           (first name-setter))))
                     e))
                 (else #f)))
-            (error-create (q define-record-syntax-error) a))))
+            (raise (q define-record-syntax-error)))))
       a))
 
   (define-syntax-case (define-record name field-name/get/set ...) s

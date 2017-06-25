@@ -18,7 +18,7 @@
     optionally depends on the \"diff\" and \"patch\" utilities for storing incremental changes only.
     version-ids are monotonically increasing integers saved with hexadecimal representation")
 
-  (define-as versioning-default-config symbol-hashtable
+  (define-as versioning-default-config ht-create-symbol
     max-count 3 max-size (inf) path-versions "versions/" path-temp "temp/")
 
   (define (get-existing-version-ids path-versions) "string -> (integer ...)"
@@ -31,7 +31,7 @@
     (+ 1 (apply max existing-version-ids)))
 
   (define (path-versions-string filename config) "string rnrs-hashtable -> string"
-    (string-append (hashtable-ref config (q path-versions)) filename "/"))
+    (string-append (ht-ref config (q path-versions)) filename "/"))
 
   (define-syntax-rule (path-version-file-string path-versions version-id)
     ;"string integer -> string"
@@ -39,7 +39,7 @@
 
   (define (path-restored-file-string filename version-id config)
     "string integer rnrs-hashtable -> string"
-    (string-append (hashtable-ref config (q path-temp)) filename "." (number->string version-id)))
+    (string-append (ht-ref config (q path-temp)) filename "." (number->string version-id)))
 
   (define (delete-oldest-versions after-version-id existing-version-ids path-versions)
     "integer (integer ...) string ->"
@@ -56,18 +56,18 @@
     "symbol:text/binary string procedure:{string ->} -> integer:current-version-id
     calls \"proc\" with a path to an empty file which is the next version, and moves the old file to
     the directory for previous versions which is set in \"config\""
-    (if (> (get-file-size path) (hashtable-ref config (q max-size))) (proc path)
+    (if (> (get-file-size path) (ht-ref config (q max-size))) (proc path)
       (let*
         ( (path-versions (path-versions-string (basename path) config))
           (existing-version-ids (get-existing-version-ids path-versions))
           (version-id
             (if (null? existing-version-ids)
               (begin (ensure-directory-structure path-versions)
-                (ensure-directory-structure (hashtable-ref config (q path-temp))) 1)
+                (ensure-directory-structure (ht-ref config (q path-temp))) 1)
               (get-current-version-id existing-version-ids)))
           (path-version-file (path-version-file-string path-versions version-id)))
-        (if (> (length existing-version-ids) (hashtable-ref config (q max-count)))
-          (delete-oldest-versions (- version-id (hashtable-ref config (q max-count)))
+        (if (> (length existing-version-ids) (ht-ref config (q max-count)))
+          (delete-oldest-versions (- version-id (ht-ref config (q max-count)))
             existing-version-ids path-versions))
         (copy-file path path-version-file) (proc path)
         (if (eqv? (q text) type)

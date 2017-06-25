@@ -48,13 +48,13 @@
     (if (not (unspecified? a))
       (begin (display a) (if (not (and (string? a) (string-suffix? "\n" a))) (newline)))))
 
-  (define-as interface-format-writers symbol-hashtable
+  (define-as interface-format-writers ht-create-symbol
     text
-    (symbol-hashtable error interface-format-text-write-error
+    (ht-create-symbol error interface-format-text-write-error
       message interface-format-text-write-message
       lines interface-format-text-write-lines data interface-format-text-write-data)
     scm
-    (symbol-hashtable error interface-format-scm-write-error
+    (ht-create-symbol error interface-format-scm-write-error
       message interface-format-scm-write-message
       lines interface-format-scm-write-lines data interface-format-scm-write-data))
 
@@ -73,9 +73,9 @@
     displays objects corresponding to format.
     format can be a machine-readable serialisation format, or a plain text human language format for example.
     example use-case is a command-line interface that supports multiple message output formats"
-    (let (format-writers (hashtable-ref format-writers format))
+    (let (format-writers (ht-ref format-writers format))
       (each
         (l (e)
-          (let (writer (hashtable-ref format-writers (interface-format-object->type e)))
+          (let (writer (ht-ref format-writers (interface-format-object->type e)))
             (if writer (writer e port))))
         a))))

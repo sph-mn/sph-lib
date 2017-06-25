@@ -5,11 +5,10 @@
     scm->json-string)
   (import
     (guile)
-    (rnrs base)
     (rnrs hashtables)
     (sph)
     (sph vector)
-    (only (sph hashtable) hashtable-each))
+    (only (sph hashtable) ht-each))
 
   (define sph-json-description "a basic but fast json writer")
 
@@ -40,11 +39,11 @@
 
   (define (hashtable->json a port) "rnrs-hashtable port ->"
     (display "{" port)
-    (hashtable-each
+    (ht-each
       (l (key value) (object-key->json key port)
         (display ":" port) (scm->json value port) (display "," port))
       a)
-    (if (> (hashtable-size a) 1) (unread-char port)) (display "}" port))
+    (if (> (ht-size a) 1) (unread-char port)) (display "}" port))
 
   (define-syntax-rule (object-key->json a port)
     ;"string/symbol port ->"

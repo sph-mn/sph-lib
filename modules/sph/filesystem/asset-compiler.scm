@@ -49,7 +49,7 @@
   (define (config-format->output-processor a mode)
     "pair symbol/any -> false/procedure
      gets the output processor from a config-format configuration"
-    (hashtable-ref (first a) mode ac-output-copy))
+    (ht-ref (first a) mode ac-output-copy))
 
   (define* (ac-destination path-directory format sources #:optional path-file)
     "string symbol string list -> string
@@ -61,7 +61,7 @@
       "/"
       (if path-file path-file
         (string-append "_" (first (string-split (basename (first sources)) #\.))
-          "-" (number->string (equal-hash sources) 32)))))
+          "-" (number->string (ht-hash-equal sources) 32)))))
 
   (define (ac-source-files-updated? path-destination paths-input)
     "string (string ...) -> boolean
@@ -77,7 +77,7 @@
   (define (ac-config-valid? a)
     "any -> boolean
      true if input is a valid config object"
-    (and (hashtable? a)
+    (and (ht? a)
       (apply-values
         (l (keys values)
           (let (keys (vector->list keys))
@@ -86,9 +86,9 @@
                 (every
                   (l (a)
                     (and (list? a) (>= 2 (length a))
-                      (hashtable? (first a)) (every vector? (tail a))))
+                      (ht? (first a)) (every vector? (tail a))))
                   (vector->list values))))))
-        (hashtable-entries a))))
+        (ht-entries a))))
 
   (define* (ac-compile config mode port output-format sources #:optional processor-options)
     "hashtable symbol port symbol (string ...) (string/list ...) ->
@@ -106,17 +106,17 @@
      * sources: (any:processor-dependent ...)
      example config:
      (define client-ac-config
-       (symbol-hashtable
+       (ht-create-symbol
          javascript
          (pair
-           (symbol-hashtable production javascript-output-compress development javascript-output-format)
+           (ht-create-symbol production javascript-output-compress development javascript-output-format)
            (record ac-config-input (q sescript) (has-suffix-proc \".sjs\") s-template-sescript->javascript))
          html
          (pair
-           (symbol-hashtable)
+           (ht-create-symbol)
            (record ac-config-input \"sxml\" (has-suffix-proc \".sxml\") s-template-sxml->html))))"
     (and-let*
-      ( (config-format (hashtable-ref config output-format))
+      ( (config-format (ht-ref config output-format))
         (output-processor (config-format->output-processor config-format mode)))
       (output-processor
         (map (l (a) (source->input-processor a config-format processor-options)) sources) port

@@ -22,7 +22,7 @@
     (sph list)
     (sph set)
     (sph web shtml)
-    (only (sph hashtable) hashtable-ref symbol-hashtable)
+    (only (sph hashtable) ht-ref ht-create-symbol)
     (only (sph string) string-equal?)
     (only (sph tree) tree-transform-with-state)
     (only (srfi srfi-1) remove))
@@ -51,7 +51,7 @@
     (apply set-create-symbol
       (q (span a object img script select button input label select textarea))))
 
-  (define-syntax-rule (html-tag-no-newline? a) (hashtable-ref html-tags-no-newline a))
+  (define-syntax-rule (html-tag-no-newline? a) (ht-ref html-tags-no-newline a))
   (define-syntax-rule (handle-line a) (list (q p) a))
   (define-syntax-rule (handle-line-list a) (pair (q p) a))
 
@@ -99,12 +99,12 @@
 
   (define (descend-handle-escaped-association-infix a re-descend nesting-depth docl-state env) ":")
 
-  (define-as ascend-prefix->handler-ht symbol-hashtable
+  (define-as ascend-prefix->handler-ht ht-create-symbol
     line ascend-handle-line
     inline-expr itml-eval-ascend-inline-expr
     line-expr itml-eval-ascend-line-expr indent-expr itml-eval-ascend-indent-expr)
 
-  (define-as descend-prefix->handler-ht symbol-hashtable
+  (define-as descend-prefix->handler-ht ht-create-symbol
     inline-scm-expr itml-eval-descend-inline-scm-expr
     line-scm-expr itml-eval-descend-line-scm-expr
     association descend-handle-association
@@ -114,7 +114,7 @@
     double-backslash descend-handle-double-backslash)
 
   (define-syntax-rule (expr->shtml prefix->handler a proc-arguments ...)
-    (let (p (hashtable-ref prefix->handler (first a))) (and p (p (tail a) proc-arguments ...))))
+    (let (p (ht-ref prefix->handler (first a))) (and p (p (tail a) proc-arguments ...))))
 
   (define (ascend-expr->shtml a nesting-depth docl-state env)
     (or (expr->shtml ascend-prefix->handler-ht a nesting-depth docl-state env)

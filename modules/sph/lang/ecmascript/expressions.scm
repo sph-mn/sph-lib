@@ -34,13 +34,11 @@
     list->es-vector)
   (import
     (guile)
-    (rnrs base)
     (sph)
     (sph alist)
     (sph hashtable)
     (sph list)
-    (sph string)
-    (only (rnrs hashtables) hashtable?))
+    (sph string))
 
   (define sph-lang-ecmascript-expressions-description "create ecmascript syntax strings")
 
@@ -169,16 +167,16 @@
       ((number? a) (number->string a)) ((vector? a) (vector->es-vector a))
       ((boolean? a) (if a "true" "false"))
       ((list? a) (if (list-alist? a) (es-object a) (list->es-vector a)))
-      ((pair? a) (es-vector (first a) (tail a))) ((hashtable? a) (hashtable->es-object a))
+      ((pair? a) (es-vector (first a) (tail a))) ((ht? a) (ht->es-object a))
       ((char? a) (string-enclose (any->string a) "\"")) (else (q cannot-convert-to-es))))
 
   (define (es-vector-nc contents) (string-append "[" (string-join contents ",") "]"))
   (define (es-vector . contents) (es-vector-nc (map es-value contents)))
 
-  (define (hashtable->es-object a)
+  (define (ht->es-object a)
     (string-append "{"
       (string-join
-        (hashtable-fold (l (key value prev) (pair (single-assoc key value) prev)) (list) a) ",")
+        (ht-fold (l (key value prev) (pair (single-assoc key value) prev)) (list) a) ",")
       "}"))
 
   (define (list->es-vector a) (apply es-vector a))

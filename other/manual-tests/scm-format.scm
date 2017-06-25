@@ -8,7 +8,7 @@
   (let*
     ( (config-format
         (if (length-greater-one? in)
-          (hashtable (q format) (alist->hashtable (list->alist (last in)))) #f))
+          (ht-create (q format) (alist->hashtable (list->alist (last in)))) #f))
       (res (scm-format (first in) 0 config-format)))
     (if (equal? res exp) exp (pass (l (res) (display (string-replace-char res #\- #\space))) res))))
 

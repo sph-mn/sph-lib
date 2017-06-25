@@ -15,7 +15,6 @@
     (sph random-data)
     (only (guile) identity)
     (only (rnrs base) set!)
-    (only (rnrs hashtables) hashtable-set!)
     (only (srfi srfi-1) delete-duplicates))
 
   ; additional list processing procedures which depend on libraries that depend on (sph list). to avoid circular dependencies
@@ -26,7 +25,7 @@
      if the value is a list, the element is either removed (empty list) or replaced with multiple elements"
     (fold
       (l (e r)
-        (let (value (hashtable-ref ht e))
+        (let (value (ht-ref ht e))
           (if value ((if (list? value) append pair) value r) (pair e r))))
       (list) a))
 

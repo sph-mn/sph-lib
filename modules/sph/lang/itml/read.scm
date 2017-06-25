@@ -19,7 +19,7 @@
       read
       string-drop-right)
     (only (sph conditional) if-pass)
-    (only (sph hashtable) hashtable-ref symbol-hashtable)
+    (only (sph hashtable) ht-ref ht-create-symbol)
     (only (sph list)
       first-or-false
       any->list
@@ -141,7 +141,7 @@
   (define (string->datums a) "string -> list" (string->datum (parenthesise a) read))
   (define (split-at& a index c) (call-with-values (nullary (split-at a index)) c))
 
-  (define-as prefix->handler-ht symbol-hashtable
+  (define-as prefix->handler-ht ht-create-symbol
     inline-scm-expr (l (a) (pair (q inline-scm-expr) (simplify-list (read-scm-expr a))))
     line-scm-expr (l (a) (pair (q line-scm-expr) (read-scm-expr a)))
     indent-scm-expr (l (a) (pair (q indent-scm-expr) (read-scm-expr a)))
@@ -165,7 +165,7 @@
     (let
       (finalise-expression
         (l (a) "list -> any"
-          (let (p (hashtable-ref prefix->handler-ht (first a))) (if p (p (tail a)) a))))
+          (let (p (ht-ref prefix->handler-ht (first a))) (if p (p (tail a)) a))))
       (l (a) "list -> list" (finalise-expression (tree-map-lists finalise-expression a)))))
 
   (define (top-level-map a) #t)

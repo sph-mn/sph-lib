@@ -14,7 +14,6 @@
     (sph hashtable)
     (sph string)
     (sph test base)
-    (except (rnrs hashtables) hashtable-ref)
     (only (sph one) ignore each-integer)
     (only (sph two) boolean->integer)
     (only (srfi srfi-1) filter-map))
@@ -128,20 +127,20 @@
 
   (define test-report-null ignore)
 
-  (define-as test-reporters-default symbol-hashtable
+  (define-as test-reporters-default ht-create-symbol
     ; name -> (report-result . hooks)
     compact (pair test-report-compact test-report-hooks-compact)
     null (pair test-report-null test-report-hooks-null)
     default (pair test-report-null test-report-hooks-null))
 
   (define (test-reporter-get test-reporters name) "hashtable symbol -> procedure"
-    (hashtable-ref test-reporters name (hashtable-ref test-reporters (q default))))
+    (ht-ref test-reporters name (ht-ref test-reporters (q default))))
 
   (define (test-reporter-names test-reporters) "hashtable -> (symbol ...)"
-    (hashtable-keys test-reporters))
+    (ht-keys test-reporters))
 
   (define*
     (test-report-result result #:key data (test-reporters test-reporters-default)
       (format (q compact))
       (port (current-output-port)))
-    ((hashtable-ref test-reporters format) result port) result))
+    ((ht-ref test-reporters format) result port) result))

@@ -43,25 +43,12 @@
     (rnrs io ports)
     (sph)
     (sph string)
-    (only (sph hashtable)
-      hashtable
-      hashtable-ref
-      symbol-hashtable)
+    (sph hashtable)
     (ice-9 threads)
-    (only (sph list)
-      any->list
-      length-greater-one?)
-    (only (sph one) call-at-approximated-interval begin-first)
-    (only (sph string) string-replace-string)
-    (only (srfi srfi-1)
-      append-map
-      delete!
-      remove
-      unfold
-      filter-map
-      fold-right
-      map!
-      last))
+    (sph list)
+    (sph one)
+    (sph string)
+    (except (srfi srfi-1) map))
 
   (define directory-read-all scandir)
 
@@ -141,7 +128,7 @@
     (unfold (l (e) (or (string-equal? "/" e) (string-equal? "." e))) identity dirname a))
 
   (define stat-field-name->stat-accessor-ht
-    (symbol-hashtable mtime stat:mtime
+    (ht-create-symbol mtime stat:mtime
       atime stat:atime
       size stat:size mode stat:mode uid stat:uid gid stat:gid nlink stat:nlink ctime stat:ctime))
 
@@ -149,17 +136,17 @@
     "symbol -> guile-stat-accessor
     a guile-stat-accessor is for example stat:mtime, and the argument is as symbol for the part after stat:, in this case mtime.
     utility for functions working with file change events and stat-records"
-    (hashtable-ref stat-field-name->stat-accessor-ht a))
+    (ht-ref stat-field-name->stat-accessor-ht a))
 
   (define stat-accessor->stat-field-name-ht
-    (hashtable stat:mtime (q mtime)
+    (ht-create stat:mtime (q mtime)
       stat:atime (q atime)
       stat:size (q size)
       stat:mode (q mode) stat:uid (q uid) stat:gid (q gid) stat:nlink (q nlink) stat:ctime (q ctime)))
 
   (define (stat-accessor->stat-field-name a)
     "utility for functions working with file change events and stat-records"
-    (hashtable-ref stat-accessor->stat-field-name-ht a))
+    (ht-ref stat-accessor->stat-field-name-ht a))
 
   (define* (fold-directory-tree proc init path #:optional (max-depth (inf)))
     "::

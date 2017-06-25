@@ -37,7 +37,6 @@
     procedure-cond
     program-name
     program-path
-    quote-odd
     remove-keyword-associations
     rnrs-exception->key
     rnrs-exception->object
@@ -61,16 +60,11 @@
     (sph number)
     (sph string)
     (only (rnrs base) set!)
-    (only (rnrs hashtables)
-      make-hashtable
-      equal-hash
-      hashtable-ref
-      hashtable-set!)
+    (sph hashtable)
     (only (srfi srfi-1)
-      append-map
       unfold-right
-      filter
-      unfold))
+      unfold
+      ))
 
   (define sph-one-description "various")
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
@@ -209,24 +203,24 @@
      where the extended procedure is only called once for a combination of arguments, and subsequent
      calls with the same arguments return the previous result from a cache.
      the cache is never cleared until the current process ends"
-    (let (cache (make-hashtable equal-hash equal?))
+    (let (cache (ht-make ht-hash-equal equal?))
       (l args
-        (let (cached-result (hashtable-ref cache args (q --not-in-cache)))
+        (let (cached-result (ht-ref cache args (q --not-in-cache)))
           (if (eqv? (q --not-in-cache) cached-result)
-            ((l (r) (hashtable-set! cache args r) r) (apply proc args)) cached-result)))))
+            ((l (r) (ht-set! cache args r) r) (apply proc args)) cached-result)))))
 
   (define (procedure->temporarily-cached-procedure cache-duration proc)
     "integer:seconds procedure -> procedure
      like procedure->cached-procedure but the cache is emptied after cache-duration the next time the procedure is called"
-    (let ((cache (make-hashtable equal-hash equal?)) (last-time 0))
+    (let ((cache (ht-make ht-hash-equal equal?)) (last-time 0))
       (l args
         (let (time (current-time))
           (if (> (- time last-time) cache-duration)
             (begin (set! last-time time)
-              ((l (result) (hashtable-set! cache args result) result) (apply proc args)))
-            (let (cached-result (hashtable-ref cache args (q --not-in-cache)))
+              ((l (result) (ht-set! cache args result) result) (apply proc args)))
+            (let (cached-result (ht-ref cache args (q --not-in-cache)))
               (if (eqv? (q --not-in-cache) cached-result)
-                ((l (result) (hashtable-set! cache args result) result) (apply proc args))
+                ((l (result) (ht-set! cache args result) result) (apply proc args))
                 cached-result)))))))
 
   (define (program-path)
@@ -252,11 +246,7 @@
      like procedure-append but does not collect results and returns unspecified"
     (l a (each (l (b) (apply b a)) proc)))
 
-  (define-syntax-rules quote-odd
-    ;any ... -> list
-    ;quote each argument at odd indexes starting from one, not quoting each second argument.
-    ((a b) (list (quote a) b))
-    ((a b c ...) (quasiquote ((unquote-splicing (quote-odd a b) (quote-odd c ...))))))
+
 
   (define (bytevector-contains? a search-bv)
     "bytevector bytevector -> boolean

@@ -7,27 +7,27 @@
   (define proc (l () #t))
 
   (define valid-config
-    (symbol-hashtable javascript
-      (list (symbol-hashtable production proc development proc)
+    (ht-create-symbol javascript
+      (list (ht-create-symbol production proc development proc)
         (record ac-config-input (q sescript) proc proc))
-      html (list (symbol-hashtable) (record ac-config-input "sxml" proc proc))
+      html (list (ht-create-symbol) (record ac-config-input "sxml" proc proc))
       css
-      (list (symbol-hashtable production proc development proc)
+      (list (ht-create-symbol production proc development proc)
         (record ac-config-input (q plcss) proc proc))))
 
   (define invalid-config-1
-    (symbol-hashtable javascript
-      (list (symbol-hashtable production proc development proc)
+    (ht-create-symbol javascript
+      (list (ht-create-symbol production proc development proc)
         (record ac-config-input (q sescript) proc proc))
       "css"
-      (list (symbol-hashtable production proc development proc)
+      (list (ht-create-symbol production proc development proc)
         (record ac-config-input (q plcss) proc proc))))
 
   (define invalid-config-2
-    (symbol-hashtable css (list (record ac-config-input (q plcss) proc proc))))
+    (ht-create-symbol css (list (record ac-config-input (q plcss) proc proc))))
 
   (define invalid-config-3
-    (symbol-hashtable css (list (vector) (record ac-config-input (q plcss) proc proc))))
+    (ht-create-symbol css (list (vector) (record ac-config-input (q plcss) proc proc))))
 
   (define invalid-config-4 (vector))
 

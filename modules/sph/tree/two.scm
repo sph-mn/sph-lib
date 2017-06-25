@@ -7,17 +7,16 @@
     (sph)
     (sph alist)
     (sph hashtable)
-    (sph tree)
-    (only (rnrs hashtables) hashtable-set!))
+    (sph tree))
 
   (define (tree->values-count-hash a)
     (let (r (hashtable))
       (tree-each-leaf
         (l (e)
-          (let (existing (hashtable-ref r e))
-            (if existing (hashtable-set! r e (+ existing 1)) (hashtable-set! r e 1))))
+          (let (existing (ht-ref r e))
+            (if existing (ht-set! r e (+ existing 1)) (ht-set! r e 1))))
         a)))
 
   (define (tree-replace-from-hashtable a ht) "list rnrs-hashtable -> list/any"
     (if (list? a) (map (l (e) (tree-replace-from-hashtable e ht)) a)
-      (identity-if (hashtable-ref ht a) a))))
+      (identity-if (ht-ref ht a) a))))

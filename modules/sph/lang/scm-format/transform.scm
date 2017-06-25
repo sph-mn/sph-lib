@@ -6,7 +6,6 @@
   (import
     (guile)
     (ice-9 match)
-    (rnrs base)
     (rnrs lists)
     (rnrs sorting)
     (sph)
@@ -71,18 +70,18 @@
         (pairs (q library) name
           (pair (q export)
             (delete-duplicate-import-exports
-              (if (hashtable-ref config (q sort-export)) (sort-import-export-list export) export)))
+              (if (ht-ref config (q sort-export)) (sort-import-export-list export) export)))
           (pair (q import)
             (delete-duplicate-import-exports
-              (if (hashtable-ref config (q sort-import)) (sort-import-export-list import) import)))
+              (if (ht-ref config (q sort-import)) (sort-import-export-list import) import)))
           (let
             (config-separate-unexported-definitions
-              (hashtable-ref config (q separate-unexported-definitions)))
+              (ht-ref config (q separate-unexported-definitions)))
             (if config-separate-unexported-definitions
               (separate-unexported-definitions body export
-                (hashtable-ref config (q sort-definitions))
+                (ht-ref config (q sort-definitions))
                 (eqv? (q after) config-separate-unexported-definitions))
-              (if (hashtable-ref config (q sort-definitions))
+              (if (ht-ref config (q sort-definitions))
                 (split-definitions body
                   (l (definitions rest) (append (sort-definitions definitions) rest)))
                 body)))))
