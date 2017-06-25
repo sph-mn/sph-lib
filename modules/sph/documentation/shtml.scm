@@ -4,20 +4,20 @@
     documentation-shtml-library)
   (import
     (guile)
-    (rnrs base)
+    (ice-9 threads)
     (rnrs sorting)
     (sph)
     (sph alist)
     (sph binding-info)
     (sph documentation)
     (sph documentation display-format-plist)
-    (only (sph lang docl itml-to-shtml) process-lines)
     (sph list)
     (sph module)
     (sph one)
     (sph string)
     (sph web shtml)
-    (except (srfi srfi-1) map))
+    (only (srfi srfi-1) alist-delete)
+    (only (sph lang docl itml-to-shtml) process-lines))
 
   (define (create-binding-name-anchor-target title)
     (qq (span (@ (id "b-" (unquote title))) (unquote title))))
@@ -47,9 +47,9 @@
 
   (define (documentation-shtml-library nesting-depth . library-names)
     "((symbol ...) ...) integer -> list
-    a navigatable index of all bindings in a module and a listing of the available binding documentation"
+     a navigatable index of all bindings in a module and a listing of the available binding documentation"
     (let (bindings (append-map get-binding-documentation library-names))
-      (par-let
+      (letpar
         ( (index
             (pairs (q ul) (q (@ (class "doc-n")))
               (map (compose (l (e) (list (q li) e)) create-binding-name-anchor first) bindings)))
@@ -67,7 +67,7 @@
       (map-binding-name (l (name library-name) (symbol->string name)))
       (map-library-name any->string))
     "((symbol ...) ...) [{symbol list:library-name -> sxml} {list:library-name -> sxml}] -> list
-    a table of all bindings from all specified libraries with binding names in the first column and associated library names in the second"
+     a table of all bindings from all specified libraries with binding names in the first column and associated library names in the second"
     (let
       (binding-info
         (map tail
@@ -79,5 +79,5 @@
                     (list (symbol->string name) (map-binding-name name library-name)
                       (map-library-name library-name)))
                   names))
-              (module-names->exports library-names) library-names))))
+              (map (l (a) (module-exports (resolve-interface a))) library-names) library-names))))
       (pair (q table) (map (l (e) (pair (q tr) (map (l (e) (list (q td) e)) e))) binding-info)))))

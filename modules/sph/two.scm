@@ -222,8 +222,8 @@
      move source-path to target-path and replace original source-path"
     (let (target-path (path->full-path target-path))
       (and (ensure-directory-structure target-path)
-        (execute+check-result "mv" "-t" target-path source-path)
-        (execute+check-result "ln" "-s"
+        (execute-and-check-result "mv" "-t" target-path source-path)
+        (execute-and-check-result "ln" "-s"
           (string-append (ensure-trailing-slash target-path) (basename source-path))
           (dirname source-path)))))
 

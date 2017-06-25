@@ -14,7 +14,6 @@
   (import
     (guile)
     (sph base)
-    (sph hashtable one)
     (sph tree)
     (only (rnrs base) set!))
 
@@ -65,7 +64,7 @@
      if name is a true value it is passed to a config loader selected by loader-key.
      the default config loader reads a \"flat-alist-tree\" from a file.
      if name/config is false, look for an environment variable sph-config-name and try to read a file $sph-config-name/default.scm"
-    (if (hashtable? name/config) (ht-tree-merge! sph-config-object name/config)
+    (if (ht? name/config) (ht-tree-merge! sph-config-object name/config)
       (let (name (or name/config (getenv "sph-config-name") "default"))
         (ht-tree-merge! sph-config-object
           ((ht-ref config-loaders loader-key) name loader-options))

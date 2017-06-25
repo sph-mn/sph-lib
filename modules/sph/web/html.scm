@@ -9,8 +9,8 @@
     html-uri-encode)
   (import
     (ice-9 pretty-print)
-    (rnrs base)
     (rnrs bytevectors)
+    (rnrs exceptions)
     (sph)
     (sph conditional)
     (only (guile)
@@ -64,7 +64,7 @@
 
   (define (html-parse-urlencoded-form-data request-body)
     "string -> alist
-    parse an application/x-www-form-urlencoded string and result in an alist"
+     parse an application/x-www-form-urlencoded string and result in an alist"
     (if (string-null? request-body) (list)
       (map
         (l (e)
@@ -84,7 +84,7 @@
   (define (read-boundary port) "port -> string/eof-object"
     (let (boundary (read-line-crlf-trim port))
       (if (eof-object? boundary) boundary
-        (if (string-null? boundary) (throw (q boundary-not-found) boundary) boundary))))
+        (if (string-null? boundary) (raise (pair (q boundary-not-found) boundary)) boundary))))
 
   (define-syntax-rule (header-multipart-mixed? a)
     (if-pass (or (alist-ref a "content-type") (alist-ref a "Content-Type"))
@@ -96,11 +96,11 @@
      procedure:{header port result ->} any port [string]
      ->
      any
-
+     ----
      proc-multipart is only called for multipart/mixed.
      a functional parser for multipart-form-data that allows to stop after any cr-lf-terminated line or part and reads content stream-like via a reader procedure
      and supports nested multipart/mixed data.
-    see also html-read-multipart-form-data"
+     see also html-read-multipart-form-data"
     ;see the code of "html-read-multipart-form-data" for a usage example
     (let* ((boundary (if boundary boundary (read-boundary port))) (header (http-read-header port)))
       (if
@@ -125,8 +125,8 @@
 
   (define* (html-read-multipart-form-data port #:optional normalise-header-keys?)
     "port [procedure:{string -> string/any}] -> list
-    parses all multipart form data available on port into a list.
-    for stream-like and conditional parsing see html-fold-multipart-form-data"
+     parses all multipart form data available on port into a list.
+     for stream-like and conditional parsing see html-fold-multipart-form-data"
     (reverse
       (html-fold-multipart-form-data
         (l (header fold-lines result)
@@ -151,8 +151,8 @@
 
   (define (html-multipart-form-data-ref a name)
     "list string -> pair
-    for parsed multipart form data like html-read-multipart-form-data creates.
-    retrieves (alist:header . string:body) pairs by content-disposition name"
+     for parsed multipart form data like html-read-multipart-form-data creates.
+     retrieves (alist:header . string:body) pairs by content-disposition name"
     (find
       (l (e)
         (string-equal? name

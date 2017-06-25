@@ -195,7 +195,7 @@
                       (l (a)
                         (let*
                           ( (a (string-drop-prefix-if-exists indent-to-remove a))
-                            (space-count (string-skip a #\space)))
+                            (space-count (or (string-skip a #\space) 0)))
                           (if (even? space-count) (string-append indent " " a)
                             (string-append indent a))))
                       (tail lines)))
