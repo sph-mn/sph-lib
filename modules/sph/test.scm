@@ -15,6 +15,7 @@
   (export
     assert-and
     assert-equal
+    assert-test-result
     assert-true
     define-procedure-tests
     define-test
@@ -42,7 +43,7 @@
     (sph)
     (sph alist)
     (sph conditional)
-    (sph error)
+    (sph filesystem)
     (sph list)
     (sph list one)
     (sph module)
@@ -50,14 +51,31 @@
     (sph record)
     (sph string)
     (sph test base)
-    (sph test report)
-    (except (srfi srfi-1) map)
-    (only (sph filesystem) path->full-path))
+    (sph test report))
 
   (define sph-test-description
-    "automated code testing with composable modules
-     data structures:
-       test-result: ([group-name] test-result ...)/test-result-record")
+    "automated code testing with composable modules.
+     # data structures:
+     test-result: ([group-name] test-result ...)/vector
+     # syntax
+     test-settings-default-custom :: [any:unquoted-key any:value] ... -> list
+     test-list :: symbol:name/(symbol:name any:io-data ...) ... -> ((symbol procedure [arguments expected] ...) ...)
+     define-test
+       :: (name [arguments expected settings]) body ...
+       :: name procedure body ...
+       define a procedure with the name test-{name} and the arity expected by the default evaluators
+     define-procedure-tests :: symbol:name symbol/literal-list
+       define a variable with tests that can be executed with test-execute-procedures.
+       resolves procedures by name and normalises the test specification
+     test-execute-procedures-lambda :: test-list-arguments ... -> procedure:{settings -> test-result}
+       create a procedure that executes procedure tests corresponding to test-spec.
+       can be used as the last expression in a test module
+     test-lambda
+       :: symbol:formals/([arguments expected settings]) body ... -> procedure
+       creates a normalised test procedure with the correct arity
+     assert-and :: [optional-title] expression ... -> vector:test-result
+       creates a successful test result if all given expressions or assertions are successful test results or true
+     assert-equal :: [optional-title] expected expression -> vector:test-result")
 
   (define-as test-settings-default alist-q
     reporters test-reporters-default
@@ -75,7 +93,6 @@
     procedure-wrap #f random-order? #f parallel? #f exclude #f only #f until #f)
 
   (define-syntax-rule (test-settings-default-custom key/value ...)
-    ;[any:unquoted-key any:value] ... -> list
     (test-settings-default-custom-by-list (quote-odd key/value ...)))
 
   (define (test-settings-default-custom-by-list key/value)
@@ -117,9 +134,9 @@
             ((directory) (module-find-by-name (module-file->name a) (q prefix) %load-path))
             ((regular) (list (module-file->name a)))
             ( (symlink)
-              ;assumes that readlink fails on circular symlinks
-              (test-module-name-from-files (readlink a))))
-          (error-create (q file-not-found-in-load-path))))))
+              ; assumes that readlink* fails on circular symlinks
+              (test-module-name-from-files (readlink* a))))
+          (raise (pair (q file-not-found-in-load-path) a))))))
 
   (define-syntax-cases test-lambda s
     (((arguments expected settings) body ...) (syntax (lambda (arguments expected) body ...)))
@@ -127,7 +144,7 @@
       (quasisyntax (lambda (a ... . (unsyntax (datum->syntax s (gensym "define-test")))) body ...))))
 
   (define-syntax-cases define-test
-    ;define a new test procedure
+    ; define a new test procedure
     ( ( (name parameter ...) body ...)
       (syntax (define-test name (test-lambda (parameter ...) body ...))))
     ( (name proc)
@@ -139,7 +156,6 @@
   (define (macro?* a) (false-if-exception (macro? (module-ref (current-module) a))))
 
   (define-syntax-cases test-list-one
-    ;-> (symbol procedure [arguments expected] ...)/error
     ( ( (name data ...))
       (let*
         ( (name-datum (syntax->datum (syntax name)))
@@ -152,7 +168,7 @@
                 (if (defined? (quote (unsyntax test-name))) (unsyntax test-name)
                   (unsyntax
                     (if (macro?* name-datum)
-                      (syntax (error-create (q macro-instead-of-test-procedure) (quote name)))
+                      (syntax (raise (pair (q macro-instead-of-test-procedure) (quote name))))
                       (syntax (lambda (arguments . rest) (apply name arguments)))))))
               (current-module))
             (quasiquote (data ...))))))
@@ -161,13 +177,10 @@
   (define-syntax-rule (test-list test-spec ...) (list (test-list-one test-spec) ...))
 
   (define-syntax-rule (define-procedure-tests name test-spec ...)
-    ;symbol symbol/list-literal -> ((symbol procedure any ...) ...)
-    ;define procedure tests that can be executed with "test-execute-procedures".
-    ;resolves procedures by name in test-specs and normalises the test specification
+    ; -> ((symbol procedure any ...) ...)
     (define name (test-list test-spec ...)))
 
   (define-syntax-rule (test-execute-procedures-lambda test-spec ...)
-    ;create a procedure that executes procedure tests corresponding to test-spec
     ((l (tests) (l (settings) (test-execute-procedures settings tests))) (test-list test-spec ...)))
 
   (define-syntax define-test-module
@@ -244,8 +257,8 @@
      modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
      this procedure is supposed to return a test-result, for example from calling \"test-execute\"
      the implementation is depends on the following features:
-     - module names are mapped to filesystem paths
-     - modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
+     * module names are mapped to filesystem paths
+     * modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
     (let
       ((load-path (settings->load-path! settings)) (search-type (alist-q-ref settings search-type)))
       (let
@@ -254,7 +267,7 @@
         (if module-names
           (test-modules-execute settings
             (test-modules-apply-settings settings (apply append module-names)))
-          (error-create (q module-not-found) name)))))
+          (raise (pair (q module-not-found) name))))))
 
   (define (filter-module-names a) "list -> list" (filter list? a))
   (define (filter-procedure-names a) "list -> list" (filter symbol? a))
@@ -421,8 +434,8 @@
     ((expr) (assert-true #f expr)))
 
   (define-syntax-rule (assert-test-result title expr continue)
-    ;string/false expression expression -> true/test-result:failure
-    ;assertions create test-result vectors only on failure
+    ; string/false expression expression -> true/test-result:failure
+    ; assertions create test-result vectors only on failure
     (let (r expr)
       (if (and r (or (boolean? r) (and (test-result? r) (test-result-success? r)))) continue
         (assert-failure-result r #t title (q expr)))))
@@ -432,7 +445,6 @@
       (assert-test-result title a (assert-and-with-explicit-title title a-rest ...))))
 
   (define-syntax-case (assert-and optional-title expr ...)
-    ;creates a successul test result if all given expressions or assertions are true test results or true
     (let (optional-title-datum (syntax->datum (syntax optional-title)))
       (if (string? optional-title-datum)
         (syntax (assert-and-with-explicit-title optional-title expr ...))
@@ -440,6 +452,6 @@
 
   (define-syntax-rules assert-equal
     ( (optional-title expected expr)
-      (let (r expr)
-        (if (equal? expected r) #t (assert-failure-result r expected optional-title (q expr)))))
+      (let ((r expr) (exp expected))
+        (if (equal? exp r) #t (assert-failure-result r exp optional-title (q expr)))))
     ((expected expr) (assert-equal #f expected expr))))

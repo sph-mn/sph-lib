@@ -1,8 +1,8 @@
 (library (sph lang template)
   (export
+    sph-lang-template-description
     template-bindings-proc
     template-compose
-    sph-lang-template-description
     template-datum->template-proc
     template-fold
     template-get)
@@ -11,17 +11,18 @@
     (rnrs eval)
     (sph)
     (only (sph alist) alist-ref)
-    (only (sph list) fold-multiple)
-    (only (sph io read-write) rw-file->list rw-port->list))
+    (only (sph io read-write) rw-file->list rw-port->list)
+    (only (sph list) fold-multiple))
 
-  (define sph-lang-template-description "generic s-expression template processor
-    a template engine using implicitly quasiquoted s-expressions.
-    creates template procedures from source data read from files or ports.
-    alternative name: s-template")
+  (define sph-lang-template-description
+    "generic s-expression template processor
+     a template engine using implicitly quasiquoted s-expressions.
+     supports composition and concatenation. creates template procedures from source data read from files or ports.
+     alternative name: s-template")
 
   (define (template-datum->template-proc a env)
     "any:scheme-datum environment -> procedure:template-proc
-    creates a template-proc from an unevaluated template scheme datum"
+     creates a template-proc from an unevaluated template scheme datum"
     (eval (quasiquote (lambda (ref content) (unquote (list (q quasiquote) a)))) env))
 
   (define (template-get env a) "environment procedure/string/port/any -> procedure"
@@ -31,7 +32,7 @@
 
   (define (template-compose env . source)
     "environment template-source ... -> procedure:template-proc
-    evaluated templates from source are passed as content to the templates before them, like function composition"
+     evaluated templates from source are passed as content to the templates before them, like function composition"
     (l (ref content) (fold-right (l (e prev) ((template-get env e) ref prev)) content source)))
 
   (define (template-bindings-proc data)
@@ -52,13 +53,17 @@
 
   (define (template-fold fold-proc bindings env source . result)
     "procedure:{procedure any -> any} list environment template-source any -> any
-    template-fold processes multiple template sources with or without template composition depending on the nesting of sources in the \"source\" specification.
-
-    element: string:path/template-procedure/port
-    template-source: element/(element/(element ...) ...)
-    template-source: single-element/(multiple-element/(composed-element ...) ...)
-    example
-    (template-fold (l (template-result result) (pair template-result result)) source bindings env (list))"
+     template-fold processes multiple template sources with or without template composition depending on the nesting of sources in the \"source\" specification.
+     element: string:path/procedure:template-procedure/port
+     template-source: element/(element/(element ...) ...)
+     template-source: single-element/(concatenated-element/(composed-element ...) ...)
+     example:
+       (template-fold
+         (l (template-result result) (pair template-result result))
+         (list file.sxml appended-file.sxml (list layout.sxml included-in-layout.sxml))
+         (alist (q a) 1)
+         (environment (rnrs base))
+         (list))"
     (apply template-source-fold source
       (let (bindings-accessor (template-bindings-proc bindings))
         (l (template . result) (apply fold-proc (template bindings-accessor #f) result)))

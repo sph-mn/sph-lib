@@ -29,6 +29,7 @@
     angle
     any
     append
+    append-map
     apply
     apply-values
     asin
@@ -79,6 +80,8 @@
     exact?
     exp
     expt
+    filter
+    filter-map
     finite?
     first
     floow
@@ -129,7 +132,6 @@
     nan?
     negative?
     not
-    quote-odd
     null
     null?
     nullary
@@ -148,12 +150,14 @@
     quasiquote
     quasisyntax
     quote
+    quote-odd
     rational-valued?
     rational?
     rationalize
     real-part
     real-valued?
     real?
+    remove
     reverse
     round
     second
@@ -183,6 +187,7 @@
     syntax-rules
     syntax-rules_
     tail
+    take-while
     tan
     truncate
     unquote
@@ -196,9 +201,6 @@
     vector-for-each
     vector-length
     vector-map
-    append-map
-    filter
-    filter-map
     vector-ref
     vector-set!
     vector?
@@ -207,6 +209,7 @@
   (import
     (ice-9 pretty-print)
     (except (rnrs base) let)
+    (except (srfi srfi-1) map)
     (only (guile)
       LC_ALL
       cons*
@@ -230,7 +233,6 @@
       with-syntax
       write)
     (only (ice-9 optargs) lambda* define*)
-    (except (srfi srfi-1) map)
     (only (srfi srfi-2) and-let*))
 
   (define sph-description
@@ -328,12 +330,12 @@
     ((name (wrap-name ...) expr ...) (define name (compose-s (wrap-name ...) expr ...)))
     ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
-(define-syntax-rules quote-odd
-  ;copied from (sph one) to avoid circular dependency
+  (define-syntax-rules quote-odd
+    ;copied from (sph one) to avoid circular dependency
     ;any ... -> list
     ;quote each argument at odd indexes starting from one, not quoting each second argument.
     ((a b) (list (quote a) b))
-  ((a b c ...) (quasiquote ((unquote-splicing (quote-odd a b) (quote-odd c ...))))))
+    ((a b c ...) (quasiquote ((unquote-splicing (quote-odd a b) (quote-odd c ...))))))
 
   (define* (display-line a #:optional (port (current-output-port)))
     "any [port] -> unspecified
