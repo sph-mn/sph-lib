@@ -12,7 +12,7 @@
     ensure-directory-structure
     ensure-directory-structure-and-new-mode
     ensure-trailing-slash
-    file-path-directory?
+    is-directory?
     filename-extension
     fold-directory-tree
     get-unique-target-path
@@ -52,7 +52,7 @@
 
   (define directory-read-all scandir)
 
-  (define (file-path-directory? path) "test if path exists and is a directory"
+  (define (is-directory? path) "test if path exists and is a directory"
     (eqv? (q directory) (stat:type (stat path))))
 
   (define (directory-fold path proc init)
