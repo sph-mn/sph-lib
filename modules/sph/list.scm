@@ -465,8 +465,7 @@
             (loop rest (proc consecutive r)))))))
 
   (define (fold-multiple proc a . custom-state-values)
-    "procedure:{any:state-value ... -> list} list any:state-value ... -> list:state-values
-     {previous-result ... -> list}
+    "procedure:{any:list-element any:state-value ... -> (any:state-value)} list any:state-value ... -> list:state-values
      like fold but with multiple state values. the state values are updated by returning a list from a call to \"proc\".
      apply \"proc\" to each element of \"a\" and the state-value elements that were given to
      fold-multiple or subsequently the updated state-values from the previous call to \"proc\""

@@ -11,13 +11,13 @@
     (sph binding-info)
     (sph documentation)
     (sph documentation display-format-plist)
+    (sph lang docl itml-to-shtml)
     (sph list)
     (sph module)
     (sph one)
     (sph string)
     (sph web shtml)
-    (only (srfi srfi-1) alist-delete)
-    (only (sph lang docl itml-to-shtml) process-lines))
+    (only (srfi srfi-1) alist-delete))
 
   (define (create-binding-name-anchor-target title)
     (qq (span (@ (id "b-" (unquote title))) (unquote title))))
@@ -33,7 +33,7 @@
             (if (null? content) #f
               (let (lines (append-map (l (e) (string-split e #\newline)) content))
                 (shtml-section (+ 1 nesting-depth) (first e)
-                  (process-lines lines) (list (q class) (first e)))))))
+                  (docl-itml-lines lines) (list (q class) (first e)))))))
         (tail binding))))
 
   (define (get-binding-documentation module-name) "list -> ((symbol:name . list:alist) ...)"

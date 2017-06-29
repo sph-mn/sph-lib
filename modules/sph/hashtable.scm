@@ -33,6 +33,7 @@
     ht-entries
     ht-equivalence-function
     ht-fold
+    ht-create-binding
     ht-from-alist
     ht-from-list
     ht-hash-equal
@@ -104,9 +105,17 @@
     ((h k ... k-last v) (ht-set! (ht-ref h k ...) k-last v)))
 
   (define-syntax-rules ht-create-symbol
-    ;like hashtable, but create a hashtable optimised for symbol keys
-    (() (ht-make ht-hash-symbol eqv?))
-    ((associations ...) (ht-from-list (quote-odd associations ...) eqv? ht-hash-symbol)))
+    ; like hashtable, but create a hashtable optimised for symbol keys
+    (() (ht-make ht-hash-symbol eq?))
+    ((associations ...) (ht-from-list (quote-odd associations ...) eq? ht-hash-symbol)))
+
+  (define-syntax-rules quote-duplicate ((a) (list (quote a) a))
+    ((a b ...) (quasiquote ((unquote-splicing (quote-duplicate a) (quote-duplicate b ...))))))
+
+  (define-syntax-rules ht-create-binding
+    ; equivalent to (ht-create-symbol (q name) name ...)
+    (() (ht-make ht-hash-symbol eq?))
+    ((binding-name ...) (ht-from-list (quote-duplicate binding-name ...) eq? ht-hash-symbol)))
 
   (define-syntax-rules ht-create-string
     ;like hashtable, but create a hashtable designated and optimised for string keys

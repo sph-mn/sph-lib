@@ -2,17 +2,17 @@
   (export
     docl-itml-env-shtml
     docl-itml-env-shtml-module-names
+    docl-itml-lines
     docl-itml-parsed->shtml
     docl-itml-port->shtml
     docl-itml-shtml-env-module-names
     docl-itml-string->shtml
-    itml-parsed->shtml
-    process-lines)
+    itml-parsed->shtml)
   (import
     (guile)
-    (rnrs base)
     (rnrs eval)
     (sph)
+    (sph hashtable)
     (sph io)
     (sph lang docl)
     (sph lang docl env itml-to-shtml)
@@ -21,11 +21,9 @@
     (sph lang itml read)
     (sph list)
     (sph set)
-    (sph web shtml)
-    (only (sph hashtable) ht-ref ht-create-symbol)
-    (only (sph string) string-equal?)
-    (only (sph tree) tree-transform-with-state)
-    (only (srfi srfi-1) remove))
+    (sph string)
+    (sph tree)
+    (sph web shtml))
 
   (define (add-spaces a)
     "list -> list
@@ -55,13 +53,13 @@
   (define-syntax-rule (handle-line a) (list (q p) a))
   (define-syntax-rule (handle-line-list a) (pair (q p) a))
 
-  (define (process-lines a)
+  (define (docl-itml-lines a)
     "list integer -> list
      the top-level is interpreted as a list of lines. this procedure inserts line breaks between string or symbol elements.
      removes empty lists and merges sub-lists that are not tag elements.
      sub-expressions creators are supposed to handle line breaks themselves"
     (if (null? a) a
-      (let ((e (first a)) (r (process-lines (tail a))))
+      (let ((e (first a)) (r (docl-itml-lines (tail a))))
         (if (list? e)
           (if (null? e) r
             (let (prefix (first e))
@@ -72,7 +70,7 @@
           (pair (handle-line e) r)))))
 
   (define-syntax-rule (join-heading-section a nesting-depth)
-    (shtml-section nesting-depth (first a) (process-lines (tail a))))
+    (shtml-section nesting-depth (first a) (docl-itml-lines (tail a))))
 
   (define-syntax-rule (heading-section? a)
     (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
@@ -127,7 +125,7 @@
   (define (handle-terminal a . states) (pair (handle-top-level-terminal a) states))
 
   (define itml-parsed->shtml
-    (itml-parsed->result-proc (l (a nesting-depth docl-state env) (process-lines a))
+    (itml-parsed->result-proc (l (a nesting-depth docl-state env) (docl-itml-lines a))
       (itml-descend-proc descend-expr->shtml)
       (itml-ascend-proc ascend-expr->shtml itml-adjust-nesting-depth) handle-top-level-terminal
       handle-terminal))
