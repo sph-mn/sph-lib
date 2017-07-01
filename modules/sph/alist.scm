@@ -21,25 +21,25 @@
     alist-map
     alist-merge
     alist-q
-    alist-q-ref
-    alist-q-select
-    alist-q-select-apply
-    alist-q-set-multiple
-    alist-q-update-multiple
     alist-ref
+    alist-ref-q
     alist-select
     alist-select-apply
+    alist-select-q
+    alist-select-q-apply
     alist-set
     alist-set!
     alist-set-multiple
+    alist-set-multiple-q
     alist-update
     alist-update-multiple
+    alist-update-multiple-q
     alist-values
     alist?
     alistq-ref
     alistq-select
-    alists-q-ref
     alists-ref
+    alists-ref-q
     alists-set!
     alistv-ref
     alistv-select
@@ -107,12 +107,12 @@
     ;a:alist k:key d:default-if-not-found
     ((a k d) ((l (r) (if r (tail r) d)) (assoc k a))) ((a k) (assoc-ref a k)))
 
-  (define-syntax-rules alist-q-ref
+  (define-syntax-rules alist-ref-q
     ;a:alist k:unquoted-key d:default-if-not-found
     ((a k d) (alist-ref a (quote k) d)) ((a k) (alist-ref a (quote k))))
 
-  (define-syntax-rules alists-q-ref ((a k) (alist-q-ref a k))
-    ((a k ... k-last) (alist-q-ref (alists-q-ref a k ...) k-last)))
+  (define-syntax-rules alists-ref-q ((a k) (alist-ref-q a k))
+    ((a k ... k-last) (alist-ref-q (alists-ref-q a k ...) k-last)))
 
   (define-syntax-rules alists-ref ((a k) (alist-ref a k))
     ((a k ... k-last) (alist-ref (alists-ref a k ...) k-last)))
@@ -173,7 +173,7 @@
      key and value are specified alternatingly"
     (alist-merge a (list->alist key/value)))
 
-  (define-syntax-rule (alist-q-set-multiple a key/value ...)
+  (define-syntax-rule (alist-set-multiple-q a key/value ...)
     ;list [any:unquoted-key any:value] ...
     (apply alist-set-multiple a (quote-odd key/value ...)))
 
@@ -183,7 +183,7 @@
      key and value are specified alternatingly"
     (alist-update a (list->alist key/value)))
 
-  (define-syntax-rule (alist-q-update-multiple a key/value ...)
+  (define-syntax-rule (alist-update-multiple-q a key/value ...)
     ;list [any:unquoted-key any:value] ...
     (apply alist-update-multiple a (quote-odd key/value ...)))
 
@@ -212,10 +212,10 @@
      applies proc with all alist values for keys in order"
     (apply proc (alist-select a keys)))
 
-  (define-syntax-rule (alist-q-select-apply a (key ...) proc)
+  (define-syntax-rule (alist-select-q-apply a (key ...) proc)
     (alist-select-apply a (quote (key ...)) proc))
 
-  (define-syntax-rule (alist-q-select a (key ...)) (alist-select a (quote (key ...))))
+  (define-syntax-rule (alist-select-q a (key ...)) (alist-select a (quote (key ...))))
   (define (alist-keys-map proc a) (map (l (a) (pair (proc (first a)) (tail a))) a))
 
   (define (alist-set a key value)

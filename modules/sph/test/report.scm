@@ -105,20 +105,20 @@
   (define-as test-report-hooks-compact alist-q
     procedure-before
     (l (s index result)
-      (if (alist-q-ref s current-module-name) (newline) (if (not (zero? index)) (newline))))
+      (if (alist-ref-q s current-module-name) (newline) (if (not (zero? index)) (newline))))
     procedure-after ignore
     procedure-data-before ignore
     procedure-data-after
     (l (s index index-data result)
       (let (index-data (test-result-index result))
         (if (= 0 (or index-data 0))
-          (begin (display (create-indent (boolean->integer (alist-q-ref s current-module-name))))
+          (begin (display (create-indent (boolean->integer (alist-ref-q s current-module-name))))
             (display (test-result-title result))))
         (if (test-result-success? result) (begin (display " ") (display (+ 1 index-data)))
           (begin (newline)
-            (display (create-indent (+ 1 (boolean->integer (alist-q-ref s current-module-name)))))
+            (display (create-indent (+ 1 (boolean->integer (alist-ref-q s current-module-name)))))
             (display "failure") (newline)
-            (test-report-compact-ieo result (boolean->integer (alist-q-ref s current-module-name))
+            (test-report-compact-ieo result (boolean->integer (alist-ref-q s current-module-name))
               display)))))
     module-before
     (l (s index name) (if (not (zero? index)) (newline))

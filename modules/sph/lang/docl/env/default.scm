@@ -15,7 +15,6 @@
     unquote)
   (import
     (guile)
-    (rnrs base)
     (sph)
     (sph alist))
 

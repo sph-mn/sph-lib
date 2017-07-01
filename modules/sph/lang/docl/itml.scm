@@ -16,7 +16,6 @@
     sph-lang-docl-itml-description)
   (import
     (ice-9 threads)
-    (rnrs base)
     (rnrs eval)
     (sph)
     (sph conditional)

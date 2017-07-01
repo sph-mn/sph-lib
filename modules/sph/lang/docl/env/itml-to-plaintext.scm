@@ -5,7 +5,6 @@
     docl-param-insert
     escape)
   (import
-    (rnrs base)
     (sph)
     (sph lang indent-syntax)
     (only (guile)

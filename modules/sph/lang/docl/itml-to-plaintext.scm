@@ -1,7 +1,6 @@
 (library (sph lang docl itml-to-plaintext)
   (export
-    docl-itml-env-plaintext
-    docl-itml-env-plaintext-module-names
+    docl-itml-env-plaintext-modules
     docl-itml-parsed->plaintext
     docl-itml-plaintext-env
     docl-itml-port->plaintext
@@ -10,7 +9,6 @@
     sph-lang-docl-itml-to-plaintext-description)
   (import
     (guile)
-    (rnrs base)
     (rnrs eval)
     (sph)
     (sph conditional)
@@ -27,7 +25,6 @@
   (define docl-itml-env-plaintext-module-names
     (pair (q (sph lang docl env itml-to-plaintext)) docl-default-env-module-names))
 
-  (define docl-itml-env-plaintext (apply environment docl-itml-env-plaintext-module-names))
   (define (ascend-handle-line a nesting-depth docl-state env) (string-join a ""))
   (define (descend-handle-double-backslash a nesting-depth docl-state env) "\\")
 

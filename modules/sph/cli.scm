@@ -136,7 +136,7 @@
 
   (define (config->option-spec a)
     (apply
-      (l (named . unnamed) (if-pass (alist-q-ref named options) (l (a) (append a unnamed)) unnamed))
+      (l (named . unnamed) (if-pass (alist-ref-q named options) (l (a) (append a unnamed)) unnamed))
       (keyword-list->alist+keyless a)))
 
   (define (commands->help-text-lines a) "list:commands-spec -> string"
@@ -253,11 +253,11 @@
     "alist:config -> (procedure:{options -> list:extended-options/false})"
     (list
       (l (options)
-        (if-pass (alist-q-ref a version)
+        (if-pass (alist-ref-q a version)
           (l (version-spec)
             (pair (q (version #:names #\v #:processor (display-version-proc version-spec))) options))))
       (l (options)
-        (if-pass (alist-q-ref a about)
+        (if-pass (alist-ref-q a about)
           (l (text)
             (pair (qq (about #:names #\a #:processor (unquote (display-about-proc text a))))
               options))))
@@ -269,7 +269,7 @@
                 (pair
                   (append help-option
                     (list #:processor
-                      (display-help-proc (alist-q-ref a description) commands
+                      (display-help-proc (alist-ref-q a description) commands
                         command-options-config a options-temp)))
                   options)))
             (pair
@@ -360,11 +360,11 @@
         (alist-ref a (q commands)))))
 
   (define (config->missing-arguments-handler a) "list -> procedure/false"
-    (let (v (alist-q-ref a missing-arguments-handler (q undefined)))
+    (let (v (alist-ref-q a missing-arguments-handler (q undefined)))
       (if (eqv? (q undefined) v) default-missing-arguments-handler (and (procedure? v) v))))
 
   (define (config->unsupported-option-handler a) "list -> procedure/false"
-    (let (v (alist-q-ref a unsupported-option-handler (q undefined)))
+    (let (v (alist-ref-q a unsupported-option-handler (q undefined)))
       (if (eqv? (q undefined) v) default-unsupported-option-handler (and (procedure? v) v))))
 
   (define (cli-create . config)

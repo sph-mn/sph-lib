@@ -1,7 +1,7 @@
 (library (sph documentation shtml)
   (export
-    documentation-shtml-libraries
-    documentation-shtml-library)
+    doc-shtml-libraries
+    doc-shtml-library)
   (import
     (guile)
     (ice-9 threads)
@@ -25,18 +25,18 @@
   (define (create-binding-name-anchor title)
     (qq (a (@ (href "#b-" (unquote title))) (unquote title))))
 
-  (define (library-documentation-shtml-binding-documentation binding nesting-depth)
+  (define (shtml-bindings binding nesting-depth)
     (shtml-section nesting-depth (create-binding-name-anchor-target (first binding))
       (filter-map
-        (l (e)
-          (let (content (remove string-null? (tail e)))
+        (l (a)
+          (let (content (remove string-null? (tail a)))
             (if (null? content) #f
-              (let (lines (append-map (l (e) (string-split e #\newline)) content))
-                (shtml-section (+ 1 nesting-depth) (first e)
-                  (docl-itml-lines lines) (list (q class) (first e)))))))
+              (let (lines (append-map (l (a) (string-split a #\newline)) content))
+                (shtml-section (+ 1 nesting-depth) (first a)
+                  (docl-itml-lines lines) (list (q class) (first a)))))))
         (tail binding))))
 
-  (define (get-binding-documentation module-name) "list -> ((symbol:name . list:alist) ...)"
+  (define (get-bindings module-name) "list -> ((symbol:name . list:alist) ...)"
     (list-sort-with-accessor string<? first
       (alist-bind display-format-plist (format-binding-info format-arguments)
         (map
@@ -45,25 +45,25 @@
               (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
           (module-binding-info module-name)))))
 
-  (define (documentation-shtml-library nesting-depth . library-names)
-    "((symbol ...) ...) integer -> list
-     a navigatable index of all bindings in a module and a listing of the available binding documentation"
-    (let (bindings (append-map get-binding-documentation library-names))
+  (define (doc-shtml-library nesting-depth . library-names)
+    "integer (symbol ...) -> list
+     a navigatable index of all bindings from the specified libraries and
+    a listing of the available documentation for bindings"
+    (let (bindings (append-map get-bindings library-names))
       (letpar
         ( (index
             (pairs (q ul) (q (@ (class "doc-n")))
-              (map (compose (l (e) (list (q li) e)) create-binding-name-anchor first) bindings)))
+              (map (compose (l (a) (list (q li) a)) create-binding-name-anchor first) bindings)))
           (content
             (pairs (q div) (q (@ (class "doc-b")))
               (map
-                (l (e)
-                  (library-documentation-shtml-binding-documentation
-                    (pair (first e) (alist-delete "module" (tail e))) nesting-depth))
+                (l (a)
+                  (shtml-bindings (pair (first a) (alist-delete "module" (tail a))) nesting-depth))
                 bindings))))
         (list index content))))
 
   (define*
-    (documentation-shtml-libraries library-names #:optional
+    (doc-shtml-libraries library-names #:optional
       (map-binding-name (l (name library-name) (symbol->string name)))
       (map-library-name any->string))
     "((symbol ...) ...) [{symbol list:library-name -> sxml} {list:library-name -> sxml}] -> list
@@ -80,4 +80,4 @@
                       (map-library-name library-name)))
                   names))
               (map (l (a) (module-exports (resolve-interface a))) library-names) library-names))))
-      (pair (q table) (map (l (e) (pair (q tr) (map (l (e) (list (q td) e)) e))) binding-info)))))
+      (pair (q table) (map (l (a) (pair (q tr) (map (l (a) (list (q td) a)) a))) binding-info)))))

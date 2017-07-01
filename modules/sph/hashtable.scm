@@ -23,6 +23,7 @@
     ht-copy-deep*
     ht-copy-empty
     ht-create
+    ht-create-binding
     ht-create-eq
     ht-create-eqv
     ht-create-string
@@ -33,7 +34,7 @@
     ht-entries
     ht-equivalence-function
     ht-fold
-    ht-create-binding
+    ht-fold-right
     ht-from-alist
     ht-from-list
     ht-hash-equal
@@ -53,6 +54,7 @@
     ht-set!
     ht-set-multiple!
     ht-set-multiple-q!
+    ht-set-q!
     ht-size
     ht-tree-merge!
     ht-tree-ref
@@ -95,6 +97,7 @@
     ((h k d) (rnrs-ht-ref h k d)) ((h k) (rnrs-ht-ref h k #f)))
 
   (define-syntax-rules ht-ref-q ((h k d) (ht-ref h (quote k) d)) ((h k) (ht-ref h (quote k) #f)))
+  (define-syntax-rule (ht-set-q! h k v) (ht-set! h (quote k) v))
 
   (define-syntax-rules ht-tree-ref ((h k) (ht-ref h k #f))
     ((h k ... k-last) (ht-ref (ht-ref h k ...) k-last #f)))
@@ -118,7 +121,7 @@
     ((binding-name ...) (ht-from-list (quote-duplicate binding-name ...) eq? ht-hash-symbol)))
 
   (define-syntax-rules ht-create-string
-    ;like hashtable, but create a hashtable designated and optimised for string keys
+    ; like hashtable, but create a hashtable designated and optimised for string keys
     (() (ht-make ht-hash-string string-equal?))
     ((associations ...) (ht-from-list (quote-odd associations ...) string-equal? ht-hash-string)))
 
@@ -128,11 +131,11 @@
     ((associations ...) (ht-from-list (quote-odd associations ...) eq? ht-hash-symbol)))
 
   (define-syntax-rules ht-create-eqv (() (ht-make-eqv))
-    ;not the best hash function
+    ; not the best hash function
     ((associations ...) (ht-from-list (quote-odd associations ...) eqv? ht-hash-equal)))
 
   (define-syntax-rule (ht-bind ht (key ...) body ...)
-    ;selectively bind keys of hashtable to variables
+    ; selectively bind keys of hashtable to variables
     ((lambda (key ...) body ...) (ht-ref ht (quote key)) ...))
 
   (define-syntax-rule (ht-each-key proc ht) (vector-each proc (ht-keys ht)))
@@ -165,7 +168,11 @@
     (let-values (((keys values) (ht-entries a)))
       (fold proc init (vector->list keys) (vector->list values))))
 
-  (define (ht-map! proc a) (ht-each (l (k v) (ht-set! a k (proc k v))) a))
+  (define (ht-fold-right proc init a) "procedure:{key value state -> state} any hashtable -> list"
+    (let-values (((keys values) (ht-entries a)))
+      (fold-right proc init (vector->list keys) (vector->list values))))
+
+  (define (ht-map! proc a) "hashtable -> hashtable" (ht-each (l (k v) (ht-set! a k (proc k v))) a))
 
   (define (ht-invert! a)
     "hashtable -> hashtable

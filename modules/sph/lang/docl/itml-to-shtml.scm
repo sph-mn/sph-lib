@@ -1,11 +1,9 @@
 (library (sph lang docl itml-to-shtml)
   (export
-    docl-itml-env-shtml
-    docl-itml-env-shtml-module-names
+    docl-itml-env-shtml-modules
     docl-itml-lines
     docl-itml-parsed->shtml
     docl-itml-port->shtml
-    docl-itml-shtml-env-module-names
     docl-itml-string->shtml
     itml-parsed->shtml)
   (import
@@ -78,10 +76,9 @@
   (define-syntax-rule (list->sxml a nesting-depth)
     (if (heading-section? a) (join-heading-section a nesting-depth) a))
 
-  (define docl-itml-env-shtml-module-names
+  (define docl-itml-env-shtml-modules
     (pair (q (sph lang docl env itml-to-shtml)) docl-default-env-module-names))
 
-  (define docl-itml-env-shtml (apply environment docl-itml-env-shtml-module-names))
   (define (ascend-handle-line a nesting-depth docl-state env) (if (null? a) "" a))
   (define (descend-handle-double-backslash a re-descend nesting-depth docl-state env) "\\")
 
@@ -134,5 +131,5 @@
   (define docl-itml-port->shtml (docl-itml-port->result-proc itml-parsed->shtml))
 
   (define docl-itml-string->shtml
-    ;same signature as docl-itml-port->result-proc
+    ; same signature as docl-itml-port->result-proc
     (docl-itml-string->result-proc docl-itml-port->shtml)))

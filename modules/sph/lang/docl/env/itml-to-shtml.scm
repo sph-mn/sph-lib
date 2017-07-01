@@ -6,7 +6,6 @@
     escape)
   (import
     (guile)
-    (rnrs base)
     (sph)
     (sph alist)
     (sph string)

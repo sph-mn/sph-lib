@@ -103,7 +103,7 @@
   (define (settings->hook a name) "list symbol -> procedure" (alists-ref a (q hook) name))
 
   (define (settings->reporter a) "list -> (procedure . alist:hooks)"
-    (test-reporter-get (alist-q-ref a reporters) (alist-q-ref a reporter-name)))
+    (test-reporter-get (alist-ref-q a reporters) (alist-ref-q a reporter-name)))
 
   (define (settings->reporter-hook a name) "hashtable -> (report-write . report-hooks)"
     (alist-ref (tail (settings->reporter a)) name))
@@ -205,7 +205,7 @@
   (define (test-module-execute settings module index name)
     "alist module/environment (symbol ...) -> test-result"
     (let*
-      ( (settings (alist-q-set-multiple settings current-module-name name))
+      ( (settings (alist-set-multiple-q settings current-module-name name))
         (settings (apply-settings-reporter+hook settings (q module-before) index name))
         (r ((eval (q test-execute) module) settings)))
       (apply-settings-hook+reporter settings (q module-after) index name r) r))
@@ -246,7 +246,7 @@
     "list -> (string ...)
      adds the value for the \"path-search\" setting to the global load-path and returns the value in a list to be used as a load-path variable, if the path-search value is not false.
      otherwise returns %load-path"
-    (let (path-search (alist-q-ref a path-search))
+    (let (path-search (alist-ref-q a path-search))
       (if path-search
         (let (path (path->full-path path-search)) (add-to-load-path path) (list path)) %load-path)))
 
@@ -260,7 +260,7 @@
      * module names are mapped to filesystem paths
      * modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
     (let
-      ((load-path (settings->load-path! settings)) (search-type (alist-q-ref settings search-type)))
+      ((load-path (settings->load-path! settings)) (search-type (alist-ref-q settings search-type)))
       (let
         (module-names
           (every-map (l (a) (false-if-null (module-find-by-name a search-type load-path))) name))
@@ -394,12 +394,12 @@
     (let
       ( (get-executor
           (l (settings) "list -> procedure"
-            (if (alist-q-ref settings parallel?) test-procedures-execute-parallel
+            (if (alist-ref-q settings parallel?) test-procedures-execute-parallel
               test-procedures-execute-serial)))
         (settings->procedure-hooks
           (l (settings) "list -> (procedure:hook-before hook-after report-before report-after)"
             (append
-              (alist-select (alist-q-ref settings hook)
+              (alist-select (alist-ref-q settings hook)
                 (q (procedure-before procedure-after procedure-data-before procedure-data-after)))
               (alist-select (tail (settings->reporter settings))
                 (q (procedure-before procedure-after procedure-data-before procedure-data-after)))))))

@@ -46,7 +46,7 @@
     "list ->
     if the --add-to-load-path option has been specified, add the comma separated list of paths given
     as a value to the option to the beginning of the module load-path"
-    (if-pass (alist-q-ref cli-arguments add-to-load-path)
+    (if-pass (alist-ref-q cli-arguments add-to-load-path)
       (l (a) (map (l (e) (add-to-load-path e)) (string-split a #\,)))))
 
   #;(define (test-execute-cli-get-settings cli-arguments)
@@ -54,8 +54,8 @@
     create the test settings object from program arguments"
     (alist-bind cli-arguments (reporter exclude only until)
       (cli-add-to-load-path! cli-arguments)
-      (alist-q-set-multiple test-settings-default reporter-name
-        (cli-value-reporter (alist-q-ref test-settings-default reporters) reporter) exclude
+      (alist-set-multiple-q test-settings-default reporter-name
+        (cli-value-reporter (alist-ref-q test-settings-default reporters) reporter) exclude
         (cli-value-path/module-list exclude) only
         (cli-value-path/module-list only) until (cli-value-path/module-list until))
       test-settings-default))

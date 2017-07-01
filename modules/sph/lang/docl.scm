@@ -9,40 +9,39 @@
     docl-translate-port
     sph-lang-docl-description)
   (import
+    (rnrs exceptions)
     (rnrs io ports)
     (sph)
+    (sph alist)
     (sph hashtable)
-    (sph error)
+    (sph list)
+    (sph one)
     (only (guile)
       current-thread
       port-filename
-      catch)
-    (sph alist)
-    (sph list)
-    (sph one))
+      catch))
 
   (define sph-lang-docl-description
-    "evaluate templates with a specific scheme environment, state values and circular inclusion protection")
+    "evaluate templates with a specific scheme environment, state values and circular inclusion protection.
+     # data structures
+     docl-state: ((parent-source-name ...) any:custom-values ...)")
 
   (define docl-default-env-module-names (q ((sph lang docl env default))))
-  ;(call-hierachy-information . alist)
   (define docl-state-empty (list (list)))
 
   (define (call-with-docl get-source-identifier get-source-position input proc docl-state)
     "{any:input -> any} {input -> any} any {input -> any} list -> any/string
-     installs a handler that amends exceptions with source information so that an exception-handler
+     installs a handler that extends exceptions with source information so that an exception-handler
      receives the arguments (key source-name source-position other-exception-arguments ...) for exceptions matching exception-keys.
      sets up the circular inclusion protection and bindings which are accessible with
      the procedures from (sph lang docl env). then calls \"proc\" with \"input\""
     (let (source-name (get-source-identifier input))
-      (if (and source-name (contains? (first docl-state) source-name)) ""
+      (if (and source-name (contains? (first docl-state) source-name))
+        ; circular inclusion
+        ""
         (let (docl-state (pair (pair source-name (first docl-state)) (tail docl-state)))
-          (begin-first
-            (catch #t (nullary (proc input docl-state))
-              (l (key . args)
-                (error-create key args
-                  (pair source-name (and get-source-position (get-source-position input))))))
-            (pair (tail (first docl-state)) (tail docl-state)))))))
+          (guard (obj (#t (raise (list (q docl) obj source-name (get-source-position input)))))
+            (proc input docl-state))))))
 
   (define (docl-translate-any input proc docl-state)
     "calls proc with input and enables docl features as with call-with-docl.
