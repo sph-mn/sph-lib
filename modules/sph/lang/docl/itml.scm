@@ -3,7 +3,7 @@
     docl-itml-parsed->result-proc
     docl-itml-port->result-proc
     docl-itml-string->result-proc
-    itml-adjust-nesting-depth
+    itml-adjust-depth
     itml-eval-ascend-indent-expr
     itml-eval-ascend-inline-expr
     itml-eval-ascend-line-expr
@@ -36,7 +36,7 @@
   (define sph-lang-docl-itml-description
     "helpers to evaluate itml expressions and translate itml to other formats")
 
-  (define (itml-adjust-nesting-depth a)
+  (define (itml-adjust-depth a)
     "integer -> integer
      level 0 and 1 are equivalent because content of nested-lists on the top-level in
      itml-parsed is still considered belonging to the top-level"
@@ -48,8 +48,8 @@
         (docl-proc
           (eval
             (qq
-              (l (docl-call nesting-depth docl-state)
-                ((unquote (first a)) nesting-depth docl-state (unquote-splicing (tail a)))))
+              (l (docl-call depth docl-state)
+                ((unquote (first a)) depth docl-state (unquote-splicing (tail a)))))
             env)))
       (apply docl-proc docl-call proc-arguments)))
 
@@ -57,13 +57,13 @@
     (itml-list-eval (pair (string->symbol (first a)) (map (l (a) (list (q quote) a)) (tail a))) env
       proc-arguments ...))
 
-  (define (itml-eval-1 a re-descend nesting-depth docl-state env)
+  (define (itml-eval-1 a re-descend depth docl-state env)
     "list procedure integer list environment -> any
-     evaluate an inline-code expression when the arguments are strings"
-    (itml-list-string-eval a env nesting-depth docl-state))
+     evaluate an inline code expression when the arguments are strings"
+    (itml-list-string-eval a env depth docl-state))
 
-  (define (itml-eval-2 a re-descend nesting-depth docl-state env)
-    "evaluate an inline-code expression" (itml-list-eval a env nesting-depth docl-state))
+  (define (itml-eval-2 a re-descend depth docl-state env) "evaluate an inline code expression"
+    (itml-list-eval a env depth docl-state))
 
   (define (descend->ascend-proc proc)
     "procedure -> procedure
@@ -80,27 +80,27 @@
   (define itml-eval-ascend-indent-expr (descend->ascend-proc itml-eval-1))
 
   (define (docl-itml-port->result-proc create-result)
-    "procedure:{list:itml-parsed integer:nesting-depth list:docl-state environment:eval-environment} -> any
+    "procedure:{list:itml-parsed integer:depth list:docl-state environment:eval-environment} -> any
      create a procedure that reads itml from a port, reads itml expressions from it and parses it to \"create-result\""
-    (l (a nesting-depth docl-state env)
+    (l (a depth docl-state env)
       "any integer list environment -> any
       read itml from a port, parse it and create a result"
       (docl-translate-port a
-        (l (a docl-state) (create-result (port->itml-parsed a) nesting-depth docl-state env))
-        docl-state)))
+        (l (a docl-state) (create-result (port->itml-parsed a) depth docl-state env)) docl-state)))
 
   (define (docl-itml-string->result-proc port->result)
     "procedure:{port any ... ->} -> procedure:{string any ... ->}
-     creates a procedure that accepts an itml string to transform with \"port->result\""
+     creates a procedure that accepts an itml string to transform with the given \"port->result\" procedure"
     (l (a . port->result-arguments)
       "string _ ... -> text
       accepts an itml string to transform"
       (apply port->result (open-input-string a) port->result-arguments)))
 
   (define (docl-itml-parsed->result-proc itml-parsed->result)
-    "create a procedure that accepts itml-parsed and pass it to \"itml-parsed->result\""
-    (l (a nesting-depth docl-state env)
+    "create a procedure that accepts itml-parsed and pass it to \"itml-parsed->result\".
+     itml-parsed->result is a procedure like the one returned by (sph lang itml) itml-parsed->result-proc"
+    (l (a depth docl-state env)
       "list [integer list environment] -> any
-      this can also be used to convert list trees with strings to html"
-      (docl-translate-any a (l (a docl-state) (itml-parsed->result a nesting-depth docl-state env))
+      this can for example be used to convert list trees with strings to html"
+      (docl-translate-any a (l (a docl-state) (itml-parsed->result a depth docl-state env))
         docl-state))))

@@ -36,9 +36,7 @@
      sets up the circular inclusion protection and bindings which are accessible with
      the procedures from (sph lang docl env). then calls \"proc\" with \"input\""
     (let (source-name (get-source-identifier input))
-      (if (and source-name (contains? (first docl-state) source-name))
-        ; circular inclusion
-        ""
+      (if (and source-name (contains? (first docl-state) source-name)) ""
         (let (docl-state (pair (pair source-name (first docl-state)) (tail docl-state)))
           (guard (obj (#t (raise (list (q docl) obj source-name (get-source-position input)))))
             (proc input docl-state))))))

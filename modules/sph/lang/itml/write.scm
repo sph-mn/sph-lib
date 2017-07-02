@@ -7,11 +7,11 @@
     itml-create-inline-scm-expr
     itml-create-line-expr
     itml-create-line-scm-expr
-    itml-parsed->itml)
+    itml-parsed->itml
+    sph-lang-itml-write-description)
   (import
     (guile)
     (ice-9 threads)
-    (rnrs base)
     (sph)
     (sph hashtable)
     (sph lang indent-syntax)
@@ -19,11 +19,10 @@
     (sph lang itml read)
     (sph string)
     (only (sph list) flatten map-selected)
-    (only (sph tree)
-      tree-map-leafs
-      tree-transform-with-state)
+    (only (sph tree) tree-map-leafs tree-transform-with-state)
     (only (srfi srfi-1) remove))
 
+  (define sph-lang-itml-write-description "create itml strings from parsed itml")
   (define prefix-expr-scm "\\.")
   (define prefix-expr "\\")
 
@@ -65,9 +64,9 @@
 
   (define (string-char-escape a)
     "string -> string
-    add the backslash escape character in front of every character that needs to be escaped in itml.
-    escaping is only necessary on ascend or for terminals,
-    because arguments to descend expressions are interpreted as plain text and do not need to escape these chars"
+     add the backslash escape character in front of every character that needs to be escaped in itml.
+     escaping is only necessary on ascend or for terminals,
+     because arguments to descend expressions are interpreted as plain text and do not need to escape these chars"
     (let
       (spec
         (remove not

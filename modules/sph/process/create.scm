@@ -21,7 +21,7 @@
       compact
       first-or-false
       pair-reverse)
-    (only (sph one) search-env-path begin-first))
+    (only (sph one) search-env-path-one begin-first))
 
   (define sph-process-create-description "create child processes and process chains")
   (load-extension "libguile-sph-lib" "init_sph_lib")
@@ -45,8 +45,7 @@
     (if search-path?
       (let
         (executable
-          (if (string-prefix? "/" executable) executable
-            (first-or-false (search-env-path executable))))
+          (if (string-prefix? "/" executable) executable (search-env-path-one executable)))
         (and executable (file-exists? executable)
           (primitive-process-create executable (pair (basename executable) arguments)
             input-port output-port error-port env keep-descriptors path-open-flags)))

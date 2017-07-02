@@ -63,16 +63,11 @@
         (string-append "_" (first (string-split (basename (first sources)) #\.))
           "-" (number->string (ht-hash-equal sources) 32)))))
 
-  (define (ac-source-files-updated? path-destination paths-input)
+  (define (ac-source-files-updated? dest sources)
     "string (string ...) -> boolean
-     * destination does not exist: true
-     * destination path older than any input file: true"
-    (if (file-exists? path-destination)
-      (let
-        ( (paths-input-mtime (apply max (map (l (a) (stat:mtime (stat a))) paths-input)))
-          (path-destination-mtime (stat:mtime (stat path-destination))))
-        (> paths-input-mtime path-destination-mtime))
-      #t))
+     true if any source is newer than destination"
+    (let (dest-mtime (stat:mtime (stat dest)))
+      (any (l (a) (< dest-mtime (stat:mtime (stat a)))) sources)))
 
   (define (ac-config-valid? a)
     "any -> boolean
@@ -84,9 +79,7 @@
             (or (null? keys)
               (and (every symbol? keys)
                 (every
-                  (l (a)
-                    (and (list? a) (>= 2 (length a))
-                      (ht? (first a)) (every vector? (tail a))))
+                  (l (a) (and (list? a) (>= 2 (length a)) (ht? (first a)) (every vector? (tail a))))
                   (vector->list values))))))
         (ht-entries a))))
 
@@ -102,7 +95,7 @@
      * config-output: hashtable:{mode -> processor}
      * config-input: vector:(symbol:name procedure:{string:path -> boolean} procedure:processor)
      * mode: symbol
-     * processor: procedure:{string/(string ...):sources port:port-output ->}
+     * processor: procedure:{string/(string ...):sources port:port-output any:processor-options->}
      * sources: (any:processor-dependent ...)
      example config:
      (define client-ac-config
@@ -123,17 +116,21 @@
         processor-options)))
 
   (define*
-    (ac-compile->file config mode dest-directory output-format sources #:key processor-options
-      only-if-newer
+    (ac-compile->file config mode dest-directory output-format sources #:key processor-options when
       dest-file-name)
-    "-> string:path-destination
-     if \"#:only-if-newer\" is true, checks the modification times of files and only copies if any source is newer than the destination.
+    "hashtable symbol string symbol list -> string:path-destination
+     #:when takes a symbol:
+     * new: update only if destination does not exist
+     * newer: update if destination does not exist or any source file is newer
+     * always: always compile, overwriting any existing destination file
+     if sources do not contain only file paths (as leafs when nested lists are used), sources are only compiled
+     if the destination file does not exist of if #:when is set to always.
      \"#:dest-file-name\" sets the destination file name to use instead of an automatically generated one"
     (let*
       ( (sources-flat (flatten sources))
         (path-destination (ac-destination dest-directory output-format sources-flat dest-file-name)))
       (if
-        (or (not only-if-newer)
+        (or (eq? (q always) when) (not (file-exists? path-destination))
           (and (every string? sources-flat)
             (ac-source-files-updated? path-destination sources-flat)))
         (and (ensure-directory-structure (dirname path-destination))

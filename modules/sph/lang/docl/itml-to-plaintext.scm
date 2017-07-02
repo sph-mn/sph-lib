@@ -22,7 +22,7 @@
   (define sph-lang-docl-itml-to-plaintext-description
     "translates itml to an indent-tree plaintext string with evaluated expressions")
 
-  (define docl-itml-env-plaintext-module-names
+  (define docl-itml-env-plaintext-modules
     (pair (q (sph lang docl env itml-to-plaintext)) docl-default-env-module-names))
 
   (define (ascend-handle-line a nesting-depth docl-state env) (string-join a ""))

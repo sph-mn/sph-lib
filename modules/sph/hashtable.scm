@@ -179,11 +179,14 @@
      use values as keys and keys as values"
     (ht-each (l (k v) (ht-set! a v k)) a))
 
-  (define (ht-merge! a b)
-    "hashtable hashtable -> unspecified
+  (define (ht-merge! a . b)
+    "hashtable hashtable ... -> unspecified
      copy the values of hash b to hash a. existing key values are overwritten"
-    (let-values (((keys values) (ht-entries b)))
-      (vector-each-with-index (l (key index) (ht-set! a key (vector-ref values index))) keys)))
+    (each
+      (l (b)
+        (let-values (((keys values) (ht-entries b)))
+          (vector-each-with-index (l (key index) (ht-set! a key (vector-ref values index))) keys)))
+      b))
 
   (define (ht-tree-merge! a b)
     "hashtable hashtable -> unspecified

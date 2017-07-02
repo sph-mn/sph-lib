@@ -8,7 +8,6 @@
     itml-parsed->shtml)
   (import
     (guile)
-    (rnrs eval)
     (sph)
     (sph hashtable)
     (sph io)
@@ -33,7 +32,7 @@
             (if (and (string? e) (string-suffix? " " e)) (pair e r) (pairs e " " r)))))
       (list) a))
 
-  (define (string->sxml a nesting-level docl-state)
+  (define (string->sxml a depth docl-state)
     "string -> sxml
      convert newlines in string to (br) and result in an sxml expression"
     (let (a (string-split a #\newline)) (if (length-one? a) (first a) (interleave a (q (br))))))
@@ -57,21 +56,21 @@
      removes empty lists and merges sub-lists that are not tag elements.
      sub-expressions creators are supposed to handle line breaks themselves"
     (if (null? a) a
-      (let ((e (first a)) (r (docl-itml-lines (tail a))))
-        (if (list? e)
-          (if (null? e) r
-            (let (prefix (first e))
+      (let ((a (first a)) (r (docl-itml-lines (tail a))))
+        (if (list? a)
+          (if (null? a) r
+            (let (prefix (first a))
               (pair
-                (if (symbol? prefix) (if (html-tag-no-newline? prefix) (handle-line e) e)
-                  (handle-line-list e))
+                (if (symbol? prefix) (if (html-tag-no-newline? prefix) (handle-line a) a)
+                  (handle-line-list a))
                 r)))
-          (pair (handle-line e) r)))))
+          (pair (handle-line a) r)))))
 
   (define-syntax-rule (join-heading-section a nesting-depth)
     (shtml-section nesting-depth (first a) (docl-itml-lines (tail a))))
 
   (define-syntax-rule (heading-section? a)
-    (and (list? a) (> (length a) 1) (not (eqv? (q section) (first a)))))
+    (and (list? a) (> (length a) 1) (not (eq? (q section) (first a)))))
 
   (define-syntax-rule (list->sxml a nesting-depth)
     (if (heading-section? a) (join-heading-section a nesting-depth) a))
@@ -87,7 +86,7 @@
       ( (keyword (first a))
         (re-descend*
           (l (keyword)
-            (map (compose first (l (e) (re-descend e nesting-depth docl-state env)))
+            (map (compose first (l (a) (re-descend a nesting-depth docl-state env)))
               (any->list keyword)))))
       (append (if (string? keyword) (list keyword) (re-descend* keyword))
         (pair ": " (re-descend* (tail a))))))
@@ -122,9 +121,10 @@
   (define (handle-terminal a . states) (pair (handle-top-level-terminal a) states))
 
   (define itml-parsed->shtml
-    (itml-parsed->result-proc (l (a nesting-depth docl-state env) (docl-itml-lines a))
+    (itml-parsed->result-proc
+      (l (a nesting-depth docl-state env) (docl-itml-lines a))
       (itml-descend-proc descend-expr->shtml)
-      (itml-ascend-proc ascend-expr->shtml itml-adjust-nesting-depth) handle-top-level-terminal
+      (itml-ascend-proc ascend-expr->shtml itml-adjust-depth) handle-top-level-terminal
       handle-terminal))
 
   (define docl-itml-parsed->shtml (docl-itml-parsed->result-proc itml-parsed->shtml))

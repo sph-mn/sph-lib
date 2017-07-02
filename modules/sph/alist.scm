@@ -20,6 +20,7 @@
     alist-keys-map
     alist-map
     alist-merge
+    alist-prepend
     alist-q
     alist-ref
     alist-ref-q
@@ -56,6 +57,7 @@
     (only (sph list) fold-multiple)
     (only (srfi srfi-1) alist-cons filter)
     (rename (guile)
+      (acons alist-prepend)
       (assq-ref alistq-ref)
       (assv-ref alistv-ref)
       (assoc-set! alist-set!)))
@@ -77,7 +79,7 @@
             (loop (tail rest) r (pair e keyless)))))))
 
   (define list->alist
-    (let (proc (l (e alt prev r) (if alt (list #f #f (acons prev e r)) (list #t e r))))
+    (let (proc (l (a alt prev r) (if alt (list #f #f (alist-prepend prev a r)) (list #t a r))))
       (lambda (lis)
         "-> alist
          create an association list from the given arguments,

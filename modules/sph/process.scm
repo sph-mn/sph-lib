@@ -73,7 +73,7 @@
     "(string:\"name=value\" ...) string string ... ->
     like process-replace-e except that if the path to the program to execute does not start with a slash
     it is searched in the directories in the PATH environment variable"
-    (apply execle (if (string-prefix? "/" name/path) name/path (search-env-path name/path))
+    (apply execle (if (string-prefix? "/" name/path) name/path (search-env-path-one name/path))
       env (basename name/path) arguments))
 
   (define (execute-with-pipe proc mode path . arguments)

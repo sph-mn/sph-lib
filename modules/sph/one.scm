@@ -41,6 +41,7 @@
     rnrs-exception->key
     rnrs-exception->object
     search-env-path
+    search-env-path-one
     socket-bind
     sph-one-description
     string->datum
@@ -116,8 +117,8 @@
         (let (element (first rest))
           (if (keyword? element) (loop (list-tail rest 2)) (pair element (loop (tail rest))))))))
 
-  (define (search-env-path . a)
-    "string -> string
+  (define (search-env-path a)
+    "(string ...) -> (string ...)
      search for any match of paths \"a\" in the directories in the PATH environment variable and result in the full path.
      similar to guiles %search-load-path but does not consider filename extensions"
     (let*
@@ -127,6 +128,9 @@
             (any (l (e) (let (path (string-append e "/" a)) (if (file-exists? path) path #f)))
               path-parsed))))
       (map search-path a)))
+
+  (define (search-env-path-one a)
+    (first-or-false (search-env-path (list a))))
 
   (define (call-at-interval proc interval)
     "procedure:{current-interval procedure:continue:{next-interval -> any} -> any} microseconds -> unspecified
