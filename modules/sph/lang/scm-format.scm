@@ -15,6 +15,7 @@
     (sph lang scm-format format)
     (sph lang scm-format transform)
     (sph system reader)
+    (sph tree)
     (only (guile)
       inf
       object->string
@@ -25,8 +26,7 @@
     (only (sph string)
       any->string
       any->string-write*
-      string-multiply)
-    (only (sph tree) tree-transform-with-state))
+      string-multiply))
 
   (define sph-lang-scm-format-description "format scheme code")
   (define default-format-ascend format-application)
@@ -69,19 +69,15 @@
 
   (define (config-add-defaults c) "r6rs-hashtable -> r6rs-hashtable"
     (let
-      ( (config-format (ht-ref-q c format))
-        (config-transform (ht-ref-q c transform))
+      ( (config-format (ht-ref-q c format)) (config-transform (ht-ref-q c transform))
         (default-config-transform (ht-ref-q scm-format-default-config transform))
         (default-config-format (ht-ref-q scm-format-default-config format)))
       (ht-create-symbol format
-        (if config-format
-          (ht-copy* default-config-format (l (a)
-              (ht-merge! a config-format)) )
+        (if config-format (ht-copy* default-config-format (l (a) (ht-merge! a config-format)))
           default-config-format)
         transform
         (if config-transform
           (ht-copy* default-config-transform (l (a) (ht-merge! a config-transform)))
-
           default-config-transform))))
 
   (define (format-sequence a a-length ref current-indent config config-format)
@@ -98,7 +94,7 @@
 
   (define (scm-format-list->string a nesting-depth config)
     (let (config-format (ht-ref config (q format)))
-      (tree-transform-with-state a
+      (tree-transform* a
         (l (expr recurse current-indent)
           (let (format-proc (ht-ref descend-prefix->format-proc (first expr)))
             (if format-proc

@@ -35,7 +35,7 @@
      itml-state: ((any:source-id ...) integer:depth hashtable:data)")
 
   (define (itml-state-data a) (first (tail (tail a))))
-  (define (itml-state-create depth env) (list (list) depth (ht-create-symbol (q env) env)))
+  (define (itml-state-create depth env) (list (list) depth (ht-create-symbol env env)))
 
   (define (itml-call-for-eval input get-source-identifier get-source-position itml-state proc)
     "any procedure:{any -> any} procedure:{any -> any} list procedure:{any:input list:itml-state} -> any/string
@@ -65,9 +65,8 @@
       ( (descend-proc
           (l (proc)
             (l (a re-descend sources depth data)
-              (debug-log proc)
-              (let (r (proc a re-descend sources depth data))
-                (if r (list r #f sources depth data) (list #f #t sources (+ 1 depth) data))))))
+              (let (b (proc a (compose first re-descend) sources depth data))
+                (if b (list b #f sources depth data) (list #f #t sources (+ 1 depth) data))))))
         (ascend-proc
           (l (proc)
             (l (a sources depth data)
@@ -75,15 +74,16 @@
                 (proc a sources
                   ; depth 0 and 1 are equivalent
                   (max 0 (- depth 1)) data)
-                sources (- depth 1) data)))))
+                sources (- depth 1) data))))
+        (terminal-proc (l (proc) (l (a . b) (pair (apply proc a b) b)))))
       (l (a itml-state descend ascend terminal)
         "list:parsed-itml list procedure procedure procedure -> any"
         (map
           (l (a)
             (if (list? a)
               (first
-                (apply tree-transform-with-state a
-                  (descend-proc descend) (ascend-proc ascend) terminal itml-state))
+                (apply tree-transform* a
+                  (descend-proc descend) (ascend-proc ascend) (terminal-proc terminal) itml-state))
               (apply terminal a itml-state)))
           a))))
 
@@ -97,8 +97,7 @@
   (define (itml-eval-descend-string a . b)
     "list procedure integer list environment -> any
      evaluate an inline code expression when the arguments are strings"
-    (let (a (pair (string->symbol (first a)) (map (l (a) (list (q quote) a)) (tail a))))
-      (apply itml-eval-list a b)))
+    (let (a (pair (string->symbol (first a)) (tail a))) (apply itml-eval-descend a b)))
 
   (define (descend->ascend proc) (l (a . b) (apply proc a #f b)))
   (define itml-eval-desc-line-scm-expr itml-eval-descend)

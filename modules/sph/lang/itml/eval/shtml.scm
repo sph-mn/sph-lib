@@ -19,13 +19,9 @@
     "evaluate inline code expressions and translate itml to shtml")
 
   (define (descend-handle-association a re-descend sources depth data)
-    (let
-      ( (keyword (first a))
-        (re-descend*
-          (l (keyword)
-            (map (compose first (l (a) (re-descend a sources depth data))) (any->list keyword)))))
-      (append (if (string? keyword) (list keyword) (re-descend* keyword))
-        (pair ": " (re-descend* (tail a))))))
+    (let ((keyword (first a)) (re-descend* (l (a) (re-descend a sources depth data))))
+      (append (if (string? keyword) (list keyword) (map re-descend* keyword))
+        (pair ": " (map re-descend* (tail a))))))
 
   (define-as ascend-prefix-ht ht-create-symbol
     line (l (a . b) (if (null? a) "" a))
@@ -67,7 +63,7 @@
     (let*
       ( (prefix-dispatch
           (l (prefix-ht a . b) "hashtable list -> false/any"
-            (let (c (ht-ref prefix-ht (first a))) (and c (apply c b)))))
+            (let (c (ht-ref prefix-ht (first a))) (and c (apply c (tail a) b)))))
         (section? (l (a) (and (list? a) (> (length a) 1) (not (eq? (q section) (first a))))))
         (ascend-list
           (l (a sources depth . b)

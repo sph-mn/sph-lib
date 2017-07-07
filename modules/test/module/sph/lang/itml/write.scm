@@ -1,10 +1,15 @@
 (define-test-module (test module sph lang itml write)
-  (import (sph lang itml) (sph lang itml write))
+  (import
+    (sph lang itml)
+    (sph lang itml write))
+
   #;(define (test-itml-parsed->itml inp exp)
   (let (r (itml-parsed->itml (string->itml-parsed inp) 0))
     (if (string? exp) (equal? r exp) (equal? r inp))))
+
   (define test-env-list-1 (q (a (b ("c" d)))))
   (define test-env-list-2 (q (a b ("c" d))))
+
   (test-execute-procedures-lambda
     (itml-create-indent-scm-expr ((unquote test-env-list-2)) "\\.a\n  b\n  \"c\"\n    d")
     (itml-create-indent-scm-expr ((unquote test-env-list-1)) "\\.a\n  b\n    \"c\"\n      d")

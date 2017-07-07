@@ -7,7 +7,11 @@
   (import
     (ice-9 peg)
     (sph)
+    (sph conditional)
+    (sph hashtable)
     (sph lang indent-syntax)
+    (sph list)
+    (sph string)
     (sph tree)
     (only (guile)
       open-input-string
@@ -18,20 +22,7 @@
       const
       read
       string-drop-right)
-    (only (sph conditional) if-pass)
-    (only (sph hashtable) ht-ref ht-create-symbol)
-    (only (sph list)
-      first-or-false
-      any->list
-      simplify-list
-      splice-last-list
-      list-tail-ref)
     (only (sph one) string->datum)
-    (only (sph string)
-      parenthesise
-      any->string
-      any->string-display
-      any->string-write)
     (only (srfi srfi-1) remove split-at))
 
   (define sph-lang-itml-read-description "parse itml")
@@ -164,8 +155,7 @@
   (define finalise-tree
     (let
       (finalise-expression
-        (l (a) "list -> any"
-          (let (p (ht-ref prefix->handler-ht (first a))) (if p (p (tail a)) a))))
+        (l (a) "list -> any" (let (p (ht-ref prefix->handler-ht (first a))) (if p (p (tail a)) a))))
       (l (a) "list -> list" (finalise-expression (tree-map-lists finalise-expression a)))))
 
   (define (top-level-map a) #t)
@@ -176,9 +166,9 @@
     (let (a (denoted-tree->prefix-tree (read-space-indent-tree->denoted-tree a 2)))
       ;the top-level is not an itml-expression but a list of itml-expressions
       (map
-        (l (e)
-          (let (r (finalise-tree (tree-transform (any->list e) descend ascend terminal)))
-            (if (null? (tail r)) (first r) r)))
+        (l (a)
+          (let (b (finalise-tree (tree-transform (any->list a) descend ascend terminal)))
+            (if (null? (tail b)) (first b) b)))
         a)))
 
   (define (path->itml-parsed a)

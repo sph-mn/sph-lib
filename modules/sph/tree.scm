@@ -64,12 +64,13 @@
     tree-replace-at-once
     tree-replace-by-list
     tree-transform
-    tree-transform-descend-identity
-    tree-transform-with-state)
+    tree-transform*
+    tree-transform-descend-identity)
   (import
     (sph)
     (only (guile)
       1+
+      compose
       identity
       string-join)
     (only (sph alist) alist-ref)
@@ -467,68 +468,54 @@
                     (loop (tail rest) (pair (first replacements) r) (tail replacements))
                     (loop (tail rest) (pair a r) replacements))))))))))
 
-  (define (tree-transform-ascend rest leaf-list recurse-descend ascend-proc terminal-proc)
-    (if (null? rest) (ascend-proc (reverse leaf-list))
-      (let (e (first rest))
-        (tree-transform-ascend (tail rest)
-          (pair (if (list? e) (recurse-descend e) (terminal-proc e)) leaf-list) recurse-descend
-          ascend-proc terminal-proc))))
-
-  (define (tree-transform a descend-proc ascend-proc terminal-proc)
-    "list {any procedure -> (any boolean)} {list -> any} {any -> any} -> any
-     input-list {element recurse-descend -> (result-element continue?)} {element -> result-element} {element -> result-element} -> result
-     transform tree by traversing top to bottom then bottom to top, applying descend-proc on lists when descending tree,
-     ascend-proc on lists when ascending, and terminal-proc for non-list elements.
-     descend-proc should return a list of two values - one for the result and a boolean indicating if the result
-     should further be passed to ascend-proc and terminal-proc.
-     descend-proc receives a procedure to recursively evaluate.
-     example use cases:
-     * compiling s-expression list trees into string output languages by mapping sub-expressions to strings
-     * applying transformations to s-expressions"
-    (let recurse-descend ((e a))
-      (if (and (list? e) (not (null? e)))
+  (define (tree-transform-ascend rest leaf-list recurse-descend ascend terminal states)
+    (if (null? rest) (apply ascend (reverse leaf-list) states)
+      (let (a (first rest))
         (apply
-          (l (r continue?)
-            (if continue?
-              (if r (recurse-descend r)
-                (tree-transform-ascend e (list) recurse-descend ascend-proc terminal-proc))
-              r))
-          (descend-proc e recurse-descend))
-        (terminal-proc e))))
+          (l (a . states)
+            (tree-transform-ascend (tail rest) (pair a leaf-list)
+              recurse-descend ascend terminal states))
+          (apply (if (list? a) recurse-descend terminal) a states)))))
 
-  (define
-    (tree-transform-with-state-ascend rest leaf-list recurse-descend ascend-proc terminal-proc
-      states)
-    (if (null? rest) (apply ascend-proc (reverse leaf-list) states)
-      (let (e (first rest))
-        (apply
-          (l (r . states)
-            (tree-transform-with-state-ascend (tail rest) (pair r leaf-list)
-              recurse-descend ascend-proc terminal-proc states))
-          (apply (if (list? e) recurse-descend terminal-proc) e states)))))
-
-  (define (tree-transform-with-state a descend-proc ascend-proc terminal-proc . states)
-    "list {any procedure -> any boolean} {list -> any} {any -> any} -> any
-     input-list {element recurse-descend -> result-element continue?} {element -> result-element} {element -> result-element} -> result
-     like tree-transform with additional custom state arguments"
+  (define (tree-transform* a descend ascend terminal . states)
+    "list procedure procedure procedure any ... -> any
+     descend :: any:element procedure:recurse-descend any:state ... -> (any:result-element boolean:continue? any:state ...)
+     ascend :: any:element any:state ... -> (any:result-element any:state ...)
+     terminal :: any:element any:state ... -> (any:result-element any:state ...)
+     like tree-transform but also takes, passes and updates caller specified values"
     (letrec
       ( (recurse-descend
-          (lambda (e . states)
-            (if (and (list? e) (not (null? e)))
+          (lambda (a . states)
+            (if (and (list? a) (not (null? a)))
               (apply
                 (l (r continue? . states)
                   (if continue?
                     (if r (apply recurse-descend r states)
-                      (tree-transform-with-state-ascend e (list)
-                        recurse-descend ascend-proc terminal-proc states))
+                      (tree-transform-ascend a (list) recurse-descend ascend terminal states))
                     (pair r states)))
-                (apply descend-proc e recurse-descend states))
-              (apply terminal-proc e states)))))
+                (apply descend a recurse-descend states))
+              (apply terminal a states)))))
       (apply recurse-descend a states)))
 
-  (define (tree-transform-descend-identity . args)
+  (define (tree-transform a descend ascend terminal)
+    "list procedure procedure procedure -> any
+     descend :: any:element procedure:recurse-descend -> (any:result-element boolean:continue?)
+     ascend :: any:element -> any:result-element
+     terminal :: any:element -> any:result-element
+     map/transform list and sub-lists first top to bottom, calling \"descend\" for each sub-list,
+     then bottom to top, calling \"ascend\" for lists and \"terminal\" for non-lists/leafs.
+     descend should return a list of two values: the first for the result and the second a boolean indicating if the result
+     should be passed to ascend and terminal (true) or if that should be skipped (false).
+     example use cases:
+     * compile s-expression list trees into string output languages by mapping all expressions and sub-expressions to strings
+     * apply transformations to a list tree"
+    (first
+      (tree-transform* a (l (a re-descend) (descend a (compose first re-descend)))
+        (compose list ascend) (compose list terminal))))
+
+  (define (tree-transform-descend-identity . a)
     "any ... -> (#f #t)
-     a tree-transform descend-proc that does not apply transformations on descend"
+     a tree-transform descend procedure that does not do anything"
     (list #f #t))
 
   (define (tree-replace-at-once match? proc a)
