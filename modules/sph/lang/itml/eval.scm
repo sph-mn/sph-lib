@@ -36,30 +36,31 @@
      itml-state: ((any:source-id ...) integer:depth hashtable:data)")
 
   (define (itml-state-data a) (first (tail (tail a))))
-  (define (itml-state-create depth env) (list (list) depth (ht-create-symbol env env)))
 
-  (define (itml-call-for-eval input get-source-identifier get-source-position itml-state proc)
+  (define (itml-state-create depth env . data)
+    (list (list) depth (ht-from-list (pairs (q env) env data) eq? ht-hash-symbol)))
+
+  (define (itml-call-for-eval input get-source-id get-source-name get-source-position itml-state proc)
     "any procedure:{any -> any} procedure:{any -> any} list procedure:{any:input list:itml-state} -> any/string
      * protects against circular inclusion
      * adds source-name and source-position to exceptions
      exception-object: (obj source-name source-position)"
-    (let (name (get-source-identifier input))
+    (let (name (get-source-id input))
       (if (and name (contains? (first itml-state) name)) ""
         (let (itml-state (pair (pair name (first itml-state)) (tail itml-state)))
-          (guard (obj (#t (raise (list (q itml) obj name (get-source-position input)))))
+          (guard (obj (#t (raise (list (q itml) obj (get-source-name input) (get-source-position input)))))
             (proc input itml-state))))))
 
   (define (itml-call-for-eval-port input itml-state proc)
-    "port list procedure:{list:parsed-itml list -> any} list -> any
+    "port list procedure:{list:parsed-itml list -> any} -> any
      input must be a port and the source-identifier and source-position for itml-call-for-eval are retrieved with port-filename and port-position.
      reads itml from port"
-    (itml-call-for-eval input port-filename
-      port-position itml-state (l (input itml-state) (proc (port->itml-parsed input) itml-state))))
+    (itml-call-for-eval input port-filename port-filename port-position itml-state proc))
 
   (define (itml-call-for-eval-any input itml-state proc)
     "port procedure:{port -> any} list -> any
      input can be of any type. source-identifier is created with a hash function and source-position will be false"
-    (itml-call-for-eval input ht-hash-equal (const #f) itml-state proc))
+    (itml-call-for-eval input ht-hash-equal identity (const #f) itml-state proc))
 
   (define itml-eval
     (let

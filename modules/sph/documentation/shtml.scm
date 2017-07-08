@@ -11,7 +11,7 @@
     (sph binding-info)
     (sph documentation)
     (sph documentation display-format-plist)
-    (sph lang docl itml-to-shtml)
+    (sph lang itml eval shtml)
     (sph list)
     (sph module)
     (sph one)
@@ -33,7 +33,7 @@
             (if (null? content) #f
               (let (lines (append-map (l (a) (string-split a #\newline)) content))
                 (shtml-section (+ 1 nesting-depth) (first a)
-                  (docl-itml-lines lines) (list (q class) (first a)))))))
+                  (itml-shtml-lines lines) (list (q class) (first a)))))))
         (tail binding))))
 
   (define (get-bindings module-name) "list -> ((symbol:name . list:alist) ...)"
@@ -48,7 +48,7 @@
   (define (doc-shtml-library nesting-depth . library-names)
     "integer (symbol ...) -> list
      a navigatable index of all bindings from the specified libraries and
-    a listing of the available documentation for bindings"
+     a listing of the available documentation for bindings"
     (let (bindings (append-map get-bindings library-names))
       (letpar
         ( (index
