@@ -1,11 +1,11 @@
 (define-test-module (test module sph lang itml write)
   (import
-    (sph lang itml)
-    (sph lang itml write))
+    (sph lang itml write)
+    (sph lang itml read))
 
-  #;(define (test-itml-parsed->itml inp exp)
-  (let (r (itml-parsed->itml (string->itml-parsed inp) 0))
-    (if (string? exp) (equal? r exp) (equal? r inp))))
+  (define-test (itml-parsed->itml arguments)
+    (let* ((a (first arguments)) (result (itml-parsed->itml (string->itml-parsed a))))
+      (assert-equal a result)))
 
   (define test-env-list-1 (q (a (b ("c" d)))))
   (define test-env-list-2 (q (a b ("c" d))))
@@ -15,13 +15,12 @@
     (itml-create-indent-scm-expr ((unquote test-env-list-1)) "\\.a\n  b\n    \"c\"\n      d")
     (itml-create-inline-scm-expr ((unquote test-env-list-1)) "\\.(a (b (\"c\" d)))")
     (itml-create-line-scm-expr ((unquote test-env-list-1)) "\\.a: (b (\"c\" d))")
-    #;(itml-parsed->itml
-    ;inline-scm
-    ;"\\.(scm (+ 1 2) (+ 3 4))" #t
-    ;line-scm
-    ;"\\.scm: (+ 1 2) (+ 3 4)" #t
-    ;indent-scm
-    ;"\\.scm\n  (+ 1 2)\n    (+ 3 4)" #t
-    ;association
-    ;"aa bb: cc dd" #t
-    )))
+    (itml-parsed->itml
+      ; indent-scm
+      "\\.scm\n  (+ 1 2)\n  (+ 3 4)" #t
+      ; inline-scm
+      "\\.(scm (+ 1 2) (+ 3 4))" #t
+      ; line-scm
+      "\\.scm: (+ 1 2) (+ 3 4)" #t
+      ; association
+      "aa bb: cc dd" #t)))

@@ -321,8 +321,8 @@
 
   (define (tree-map proc a)
     "procedure:{any -> any} list -> list
-     maps lists bottom-to-top. does not map the topmost tree structure itself."
-    (map (l (e) (proc (if (list? e) (tree-map proc e) e))) a))
+    maps lists bottom-to-top. does not map the topmost tree structure itself."
+    (map (l (a) (proc (if (list? a) (tree-map proc a) a))) a))
 
   (define (tree-map-lists proc a)
     "{list -> any} list -> list

@@ -31,9 +31,19 @@
 
   (define (itml-create-inline-scm-expr a) (string-append prefix-expr-scm (any->string-write a)))
 
-  (define (itml-create-indent-scm-expr a)
-    (let (a (tree-map-leafs any->string-write a))
-      (string-append prefix-expr-scm (prefix-tree->indent-tree-string (list a)))))
+  (define* (itml-create-indent-scm-expr a #:optional line-width)
+    (string-append prefix-expr-scm
+      (prefix-tree->indent-tree-string
+        (list
+          (tree-map
+            (l (a)
+              (if (list? a)
+                (if line-width
+                  (let (a-string (any->string-display a))
+                    (if (<= (string-length a-string) line-width) a-string a))
+                  a)
+                (any->string-write a)))
+            a)))))
 
   (define (itml-create-inline-expr a) (string-append prefix-expr (any->string-display a)))
 
@@ -46,17 +56,6 @@
       (string-append prefix-expr (first a) ": " (string-join (tail a) " "))))
 
   (define (itml-create-association a . b) (apply string-append a ": " b))
-  (define (ascend-handle-line a depth) (apply string-append a))
-  (define (descend-handle-double-backslash a depth) "\\\\")
-  (define (ascend-handle-association a depth) (apply string-append (first a) ": " (tail a)))
-  (define (handle-descend-line-scm-expr a depth) (itml-create-line-scm-expr a))
-  (define (handle-descend-inline-scm-expr a depth) (apply string-append prefix-expr-scm a))
-
-  (define (handle-descend-indent-scm-expr a depth)
-    (pair (string-append prefix-expr-scm (first a)) (tail a)))
-
-  (define (handle-descend-indent-expr a depth) (pair (string-append "\\#" (first a)) (tail a)))
-  (define (handle-ascend-inline-expr a depth) (string-append prefix-expr (any->string-display a)))
 
   (define (string-char-escape a)
     "string -> string
@@ -72,42 +71,26 @@
 
   (define (list-string-char-escape a) "list -> list" (map-selected string? string-char-escape a))
 
-  (define (handle-ascend-line-expr a depth)
-    (apply string-append prefix-expr (first a) ": " (list-string-char-escape (tail a))))
+  (define-as ascend-ht ht-create-symbol
+    line (l (a . b) (apply string-append a))
+    inline-expr (l (a . b) (string-append prefix-expr (any->string-display a)))
+    line-expr
+    (l (a . b) (apply string-append prefix-expr (first a) ": " (list-string-char-escape (tail a))))
+    indent-expr
+    (l (a . b) (pair (string-append prefix-expr (first a)) (list-string-char-escape (tail a))))
+    association (l (a . b) (apply string-append (first a) ": " (tail a))))
 
-  (define (handle-ascend-indent-expr a depth)
-    (pair (string-append prefix-expr (first a)) (list-string-char-escape (tail a))))
+  (define-as descend-ht ht-create-symbol
+    inline-scm-expr (l (a . b) (string-append prefix-expr-scm (any->string a)))
+    line-scm-expr (l (a . b) (itml-create-line-scm-expr a))
+    indent-scm-expr (l (a . b) (itml-create-indent-scm-expr (pair (first a) (tail a)) 80))
+    indent-descend-expr (l (a . b) (pair (string-append "\\#" (first a)) (tail a)))
+    double-backslash (l (a . b) "\\\\"))
 
-  (define-as ascend-prefix->handler-ht ht-create-symbol
-    line ascend-handle-line
-    inline-expr handle-ascend-inline-expr
-    line-expr handle-ascend-line-expr
-    indent-expr handle-ascend-indent-expr association ascend-handle-association)
-
-  (define-as descend-prefix->handler-ht ht-create-symbol
-    inline-scm-expr handle-descend-inline-scm-expr
-    line-scm-expr handle-descend-line-scm-expr
-    indent-scm-expr handle-descend-indent-scm-expr
-    indent-descend-expr handle-descend-indent-expr double-backslash descend-handle-double-backslash)
-
-  (define-syntax-rule (expr->itml prefix->handler a proc-arguments ...)
-    (let (p (ht-ref prefix->handler (first a))) (and p (p (tail a) proc-arguments ...))))
-
-  (define (ascend-expr->itml a depth) (or (expr->itml ascend-prefix->handler-ht a depth) a))
-  (define (descend-expr->itml a re-descend depth) (expr->itml descend-prefix->handler-ht a depth))
-
-  (define (handle-top-level-terminal a . states)
-    (if (string? a) (string-char-escape a) (if (eqv? (q line-empty) a) "" a)))
-
-  (define (handle-terminal a . states) (pair (handle-top-level-terminal a) states))
-
-  (define* (itml-parsed->itml a #:optional (depth 0))
-    (prefix-tree->indent-tree-string
-      (itml-eval a (itml-state-create depth #f)
-        (l (a . b) (apply prefix-dispatch descend-prefix-ht a b))
-        ; ascend
-        (l (a . b) (or (apply prefix-dispatch ascend-prefix-ht a b) (apply ascend-list a b)))
-        ; terminal
-        (l (a . b) (if (eq? (q line-empty) a) (q (br)) a)) (itml-descend-proc descend-expr->itml)
-        (itml-ascend-proc ascend-expr->itml identity) handle-top-level-terminal handle-terminal)
-      depth)))
+  (define itml-parsed->itml
+    (let
+      (eval
+        (itml-eval* descend-ht ascend-ht
+          (l (a . b) (if (string? a) (string-char-escape a) (if (eqv? (q line-empty) a) "" a)))))
+      (l (a) "list list -> sxml"
+        (prefix-tree->indent-tree-string (eval a (itml-state-create 0 #f)) 0)))))
