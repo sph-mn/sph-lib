@@ -1,5 +1,8 @@
 (library (sph lang itml eval plaintext)
-  (export)
+  (export
+    itml-plaintext-eval
+    itml-plaintext-eval-port
+    itml-plaintext-eval-string)
   (import
     (guile)
     (sph)
@@ -7,48 +10,33 @@
     (sph lang indent-syntax)
     (sph lang itml eval)
     (sph lang itml read)
+    (sph list)
     (sph string))
 
-  (define sph-lang-itml-eval-plaintext-description
-    "evaluate inline code expressions and translate itml to plaintext")
+  (define sph-lang-itml-eval-plaintext-description "evaluate inline code expressions")
 
-  (define (ascend-handle-line a depth state env) (string-join a ""))
-  (define (descend-handle-double-backslash a depth state env) "\\")
-
-  (define (ascend-handle-association a depth state env)
-    (string-append (first a) ": " (string-join (tail a) " ")))
-
-  (define-as ascend-prefix->handler-ht ht-create-symbol
-    line ascend-handle-line
+  (define-as ascend-ht ht-create-symbol
+    line (l (a . b) (string-join a ""))
     inline-expr itml-eval-asc-inline-expr
     line-expr itml-eval-asc-line-expr
-    indent-expr itml-eval-asc-indent-expr association ascend-handle-association)
+    indent-expr itml-eval-asc-indent-expr
+    association
+    (l (a . b)
+      (let (keyword (first a))
+        (string-append (if (string? keyword) keyword (string-join keyword " ")) ": "
+          (string-join (tail a) " ")))))
 
-  (define-as descend-prefix->handler-ht ht-create-symbol
+  (define-as descend-ht ht-create-symbol
     inline-scm-expr itml-eval-desc-inline-scm-expr
     line-scm-expr itml-eval-desc-line-scm-expr
     indent-scm-expr itml-eval-desc-indent-scm-expr
-    indent-desc-expr itml-eval-desc-indent-expr double-backslash descend-handle-double-backslash)
+    indent-desc-expr itml-eval-desc-indent-expr double-backslash (l a "\\"))
 
-  (define-syntax-rule (expr->plaintext prefix->handler a proc-arguments ...)
-    (let (handler (ht-ref prefix->handler (first a)))
-      (and handler (handler (tail a) proc-arguments ...))))
+  (define itml-plaintext-eval
+    (let (eval (itml-eval* descend-ht ascend-ht (l (a . b) (if (eq? (q line-empty) a) "" a))))
+      (l (a itml-state) "list list -> sxml"
+        (list-bind itml-state (sources depth . b)
+          (prefix-tree->indent-tree-string (eval a itml-state) depth)))))
 
-  (define (ascend-expr->plaintext a depth state env)
-    (or (expr->plaintext ascend-prefix->handler-ht a depth state env) a))
-
-  (define (descend-expr->plaintext a re-descend depth state env)
-    (expr->plaintext descend-prefix->handler-ht a re-descend depth state env))
-
-  (define (handle-top-level-terminal a . states) (if (eqv? (q line-empty) a) "" a))
-  (define (handle-terminal a . states) (pair (apply handle-top-level-terminal a states) states))
-
-  (define itml-parsed->plaintext
-    (itml-parsed->result-proc (l (a depth state env) (prefix-tree->indent-tree-string a depth))
-      (itml-descend-proc descend-expr->plaintext)
-      (itml-ascend-proc ascend-expr->plaintext itml-adjust-depth) handle-top-level-terminal
-      handle-terminal))
-
-  (define docl-itml-parsed->plaintext (docl-itml-parsed->result-proc itml-parsed->plaintext))
-  (define docl-itml-port->plaintext (docl-itml-port->result-proc itml-parsed->plaintext))
-  (define docl-itml-string->plaintext (docl-itml-string->result-proc docl-itml-port->plaintext)))
+  (define (itml-plaintext-eval-port a . b) (apply itml-plaintext-eval (port->itml-parsed a) b))
+  (define (itml-plaintext-eval-string a . b) (apply itml-plaintext-eval (string->itml-parsed a) b)))

@@ -4,6 +4,7 @@
     itml-call-for-eval-any
     itml-call-for-eval-port
     itml-eval
+    itml-eval*
     itml-eval-asc-indent-expr
     itml-eval-asc-inline-expr
     itml-eval-asc-line-expr
@@ -86,6 +87,24 @@
                   (descend-proc descend) (ascend-proc ascend) (terminal-proc terminal) itml-state))
               (apply terminal a itml-state)))
           a))))
+
+  (define itml-eval*
+    (let
+      ( (default-descend-alt (l a #f)) (default-ascend-alt (l (a . b) a))
+        (dispatch
+          (l (prefix-ht alt) "hashtable procedure list any ... -> false/any"
+            (l (a . b)
+              (let (c (ht-ref prefix-ht (first a))) (if c (apply c (tail a) b) (apply alt a b)))))))
+      (l* (descend-prefix-ht ascend-prefix-ht #:optional terminal descend-alt ascend-alt)
+        "hashtable  hashtable [procedure procedure procedure] -> procedure
+        returns a procedure similar to itml-eval that uses expression handlers from hashtables.
+        the -prefix-ht hashtables map list prefixes to tail handlers that map a list/expression to a result.
+        if the prefix is not found in one of the hashtables then the corresponding -alt procedure is called"
+        (l (a itml-state) "list list -> sxml"
+          (itml-eval a itml-state
+            (dispatch descend-prefix-ht (or descend-alt default-descend-alt))
+            (dispatch ascend-prefix-ht (or ascend-alt (l (a . b) a)))
+            (or terminal default-ascend-alt))))))
 
   (define (itml-eval-list a env state)
     (let (proc (eval (qq (l (b) ((unquote (first a)) b (unquote-splicing (tail a))))) env))

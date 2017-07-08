@@ -23,12 +23,12 @@
       (append (if (string? keyword) (list keyword) (map re-descend* keyword))
         (pair ": " (map re-descend* (tail a))))))
 
-  (define-as ascend-prefix-ht ht-create-symbol
+  (define-as ascend-ht ht-create-symbol
     line (l (a . b) (if (null? a) "" a))
     inline-expr itml-eval-asc-inline-expr
     line-expr itml-eval-asc-line-expr indent-expr itml-eval-asc-indent-expr)
 
-  (define-as descend-prefix-ht ht-create-symbol
+  (define-as descend-ht ht-create-symbol
     inline-scm-expr itml-eval-desc-inline-scm-expr
     line-scm-expr itml-eval-desc-line-scm-expr
     association descend-handle-association
@@ -60,23 +60,17 @@
               (pair (map-line a) r)))))))
 
   (define itml-shtml-eval
-    (let*
-      ( (prefix-dispatch
-          (l (prefix-ht a . b) "hashtable list -> false/any"
-            (let (c (ht-ref prefix-ht (first a))) (and c (apply c (tail a) b)))))
-        (section? (l (a) (and (list? a) (> (length a) 1) (not (eq? (q section) (first a))))))
-        (ascend-list
-          (l (a sources depth . b)
-            (if (section? a) (shtml-section depth (first a) (itml-shtml-lines (tail a))) a))))
-      (l (a itml-state) "list list -> sxml"
-        (itml-shtml-lines
-          (itml-eval a itml-state
-            ; descend
-            (l (a . b) (apply prefix-dispatch descend-prefix-ht a b))
-            ; ascend
-            (l (a . b) (or (apply prefix-dispatch ascend-prefix-ht a b) (apply ascend-list a b)))
-            ; terminal
-            (l (a . b) (if (eq? (q line-empty) a) (q (br)) a)))))))
+    (let
+      (eval
+        (itml-eval* descend-ht ascend-ht
+          ; terminal
+          (l (a . b) (if (eq? (q line-empty) a) (q (br)) a)) #f
+          ; ascend-alt
+          (let
+            (section? (l (a) (and (list? a) (> (length a) 1) (not (eq? (q section) (first a))))))
+            (l (a sources depth . b)
+              (if (section? a) (shtml-section depth (first a) (itml-shtml-lines (tail a))) a)))))
+      (l (a itml-state) "list list -> sxml" (itml-shtml-lines (eval a itml-state)))))
 
   (define (itml-shtml-eval-port a . b) (apply itml-shtml-eval (port->itml-parsed a) b))
   (define (itml-shtml-eval-string a . b) (apply itml-shtml-eval (string->itml-parsed a) b)))
