@@ -40,16 +40,16 @@
   (define (itml-state-create depth env . data)
     (list (list) depth (ht-from-list (pairs (q env) env data) eq? ht-hash-symbol)))
 
-  (define (itml-call-for-eval input get-source-id get-source-name get-source-position itml-state proc)
+  (define
+    (itml-call-for-eval input get-source-id get-source-name get-source-position itml-state proc)
     "any procedure:{any -> any} procedure:{any -> any} list procedure:{any:input list:itml-state} -> any/string
-     * protects against circular inclusion
-     * adds source-name and source-position to exceptions
-     exception-object: (obj source-name source-position)"
+     * protects against circular inclusion"
+    ; would ideally add source-name and source-position to the exception but r6rs exceptions conditions are opaque objects
+    ; and we could not find any documentation on accessors to be able to display their contents.
     (let (name (get-source-id input))
       (if (and name (contains? (first itml-state) name)) ""
         (let (itml-state (pair (pair name (first itml-state)) (tail itml-state)))
-          (guard (obj (#t (raise (list (q itml) obj (get-source-name input) (get-source-position input)))))
-            (proc input itml-state))))))
+          (proc input itml-state)))))
 
   (define (itml-call-for-eval-port input itml-state proc)
     "port list procedure:{list:parsed-itml list -> any} -> any
@@ -108,7 +108,7 @@
             (or terminal default-ascend-alt))))))
 
   (define (itml-eval-list a env state)
-    (let (proc (eval (qq (l (b) ((unquote (first a)) b (unquote-splicing (tail a))))) env))
+    (let (proc (eval (qq (lambda (b) ((unquote (first a)) b (unquote-splicing (tail a))))) env))
       (proc state)))
 
   (define (itml-eval-descend a re-descend sources depth data) "evaluate an inline code expression"

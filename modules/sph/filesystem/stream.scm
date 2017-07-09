@@ -17,7 +17,7 @@
       (stream-each
         (l (e)
           (let (e (string-append path e))
-            (if (file-path-directory? e) (begin (directory-delete-content e) (rmdir e))
+            (if (is-directory? e) (begin (directory-delete-content e) (rmdir e))
               (delete-file e))))
         (directory-stream path))))
 

@@ -7,6 +7,7 @@
     and
     itml-param-ref
     l
+    lambda
     list
     or
     qq
