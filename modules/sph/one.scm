@@ -57,15 +57,12 @@
     (rnrs io ports)
     (rnrs sorting)
     (sph)
+    (sph hashtable)
     (sph list)
     (sph number)
     (sph string)
     (only (rnrs base) set!)
-    (sph hashtable)
-    (only (srfi srfi-1)
-      unfold-right
-      unfold
-      ))
+    (only (srfi srfi-1) unfold-right unfold))
 
   (define sph-one-description "various")
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
@@ -129,8 +126,7 @@
               path-parsed))))
       (map search-path a)))
 
-  (define (search-env-path-one a)
-    (first-or-false (search-env-path (list a))))
+  (define (search-env-path-one a) (first-or-false (search-env-path (list a))))
 
   (define (call-at-interval proc interval)
     "procedure:{current-interval procedure:continue:{next-interval -> any} -> any} microseconds -> unspecified
@@ -202,30 +198,35 @@
   (define-syntax-rule (limit-max a max) (min a max))
 
   (define (procedure->cached-procedure proc)
-    "procedure -> procedure
-     results in a new procedure with the same signature and which is an extended version of the given procedure,
-     where the extended procedure is only called once for a combination of arguments, and subsequent
-     calls with the same arguments return the previous result from a cache.
-     the cache is never cleared until the current process ends"
+    "procedure -> procedure procedure
+     returns a new procedure with the same signature that calculates each result only once.
+     calling the procedure again with the same arguments will lead to the cached result to be returned.
+     the second returned procedure takes no arguments and clears the cache when called.
+     example 1:
+       (define my-calculate-cached (procedure->cached-procedure my-calculate))
+     example 2:
+       (let-values (((my-calculate-cached my-calculate-cached-reset) (procedure->cached-procedure my-calculate)))
+         (my-calculate-cached-reset))"
     (let (cache (ht-make ht-hash-equal equal?))
-      (l args
-        (let (cached-result (ht-ref cache args (q --not-in-cache)))
-          (if (eqv? (q --not-in-cache) cached-result)
-            ((l (r) (ht-set! cache args r) r) (apply proc args)) cached-result)))))
+      (values
+        (l a
+          (let (cached-result (ht-ref cache a (q --not-in-cache)))
+            (if (eq? (q --not-in-cache) cached-result)
+              ((l (r) (ht-set! cache a r) r) (apply proc a)) cached-result)))
+        (l () (ht-clear! cache)))))
 
   (define (procedure->temporarily-cached-procedure cache-duration proc)
     "integer:seconds procedure -> procedure
      like procedure->cached-procedure but the cache is emptied after cache-duration the next time the procedure is called"
     (let ((cache (ht-make ht-hash-equal equal?)) (last-time 0))
-      (l args
+      (l a
         (let (time (current-time))
           (if (> (- time last-time) cache-duration)
             (begin (set! last-time time)
-              ((l (result) (ht-set! cache args result) result) (apply proc args)))
-            (let (cached-result (ht-ref cache args (q --not-in-cache)))
-              (if (eqv? (q --not-in-cache) cached-result)
-                ((l (result) (ht-set! cache args result) result) (apply proc args))
-                cached-result)))))))
+              ((l (result) (ht-set! cache a result) result) (apply proc a)))
+            (let (cached-result (ht-ref cache a (q --not-in-cache)))
+              (if (eq? (q --not-in-cache) cached-result)
+                ((l (result) (ht-set! cache a result) result) (apply proc a)) cached-result)))))))
 
   (define (program-path)
     "-> string
@@ -249,8 +250,6 @@
     "procedure ... -> procedure:{any ... -> unspecified}
      like procedure-append but does not collect results and returns unspecified"
     (l a (each (l (b) (apply b a)) proc)))
-
-
 
   (define (bytevector-contains? a search-bv)
     "bytevector bytevector -> boolean
