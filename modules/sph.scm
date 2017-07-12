@@ -53,6 +53,7 @@
     cond
     cos
     datum->syntax
+    delete-duplicates
     debug-log
     define
     define*
