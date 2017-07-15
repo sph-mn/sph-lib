@@ -2,14 +2,8 @@
   (export
     ac-compile
     ac-compile->file
-    ac-config-input
-    ac-config-input-match?
-    ac-config-input-name
-    ac-config-input-processor
     ac-config-valid?
     ac-destination
-    ac-input-copy
-    ac-output-copy
     ac-source-files-updated?
     sph-filesystem-asset-compiler-description)
   (import
@@ -21,27 +15,23 @@
     "configuration format and helpers to copy or compile and process data from custom sources.
      for example to compile from many files in different preprocessor formats into one target format file.
      # data structures
-     * config: hashtable:{symbol:format-name -> list}
-     * config-format: (config-output config-input ...)
-     * config-output: hashtable:{symbol:mode -> procedure:processor}
-     * config-input: #(symbol:name procedure:source-matches? procedure:processor)
-     * source-matches? :: any:path -> boolean
-     * processor :: sources port:output any:processor-options ->
+     * config: hashtable:{symbol:format-name -> (output-processor-config input-processor-config ...)}
+     * output-processor-config: false/procedure:output-processor
+     * input-processor-config: #(symbol:name procedure:source-matches? procedure:input-processor)
+     * source-matches? :: any -> boolean
+     * input-processor :: source port:output any:processor-options ->
+     * output-processor :: procedure:process-input port:output-port any:processor-options ->
      * sources: (any:processor-dependent ...)
      example config:
      (define client-ac-config
        (ht-create-symbol
          javascript
-           (list
-             (ht-create-symbol production javascript-output-compress development javascript-output-format)
-             (record ac-config-input (q sescript) source-matches? s-template-sescript->javascript))
+         (list javascript-output-compress
+           (vector (q sescript) source-matches? s-template-sescript->javascript))
          html
-           (list
-             (ht-create-symbol)
-             (record ac-config-input (q sxml) (has-suffix-proc \".sxml\") s-template-sxml->html)
-             (record ac-config-input (q html) (has-suffix-proc \".html\") ac-input-copy))))")
-
-  (define-record input-config name match? processor)
+         (list #f
+           (vector (q sxml) (has-suffix-proc \".sxml\") s-template-sxml->html)
+           (vector (q html) (has-suffix-proc \".html\") (l (source out-port options) (file->port source out-port))))))")
 
   (define (ac-config-valid? a)
     "any -> boolean
@@ -60,7 +50,7 @@
                   (l (a)
                     (and (not (null? a))
                       ; output processor
-                      (ht? (first a))
+                      (or (not (first a)) (ht? (first a)))
                       ; input processors
                       (every
                         (l (a)
@@ -71,27 +61,32 @@
                   values)))))
         (ht-entries a))))
 
-  (define (ac-compile config output-format mode sources port #:optional processor-options)
-    "hashtable symbol port symbol (string ...) (string/list ...) ->
-     \"processor-options\" is an optional value passed to input processors and the output processor as the last argument"
-    (and-let*
-      ( (processors (ht-ref config output-format))
-        (output-processor (ht-ref (first processors) mode)) (input-processors (tail processors))
-        (input-processors
-          ; map sources to procedures that process them
-          (map
-            (l (a)
-              (or
-                (any
-                  (l (b)
-                    (let (source-match? (vector-ref b 1))
-                      (if (source-match? a)
-                        (let (processor (vector-ref b 2))
-                          (l (out-port) (processor a out-port options processor-options))))))
-                  input-processors)
-                (raise (q no-matching-input-processor))))
-            sources)))
-      (output-processor input-processors port processor-options)))
+  (define ac-compile
+    (let*
+      ( (sources->proc-and-argument
+          (l (sources input-processors-config)
+            "list (#(name source-match? processor) ...) -> ((procedure:processor . any:source) ...)
+            get a matching processor for each source or raise an exception if no processor matches"
+            (map
+              (l (a)
+                (or
+                  (any (l (b) (and ((vector-ref b 1) a) (pair (vector-ref b 2) a)))
+                    input-processors-config)
+                  (raise (list (q no-matching-input-processor) a))))
+              sources)))
+        (sources->input-processor
+          (l (sources input-processors-config options)
+            "list list any -> procedure
+            create a procedure that processes each source"
+            (let (sources (sources->proc-and-argument sources input-processors-config))
+              (l (out-port) (each (l (a) ((first a) (tail a) out-port options)) sources))))))
+      (l* (config output-format sources port #:optional processor-options)
+        "hashtable symbol port symbol (string ...) (string/list ...) ->
+        \"processor-options\" is an optional value passed to input processors and the output processor as the last argument"
+        (and-let* ((processors (ht-ref config output-format)))
+          ( (or (first processors) (l (process-input out-port options) (process-input out-port)))
+            (sources->input-processor sources (tail processors) processor-options) port
+            processor-options)))))
 
   ;-- filesystem
 
@@ -104,8 +99,10 @@
     (string-append (ensure-trailing-slash path-directory) (symbol->string format)
       "/"
       (if path-file path-file
-        (string-append "_" (first (string-split (basename (first sources)) #\.))
-          "-" (number->string (ht-hash-equal sources) 32)))))
+        (let (strings (filter string? sources))
+          (string-append "_"
+            (if (null? strings) "_" (first (string-split (basename (first strings)) #\.))) "-"
+            (number->string (ht-hash-equal sources) 32))))))
 
   (define (ac-source-files-updated? dest sources)
     "string (string ...) -> boolean
@@ -114,7 +111,7 @@
       (any (l (a) (< dest-mtime (stat:mtime (stat a)))) sources)))
 
   (define*
-    (ac-compile->file config output-format mode sources dest-directory #:key processor-options when
+    (ac-compile->file config output-format sources dest-directory #:key processor-options when
       dest-name)
     "hashtable symbol string symbol list -> string:path-destination
      #:when takes a symbol:
@@ -124,24 +121,13 @@
      \"#:dest-name\" sets the destination file name to use instead of an automatically generated one"
     (let*
       ( (sources-flat (flatten sources))
-        (path-destination (ac-destination dest-directory output-format sources-flat dest-file-name)))
+        (path-destination (ac-destination dest-directory output-format sources-flat dest-name)))
       (if
-        (or (eq? (q always) when)
-          (not (or (file-exists? path-destination) (every string? sources-flat)))
+        (or (eq? (q always) when) (not (every string? sources-flat))
+          (not (file-exists? path-destination))
           (ac-source-files-updated? path-destination sources-flat))
         (and (ensure-directory-structure (dirname path-destination))
           (call-with-output-file path-destination
-            (l (port) (ac-compile config output-format mode sources port processor-options)))
+            (l (port) (ac-compile config output-format sources port processor-options)))
           path-destination)
-        path-destination)))
-
-  #;(define (ac-output-copy input-processors port options)
-    "(procedure ...) port any -> unspecified
-     a default processur for calling all given input processors with output port"
-    (each (l (a) (a port)) input-processors))
-
-  #;(define (ac-input-copy sources port options)
-    "(string:file-path/any ...) port any -> unspecified
-     a default processor that interprets strings in sources as
-     file paths and writes the file contents to port, and everything else using scheme write"
-    (each (l (a) (if (string? a) (file->port a port) (write a port))) sources)))
+        path-destination))))

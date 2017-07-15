@@ -17,8 +17,13 @@
   (define sph-lang-template-description
     "generic s-expression template processor
      a template engine using implicitly quasiquoted s-expressions.
-     supports composition and concatenation. creates template procedures from source data read from files or ports.
-     alternative name: s-template")
+     supports composition and concatenation. creates template procedures. source data can be given as files, ports or datums.
+     alternative name: s-template.
+     # data structures
+     template-procedure :: procedure:ref:{key default -> any:template-variable-value} any:content -> any
+     template-source: single-element/(concatenated-element/(composed-element ...) ...)
+     template-source: element/(element/(element ...) ...)
+     element: string:path/procedure:template-procedure/port")
 
   (define (template-datum->template-proc a env)
     "any:scheme-datum environment -> procedure:template-proc
@@ -32,11 +37,10 @@
 
   (define (template-compose env . source)
     "environment template-source ... -> procedure:template-proc
-     evaluated templates from source are passed as content to the templates before them, like function composition"
-    (l (ref content) (fold-right (l (e prev) ((template-get env e) ref prev)) content source)))
+     evaluated templates from source are passed as content to the templates before them like function composition"
+    (l (ref content) (fold-right (l (a prev) ((template-get env a) ref prev)) content source)))
 
   (define (template-bindings-proc data)
-    ;this procedure abstracts the data object and its data type
     (case-lambda (() data)
       ((key . default) (alist-ref data key (if (null? default) "" (first default))))))
 
@@ -51,20 +55,18 @@
         a result)
       (apply fold-proc (template-get env a) result)))
 
-  (define (template-fold fold-proc bindings env source . result)
+  (define (template-fold fold-proc bindings env source . custom-values)
     "procedure:{procedure any -> any} list environment template-source any -> any
      template-fold processes multiple template sources with or without template composition depending on the nesting of sources in the \"source\" specification.
-     element: string:path/procedure:template-procedure/port
-     template-source: element/(element/(element ...) ...)
-     template-source: single-element/(concatenated-element/(composed-element ...) ...)
-     example:
-       (template-fold
-         (l (template-result result) (pair template-result result))
-         (list file.sxml appended-file.sxml (list layout.sxml included-in-layout.sxml))
-         (alist (q a) 1)
-         (environment (rnrs base))
-         (list))"
+     example call:
+     (template-fold
+       (l (template-result . custom-values) (pair template-result custom-values))
+       (list file.sxml appended-file.sxml (list layout.sxml included-in-layout.sxml))
+       (alist (q a) 1)
+       (environment (rnrs base))
+       (list))"
     (apply template-source-fold source
       (let (bindings-accessor (template-bindings-proc bindings))
-        (l (template . result) (apply fold-proc (template bindings-accessor #f) result)))
-      env result)))
+        (l (template . custom-values)
+          (apply fold-proc (template bindings-accessor #f) custom-values)))
+      env custom-values)))

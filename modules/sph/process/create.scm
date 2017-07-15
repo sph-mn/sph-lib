@@ -103,6 +103,8 @@
     "procedure:{port ... -> any} string list boolean boolean boolean -> any:proc-result integer:exit-status
      executes a program and calls proc with pipes to or from the standard streams depending on if input/output/error are true.
      path is a filesystem path to an executable.
+     you might have to close ports for proc to return.
+     pipe ports are closed when after proc returns.
      example:
      (execute-with-pipes (l (input error) #t) \"/usr/bin/echo\" (list \"test\") #t #f #t)"
     (call-with-pipes
