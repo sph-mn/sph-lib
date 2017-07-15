@@ -39,7 +39,7 @@
     (and (ht? a)
       (apply-values
         (l (keys values)
-          (let (keys (vector->list keys))
+          (let ((keys (vector->list keys)) (values (vector->list values)))
             (or (null? keys)
               (and
                 ; output formats
@@ -50,7 +50,7 @@
                   (l (a)
                     (and (not (null? a))
                       ; output processor
-                      (or (not (first a)) (ht? (first a)))
+                      (or (not (first a)) (procedure? (first a)))
                       ; input processors
                       (every
                         (l (a)
