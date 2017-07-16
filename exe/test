@@ -9,7 +9,7 @@
 
 (define settings
   (test-settings-default-custom
-    ;only (q ((test module sph filesystem asset-compiler)))
+    ;only (q ((test module sph lang itml eval)))
     exclude exclusions path-search "modules" reporter-name (q compact)))
 
 (test-execute-modules-by-prefix #:settings settings (q (test module sph)))

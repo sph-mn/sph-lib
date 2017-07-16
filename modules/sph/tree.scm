@@ -346,7 +346,7 @@
   (define (tree-map-lists proc a)
     "{list -> any} list -> list
      like tree-map but pass only the lists in tree to proc, skipping and keeping non-list elements. bottom-to-top"
-    (map (l (e) (if (list? a) (proc (tree-map-lists proc a)) a)) a))
+    (map (l (a) (if (list? a) (proc (tree-map-lists proc a)) a)) a))
 
   (define (tree-map-lists-and-self proc a)
     "{list -> any} list -> list
