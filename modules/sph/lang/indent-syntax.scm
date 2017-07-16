@@ -24,7 +24,7 @@
 
   (define* (prefix-tree->indent-tree-string a #:optional (base-depth 0) (indent-string "  "))
     "list:(string/list ...) -> string
-    converts a list to a string of indented lines"
+    converts a list to a string of indented lines with indent corresponding to nesting depth"
     (denoted-tree->indent-tree-string (prefix-tree->denoted-tree a) base-depth indent-string))
 
   (define-syntax-rule (prefix-count->indent-level a indent-width)

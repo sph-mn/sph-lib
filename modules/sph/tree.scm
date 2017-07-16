@@ -27,6 +27,7 @@
     prefix-tree-product
     prefix-tree-product-mm
     prefix-tree-replace-prefix
+    prefix-tree->relations
     produce-prefix-context
     produce-prefix-context-mm
     produce-prefix-trees
@@ -281,53 +282,71 @@
 
   (define (prefix-tree-replace-prefix a replacements)
     "list ((to-replace . replacement) ...) -> list
-     replace list prefixes, the first elements, in tree based on the given replacements specification"
+     replace list prefixes (the first elements) in tree based on the given replacements structure"
     (tree-map
-      (l (e level)
-        (if (list? e)
-          (let ((replacement (alist-ref replacements (first e))))
-            (if replacement (if (procedure? replacement) (replacement e) replacement) e))
-          e))
+      (l (a level)
+        (if (list? a)
+          (let ((replacement (alist-ref replacements (first a))))
+            (if replacement (if (procedure? replacement) (replacement a) replacement) a))
+          a))
       a))
 
   (define (prefix-tree-produce proc a)
     "{any ... -> any} list:prefix-tree -> list
-     applies proc for each combination of a prefix and following, possibly further nested, tail-elements"
-    (produce-prefix-context (l (context e) (apply proc (reverse (pair context e)))) a))
+     calls proc for each combination of a prefix and tail-elements"
+    (produce-prefix-context (l (context a) (apply proc (reverse (pair context a)))) a))
 
   (define (prefix-tree->path-list a)
     "list -> (string ...)
-     regard tree as a nested list representation
-     of a filesystem file and directory structure and result in a flat list of filesystem path strings.
+     regard tree as a nested list representation of a filesystem file and directory structure
+     and return a flat list of corresponding filesystem path strings.
      example:
      (prefix-tree->path-list (list \"/usr\" (list \"bin\" (list \"share\" \"guile\") \"include\") \"/var\"))
      creates
      (list
-         \"/usr/bin\"
-         \"/usr/share/guile\"
-         \"/usr/include\"
-         \"/var\")"
-    (prefix-tree-produce (l e (string-join e "/")) a))
+       \"/usr/bin\"
+       \"/usr/share/guile\"
+       \"/usr/include\"
+       \"/var\")"
+    (prefix-tree-produce (l a (string-join a "/")) a))
 
   (define* (prefix-tree-product a #:optional ignore-prefixes?) "list -> list"
-    "combines prefixex and tails as a one-to-many relation.
+    "combines prefixex and tails as a one-to-many (prefix to tail elements) relation.
     example (a (d e f) (g h i) j) -> ((a d e) (a d f) (a g h) (a g i) (a j))"
-    (produce-prefix-context (l (context e) (reverse (pair context e))) a ignore-prefixes?))
+    (produce-prefix-context (l (context a) (reverse (pair context a))) a ignore-prefixes?))
 
   (define (prefix-tree-product-mm a) "list -> list"
-    "like prefix-tree-product, but optionally supporting a list as prefix for many-to-many relations
+    "like prefix-tree-product, but also interprets lists as prefixes as many-to-many relations
+    (many prefixes to tail elements).
     example ((a b) c) -> ((a c) (b c))"
-    (produce-prefix-context-mm (l (context e) (reverse (pair context e))) a))
+    (produce-prefix-context-mm (l (context a) (reverse (pair context a))) a))
+
+  (define (prefix-tree->relations a)
+    "list -> (pair ...)
+     create a list of all individual relations between prefix and tail elements or tail element prefixes.
+     example:
+     ((a (b c (d e)))) -> ((a . b) (b . c) (b . d) (d . e))"
+    (append-map
+      (l (a)
+        (if (list? a)
+          (let ((prefix (first a)) (suffix (tail a)))
+            (append-map
+              (l (a)
+                (pair (pair prefix (if (list? a) (first a) a))
+                  (if (list? a) (prefix-tree->relations (list a)) (list))))
+              suffix))
+          (list a)))
+      a))
 
   (define (tree-map proc a)
     "procedure:{any -> any} list -> list
-    maps lists bottom-to-top. does not map the topmost tree structure itself."
+     maps lists bottom-to-top. does not map the topmost tree structure itself."
     (map (l (a) (proc (if (list? a) (tree-map proc a) a))) a))
 
   (define (tree-map-lists proc a)
     "{list -> any} list -> list
      like tree-map but pass only the lists in tree to proc, skipping and keeping non-list elements. bottom-to-top"
-    (map (l (e) (if (list? e) (proc (tree-map-lists proc e)) e)) a))
+    (map (l (e) (if (list? a) (proc (tree-map-lists proc a)) a)) a))
 
   (define (tree-map-lists-and-self proc a)
     "{list -> any} list -> list
