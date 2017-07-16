@@ -12,7 +12,7 @@
     (sph record))
 
   (define sph-filesystem-asset-compiler-description
-    "configuration format and helpers to copy or compile and process data from custom sources.
+    "configuration format and helpers to concatenate/preprocess code from multiple sources.
      for example to compile from many files in different preprocessor formats into one target format file.
      # data structures
      * config: hashtable:{symbol:format-name -> (output-processor-config input-processor-config ...)}
