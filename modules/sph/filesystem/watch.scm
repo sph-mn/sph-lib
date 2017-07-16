@@ -4,10 +4,10 @@
     watch-path)
   (import
     (linux inotify)
-    (rnrs base)
     (sph)
     (sph filesystem)
     (sph linux)
+    (sph list)
     (only (guile)
       logand
       logior
@@ -22,11 +22,11 @@
       stat:gid
       stat:nlink
       stat:ctime)
-    
     (only (srfi srfi-1) delete-duplicates filter-map))
 
-  (define sph-filesystem-watch-description "observing and acting on file-system changes
-    uses inotify if available or polling as a fall-back")
+  (define sph-filesystem-watch-description
+    "observing and acting on file-system changes
+     uses inotify if available or polling as a fall-back")
 
   (define watch-path-events (q (mtime atime attrib)))
 
@@ -62,7 +62,7 @@
   (define (create-inotify-watch-path)
     (lambda (paths events proc)
       "(string ...) (symbol:event-name ...) {(symbol:event-name ...)} ->
-      the supported events are designated by the symbols mtime, atime or attrib"
+       the supported events are designated by the symbols mtime, atime or attrib"
       (inotify-watch paths (watch-path-events->inotify-event events)
         (l (watch-info)
           (apply proc

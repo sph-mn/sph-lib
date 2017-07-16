@@ -1,14 +1,13 @@
 (library (sph json)
   (export
-    sph-json-description
     scm->json
-    scm->json-string)
+    scm->json-string
+    sph-json-description)
   (import
     (guile)
-    (rnrs hashtables)
     (sph)
-    (sph vector)
-    (only (sph hashtable) ht-each))
+    (sph hashtable)
+    (sph vector))
 
   (define sph-json-description "a basic but fast json writer")
 
@@ -56,7 +55,7 @@
   (define* (scm->json a #:optional (port (current-output-port))) "any ->"
     (cond ((list? a) (list->json a port)) ((vector? a) (vector->json a port))
       ((string? a) (string->json a port)) ((symbol? a) (string->json (symbol->string a) port))
-      ((number? a) (number->json a port)) ((hashtable? a) (hashtable->json a port))
+      ((number? a) (number->json a port)) ((ht? a) (hashtable->json a port))
       ((pair? a) (pair->json a port)) ((boolean? a) (boolean->json a port))
       (else (throw (q json-invalid)))))
 

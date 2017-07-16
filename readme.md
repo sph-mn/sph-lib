@@ -31,11 +31,10 @@ this is unfortunately necessary because guile does not come with a generic proce
 ## highlights
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
-* (sph filesystem asset-compiler) - process and merge files of various formats into one
+* (sph filesystem asset-compiler) - configuration format and helpers to copy or compile and process data from custom sources
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph install) - program and library installer
 * (sph io path-pipe-chain) - call procedures with input output arguments set up in a chained manner to allow data flow between them
-* (sph lang itml)
 * (sph lang itpn) - helpers for working with parsed itpn
 * (sph lang parser type-signature)
 * (sph lang plcss) - s-expression language that compiles to css
@@ -80,28 +79,26 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph filesystem watch) - observing and acting on file-system changes
 * (sph git)
 * (sph hashtable) - rnrs-hashtable processing
-* (sph hashtable one)
+* (sph hashtable one) - more hashtable procedures
 * (sph ice-9-stream)
 * (sph interface-format) - for programs that offer textual input/output in multiple formats. experimental
 * (sph io) - port and file input/output
 * (sph io read-write) - port io with specifying a read and write procedure
 * (sph json) - a basic but fast json writer
-* (sph lang docl) - evaluate templates with a specific scheme environment, state values and circular inclusion protection
-* (sph lang docl env default)
-* (sph lang docl env itml-to-plaintext)
-* (sph lang docl env itml-to-shtml)
-* (sph lang docl itml) - helpers to evaluate itml expressions and translate itml to other formats
-* (sph lang docl itml-to-plaintext) - translates itml to an indent-tree plaintext string with evaluated expressions
-* (sph lang docl itml-to-shtml)
 * (sph lang ecmascript expressions) - create ecmascript syntax strings
 * (sph lang indent-syntax)
+* (sph lang itml eval) - evaluate itml inline code expressions and possibly translate to a new format
+* (sph lang itml eval env default)
+* (sph lang itml eval env plaintext)
+* (sph lang itml eval env shtml)
+* (sph lang itml eval plaintext) - evaluate inline code expressions
+* (sph lang itml eval shtml) - evaluate inline code expressions and translate itml to shtml
 * (sph lang itml read) - parse itml
-* (sph lang itml write)
+* (sph lang itml write) - create itml strings from parsed itml
 * (sph lang parser outline) - parse text with nested headings
 * (sph lang scm-format base)
 * (sph lang scm-format format) - formatters for individual expressions
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
-* (sph lang sxml-element-style-css)
 * (sph linux) - linux specific features
 * (sph list)
 * (sph list one)

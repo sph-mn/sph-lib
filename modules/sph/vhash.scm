@@ -9,13 +9,11 @@
     vhash-setq)
   (import
     (ice-9 vlist)
-    (rnrs base)
     (sph)
     (sph list)
     (only (guile) hash)
     (only (sph alist) list->alist)
-    (only (sph conditional) identity-if)
-    (only (sph one) quote-odd))
+    (only (sph conditional) identity-if))
 
   (define-syntax-rule (vhash-quoted-ref a key) (vhash-ref a (q key)))
 
