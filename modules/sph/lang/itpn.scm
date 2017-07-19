@@ -5,8 +5,11 @@
     itpn-filter
     itpn-filter-all-patterns-all-parts
     itpn-filter-some-patterns-some-parts
+    itpn-from-file
+    itpn-from-port
     itpn-packets-sort
     itpn-prefixes
+    itpn-string
     line->tags
     tags->line)
   (import
@@ -33,14 +36,14 @@
      the empty set matches all"
     (apply-values list
       (partition
-        (l (e)
-          (let (e (if (string? e) (list e) e))
+        (l (a)
+          (let (a (if (string? a) (list a) a))
             (parts-combination
-              (or (null? patterns-prefix) (string-contains-multiple? (first e) patterns-prefix))
+              (or (null? patterns-prefix) (string-contains-multiple? (first a) patterns-prefix))
               (or (null? patterns-suffix)
-                (any (l (e) (string-contains-multiple? e patterns-suffix)) (flatten (tail e))))
+                (any (l (a) (string-contains-multiple? a patterns-suffix)) (flatten (tail a))))
               (or (null? patterns-anywhere)
-                (any (l (e) (string-contains-multiple? e patterns-anywhere)) (flatten e))))))
+                (any (l (a) (string-contains-multiple? a patterns-anywhere)) (flatten a))))))
         a)))
 
   (define (itpn-filter-all-patterns-all-parts a patterns-prefix patterns-suffix patterns-anywhere)
@@ -64,4 +67,8 @@
   (define (itfpn-tags a)
     "parsed-itpn -> (string ...)
      may include duplicates"
-    (append-map (l (e) (line->tags (first e))) a)))
+    (append-map (l (e) (line->tags (first e))) a))
+
+  (define (itpn-from-port a) "-> parsed-itpn" (read-space-indent-tree->prefix-tree a))
+  (define (itpn-from-file path) "-> parsed-itpn" (call-with-input-file path itpn-from-port))
+  (define (itpn-string a) "parsed-itpn -> string" (prefix-tree->indent-tree-string a)))
