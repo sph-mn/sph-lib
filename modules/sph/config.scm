@@ -18,7 +18,7 @@
     (only (rnrs base) set!))
 
   (define sph-config-description
-    "program configuration file management
+    "program configuration file management. deprecated
      writing is not completely implemented")
 
   (define (parse-config-file path) "string -> list"

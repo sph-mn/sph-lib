@@ -12,10 +12,10 @@
     ensure-directory-structure
     ensure-directory-structure-and-new-mode
     ensure-trailing-slash
-    is-directory?
     filename-extension
     fold-directory-tree
     get-unique-target-path
+    is-directory?
     last
     list->path
     mtime-difference
@@ -39,12 +39,11 @@
   (import
     (guile)
     (ice-9 ftw)
+    (ice-9 threads)
     (rnrs bytevectors)
     (rnrs io ports)
     (sph)
-    (sph string)
     (sph hashtable)
-    (ice-9 threads)
     (sph list)
     (sph one)
     (sph string)
@@ -62,8 +61,8 @@
 
   (define (directory-reference? file-path)
     "string -> boolean
-    test if given string designates a directory reference, either \".\" or \"..\"
-    can be used as a filter to directory-listing procedures."
+     test if given string designates a directory reference, either \".\" or \"..\"
+     can be used as a filter to directory-listing procedures."
     (let ((name (basename file-path))) (if (or (string= name ".") (string= name "..")) #t #f)))
 
   (define (call-with-directory path proc) "string procedure:{directory-port -> any} -> any"
@@ -71,7 +70,7 @@
 
   (define (directory-list path . include?)
     "path procedure:{filename -> boolean} ... -> (string ...)
-    return a list of filename-entries in a directory, optionally filtered by one or multiple filter procedures"
+     return a list of filename-entries in a directory, optionally filtered by one or multiple filter procedures"
     (let (include? (if (null? include?) (pair (negate directory-reference?) include?) include?))
       (call-with-directory path
         (l (d)
@@ -83,12 +82,10 @@
     (let (path (ensure-trailing-slash path))
       (map (l (e) (path->full-path (string-append path e))) (apply directory-list path filter-proc))))
 
-
-
   (define* (directory-tree-paths path #:optional (select? (const #t)))
     "string [procedure:{any -> boolean}] -> (full-path ...)
-    string procedure -> (string ...)
-    results in a list of all paths under path, excluding path and the directory references \".\" and \"..\""
+     string procedure -> (string ...)
+     results in a list of all paths under path, excluding path and the directory references \".\" and \"..\""
     ;breadth-first search
     (let (entries (or (directory-read-all path (negate directory-reference?)) (list)))
       (fold-right
@@ -102,19 +99,19 @@
 
   (define (dotfile? name)
     "string -> boolean
-    checks if name is non-empty and begins with a dot"
+     checks if name is non-empty and begins with a dot"
     (and (not (string-null? name)) (eqv? (string-ref name 0) #\.)))
 
   (define (ensure-directory-structure path)
     "string -> boolean
-    try to create any directories of path that do not exist.
-    every path part is considered a directory"
+     try to create any directories of path that do not exist.
+     every path part is considered a directory"
     (or (file-exists? path) (begin (ensure-directory-structure (dirname path)) (mkdir path))))
 
   (define (ensure-directory-structure-and-new-mode path mode)
     "string -> boolean
-    like ensure-directory-structure but also sets the file mode/permissions for new directories.
-    the mode is influenced by the umask"
+     like ensure-directory-structure but also sets the file mode/permissions for new directories.
+     the mode is influenced by the umask"
     (or (file-exists? path)
       (begin (ensure-directory-structure-and-new-mode (dirname path) mode) (mkdir path mode))))
 
@@ -124,7 +121,7 @@
 
   (define (path-directories a)
     "string -> (string ...)
-    creates a list of the full paths of all directories above the given path"
+     creates a list of the full paths of all directories above the given path"
     (unfold (l (e) (or (string-equal? "/" e) (string-equal? "." e))) identity dirname a))
 
   (define stat-field-name->stat-accessor-ht
@@ -134,8 +131,8 @@
 
   (define (stat-field-name->stat-accessor a)
     "symbol -> guile-stat-accessor
-    a guile-stat-accessor is for example stat:mtime, and the argument is as symbol for the part after stat:, in this case mtime.
-    utility for functions working with file change events and stat-records"
+     a guile-stat-accessor is for example stat:mtime, and the argument is as symbol for the part after stat:, in this case mtime.
+     utility for functions working with file change events and stat-records"
     (ht-ref stat-field-name->stat-accessor-ht a))
 
   (define stat-accessor->stat-field-name-ht
@@ -150,13 +147,13 @@
 
   (define* (fold-directory-tree proc init path #:optional (max-depth (inf)))
     "::
-    procedure:{string:current-path guile-stat-object:stat-info any:previous-result -> any} any string [integer] {string/path -> boolean} ...
-    ->
-    any:last-procedure-result
+     procedure:{string:current-path guile-stat-object:stat-info any:previous-result -> any} any string [integer] {string/path -> boolean} ...
+     ->
+     any:last-procedure-result
 
-    fold over directory-tree under path, possibly limited by max-depth.
-    the directory-references \".\" and \"..\" are ignored.
-    call to proc is (proc full-path stat-info previous-result/init)"
+     fold over directory-tree under path, possibly limited by max-depth.
+     the directory-references \".\" and \"..\" are ignored.
+     call to proc is (proc full-path stat-info previous-result/init)"
     (let (path (ensure-trailing-slash path))
       (fold
         (l (e r)
@@ -173,25 +170,23 @@
 
   (define (filename-extension a)
     "string -> string
-    results in the last dot-separated part of string or the empty-string if no such part exists"
+     results in the last dot-separated part of string or the empty-string if no such part exists"
     (let ((r (string-split a #\.))) (if (length-greater-one? r) (last r) "")))
 
   (define (get-unique-target-path target-path)
     "string boolean -> string
-    find a target path that is similar to \"target-path\" but unique in the directory.
-    adds incrementing numbers or/and a file modification time date if \"add-date?\" is true (default) to find the result path"
+     find a target path that is similar to \"target-path\" but unique in the directory.
+     adds incrementing numbers or/and a file modification time date if \"add-date?\" is true (default) to find the result path"
     (if (file-exists? target-path)
       (let (next-path (l (count) (string-append target-path "." (number->string count 32))))
         (let loop ((other-path (next-path 1)) (count 1))
           (if (file-exists? other-path) (loop (next-path count) (+ 1 count)) other-path)))
       target-path))
 
-
-
   (define (mtime-difference . paths)
     "string ... -> integer
-    get the mtimes for paths and subtract from the first mtime all subsequent.
-    at least one file has changed if the number is not zero"
+     get the mtimes for paths and subtract from the first mtime all subsequent.
+     at least one file has changed if the number is not zero"
     (apply - (par-map (compose stat:mtime stat) paths)))
 
   (define (remove-trailing-slash a) "remove trailing slashes if existant, otherwise result in a"
@@ -203,11 +198,11 @@
 
   (define (path-append first-arg . args)
     "string ... -> string
-    combine string representations of filesystem paths.
-    the arguments don't need to have leading or trailing slashes.
-    use this if redundant slashes in the middle of parts are irrelevant or
-    don't occur, otherwise use path-append*.
-    the complexity of joining strings to paths is easily underestimated."
+     combine string representations of filesystem paths.
+     the arguments don't need to have leading or trailing slashes.
+     use this if redundant slashes in the middle of parts are irrelevant or
+     don't occur, otherwise use path-append*.
+     the complexity of joining strings to paths is easily underestimated."
     (path-append-internal (l (e) (string-trim-both e #\/)) first-arg args))
 
   (define (path-append* first-arg . args)
@@ -218,29 +213,29 @@
 
   (define (path->list path)
     "string -> list
-    parse a string representation of a filesystem path to a list of its parts.
-    an empty string as the first element in the list stands for the root directory.
-    removes unnecessary slashes"
+     parse a string representation of a filesystem path to a list of its parts.
+     an empty string as the first element in the list stands for the root directory.
+     removes unnecessary slashes"
     (if (string-null? path) (list)
       (let (result (remove string-null? (string-split path #\/)))
         (if (eqv? (string-ref path 0) #\/) (pair "" result) result))))
 
   (define* (list->path a)
     "(string ...) -> string
-    for a full path prepend an empty string to the input. this is analogous to the output of path->list"
+     for a full path prepend an empty string to the input. this is analogous to the output of path->list"
     (if (equal? (list "") a) "/" (string-join a "/")))
 
   (define (readlink* path)
     "string -> string
-    like readlink but also resolves symlinks to symlinks until a non-symlink is found or a target does not exist"
+     like readlink but also resolves symlinks to symlinks until a non-symlink is found or a target does not exist"
     (let* ((path (readlink path)) (stat-info (false-if-exception (stat path))))
       (if stat-info (if (eq? (q symlink) (stat:type stat-info)) (readlink* path) path) path)))
 
   (define (realpath* path)
     "string -> false/string
-    resolves the directory references \".\" and \"..\" as well as symlinks and removes unnecessary slashes.
-    named realpath* because it does not use the posix realpath because guile currently does not include it.
-    the foreign function interface could be an alternative"
+     resolves the directory references \".\" and \"..\" as well as symlinks and removes unnecessary slashes.
+     named realpath* because it does not use the posix realpath because guile currently does not include it.
+     the foreign function interface could be an alternative"
     ;/.. = /
     (and-let* ((path (path->full-path path)) (path-list (path->list path)))
       (let loop ((rest (tail path-list)) (result (list "")))
@@ -262,9 +257,9 @@
 
   (define* (path->full-path path #:optional realpath?)
     "string -> string
-    uses \"getcwd\" to complete relative paths.
-    with \"getcwd\" the basename can be a symlink but all other parts have symlinks resolved.
-    the environment variable PWD is not used because it is not automatically updated when the process changes directory"
+     uses \"getcwd\" to complete relative paths.
+     with \"getcwd\" the basename can be a symlink but all other parts have symlinks resolved.
+     the environment variable PWD is not used because it is not automatically updated when the process changes directory"
     (if (string-prefix? "/" path) path (string-append (getcwd) "/" path)))
 
   (define remove-filename-extension
@@ -272,10 +267,11 @@
       ( (remove-filename-extension-one
           (l (extension filename)
             (if (string-suffix? extension filename)
-              (string-drop-right filename (+ 1 (string-length extension))) filename))))
+              (string-drop-right filename (string-length extension)) filename))))
       (l* (name #:optional fn-extensions all?)
         "string [(string)] [boolean]-> string
-        remove specific, all or the last filename-extension from a string"
+        remove specific, all or the last filename-extension from a string.
+        filename-extension: period characters-except-period ..."
         (if fn-extensions (fold remove-filename-extension-one name fn-extensions)
           (let (name-split (string-split name #\.))
             (if (null? (tail name-split)) name
@@ -284,9 +280,9 @@
 
   (define* (search-load-path path #:optional (load-paths %load-path))
     "gives the first match of a relative-path in load-paths or false.
-    searches from left to right in the load-paths.
-    all paths in load-paths must end with a \"/\".
-    searches in guiles %load-path by default"
+     searches from left to right in the load-paths.
+     all paths in load-paths must end with a \"/\".
+     searches in guiles %load-path by default"
     (any
       (l (base-path)
         (let (full-path (string-append base-path path)) (if (file-exists? full-path) full-path #f)))
@@ -294,14 +290,14 @@
 
   (define (stat-diff->accessors stat-info-1 stat-info-2 accessors)
     "-> (stat-accessor ...)
-    find the difference between two stat-records.
-    filter accessors (stat:mtime for example) for fields which do not differ between two stat-records."
+     find the difference between two stat-records.
+     filter accessors (stat:mtime for example) for fields which do not differ between two stat-records."
     (filter (l (e) (not (equal? (e stat-info-1) (e stat-info-2)))) accessors))
 
   (define (stat-diff stat-info-1 stat-info-2 accessors)
     "-> ((vector accessor field-value-1 field-value-2)/#f ...)
-    find the difference between two stat-records.
-    map accessors (stat:mtime for example) to vectors for fields which differ between two stat-records."
+     find the difference between two stat-records.
+     map accessors (stat:mtime for example) to vectors for fields which differ between two stat-records."
     (filter-map
       (l (e)
         (let ((value-1 (e stat-info-1)) (value-2 (e stat-info-2)))
@@ -321,11 +317,11 @@
 
   (define* (poll-watch paths events proc min-interval #:optional (max-interval min-interval))
     "(string ...) (symbol ...) {diff file-descriptors stat-info ->} milliseconds [milliseconds] ->
-    observe stat information of multiple files (which may be directories)
-    by checking for events of change (which are the name of stat-record accessors, for example stat:mtime, without the stat: prefix)
-    and call proc if any of those changes have occurred. the diff passed to proc is a result of stat-diff.
-    the files are checked in intervals with sizes between min-interval and max-interval,
-    automatically adjusting the interval size to match need."
+     observe stat information of multiple files (which may be directories)
+     by checking for events of change (which are the name of stat-record accessors, for example stat:mtime, without the stat: prefix)
+     and call proc if any of those changes have occurred. the diff passed to proc is a result of stat-diff.
+     the files are checked in intervals with sizes between min-interval and max-interval,
+     automatically adjusting the interval size to match need."
     (let ((accessors (map stat-field-name->stat-accessor events)))
       (let
         ( (fdes (map (l (e) (open e O_RDONLY)) (any->list paths)))

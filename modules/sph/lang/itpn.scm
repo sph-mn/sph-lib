@@ -16,12 +16,12 @@
     (guile)
     (rnrs sorting)
     (sph)
+    (sph lang indent-syntax)
     (sph list)
-    (sph one)
     (sph string)
     (sph tree)
     (sph two)
-    (except (srfi srfi-1) map))
+    (only (srfi srfi-1) partition))
 
   (define sph-lang-itpn-description
     "helpers for working with parsed itpn

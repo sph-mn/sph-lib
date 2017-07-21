@@ -55,6 +55,8 @@
     hash-select
     identity-s
     if-guile-exception
+    iq-file
+    iq-file-hashtable
     let-if
     let-if*
     line-reverse-direction
@@ -142,6 +144,16 @@
     (only (sph string) string-quote)
     (only (sph tree) prefix-tree->denoted-tree)
     (only (srfi srfi-19) time-second date->time-utc))
+
+  (define (iq-file path)
+    "string -> list
+     read all scheme expressions from file and evaluate them as a quasiquoted list like (quasiquote (expression ...))"
+    (primitive-eval (list (q quasiquote) (file->datums path))))
+
+  (define (iq-file-hashtable path)
+    "string -> list
+     read file like iq-file and then convert the resulting list to an association list by interpreting elements as key and value alternatingly"
+    (tree-map-lists-and-self (compose ht-from-alist list->alist) (iq-file path)))
 
   (define (path->symbol-list a)
     (let (a (string-trim-both a #\/))
