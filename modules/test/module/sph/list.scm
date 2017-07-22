@@ -67,8 +67,7 @@
       ((a a ...)) 1
       ((a ... b ...)) 0
       ((a ... b ... c d)) 2
-      ((a ... e b ... c d)) 3
-      )
+      ((a ... e b ... c d)) 3)
     (flat?
       ((1 2 3))
       #t
@@ -120,9 +119,13 @@
     (list-set-match-condition?
       ((some 3 4)) #t
       ((somex 3 4)) #f)
+    (list-index-value
+      ((1 2 3) 2) 1
+      ((1 2 3) 2 (unquote eqv?)) 1)
     (list-sort-by-list
       ((3 2 4) (4 2 3)) (3 2 4)
-      ((3 2 4) (4 5 2 3)) (3 2 4 5))
+      ((3 2 4) (4 5 2 3)) (3 2 4 5)
+      ((3 2 4) ((4) (2) (3)) (unquote first)) ((3) (2) (4)))
     (map-consecutive
       ((unquote even?) (unquote (l args (map 1+ args))) (1 2 2 3 4 4 6 5 6 7))
       (1 (3 3) 3 (5 5 7) 5 6 7)
@@ -171,4 +174,6 @@
     (simplify
       ((1)) 1
       ((1 2)) (1 2)
-      ((1 2 3)) (1 2 3))))
+      ((1 2 3)) (1 2 3))
+
+    ))

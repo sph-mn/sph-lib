@@ -89,7 +89,6 @@
     list-set-match-condition?
     list-set-match-contains?
     list-sort-by-list
-    list-sort-by-list-with-accessor
     list-sort-with-accessor
     list-suffix?
     map-apply
@@ -593,7 +592,7 @@
     (if (null? a) #f (not (null? (tail a)))))
 
   (define* (list-index-value a value #:optional (equal-proc equal?))
-    "get the index of value in list" (list-index (l (e) (equal-proc e value)) a))
+    "get the index of value in list" (list-index (l (a) (equal-proc a value)) a))
 
   (define (list-indices proc a)
     "procedure:{any -> boolean} list -> (integer ...)
@@ -686,25 +685,13 @@
      true if \"a\" is a list-set-match condition"
     (if (list? a) (if (null? a) #f (case (first a) ((some all none) #t) (else #f))) #f))
 
-  (define (list-sort-by-list order a)
+  (define* (list-sort-by-list order a #:optional (accessor identity))
     "list list -> list
      sort a list so the elements correspond to the order of elements in list \"order\".
      elements not contained in \"order\" are moved to the end of the result list.
      examples:
      (list-sort-by-list (list 3 2 4) (list 4 2 3)) -> (3 2 4)
      (list-sort-by-list (list 3 2 4) (list 4 5 2 3)) -> (3 2 4 5)"
-    (let (a-len (length a))
-      (list-sort
-        (l (a b)
-          (< (identity-if (list-index-value order a) a-len)
-            (identity-if (list-index-value order b) a-len)))
-        a)))
-
-  (define (list-sort-by-list-with-accessor order accessor a)
-    "list procedure:{any -> any} list -> list
-     like \"list-sort-by-list\" but sort by the individual results of calling accessor on elements of \"a\".
-     example:
-     (list-sort-by-list-with-accessor (list 3 1 2) first (quote (2 . b) (1 . a))) -> (quote (1 . a) (2 . b))"
     (let (a-len (length a))
       (list-sort
         (l (a b)
