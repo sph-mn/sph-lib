@@ -53,7 +53,6 @@
     cond
     cos
     datum->syntax
-    delete-duplicates
     debug-log
     define
     define*
@@ -63,6 +62,7 @@
     define-syntax-cases
     define-syntax-rule
     define-syntax-rules
+    delete-duplicates
     denominator
     display-line
     div
@@ -92,6 +92,7 @@
     gcd
     identifier-syntax
     identifier?
+    identity
     if
     imag-part
     inexact
@@ -227,6 +228,7 @@
       setlocale
       string=
       syntax
+      identity
       syntax->datum
       syntax-case
       unsyntax

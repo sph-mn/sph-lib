@@ -1,7 +1,6 @@
 (library (sph list one)
   (export
-    group-equal
-    index-with-accessor
+    group
     list-ref-cycle-randomise-proc
     list-ref-random
     list-replace-from-hashtable
@@ -13,11 +12,10 @@
     (sph hashtable)
     (sph list)
     (sph random-data)
-    (only (guile) identity)
-    (only (rnrs base) set!)
-    (only (srfi srfi-1) delete-duplicates))
+    (only (rnrs base) set!))
 
-  ; additional list processing procedures which depend on libraries that depend on (sph list). to avoid circular dependencies
+  (define sph-list-one-description
+    "additional list processing procedures which depend on libraries that depend on (sph list). to avoid circular dependencies")
 
   (define (list-replace-from-hashtable a ht)
     "list rnrs-hashtable -> list
@@ -25,22 +23,18 @@
      if the value is a list, the element is either removed (empty list) or replaced with multiple elements"
     (fold
       (l (e r)
-        (let (value (ht-ref ht e))
-          (if value ((if (list? value) append pair) value r) (pair e r))))
+        (let (value (ht-ref ht e)) (if value ((if (list? value) append pair) value r) (pair e r))))
       (list) a))
 
-  (define (group-equal a)
-    "list -> ((any:group-value ...):group ...)
-     create a list with lists of equal elements"
-    (index-with-accessor identity a))
-
-  (define (index-with-accessor accessor a)
+  (define* (group a #:optional (accessor identity))
     "procedure list -> ((any:group-key any:group-value ...):group ...)
-     create an association list entry with accessor result and element for every unique result of accessor"
+     groups entries by unique result values of accessor.
+     by default accessor is identity and groups equal elements.
+     returns an association list with one entry for each group with the value as key and related values as value"
     (let loop ((rest a) (groups (alist)))
       (if (null? rest) (map (l (a) (pair (first a) (reverse (tail a)))) groups)
-        (let* ((e (first rest)) (key (accessor e)) (group (alist-ref groups key)))
-          (loop (tail rest) (alist-set groups key (if group (pair e group) (list e))))))))
+        (let* ((a (first rest)) (key (accessor a)) (group (alist-ref groups key)))
+          (loop (tail rest) (alist-set groups key (if group (pair a group) (list a))))))))
 
   (define (list-ref-random a)
     "list -> any

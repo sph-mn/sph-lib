@@ -4,7 +4,6 @@
     time-date-stream)
   (import
     (guile)
-    (rnrs base)
     (sph)
     (sph record)
     (sph time)
@@ -12,11 +11,12 @@
     (srfi srfi-41))
 
   (define sph-time-stream-description
-    "create an srfi-41 stream of calendar dates between two dates")
+    "create an srfi-41 stream of (sph time) date vectors between two dates")
 
   (define (time-date-stream date-start date-end)
-    "date date -> stream
-    creates an srfi-41 stream of all calendar dates between date-start and date-end inclusively"
+    "date date -> stream:(vector ...)
+     creates an srfi-41 stream of all calendar dates between date-start and date-end inclusively.
+     dates are (sph time) time-date records/vectors"
     (let
       ( (year-end (time-date-year date-end)) (month-end (time-date-month date-end))
         (day-end (time-date-day date-end)))
