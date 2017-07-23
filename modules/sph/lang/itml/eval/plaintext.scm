@@ -36,7 +36,7 @@
     (let (eval (itml-eval* descend-ht ascend-ht (l (a . b) (if (eq? (q line-empty) a) "" a))))
       (l (a itml-state) "list list -> sxml"
         (list-bind itml-state (sources depth . b)
-          (prefix-tree->indent-tree-string (eval a itml-state) depth)))))
+          (prefix-tree->indent-tree (eval a itml-state) depth)))))
 
   (define (itml-plaintext-eval-port a . b) (apply itml-plaintext-eval (port->itml-parsed a) b))
   (define (itml-plaintext-eval-string a . b) (apply itml-plaintext-eval (string->itml-parsed a) b)))

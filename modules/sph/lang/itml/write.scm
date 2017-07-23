@@ -33,7 +33,7 @@
 
   (define* (itml-create-indent-scm-expr a #:optional line-width)
     (string-append prefix-expr-scm
-      (prefix-tree->indent-tree-string
+      (prefix-tree->indent-tree
         (list
           (tree-map
             (l (a)
@@ -49,7 +49,7 @@
 
   (define (itml-create-indent-expr a)
     (let (a (tree-map-leafs any->string-display a))
-      (string-append prefix-expr (prefix-tree->indent-tree-string (list a)))))
+      (string-append prefix-expr (prefix-tree->indent-tree (list a)))))
 
   (define (itml-create-line-expr a)
     (let (a (map any->string-display a))
@@ -93,4 +93,4 @@
         (itml-eval* descend-ht ascend-ht
           (l (a . b) (if (string? a) (string-char-escape a) (if (eqv? (q line-empty) a) "" a)))))
       (l (a) "list list -> sxml"
-        (prefix-tree->indent-tree-string (eval a (itml-state-create 0 #f)) 0)))))
+        (prefix-tree->indent-tree (eval a (itml-state-create 0 #f)) 0)))))

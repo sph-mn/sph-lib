@@ -94,11 +94,11 @@
     (first
       (let loop ((rest a) (level depth-start) (r (list)))
         (if (null? rest) (list (reverse r))
-          (let* ((e (first rest)) (depth (first e)))
+          (let* ((a (first rest)) (depth (first a)))
             (if (< level depth)
               (apply (l (r-2 . rest) (loop rest level update-r ...)) (loop rest (+ 1 level) (list)))
               (if (> level depth) (pair (reverse r) rest)
-                (loop (tail rest) level (append (tail e) r)))))))))
+                (loop (tail rest) level (pair (tail a) r)))))))))
 
   (define (splice-lists-without-prefix-symbol a)
     "list -> list

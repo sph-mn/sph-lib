@@ -69,6 +69,6 @@
      may include duplicates"
     (append-map (l (e) (line->tags (first e))) a))
 
-  (define (itpn-from-port a) "-> parsed-itpn" (read-space-indent-tree->prefix-tree a))
+  (define (itpn-from-port a) "-> parsed-itpn" (read-indent-tree->prefix-tree a))
   (define (itpn-from-file path) "-> parsed-itpn" (call-with-input-file path itpn-from-port))
-  (define (itpn-string a) "parsed-itpn -> string" (prefix-tree->indent-tree-string a)))
+  (define (itpn-string a) "parsed-itpn -> string" (prefix-tree->indent-tree a)))

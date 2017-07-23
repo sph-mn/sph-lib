@@ -19,4 +19,4 @@
 
   (define (escape state . a)
     (list (q pre)
-      (string-join (map (l (a) (if (list? a) (prefix-tree->indent-tree-string (list a)) a)) a) "\n"))))
+      (string-join (map (l (a) (if (list? a) (prefix-tree->indent-tree (list a)) a)) a) "\n"))))

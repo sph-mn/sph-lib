@@ -20,5 +20,5 @@
   (define (escape state . a)
     (list-bind state (sources depth)
       (string-join
-        (map (l (a) (if (list? a) (prefix-tree->indent-tree-string (list a) depth) a)) a)
+        (map (l (a) (if (list? a) (prefix-tree->indent-tree (list a) depth) a)) a)
         (string-append "\n" (string-multiply " " (* 2 depth)))))))
