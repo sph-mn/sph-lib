@@ -31,7 +31,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 ## highlights
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
-* (sph filesystem asset-compiler) - configuration format and helpers to copy or compile and process data from custom sources
+* (sph filesystem asset-compiler) - configuration format and helpers to concatenate/preprocess code from multiple sources
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph install) - program and library installer
 * (sph io path-pipe-chain) - call procedures with input output arguments set up in a chained manner to allow data flow between them
@@ -63,7 +63,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph binding-info) - get information about bindings in modules
 * (sph char-set-vector) - redefines guiles preset char-sets that are special objects as vectors. experimental
 * (sph conditional) - branching
-* (sph config) - program configuration file management
+* (sph config) - program configuration file management. deprecated
 * (sph debug) - debugging helpers. experimental
 * (sph deprecation) - display a deprecation warning when specific procedures are used. experimental
 * (sph documentation) - extract and display guile scheme code documentation
@@ -86,7 +86,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph io read-write) - port io with specifying a read and write procedure
 * (sph json) - a basic but fast json writer
 * (sph lang ecmascript expressions) - create ecmascript syntax strings
-* (sph lang indent-syntax)
+* (sph lang indent-syntax) - converting to and from strings with indented lines
 * (sph lang itml eval) - evaluate itml inline code expressions and possibly translate to a new format
 * (sph lang itml eval env default)
 * (sph lang itml eval env plaintext)
@@ -95,18 +95,18 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph lang itml eval shtml) - evaluate inline code expressions and translate itml to shtml
 * (sph lang itml read) - parse itml
 * (sph lang itml write) - create itml strings from parsed itml
+* (sph lang parser key-values-table) - replacement tables like (pattern replacement ...) from strings read from files or ports
 * (sph lang parser outline) - parse text with nested headings
 * (sph lang scm-format base)
 * (sph lang scm-format format) - formatters for individual expressions
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
 * (sph linux) - linux specific features
 * (sph list)
-* (sph list one)
+* (sph list one) - additional list processing procedures which depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
 * (sph module) - guile module system and rnrs library related procedures
 * (sph number)
 * (sph one) - various
-* (sph replacement-table) - replacement tables like (key replacement ...) loaded from files or ports
 * (sph set) - hashtables as sets
 * (sph sql) - create sql-statements from scheme data
 * (sph stream) - srfi-41 stream helper
@@ -116,7 +116,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph test cli)
 * (sph test report)
 * (sph threads) - re-exports and renames some parallel processing bindings from (ice-9 threads). experimental
-* (sph time stream) - create an srfi-41 stream of calendar dates between two dates
+* (sph time stream) - create an srfi-41 stream of (sph time) date vectors between two dates
 * (sph time string) - time string conversions
 * (sph time utc) - utc related time calculations
 * (sph tree) - processing tree-like list structures
