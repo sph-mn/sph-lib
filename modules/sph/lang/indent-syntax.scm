@@ -1,13 +1,16 @@
 (library (sph lang indent-syntax)
   (export
-    denoted-tree->indent-tree-string
-    line->denoted-tree-element
-    prefix-tree->indent-tree-string
-    read-space-indent-tree->denoted-tree
-    read-space-indent-tree->prefix-tree
-    read-space-indent-tree-element->denoted-tree
-    string-indent->delimited-tree
-    string->indent-level)
+    denoted-tree->indent-tree
+    denoted-tree->indent-tree-lines
+    indent-tree->denoted-tree
+    indent-tree->prefix-tree
+    indent-tree->range-delimited-tree
+    line->indent-and-content
+    prefix-tree->indent-tree
+    read-indent-tree->denoted-tree
+    read-indent-tree->prefix-tree
+    read-indent-tree-element->denoted-tree
+    string->indent-depth)
   (import
     (guile)
     (ice-9 match)
@@ -22,83 +25,91 @@
     (only (sph tree) denoted-tree->prefix-tree prefix-tree->denoted-tree)
     (only (srfi srfi-1) drop-while))
 
-  (define* (prefix-tree->indent-tree-string a #:optional (base-depth 0) (indent-string "  "))
-    "list:(string/list ...) -> string
-    converts a list to a string of indented lines with indent corresponding to nesting depth"
-    (denoted-tree->indent-tree-string (prefix-tree->denoted-tree a) base-depth indent-string))
+  (define sph-lang-indent-syntax-description "converting to and from strings with indented lines")
 
-  (define-syntax-rule (prefix-count->indent-level a indent-width)
+  (define-syntax-rule (char-count->indent-depth a indent-width)
     (if (>= a 0) (ceiling (/ a indent-width)) a))
 
-  (define (string->indent-level a indent-width)
-    (if-pass (string-skip a #\space)
-      (l (prefix-count) (prefix-count->indent-level prefix-count indent-width))))
+  (define* (denoted-tree->indent-tree-lines a #:optional (base-depth 0) (indent-string "  "))
+    (map (l (a)
+        (string-append (string-multiply indent-string (+ base-depth (first a))) (tail a)))
+      a))
 
-  (define (line->denoted-tree-element a indent-width)
+  (define (string->indent-depth a indent-width) "string integer -> integer"
+    (if-pass (string-skip a #\space)
+      (l (prefix-count) (char-count->indent-depth prefix-count indent-width))))
+
+  (define (line->indent-and-content a indent-width) "string integer -> (integer string)"
     (if-pass (string-skip a #\space)
       (l (prefix-count)
-        (list (prefix-count->indent-level prefix-count indent-width)
+        (pair (char-count->indent-depth prefix-count indent-width)
           (string-trim-right (string-drop a prefix-count) #\space)))
       (list 0 a)))
 
-  (define (read-space-indent-tree->prefix-tree . a)
-    (denoted-tree->prefix-tree (apply read-space-indent-tree->denoted-tree a)))
+  (define* (prefix-tree->indent-tree a #:optional (base-depth 0) (indent-string "  "))
+    "list:(string/list ...) -> string
+     converts a list to a string of indented lines with indent corresponding to nesting depth"
+    (denoted-tree->indent-tree (prefix-tree->denoted-tree a) base-depth indent-string))
 
-  (define (empty-line->denoted-tree-element a following-lines indent-width)
-    (list
-      (let (lines-next (drop-while string-null? following-lines))
-        (if (null? lines-next) 0 (string->indent-level (first lines-next) indent-width)))
-      a))
+  (define* (indent-tree->prefix-tree a #:optional (indent-width 2))
+    (read-indent-tree->prefix-tree (open-input-string a) indent-width))
 
-  (define* (read-space-indent-tree->denoted-tree port #:optional (indent-width 2))
-    "port [integer] -> list:((integer . string) ...)
-    reads a string with indented lines to a list where each elment contains indent-count and line content.
-    approximates indent-width to the next higher indent depth if it is not a multiple of indent-width.
-    empty lines are a special case, they are parsed as an empty string with the indent-level of the following expression,
-    or zero if there are no following expressions"
-    ;lines are read at once first for the look-ahead we make when handling empty lines
-    (let loop ((rest (port->lines port)))
-      (if (null? rest) rest
-        (pair
-          (let (line (first rest))
-            (if (string-null? line)
-              (empty-line->denoted-tree-element line (tail rest) indent-width)
-              (line->denoted-tree-element line indent-width)))
-          (loop (tail rest))))))
+  (define* (indent-tree->denoted-tree a #:optional (indent-width 2))
+    (read-indent-tree->denoted-tree (open-input-string a) indent-width))
 
-  (define* (read-space-indent-tree-element->denoted-tree port #:optional (indent-width 2))
-    ;this assumes that unread-string works on the port.
-    (let loop ((line (get-line port)) (top-level-reached-count 0) (r (list)))
+  (define (read-indent-tree->prefix-tree . a) "same arguments as read-indent-tree->denoted-tree"
+    (denoted-tree->prefix-tree (apply read-indent-tree->denoted-tree a)))
+
+  (define read-indent-tree->denoted-tree
+    (let
+      (empty-line->indent-and-content
+        (l (a following-lines indent-width)
+          (list
+            (let (lines-next (drop-while string-null? following-lines))
+              (if (null? lines-next) 0 (string->indent-depth (first lines-next) indent-width)))
+            a)))
+      (l* (port #:optional (indent-width 2))
+        "port [integer] -> list:((integer:indent . string:line-content) ...)
+        approximates indent-width to the next higher indent depth if it is not a multiple of indent-width.
+        empty lines are parsed as an empty string with the indent-depth of the following expression,
+        or zero if there are no following expressions"
+        ; lines are read all at once first for the look-ahead we make when handling empty lines
+        (let loop ((rest (port->lines port)))
+          (if (null? rest) rest
+            (pair
+              (let (line (first rest))
+                (if (string-null? line)
+                  (empty-line->indent-and-content line (tail rest) indent-width)
+                  (line->indent-and-content line indent-width)))
+              (loop (tail rest))))))))
+
+  (define* (read-indent-tree-element->denoted-tree port #:optional (indent-width 2))
+    "port [integer] -> list
+     assumes that unread-string works on the port"
+    (let loop ((line (get-line port)) (top-depth-reached-count 0) (r (list)))
       (if (eof-object? line) (if (null? r) line (reverse r))
-        (apply
-          (l (level data)
-            (if (= 0 level)
-              (let (top-level-reached-count (+ 1 top-level-reached-count))
-                (if (= top-level-reached-count 2)
-                  (begin (unread-string (string-append line "\n") port) (reverse r))
-                  (loop (get-line port) top-level-reached-count (pair (list level data) r))))
-              (loop (get-line port) top-level-reached-count (pair (list level data) r))))
-          (line->denoted-tree-element line indent-width)))))
+        (let* ((a (line->indent-and-content line indent-width)) (depth (first a)) (data (tail a)))
+          (if (= 0 depth)
+            (let (top-depth-reached-count (+ 1 top-depth-reached-count))
+              (if (= top-depth-reached-count 2)
+                (begin (unread-string (string-append line "\n") port) (reverse r))
+                (loop (get-line port) top-depth-reached-count (pair (list depth data) r))))
+            (loop (get-line port) top-depth-reached-count (pair (list depth data) r)))))))
 
-  (define* (denoted-tree->indent-tree-string a #:optional (base-depth 0) (indent-string "  "))
-    "list integer string -> string"
-    (string-join
-      (map
-        (l (e)
-          (apply string-append
-            (pair (string-multiply indent-string (+ base-depth (first e))) (tail e))))
-        a)
-      "\n"))
+  (define* (denoted-tree->indent-tree a #:optional (base-depth 0) (indent-string "  "))
+    "((integer:indent . string:line-content) ...) [integer string] -> string"
+    (string-join (denoted-tree->indent-tree-lines a base-depth indent-string) "\n"))
 
-  (define (string-indent->delimited-tree a indent indent-width start-delimiter end-delimiter)
-    "string char or char-set or procedure integer string string -> string
-    convert the indented-tree in string to a nested range delimited tree. for example converting
-    an indentation based tree to a parenthesis delimited tree. everything except the indentation is preserved"
+  (define
+    (indent-tree->range-delimited-tree a indent-char indent-width start-delimiter end-delimiter)
+    "string char/char-set/procedure integer string string -> string
+     convert from indent syntax to one where nesting is specified by a pair of strings
+     for start and end of a range"
     (match
       (stream-fold-right-multiple
         (l (e r r-depth)
           (let*
-            ( (skip-index (string-skip e indent))
+            ( (skip-index (string-skip e indent-char))
               (depth (if skip-index (floor (/ skip-index indent-width)) 0))
               (line (string-append (if (= 0 depth) e (string-drop e skip-index)) "\n")))
             (list

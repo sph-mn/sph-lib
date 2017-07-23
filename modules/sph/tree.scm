@@ -14,8 +14,11 @@
   (export
     denoted-tree->prefix-tree
     denoted-tree->tree
+    denoted-tree-adjust-depth
+    denoted-tree-minimise-depth
     prefix-tree->denoted-tree
     prefix-tree->path-list
+    prefix-tree->relations
     prefix-tree-context-match
     prefix-tree-map
     prefix-tree-map-with-context
@@ -27,7 +30,6 @@
     prefix-tree-product
     prefix-tree-product-mm
     prefix-tree-replace-prefix
-    prefix-tree->relations
     produce-prefix-context
     produce-prefix-context-mm
     produce-prefix-trees
@@ -573,7 +575,21 @@
      convert a tree to an association list where each element is a list having a nesting-depth number
      as the first element. similar to this is the usage of indentation for nesting depth.
      (a b (c (d e)) f) -> ((0 . a) (0 . b) (1 . c) (2 . d) (2 . e) (0 . f))"
-    (apply tree-map-with-level->flat-list list a start-level))
+    (apply tree-map-with-level->flat-list pair a start-level))
+
+  (define (denoted-tree-adjust-depth a operator . arguments)
+    "procedure list integer -> list
+     map the nesting-depth of each element with operator and arguments.
+     the lowest possible depth is bounded to zero.
+     example:
+     (denoted-tree-adjust-depth a + 1)"
+    (map (l (a) (pair (max 0 (apply operator (first a) arguments)) (tail a))) a))
+
+  (define (denoted-tree-minimise-depth a)
+    "procedure list integer -> list
+     decrease nesting-depth for all element until at least one element has a nesting-depth of zero"
+    (let (min-depth (apply min (map first a)))
+      (if (zero? min-depth) a (denoted-tree-adjust-depth a - min-depth))))
 
   (define (prefix-tree-map-with-level->flat-list proc a . start-level)
     "{integer any -> any} list [integer] -> (any ...)
@@ -594,7 +610,7 @@
     "list [integer] -> list
      like tree->denoted-tree but the nesting-depth number corresponds to prefix-tree interpretation. example
      (a b (c (d e)) f) -> ((0 . a) (1 . b) (2 . c) (3 . d) (3 . e) (0 . 4))"
-    (apply prefix-tree-map-with-level->flat-list list a start-level))
+    (apply prefix-tree-map-with-level->flat-list pair a start-level))
 
   (define (tree-filter->flat-list proc a)
     "procedure:{any -> boolean} list -> list
