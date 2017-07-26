@@ -90,15 +90,15 @@
 
   ;-- filesystem
 
-  (define* (ac-destination path-directory format sources #:optional path-file)
+  (define* (ac-destination path-directory format sources #:optional name)
     "string symbol string list -> string
      create a string for an output path relative to \"path-directory\".
      format:
-     * \"{path-directory}/{format}/{path-file}\"
+     * \"{path-directory}/{format}/{name}\"
      * \"{path-directory}/{format}/_{basename-without-suffix-first-of-sources}-{base32-hash-of-sources}\""
     (string-append (ensure-trailing-slash path-directory) (symbol->string format)
       "/"
-      (if path-file path-file
+      (if name name
         (let (strings (filter string? sources))
           (string-append "_"
             (if (null? strings) "_" (first (string-split (basename (first strings)) #\.))) "-"

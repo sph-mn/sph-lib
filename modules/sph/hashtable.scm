@@ -100,7 +100,7 @@
   (define-syntax-rule (ht-set-q! h k v) (ht-set! h (quote k) v))
 
   (define-syntax-rules ht-tree-ref ((h k) (ht-ref h k #f))
-    ((h k ... k-last) (ht-ref (ht-ref h k ...) k-last #f)))
+    ((h k ... k-last) (ht-ref (ht-tree-ref h k ...) k-last #f)))
 
   (define-syntax-rule (ht-tree-ref-q a key ...) (ht-tree-ref a (quote key) ...))
 
@@ -159,7 +159,7 @@
     "procedure:{key value ->} hashtable ->
      call proc for each key and value association in hashtable"
     (let-values (((keys values) (ht-entries ht)))
-      (vector-each-with-index (l (e index) (proc e (vector-ref values index))) keys)))
+      (vector-each-with-index (l (a index) (proc a (vector-ref values index))) keys)))
 
   (define (ht-values a) "hashtable -> vector"
     (call-with-values (nullary (ht-entries a)) (l (keys values) values)))
@@ -215,7 +215,8 @@
   (define* (ht-alist ht #:optional (depth 0))
     "rnrs-hashtable [integer] -> list
      converts a hashtable to an alist. if depth is greater than 0 any other
-     hashtables being values up to this nesting depth will be converted too"
+     hashtables being values up to this nesting depth will be converted too.
+     scheme has a value for infinite that can be used as depth"
     (ht-fold
       (l (key value r)
         (pair (pair key (if (and (> depth 0) (ht? value)) (ht-alist value (- depth 1)) value)) r))
