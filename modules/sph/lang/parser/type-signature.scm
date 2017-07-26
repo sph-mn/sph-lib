@@ -88,11 +88,11 @@
       a))
 
   (define (string->parsed-type-signature a) "string -> list/boolean"
-    (type-signature-simplify-tree (debug-log (peg:tree (match-pattern sig a)))))
+    (type-signature-simplify-tree (peg:tree (match-pattern sig a))))
 
   (define* (parsed-type-signature->string a #:optional line-prefix)
     "list [string] -> string
-    \"line-prefix\" could be indent space"
+     \"line-prefix\" could be indent space"
     (string-trim-both
       (let (line-delimiter (if line-prefix (string-append "\n" line-prefix) "\n"))
         (first

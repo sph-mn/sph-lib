@@ -163,7 +163,7 @@
   (define (port->itml-parsed a)
     "port -> list
      reads an itml string from port, parses it and returns the abstract syntax tree"
-    (let (a (denoted-tree->prefix-tree (debug-log (read-indent-tree->denoted-tree a 2))))
+    (let (a (denoted-tree->prefix-tree (read-indent-tree->denoted-tree a 2)))
       ;the top-level is not an itml-expression but a list of itml-expressions
       (map
         (l (a)

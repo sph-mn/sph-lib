@@ -33,7 +33,7 @@
     line-scm-expr itml-eval-desc-line-scm-expr
     association descend-handle-association
     indent-scm-expr itml-eval-desc-indent-scm-expr
-    indent-desc-expr itml-eval-desc-indent-expr
+    indent-descend-expr itml-eval-desc-indent-expr
     escaped-association-infix (l a ":") double-backslash (l a "\\"))
 
   (define itml-shtml-lines

@@ -30,7 +30,7 @@
     inline-scm-expr itml-eval-desc-inline-scm-expr
     line-scm-expr itml-eval-desc-line-scm-expr
     indent-scm-expr itml-eval-desc-indent-scm-expr
-    indent-desc-expr itml-eval-desc-indent-expr double-backslash (l a "\\"))
+    indent-descend-expr itml-eval-desc-indent-expr double-backslash (l a "\\"))
 
   (define itml-plaintext-eval
     (let (eval (itml-eval* descend-ht ascend-ht (l (a . b) (if (eq? (q line-empty) a) "" a))))
