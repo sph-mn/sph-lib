@@ -20,9 +20,10 @@
     consecutive
     consecutive&
     contains-all?
-    contains-some?
+    contains-any?
     contains?
     containsq?
+    containsv-any?
     containsv?
     count-value
     count-value-with-limit
@@ -244,23 +245,28 @@
                 (list (pair (tail e) r) replacements)))
             a-extended (list) (proc (filter-map (l (e) (if (first e) (tail e) #f)) a-extended)))))))
 
-  (define (contains-all? a . values)
+  (define (contains-all? a values)
     "list ... -> boolean
-     test if argument one contains all elements from following lists"
-    (every (l (a-2) (every (l (e) (contains? a e)) a-2)) values))
+     test if argument \"a\" contains all of the given values"
+    (every (l (b) (contains? a b)) values))
 
-  (define (contains-some? a . values)
+  (define (contains-any? a values)
     "list ... -> boolean
-     test if argument one contains at least one element from following lists"
-    (any (l (a-2) (any (l (e) (contains? a e)) a-2)) values))
+     test if argument \"a\" contains any of the given values"
+    (any (l (b) (contains? a b)) values))
+
+  (define (containsv-any? a values)
+    "list ... -> boolean
+     test if argument \"a\" contains any of the given values"
+    (any (l (b) (containsv? a b)) values))
 
   (define* (contains? a value #:optional (member member))
     "list any [procedure:{any list -> boolean/any}] -> boolean
      return a boolean indicating if list \"a\" contains \"value\""
     (if (member value a) #t #f))
 
-  (define* (containsq? a value) (if (memq value a) #t #f))
-  (define* (containsv? a value) (if (memv value a) #t #f))
+  (define (containsq? a value) (if (memq value a) #t #f))
+  (define (containsv? a value) (if (memv value a) #t #f))
 
   (define* (count-value value a #:optional (equal? equal?))
     "any list -> integer

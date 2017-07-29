@@ -194,15 +194,21 @@
      convert an ascii string that has incorrectly coded utf8 chars to an utf8 string"
     (utf8->string (u8-list->bytevector (map char->integer (string->list a)))))
 
-  (define-syntax-case (string-case-condition a a-n)
-    ;auxillary syntax for string-case
-    (let ((a-n-datum (syntax->datum (syntax a-n))))
-      (if (string? a-n-datum) (syntax (string-equal? a a-n))
-        (if (list? a-n-datum) (syntax (member a (quote a-n))) (syntax (member a a-n))))))
-
-  (define-syntax-rule (string-case a (a-n expr ...) ... else-expr)
-    ;requires an else expression
-    ((lambda (b) (cond ((string-case-condition b a-n) expr ...) ... (else else-expr))) a))
+  (define-syntax-case (string-case a (condition expr ...) ...) s
+    (let*
+      ( (b (syntax->datum (syntax ((condition expr ...) ...))))
+        (cond-datum
+          (pair (q cond)
+            (map
+              (l (a)
+                (let ((a-first (first a)) (a-tail (tail a)))
+                  (cond ((string? a-first) (pair (list (q string-equal?) a-first (q b)) a-tail))
+                    ((list? a-first) (pair (list (q member) (q b) (list (q quote) a-first)) a-tail))
+                    ( (and (symbol? a-first) (not (eq? (q else) a-first)))
+                      (pair (list (q member) (q b) a-first) a-tail))
+                    (else a))))
+              b))))
+      (quasisyntax ((unsyntax (datum->syntax s (qq (lambda (b) (unquote cond-datum))))) a))))
 
   (define (string-contains-any? a patterns)
     "string (string ...) -> boolean

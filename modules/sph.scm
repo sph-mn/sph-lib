@@ -105,6 +105,7 @@
     l*
     lambda
     lambda*
+    last
     lcm
     length
     let

@@ -204,7 +204,7 @@
 
   (define (ht-set-multiple! ht . assoc)
     "hashtable key/value ...
-     return a new hashtable with multiple values having been updated"
+     return a new hashtable with multiple values having been added or updated"
     (map-slice 2 (l (key value) (ht-set! ht key value)) assoc))
 
   (define (ht-update-multiple! ht keys proc)

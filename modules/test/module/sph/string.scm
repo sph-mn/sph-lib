@@ -1,6 +1,13 @@
 (define-test-module (test module sph string)
-  (import (sph string))
-  (test-execute-procedures-lambda
+  (import
+    (sph string))
+
+  (define-test (string-case)
+    (assert-and (assert-equal #t (string-case "ab" ("cd" #f) (else #t)))
+      (assert-equal #t (string-case "ab" ("ab" #t) (else #f)))
+      (assert-equal #t (string-case "cd" (("ab" "cd") #t) (else #f)))))
+
+  (test-execute-procedures-lambda string-case
     (string-indices ("/a////b//c/d" "/") (0 2 3 4 5 7 8 10)
       ("/a////b//c/d" "//") (2 4 7)
       ("abcd" "bc") (1)
@@ -11,7 +18,8 @@
       ("abcd" "bc" "") "ad"
       ("abcdbcefbcg" "bc" "hij") "ahijdhijefhijg"
       ("abcd" "abc" "e") "ed"
-      ("abcd" "cd" "efg") "abefg" ("ab" "" "") "ab" ("ab" "" "/") "/a/b/" ("" "" "/") "/" ("" "" "") "")
+      ("abcd" "cd" "efg") "abefg"
+      ("ab" "" "") "ab" ("ab" "" "/") "/a/b/" ("" "" "/") "/" ("" "" "") "")
     (string-quote "'test'" "\"'test'\""
       "t'est" "\"t'est\"" "\"test\"" "'\"test\"'" "te\"st\"" "'te\"st\"'" "te\"'st\"" #f)
     (any->string 1 "1" "string" "string" ((1 "2" 3)) "(1 2 3)" #f "#f" #(1 2 #(3)) "#(1 2 #(3))")
