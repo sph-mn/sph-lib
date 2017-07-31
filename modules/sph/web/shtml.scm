@@ -14,51 +14,77 @@
   (import
     (sph)
     (sph list)
-    (only (guile) string-split make-list)
+    (only (guile) string-split make-list string-null?)
     (only (sph string) any->string))
 
+  (define sph-web-shtml-description "helpers to create html as sxml")
   (define html-headings #(h1 h2 h3 h4 h5 h6))
 
-  (define (shtml-heading nesting-depth . content)
-    (pair (vector-ref html-headings (min 5 nesting-depth)) content))
+  (define (shtml-heading depth . content)
+    "integer sxml -> sxml
+     create a html heading element, for example <h1>, with the given content"
+    (pair (vector-ref html-headings (min 5 depth)) content))
 
-  (define (shtml-section nesting-depth title content . attributes)
+  (define (shtml-section depth title content . attributes)
     "integer sxml sxml (string/symbol string/symbol) ... -> sxml
-     create the sxml corresponding to an html <section> tag with attributes, heading and content <div>"
+     create the sxml for an html <section> tag with attributes, heading and content in a single html tag.
+     content is put in a <div> unless it already is contained in single tag or if it is empty.
+     the single tag is ensured to make accessors for the content area (everything not first heading) simpler"
     (pair (q section)
       (append (if (null? attributes) attributes (list (pair (q @) attributes)))
-        (pair (shtml-heading nesting-depth title)
+        (pair (shtml-heading depth title)
           (if (list? content)
             (if (null? content) (list)
               (if (symbol? (first content)) (list content) (list (pair (q div) content))))
-            (list (list (q div) content)))))))
+            (if (and (string? content) (string-null? content)) (list) (list (q div) content)))))))
 
   (define shtml-indent (list-q (*ENTITY* "#160") (*ENTITY* "#160")))
-  (define (shtml-indent-create indent-level) (apply append (make-list indent-level shtml-indent)))
-  (define (shtml-text->sxml a) (interleave (string-split a #\newline) (q (br))))
 
-  (define* (shtml-include-javascript path #:optional is-async) "string boolean -> sxml"
+  (define (shtml-indent-create depth)
+    "integer -> sxml
+     creates indent with the html entity for the space character so it does not get compressed by the viewer"
+    (apply append (make-list depth shtml-indent)))
+
+  (define (shtml-text->sxml a)
+    "string -> sxml
+     replace newlines with (br)"
+    (interleave (string-split a #\newline) (q (br))))
+
+  (define* (shtml-include-javascript path #:optional is-async)
+    "string boolean -> sxml
+     create the shtml for including a javascript file"
     (qq
       (script
         (@ (src (unquote path)) (unquote-splicing (if is-async (list (list-q async async)) (list))))
         "")))
 
-  (define (shtml-include-css path) "string -> sxml"
+  (define (shtml-include-css path)
+    "string -> sxml
+     create the shtml for including a stylesheet file"
     (qq (link (@ (rel "stylesheet") (type "text/css") (href (unquote path))))))
 
-  (define* (shtml-hyperlink name #:optional (value name))
-    (qq (a (@ (href (unquote value))) (unquote name))))
+  (define* (shtml-hyperlink title #:optional (href title))
+    "string string -> sxml
+     create the shtml for an anchor/hyperlink. if href is not given, title is used"
+    (qq (a (@ (href (unquote href))) (unquote title))))
 
-  (define (shtml-alist->options a) "((content . string:value/false)/string ...) -> list"
+  (define (shtml-alist->options a)
+    "((content . string:value/false)/string ...) -> sxml:((option _ ...) ...)
+     create the shtml for multiple <option> elements"
     (map
-      (l (e)
-        (if (pair? e) (qq (option (@ (value (unquote (tail e)))) (unquote (first e))))
-          (list (q option) e)))
+      (l (a)
+        (if (pair? a) (qq (option (@ (value (unquote (tail a)))) (unquote (first a))))
+          (list (q option) a)))
       a))
 
-  (define* (shtml-list->list a #:optional ordered?) "list boolean -> sxml"
+  (define* (shtml-list->list a #:optional ordered?)
+    "(sxml/list:sub-list) boolean -> sxml
+     create the shtml for an unordered or ordered list structure, <ul> or <ol>, with elements.
+     input list elements that are lists are recursively created as shtml sublists"
     (pair (if ordered? (q ol) (q ul))
-      (map (l (e) (list (q li) (if (list? e) (shtml-list->list e) (any->string e)))) a)))
+      (map (l (a) (list (q li) (if (list? a) (shtml-list->list a) a))) a)))
 
-  (define (shtml-list->table a) "((sxml ...) ...) -> sxml"
-    (pair (q table) (map (l (e) (pair (q tr) (map (l (e) (list (q td) e)) e))) a))))
+  (define (shtml-list->table a)
+    "((sxml:cell ...) ...) -> sxml
+     create the shtml for a <table> with content"
+    (pair (q table) (map (l (a) (pair (q tr) (map (l (a) (list (q td) a)) a))) a))))

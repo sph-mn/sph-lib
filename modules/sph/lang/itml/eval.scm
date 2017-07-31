@@ -1,8 +1,7 @@
 (library (sph lang itml eval)
   (export
     itml-call-for-eval
-    itml-call-for-eval-any
-    itml-call-for-eval-port
+    itml-call-for-eval-proc
     itml-eval
     itml-eval*
     itml-eval-asc-indent-expr
@@ -15,9 +14,13 @@
     itml-eval-desc-line-scm-expr
     itml-eval-descend
     itml-eval-descend-string
+    itml-eval-file
     itml-eval-list
+    itml-eval-port
+    itml-eval-string
     itml-state-create
     itml-state-data
+    itml-state-depth
     sph-lang-itml-eval-description)
   (import
     (guile)
@@ -35,32 +38,26 @@
      # data structures
      itml-state: ((any:source-id ...) integer:depth hashtable:data)")
 
-  (define (itml-state-data a) (first (tail (tail a))))
+  (define (get-source-id input) "any -> any:identifier"
+    (or (and (port? input) (port-filename input)) (ht-hash-equal input)))
 
-  (define (itml-state-create depth env . data)
-    (list (list) depth (ht-from-list (pairs (q env) env data) eq? ht-hash-symbol)))
+  (define (itml-state-data a) (list-ref a 2))
+  (define (itml-state-depth a) (list-ref a 1))
 
-  (define
-    (itml-call-for-eval input get-source-id get-source-name get-source-position itml-state proc)
-    "any procedure:{any -> any} procedure:{any -> any} list procedure:{any:input list:itml-state} -> any/string
-     * protects against circular inclusion"
+  (define (itml-state-create depth env . custom-data)
+    "integer environment symbol:key/any:value ... -> list"
+    ; is a list because the first to values get updated
+    (list (list) depth (ht-from-list (pairs (q env) env custom-data) eq? ht-hash-symbol)))
+
+  (define (itml-call-for-eval input itml-state proc)
+    "any procedure:{any:input list:itml-state} -> any
+     protects against circular inclusion by checking and updating itml-state"
     ; would ideally add source-name and source-position to the exception but r6rs exceptions conditions are opaque objects
     ; and we could not find any documentation on accessors to be able to display their contents.
-    (let (name (get-source-id input))
-      (if (and name (contains? (first itml-state) name)) ""
-        (let (itml-state (pair (pair name (first itml-state)) (tail itml-state)))
+    (let (id (get-source-id input))
+      (if (contains? (first itml-state) id) ""
+        (let (itml-state (pair (pair id (first itml-state)) (tail itml-state)))
           (proc input itml-state)))))
-
-  (define (itml-call-for-eval-port input itml-state proc)
-    "port list procedure:{list:parsed-itml list -> any} -> any
-     input must be a port and the source-identifier and source-position for itml-call-for-eval are retrieved with port-filename and port-position.
-     reads itml from port"
-    (itml-call-for-eval input port-filename port-filename port-position itml-state proc))
-
-  (define (itml-call-for-eval-any input itml-state proc)
-    "port procedure:{port -> any} list -> any
-     input can be of any type. source-identifier is created with a hash function and source-position will be false"
-    (itml-call-for-eval input ht-hash-equal identity (const #f) itml-state proc))
 
   (define itml-eval
     (let
@@ -98,10 +95,10 @@
               (let (c (ht-ref prefix-ht (first a))) (if c (apply c (tail a) b) (apply alt a b)))))))
       (l* (descend-prefix-ht ascend-prefix-ht #:optional terminal descend-alt ascend-alt)
         "hashtable  hashtable [procedure procedure procedure] -> procedure
-        returns a procedure similar to itml-eval that uses expression handlers from hashtables.
-        the -prefix-ht hashtables map list prefixes to tail handlers that map a list/expression to a result.
+        returns a procedure similar to itml-eval that uses expression handler procedures from hashtables.
+        the -prefix-ht hashtables map list prefixes to tail handlers that map a expression to a result.
         if the prefix is not found in one of the hashtables then the corresponding -alt procedure is called"
-        (l (a itml-state) "list list -> sxml"
+        (l (a itml-state) "list list -> any"
           (itml-eval a itml-state
             (dispatch descend-prefix-ht (or descend-alt default-descend-alt))
             (dispatch ascend-prefix-ht (or ascend-alt (l (a . b) a)))
@@ -127,4 +124,17 @@
   (define itml-eval-desc-indent-expr itml-eval-descend-string)
   (define itml-eval-asc-inline-expr (descend->ascend itml-eval-descend-string))
   (define itml-eval-asc-line-expr (descend->ascend itml-eval-descend-string))
-  (define itml-eval-asc-indent-expr (descend->ascend itml-eval-descend-string)))
+  (define itml-eval-asc-indent-expr (descend->ascend itml-eval-descend-string))
+  ;
+  ;-- for reading from various sources
+  ;
+  (define (itml-eval-port itml-eval a . b) (apply itml-eval (port->itml-parsed a) b))
+  (define (itml-eval-string itml-eval a . b) (apply itml-eval (string->itml-parsed a) b))
+
+  (define (itml-eval-file itml-eval a . b)
+    (apply itml-eval (call-with-input-file a (l (a) (port->itml-parsed a))) b))
+
+  (define (itml-eval-call-for-eval-proc itml-eval-any itml-eval)
+    "symbol procedure -> procedure
+     extend an itml-eval-* procedure to be passed directly to itml-call-for-*"
+    (l (a . b) (apply itml-eval-any itml-eval a b))))

@@ -1,6 +1,7 @@
 (library (sph lang itml eval plaintext)
   (export
     itml-plaintext-eval
+    itml-plaintext-eval-file
     itml-plaintext-eval-port
     itml-plaintext-eval-string)
   (import
@@ -39,4 +40,7 @@
           (prefix-tree->indent-tree (eval a itml-state) depth)))))
 
   (define (itml-plaintext-eval-port a . b) (apply itml-plaintext-eval (port->itml-parsed a) b))
-  (define (itml-plaintext-eval-string a . b) (apply itml-plaintext-eval (string->itml-parsed a) b)))
+  (define (itml-plaintext-eval-string a . b) (apply itml-plaintext-eval (string->itml-parsed a) b))
+
+  (define (itml-plaintext-eval-file a . b)
+    (call-with-input-file a (l (a) (apply itml-plaintext-eval-port a b)))))

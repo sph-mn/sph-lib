@@ -2,6 +2,7 @@
   (export
     itml-shtml-eval
     itml-shtml-eval-port
+    itml-shtml-eval-file
     itml-shtml-eval-string
     itml-shtml-lines
     sph-lang-itml-eval-shtml-description)
@@ -73,4 +74,7 @@
       (l (a itml-state) "list list -> sxml" (itml-shtml-lines (eval a itml-state)))))
 
   (define (itml-shtml-eval-port a . b) (apply itml-shtml-eval (port->itml-parsed a) b))
-  (define (itml-shtml-eval-string a . b) (apply itml-shtml-eval (string->itml-parsed a) b)))
+  (define (itml-shtml-eval-string a . b) (apply itml-shtml-eval (string->itml-parsed a) b))
+
+  (define (itml-shtml-eval-file a . b)
+    (call-with-input-file a (l (a) (apply itml-shtml-eval-port a b)))))
