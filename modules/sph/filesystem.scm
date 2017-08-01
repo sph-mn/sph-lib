@@ -89,12 +89,12 @@
     ;breadth-first search
     (let (entries (or (directory-read-all path (negate directory-reference?)) (list)))
       (fold-right
-        (l (e r)
-          (let (e (string-append path "/" e))
-            (let (stat-info (stat e))
+        (l (a r)
+          (let (a (string-append path "/" a))
+            (let (stat-info (stat a))
               ( (if (eqv? (q directory) (stat:type stat-info))
-                  (l (r) (append (directory-tree-paths e select?) r)) identity)
-                (if (select? e stat-info) (pair e r) r)))))
+                  (l (r) (append (directory-tree-paths a select?) r)) identity)
+                (if (select? a stat-info) (pair a r) r)))))
         (list) entries)))
 
   (define (dotfile? name)
