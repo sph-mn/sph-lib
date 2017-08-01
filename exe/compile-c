@@ -13,6 +13,6 @@ compile_libguile_sph_lib() {
 }
 
 mkdir -p "$dir" &&
-compile_libguile_sph_lib $*
+compile_libguile_sph_lib $* &&
 chmod 755 "$dir" &&
 chmod 644 "$file"
