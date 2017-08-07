@@ -254,11 +254,8 @@
     "list (symbol ...) ... -> test-result
      execute all test-modules whose names begin with name-prefix.
      for example if there are modules (a b c) and (a d e), (test-execute-modules (a)) will execute both
-     modules must be in load-path. the load-path can be temporarily modified by other means. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
-     this procedure is supposed to return a test-result, for example from calling \"test-execute\"
-     the implementation is depends on the following features:
-     * module names are mapped to filesystem paths
-     * modules can be loaded at runtime into a separate environment, and procedures in that environment can be called (this can be done with r6rs)"
+     modules must be in load-path. modules for testing are libraries/guile-modules that export an \"execute\" procedure.
+     this procedure is supposed to return a test-result, for example from calling \"test-execute\""
     (let
       ((load-path (settings->load-path! settings)) (search-type (alist-ref-q settings search-type)))
       (let

@@ -1,7 +1,7 @@
 (library (sph lang itml eval)
   (export
-    itml-call-for-eval
-    itml-call-for-eval-proc
+    itml-eval-call
+    itml-eval-call-proc
     itml-eval
     itml-eval*
     itml-eval-asc-indent-expr
@@ -49,7 +49,7 @@
     ; is a list because the first to values get updated
     (list (list) depth (ht-from-list (pairs (q env) env custom-data) eq? ht-hash-symbol)))
 
-  (define (itml-call-for-eval input itml-state proc)
+  (define (itml-eval-call input itml-state proc)
     "any procedure:{any:input list:itml-state} -> any
      protects against circular inclusion by checking and updating itml-state"
     ; would ideally add source-name and source-position to the exception but r6rs exceptions conditions are opaque objects
@@ -134,7 +134,7 @@
   (define (itml-eval-file itml-eval a . b)
     (apply itml-eval (call-with-input-file a (l (a) (port->itml-parsed a))) b))
 
-  (define (itml-eval-call-for-eval-proc itml-eval-any itml-eval)
+  (define (itml-eval-call-proc itml-eval-any itml-eval)
     "symbol procedure -> procedure
      extend an itml-eval-* procedure to be passed directly to itml-call-for-*"
     (l (a . b) (apply itml-eval-any itml-eval a b))))

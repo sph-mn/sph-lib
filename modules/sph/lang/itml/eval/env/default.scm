@@ -19,5 +19,5 @@
     (sph)
     (sph hashtable))
 
-  (define-syntax-rule (itml-param-ref state key ...)
+  (define-syntax-rule (itml-param-ref s key ...)
     (ht-tree-ref-q (itml-state-data data) param key ...)))
