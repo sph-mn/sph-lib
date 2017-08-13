@@ -36,14 +36,14 @@
      define a new module dest with all exported bindings of the specified sources.
      example: (module-compose (my-module) (rnrs base) (rnrs sorting))")
 
-  (define* (file->datums path #:optional (port->datum read))
+  (define* (file->datums path #:optional (get-datum read))
     "string procedure:reader -> list
      read all scheme datums of a file specified by path"
     ; copied from (sph io) to avoid circular dependecy
     (call-with-input-file path
       (l (port)
-        (let loop ((a (port->datum port)))
-          (if (eof-object? a) (list) (pair a (loop (port->datum port))))))))
+        (let loop ((a (get-datum port)))
+          (if (eof-object? a) (list) (pair a (loop (get-datum port))))))))
 
   ;-- querying
 

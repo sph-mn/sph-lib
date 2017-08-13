@@ -16,6 +16,7 @@
     named-pipe-chain
     pipe-chain
     port->bytevector
+    port->datums
     port->file
     port->lines
     port->string
@@ -29,8 +30,7 @@
     sph-io-description
     string->file
     temp-file-port
-    temp-file-port->file
-    (rename (read port->datum)))
+    temp-file-port->file)
   (import
     (guile)
     (ice-9 rdelim)
@@ -233,13 +233,15 @@
                   match/table)
                 (loop (read-char port) (pair char before-chars) match/table))))))))
 
-  (define* (file->datums path #:optional (port->datum read))
+  (define* (port->datums port #:optional (get-datum get-datum))
+    "string procedure:reader -> list
+     read all scheme datums from a port"
+    (let loop ((a (get-datum port))) (if (eof-object? a) (list) (pair a (loop (get-datum port))))))
+
+  (define* (file->datums path #:optional (get-datum get-datum))
     "string procedure:reader -> list
      read all scheme datums of a file specified by path"
-    (call-with-input-file path
-      (l (port)
-        (let loop ((a (port->datum port)))
-          (if (eof-object? a) (list) (pair a (loop (port->datum port))))))))
+    (call-with-input-file path (l (port) (port->datums port get-datum))))
 
   (define*
     (port-lines-each proc #:optional (port (current-input-port)) #:key (handle-delim (q trim)))

@@ -230,7 +230,7 @@
     (let ((ht (ht-make hash-proc equal-proc)))
       (fold (l (e r) (if r (begin (ht-set! ht r e) #f) e)) #f a) ht))
 
-  (define (ht-select a . keys) (map (l (b) (ht-ref a b)) keys))
+  (define (ht-select a keys) (map (l (b) (ht-ref a b)) keys))
 
   (define (ht-copy-empty a)
     "hashtable -> hashtable
