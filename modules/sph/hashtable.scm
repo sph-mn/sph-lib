@@ -56,6 +56,9 @@
     ht-set-multiple-q!
     ht-set-q!
     ht-size
+    ht-tree-and-ref
+    ht-tree-and-ref-q
+    ht-tree-contains?
     ht-tree-merge!
     ht-tree-ref
     ht-tree-ref-q
@@ -104,6 +107,12 @@
 
   (define-syntax-rule (ht-tree-ref-q a key ...) (ht-tree-ref a (quote key) ...))
 
+  (define-syntax-rules ht-tree-and-ref
+    ((h k) (ht-ref h k #f))
+    ((h k ... k-last) (let (a (ht-tree-ref h k ...)) (and a (ht-ref a k-last #f)))))
+
+  (define-syntax-rule (ht-tree-and-ref-q a key ...) (ht-tree-and-ref a (quote key) ...))
+
   (define-syntax-rules ht-tree-set! ((h k v) (ht-set! h k v))
     ((h k ... k-last v) (ht-set! (ht-ref h k ...) k-last v)))
 
@@ -143,6 +152,12 @@
   (define-syntax-rule (ht-set-multiple-q! a key/value ...)
     ;hashtable [any:unquoted-key any:value] ...
     (apply ht-set-multiple! a (quote-odd key/value ...)))
+
+  (define (ht-tree-contains? a . keys)
+    (let loop ((a (ht-ref a (first keys) (q --not-contained))) (keys (tail keys)))
+      (and (not (eq? (q --not-contained) a))
+        (or (null? keys) (loop (ht-ref a (first keys)) (tail keys))))
+      a keys))
 
   (define* (ht-from-alist a #:optional (equal-proc equal?) (hash-proc ht-hash-equal))
     "convert assoc-list/alist \"a\" to an r6rs hashtable"

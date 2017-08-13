@@ -45,13 +45,10 @@
     vector->record)
   (import
     (sph)
-    (sph vector)
-    (except (guile)
-      record?
-      record-accessor)
     (sph hashtable)
     (sph list)
-    )
+    (sph vector)
+    (except (guile) record? record-accessor))
 
   (define sph-record-description
     "vectors as records
@@ -78,8 +75,7 @@
     (let (a (vector-copy a))
       (let loop ((b field-name/value))
         (if (null? b) a
-          (let (b-tail (tail b))
-            (vector-set! a (ht-ref record-layout (first b) #f) (first b-tail))
+          (let (b-tail (tail b)) (vector-set! a (ht-ref record-layout (first b) #f) (first b-tail))
             (loop (tail b-tail)))))))
 
   (define-syntax-rule (record-update record-layout a field-name/value ...)
@@ -147,8 +143,7 @@
     (let (layout-1-size (ht-size layout-1))
       (ht-each
         (l (key value)
-          (if (ht-ref layout-1 key #f)
-            (raise (q fail-record-layout-field-not-existant))
+          (if (ht-ref layout-1 key #f) (raise (q fail-record-layout-field-not-existant))
             (ht-set! layout-1 key (+ value layout-1-size))))
         layout-2)))
 
