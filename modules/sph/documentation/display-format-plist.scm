@@ -5,12 +5,14 @@
     (guile)
     (rnrs base)
     (sph)
-    (sph binding-info)
     (sph alist)
+    (sph binding-info)
     (sph documentation)
     (only (srfi srfi-1) remove))
 
-  ;a format that creates a list with entries like this: (dg-any-read (signature _ [_] dg-selection [count] -> error/(vector ...)) (description ) (type procedure))
+  (define sph-documentation-display-format-plist
+    "display format for (sph documentation).
+     format that creates a list with entries like this: (dg-any-read (signature _ [_] dg-selection [count] -> error/(vector ...)) (description ) (type procedure))")
 
   (define-as display-format-plist alist-q
     format-arguments default-format-arguments
@@ -18,7 +20,7 @@
     (l (bi formatted-arguments)
       (pair (symbol->string (bi-name bi))
         (append
-          (itpn-docstring-split-signature (bi-documentation bi)
+          (docstring-split-signature (bi-documentation bi) ""
             (l (signature text-lines)
               (append
                 (if signature

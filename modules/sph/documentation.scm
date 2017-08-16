@@ -19,7 +19,6 @@
     docstring-split-signature
     documentation-display-formats
     format-module-documentation
-    itpn-docstring-split-signature
     lines->docstring
     module-description
     module-find-one-information
@@ -49,18 +48,18 @@
     (let (a (regexp-substitute/global #f " +" a (q pre) " " (q post)))
       (map (l (a) (string-trim a)) (string-split a #\newline))))
 
-  (define (docstring-split-signature a line-prefix continue)
-    "string procedure:{string:type-signatures string:rest-of-docstring} -> any
+  (define (docstring-split-signature a line-prefix c)
+    "string string procedure:{string:type-signatures string:rest-of-docstring} -> any
      if a string starts with a type-signature, split string at the end of it"
     (if a
       (let (signature (match-pattern peg-type-signature a))
         (if signature
-          (continue
+          (c
             (parsed-type-signature->string (type-signature-simplify-tree (peg:tree signature))
               line-prefix)
             (docstring->lines (string-drop a (peg:end signature))))
-          (continue #f (docstring->lines a))))
-      (continue #f (list))))
+          (c #f (docstring->lines a))))
+      (c #f (list))))
 
   (define (lines->docstring a indent) "list (string ...) -> string"
     (let (a (remove string-null? a))

@@ -891,7 +891,9 @@
 
   (define (simplify-list a)
     "list -> list
-     example: (((1 2))) -> (1 2)
+     examples:
+       (((1 2))) -> (1 2)
+       (((1 2) (3))) -> ((1 2) (3))
      removes extra nesting"
     (if (null? a) a (if (and (null? (tail a)) (list? (first a))) (simplify-list (first a)) a)))
 
