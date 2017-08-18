@@ -8,10 +8,10 @@
     (sph lang itml eval plaintext))
 
   (define env-shtml
-    (apply environment (list-q (sph lang itml eval env shtml) (sph lang itml eval env default))))
+    (apply environment (list-q (sph lang itml eval env shtml) (sph))))
 
   (define env-plaintext
-    (apply environment (list-q (sph lang itml eval env plaintext) (sph lang itml eval env default))))
+    (apply environment (list-q (sph lang itml eval env plaintext) (sph))))
 
   (define-test (itml-shtml-eval arguments)
     (itml-shtml-eval-string (first arguments) (itml-state-create 0 env-shtml)))
