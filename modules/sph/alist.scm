@@ -40,6 +40,7 @@
     alistq-ref
     alistq-select
     alists-ref
+    alists-ref-p
     alists-ref-q
     alists-set!
     alistv-ref
@@ -227,4 +228,8 @@
       (if (null? rest) (pair (pair key value) rest)
         (let (e (first rest))
           (if (equal? key (first e)) (pair (pair key value) (tail rest))
-            (pair e (loop (tail rest)))))))))
+            (pair e (loop (tail rest))))))))
+
+  (define (alists-ref-p a keys) "like alists-ref but as a procedure that accepts a list for keys"
+    (let loop ((a a) (keys keys))
+      (if (null? keys) a (and a (loop (alist-ref a (first keys)) (tail keys)))))))

@@ -29,7 +29,7 @@
     (let
       (r
         (flatten
-          (alist->list (ht-alist (ht-copy-deep* data-1 (l (a) (ht-tree-merge! a data-2))) (inf)))))
+          (alist->list (ht-alist (ht-tree-copy* data-1 (l (a) (ht-tree-merge! a data-2))) (inf)))))
       (assert-true (list-set-equal? r (q (a 1 f 6 b e 5 c 4 d 3))))))
 
   (test-execute-procedures-lambda ht-tree-merge! ht-copy* ht-from-alist ht-alist))

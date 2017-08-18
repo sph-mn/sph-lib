@@ -1,12 +1,12 @@
 (library (sph lang itml eval)
   (export
-    itml-eval-call
-    itml-eval-call-proc
     itml-eval
     itml-eval*
     itml-eval-asc-indent-expr
     itml-eval-asc-inline-expr
     itml-eval-asc-line-expr
+    itml-eval-call
+    itml-eval-call-proc
     itml-eval-desc-indent-expr
     itml-eval-desc-indent-scm-expr
     itml-eval-desc-inline-scm-expr
@@ -18,6 +18,7 @@
     itml-eval-list
     itml-eval-port
     itml-eval-string
+    itml-state-copy
     itml-state-create
     itml-state-data
     itml-state-depth
@@ -44,10 +45,13 @@
   (define (itml-state-data a) (list-ref a 2))
   (define (itml-state-depth a) (list-ref a 1))
 
-  (define (itml-state-create depth env . custom-data)
-    "integer environment symbol:key/any:value ... -> list"
+  (define* (itml-state-create depth env #:optional (data (ht-create-symbol)))
+    "integer environment hashtable ... -> list
+     data, if passed, will be modified"
     ; is a list because the first to values get updated
-    (list (list) depth (ht-from-list (pairs (q env) env custom-data) eq? ht-hash-symbol)))
+    (ht-set-q! data env env) (list (list) depth data))
+
+  (define (itml-state-copy a) (list (first a) (second a) (ht-tree-copy (itml-state-data a))))
 
   (define (itml-eval-call input itml-state proc)
     "any procedure:{any:input list:itml-state} -> any
@@ -55,7 +59,7 @@
     ; would ideally add source-name and source-position to the exception but r6rs exceptions conditions are opaque objects
     ; and we could not find any documentation on accessors to be able to display their contents.
     (let (id (get-source-id input))
-      (if (contains? (first itml-state) id) ""
+      (if (contains? (first itml-state) id) #f
         (let (itml-state (pair (pair id (first itml-state)) (tail itml-state)))
           (proc input itml-state)))))
 

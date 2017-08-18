@@ -19,8 +19,6 @@
     ht-contains?
     ht-copy
     ht-copy*
-    ht-copy-deep
-    ht-copy-deep*
     ht-copy-empty
     ht-create
     ht-create-binding
@@ -59,6 +57,8 @@
     ht-tree-and-ref
     ht-tree-and-ref-q
     ht-tree-contains?
+    ht-tree-copy
+    ht-tree-copy*
     ht-tree-merge!
     ht-tree-ref
     ht-tree-ref-q
@@ -107,8 +107,7 @@
 
   (define-syntax-rule (ht-tree-ref-q a key ...) (ht-tree-ref a (quote key) ...))
 
-  (define-syntax-rules ht-tree-and-ref
-    ((h k) (ht-ref h k #f))
+  (define-syntax-rules ht-tree-and-ref ((h k) (ht-ref h k #f))
     ((h k ... k-last) (let (a (ht-tree-ref h k ...)) (and a (ht-ref a k-last #f)))))
 
   (define-syntax-rule (ht-tree-and-ref-q a key ...) (ht-tree-and-ref a (quote key) ...))
@@ -255,7 +254,7 @@
   (define (ht-copy* a proc) "call proc with a copy of hashtable and return it"
     (let (r (ht-copy a #t)) (proc r) r))
 
-  (define (ht-copy-deep a)
-    (ht-fold (l (k v r) (ht-set! r k (if (ht? v) (ht-copy-deep v) v)) r) (ht-copy-empty a) a))
+  (define (ht-tree-copy a)
+    (ht-fold (l (k v r) (ht-set! r k (if (ht? v) (ht-tree-copy v) v)) r) (ht-copy-empty a) a))
 
-  (define (ht-copy-deep* a proc) (let (r (ht-copy-deep a)) (proc r) r)))
+  (define (ht-tree-copy* a proc) (let (r (ht-tree-copy a)) (proc r) r)))

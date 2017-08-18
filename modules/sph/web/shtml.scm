@@ -63,10 +63,10 @@
      create the shtml for including a stylesheet file"
     (qq (link (@ (rel "stylesheet") (type "text/css") (href (unquote path))))))
 
-  (define* (shtml-hyperlink title #:optional (href title))
+  (define* (shtml-hyperlink target title #:optional (attributes (list)))
     "string string -> sxml
-     create the shtml for an anchor/hyperlink. if href is not given, title is used"
-    (qq (a (@ (href (unquote href))) (unquote title))))
+     sxml for an html <a>"
+    (qq (a (@ (href (unquote target)) (unquote-splicing attributes)) (unquote title))))
 
   (define (shtml-alist->options a)
     "((content . string:value/false)/string ...) -> sxml:((option _ ...) ...)

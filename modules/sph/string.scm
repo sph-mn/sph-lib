@@ -196,19 +196,20 @@
 
   (define-syntax-case (string-case a (condition expr ...) ...) s
     (let*
-      ( (b (syntax->datum (syntax ((condition expr ...) ...))))
+      ( (b (syntax->datum (syntax ((condition expr ...) ...)))) (c (gensym "string-case-"))
         (cond-datum
           (pair (q cond)
             (map
               (l (a)
                 (let ((a-first (first a)) (a-tail (tail a)))
-                  (cond ((string? a-first) (pair (list (q string-equal?) a-first (q b)) a-tail))
-                    ((list? a-first) (pair (list (q member) (q b) (list (q quote) a-first)) a-tail))
+                  (cond ((string? a-first) (pair (list (q string-equal?) a-first c) a-tail))
+                    ((list? a-first) (pair (list (q member) c (list (q quote) a-first)) a-tail))
                     ( (and (symbol? a-first) (not (eq? (q else) a-first)))
-                      (pair (list (q member) (q b) a-first) a-tail))
+                      (pair (list (q member) c a-first) a-tail))
                     (else a))))
               b))))
-      (quasisyntax ((unsyntax (datum->syntax s (qq (lambda (b) (unquote cond-datum))))) a))))
+      (quasisyntax
+        ((unsyntax (datum->syntax s (qq (lambda ((unquote c)) (unquote cond-datum))))) a))))
 
   (define (string-contains-any? a patterns)
     "string (string ...) -> boolean
