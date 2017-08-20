@@ -113,6 +113,11 @@
             (or terminal default-ascend-alt))))))
 
   (define (itml-eval-list a env state)
+    "(symbol any ...) environment list -> any
+     creates the syntax for a lambda that contains the code from the itml expression,
+     and uses eval to create a procedure from it.
+     the procedure is called with the itml state object from the call to evaluate the itml.
+     this supports the use of syntax in itml expressions"
     (let (proc (eval (qq (lambda (s) ((unquote (first a)) s (unquote-splicing (tail a))))) env))
       (proc state)))
 
@@ -123,7 +128,11 @@
     "list procedure integer list environment -> any
      evaluate an inline code expression when all elements are strings or string lists.
      converts the prefix to a symbol and prepares lists to evaluate to lists"
-    (let (a (pair (string->symbol (first a)) (tree-map-lists (l (a) (pair (q list) a)) (tail a))))
+    (let
+      (a
+        (pair (string->symbol (first a))
+          ;(tree-map-lists (l (a) (pair (q list) a)) (tail a))
+          (tail a)))
       (apply itml-eval-descend a b)))
 
   (define (descend->ascend proc) (l (a . b) (apply proc a #f b)))

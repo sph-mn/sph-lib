@@ -3,7 +3,7 @@
     escape
     itml-param-insert
     scm-eval
-    scm-list-qq)
+    scm-qq)
   (import
     (guile)
     (sph)
@@ -11,7 +11,7 @@
     (sph list)
     (sph string))
 
-  (define-syntax-rule (scm-list-qq state a ...) (any->string (qq (a ...))))
+  (define-syntax-rule (scm-qq state a ...) (any->string (qq (a ...))))
   (define-syntax-rule (scm-eval state a ...) (any->string (begin a ...)))
 
   (define-syntax-rule (itml-param-insert state key ...)

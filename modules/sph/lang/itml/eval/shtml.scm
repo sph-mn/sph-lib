@@ -21,8 +21,9 @@
 
   (define (descend-handle-association a re-descend sources depth data)
     (let ((keyword (first a)) (re-descend* (l (a) (re-descend a sources depth data))))
-      (append (if (string? keyword) (list keyword) (map re-descend* keyword))
-        (pair ": " (map re-descend* (tail a))))))
+      (list
+        (append (if (string? keyword) (list keyword) (map re-descend* keyword))
+          (pair ": " (map re-descend* (tail a)))))))
 
   (define-as ascend-ht ht-create-symbol
     line (l (a . b) (if (null? a) a (list (q p) a)))
@@ -61,12 +62,13 @@
           (if (null? a) a
             (let ((a (first a)) (b (loop (tail a))))
               (if (list? a)
-                (if (null? a) b
-                  (let (prefix (first a))
-                    (pair
-                      (if (symbol? prefix) (if (inline-html-tag? prefix) (line-wrap a) a)
-                        (line-list a))
-                      b)))
+                (let (a (splice-non-tag-lists a))
+                  (if (null? a) b
+                    (let (prefix (first a))
+                      (pair
+                        (if (symbol? prefix) (if (inline-html-tag? prefix) (line-wrap a) a)
+                          (line-list a))
+                        b))))
                 (pair (line-wrap a) b))))))))
 
   (define itml-shtml-eval
@@ -82,7 +84,7 @@
               on ascend, lists that are not <sections> become sections, with the list prefix being the header,
               and the tail being the section content"
               (if (section? a) (shtml-section depth (first a) (itml-shtml-lines (tail a))) a)))))
-      (l (a itml-state) "list list -> sxml" (itml-shtml-lines (eval (debug-log a) itml-state)))))
+      (l (a itml-state) "list list -> sxml" (itml-shtml-lines (eval a itml-state)))))
 
   (define (itml-shtml-eval-port a . b) (apply itml-shtml-eval (port->itml-parsed a) b))
   (define (itml-shtml-eval-string a . b) (apply itml-shtml-eval (string->itml-parsed a) b))
