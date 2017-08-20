@@ -5,6 +5,10 @@
     set-contains?
     set-create
     set-create-empty
+    set-create-eq
+    set-create-eq-empty
+    set-create-eqv
+    set-create-eqv-empty
     set-create-string
     set-create-string-empty
     set-create-symbol
@@ -12,8 +16,8 @@
     sph-set-description
     (rename (ht-delete! set-delete!)))
   (import
-    (sph hashtable)
     (sph)
+    (sph hashtable)
     (sph string))
 
   (define sph-set-description "hashtables as sets")
@@ -28,6 +32,8 @@
     (ht-make ht-hash-string string-equal? initial-size))
 
   (define (set-create-symbol-empty initial-size) (ht-make ht-hash-symbol eq? initial-size))
+  (define (set-create-eqv-empty initial-size) (ht-make-eqv initial-size))
+  (define (set-create-eq-empty initial-size) (ht-make-eq initial-size))
   (define (set-create . entries) (primitive-set-create (set-create-empty (length entries)) entries))
 
   (define (set-create-string . entries)
@@ -35,6 +41,12 @@
 
   (define (set-create-symbol . entries)
     (primitive-set-create (set-create-symbol-empty (length entries)) entries))
+
+  (define (set-create-eqv . entries)
+    (primitive-set-create (set-create-eqv-empty (length entries)) entries))
+
+  (define (set-create-eq . entries)
+    (primitive-set-create (set-create-eq-empty (length entries)) entries))
 
   (define (set-contains? a value) (ht-contains? a value))
   (define (set-add! a value) (ht-set! a value #t))

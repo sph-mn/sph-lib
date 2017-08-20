@@ -5,6 +5,7 @@
     port->line-stream
     port->stream
     stream-any
+    stream-deduplicate
     stream-each
     stream-first
     stream-first-or-null
@@ -15,6 +16,7 @@
     (rnrs io ports)
     (sph)
     (sph module)
+    (sph set)
     (except (srfi srfi-41) port->stream)
     (only (guile)
       eof-object?
@@ -63,4 +65,11 @@
       (identity-if (proc (stream-first stream)) (stream-any proc (stream-tail stream)))))
 
   (define (stream-first-or-null a) "stream -> any/list"
-    (if (stream-null? a) (list) (stream-first a))))
+    (if (stream-null? a) (list) (stream-first a)))
+
+  (define* (stream-deduplicate a #:optional (set-create set-create))
+    "stream [procedure] ->
+     returns each distinct value only once.
+     set-create is a set-creation procedure from (sph set)"
+    (let (set (set-create))
+      (stream-filter (l (a) (if (set-contains? set a) #f (begin (set-add! set a) #t))) a))))

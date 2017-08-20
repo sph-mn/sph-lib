@@ -16,6 +16,9 @@
     alist-bind
     alist-bind-and*
     alist-cond
+    alist-contains
+    alist-containsq
+    alist-containsv
     alist-keys
     alist-keys-map
     alist-map
@@ -161,6 +164,11 @@
   (define-syntax-rule (alist-keys alist)
     ;get all keys of an alist as a list
     (map first alist))
+
+  (define-syntax-rule (alist-contains-s a key equal?) (any (l (a) (equal? key (first a))) a))
+  (define (alist-containsq a key) (alist-contains-s a key eq?))
+  (define (alist-containsv a key) (alist-contains-s a key eqv?))
+  (define (alist-contains a key) (alist-contains-s a key equal?))
 
   (define (alist-map proc a) "procedure:{key value -> any} list -> list"
     (map (l (e) (proc (first e) (tail e))) a))

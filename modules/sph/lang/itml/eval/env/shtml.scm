@@ -3,19 +3,17 @@
     escape
     itml-param-insert
     scm-eval
-    scm-list-qq)
+    scm-qq)
   (import
     (guile)
     (sph)
+    (sph list)
     (sph hashtable)
     (sph lang indent-syntax)
     (sph string))
 
-  (define-syntax-rule (scm-list-qq state a ...) (qq (a ...)))
+  (define-syntax-rule (scm-qq state a ...) (list-qq a ...))
   (define-syntax-rule (scm-eval state a ...) (begin a ...))
-
-  (define-syntax-rule (itml-param-insert state key ...)
-    (or (itml-param-ref state key ...) (string-join (map any->string (q (key ...))) " ")))
 
   (define (escape state . a)
     (list (q pre)

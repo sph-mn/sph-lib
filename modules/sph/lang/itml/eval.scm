@@ -68,6 +68,8 @@
       ( (descend-proc
           (l (proc)
             (l (a re-descend sources depth data)
+              "list procedure any integer any -> (result continue sources depth data)
+              receive elements that are lists while mapping and eventually recursing sub-lists"
               (let (b (proc a (compose first re-descend) sources depth data))
                 (if b (list b #f sources depth data) (list #f #t sources (+ 1 depth) data))))))
         (ascend-proc
@@ -96,6 +98,8 @@
         (dispatch
           (l (prefix-ht alt) "hashtable procedure list any ... -> false/any"
             (l (a . b)
+              "list ascend/descend-arguments ... -> any
+              selects a handler by list prefix and calls alt if no handler could be found"
               (let (c (ht-ref prefix-ht (first a))) (if c (apply c (tail a) b) (apply alt a b)))))))
       (l* (descend-prefix-ht ascend-prefix-ht #:optional terminal descend-alt ascend-alt)
         "hashtable  hashtable [procedure procedure procedure] -> procedure
@@ -109,7 +113,7 @@
             (or terminal default-ascend-alt))))))
 
   (define (itml-eval-list a env state)
-    (let (proc (eval (qq (lambda (b) ((unquote (first a)) b (unquote-splicing (tail a))))) env))
+    (let (proc (eval (qq (lambda (s) ((unquote (first a)) s (unquote-splicing (tail a))))) env))
       (proc state)))
 
   (define (itml-eval-descend a re-descend sources depth data) "evaluate an inline code expression"
@@ -117,8 +121,10 @@
 
   (define (itml-eval-descend-string a . b)
     "list procedure integer list environment -> any
-     evaluate an inline code expression when the arguments are strings"
-    (let (a (pair (string->symbol (first a)) (tail a))) (apply itml-eval-descend a b)))
+     evaluate an inline code expression when all elements are strings or string lists.
+     converts the prefix to a symbol and prepares lists to evaluate to lists"
+    (let (a (pair (string->symbol (first a)) (tree-map-lists (l (a) (pair (q list) a)) (tail a))))
+      (apply itml-eval-descend a b)))
 
   (define (descend->ascend proc) (l (a . b) (apply proc a #f b)))
   (define itml-eval-desc-line-scm-expr itml-eval-descend)

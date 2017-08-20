@@ -18,7 +18,6 @@
     complement
     complement-both
     consecutive
-    consecutive&
     contains-all?
     contains-any?
     contains?
@@ -897,10 +896,10 @@
      removes extra nesting"
     (if (null? a) a (if (and (null? (tail a)) (list? (first a))) (simplify-list (first a)) a)))
 
-  (define (splice proc a)
+  (define (splice predicate a)
     "{list -> boolean} list -> list
-     for each sub-list, merge sub-list at position with the parent list if a call to \"proc\" with the sub-list is true"
-    (fold-right (l (e r) (if (list? e) ((if (proc e) append cons) e r) (pair e r))) (list) a))
+    splice elements that are lists and match predicate"
+    (fold-right (l (a result) (if (list? a) ((if (predicate a) append pair) a result) (pair a result))) (list) a))
 
   (define (splice-last-list a)
     "list -> list
@@ -971,14 +970,12 @@
               (+ count 1) count)))
         a 0)))
 
-  (define (consecutive proc a)
-    "procedure:{any -> any/boolean} list -> (list:matches list:rest)
+  (define* (consecutive proc a #:optional (c list))
+    "procedure:{any -> any/boolean} list [procedure] -> (list:matches list:rest)
      splits the list into two lists, the first being a list of all beginning elements of \"a\" that consecutively matched
      \"proc\", the second being the rest.
      like srfi-1 span but the result is a list and not multiple return values"
-    (call-with-values (nullary (span proc a)) (l r r)))
-
-  (define (consecutive& proc a c) (call-with-values (nullary (span proc a)) c))
+    (call-with-values (nullary (span proc a)) c))
 
   (define (group-split-at-matches start-group? a)
     "procedure:{any -> boolean} list -> (list ...)
