@@ -110,6 +110,7 @@
     length
     let
     let*
+    let-keywords
     let-syntax
     let-values
     letrec
@@ -236,7 +237,10 @@
       unsyntax-splicing
       with-syntax
       write)
-    (only (ice-9 optargs) lambda* define*)
+    (only (ice-9 optargs)
+      lambda*
+      define*
+      let-keywords)
     (only (srfi srfi-2) and-let*))
 
   (define sph-description

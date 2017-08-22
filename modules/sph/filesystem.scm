@@ -30,8 +30,6 @@
     remove-filename-extension
     remove-trailing-slash
     search-load-path
-    spath->path
-    spath?
     stat-accessor->stat-field-name
     stat-diff
     stat-diff->accessors
@@ -280,7 +278,6 @@
 
   (define* (search-load-path path #:optional (load-paths %load-path))
     "gives the first match of a relative-path in load-paths or false.
-     searches from left to right in the load-paths.
      all paths in load-paths must end with a \"/\".
      searches in guiles %load-path by default"
     (any

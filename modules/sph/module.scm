@@ -98,8 +98,7 @@
   (define* (path->load-path path #:optional (load-path %load-path))
     "string -> false/path
      returns the first found load-path where path can be found.
-     works for full and relative paths.
-     does not check file types or file name extensions"
+     works for full and relative paths"
     (if (string-prefix? "/" path)
       (fold
         (l (a r)

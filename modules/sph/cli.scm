@@ -132,7 +132,15 @@
       (list-sort (l (a b) (string< (symbol->string (first a)) (symbol->string (first b)))) a)))
 
   (define (options-spec->unnamed-arguments-strings a)
-    (map (l (e) (string-join (map symbol->string e) " ")) (map first (filter unnamed-option? a))))
+    (map
+      (l (a)
+        (let*
+          ( (explicitly-not-required
+              (and (contains? (tail a) #:required?)
+                (not (apply (l* (#:key required? #:allow-other-keys) required?) (tail a)))))
+            (a (string-join (map symbol->string (first a)) " ")))
+          (if explicitly-not-required (string-append "[" a "]") a)))
+      (filter unnamed-option? a)))
 
   (define (config->option-spec a)
     (apply
@@ -159,7 +167,7 @@
 
   (define (options-remove-processors a)
     "(single-option-spec ...) -> list
-    remove processor procedures from option-specs"
+     remove processor procedures from option-specs"
     (map (l (e) (reverse (drop-while not (reverse (if (> (length e) 6) (drop-right e 1) e))))) a))
 
   (define (display-command-line-interface-proc config spec)
@@ -178,8 +186,8 @@
 
   (define (format-help-description a indent)
     "string string -> string
-    multiline strings in scheme are often indented in code, but the whitespace is not intended to be part of the string.
-    this procedure removes existing indent and applies the given one"
+     multiline strings in scheme are often indented in code, but the whitespace is not intended to be part of the string.
+     this procedure removes existing indent and applies the given one"
     (string-join (map (l (a) (string-trim a #\space)) (string-split a #\newline))
       (string-append "\n" indent) (q prefix)))
 
@@ -319,12 +327,12 @@
 
   (define (default-missing-arguments-handler key count option-names)
     "symbol integer integer (string ...) ->
-    write message to standard output and exit"
+     write message to standard output and exit"
     (format #t "~a missing argument~p ~s\n" count count option-names) (exit 1))
 
   (define (default-unsupported-option-handler key option option-name)
     "symbol srfi-37-option string ->
-    write message to standard output and exit"
+     write message to standard output and exit"
     (format #t "unsupported option ~s\n" option-name) (exit 1))
 
   (define (cli-command-match arguments commands-spec) "list list -> false/any"
@@ -332,9 +340,9 @@
 
   (define (command-dispatch& command-handler arguments commands-spec command-options c)
     "procedure/false list list/false procedure:{-> any} -> any:end-result-of-cli-application
-    if a command from commands-spec is matched at the beginning of the given cli arguments, eventually calls an associated handler procedure,
-    and in any case calls the command-handler if available.
-    if no command matches, proceeds with nullary \"c\""
+     if a command from commands-spec is matched at the beginning of the given cli arguments, eventually calls an associated handler procedure,
+     and in any case calls the command-handler if available.
+     if no command matches, proceeds with nullary \"c\""
     (if commands-spec
       (let (match (cli-command-match arguments commands-spec))
         (if match
