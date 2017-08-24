@@ -14,4 +14,4 @@
 
   (define-syntax-rule (scm-qq state a ...) (list-qq (a ...)))
   (define-syntax-rule (scm-eval state a ...) (list a ...))
-  (define-syntax-rule (escape state a ...) (list (q pre) (prefix-tree->indent-tree (q ((a ...)))))))
+  (define-syntax-rule (escape state a ...) (list (q pre) (prefix-tree->indent-tree (list-q a ...)))))

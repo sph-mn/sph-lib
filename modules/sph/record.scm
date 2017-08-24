@@ -247,4 +247,5 @@
     "list procedure:accessor procedure:accessor -> false/(any ...)
      filter record list entries by values retrieved by match-accessor that match the given value,
      and return a list of values retrieved by retrieve-accessor"
+    ; this does actually not depend on (sph record) - could be vector-list-filter-value
     (filter-map (l (a) (and (equal? value (match-accessor a)) (retrieve-accessor a))) record-list)))
