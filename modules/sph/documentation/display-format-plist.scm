@@ -25,14 +25,14 @@
               (append
                 (if signature
                   (list
-                    (pair "signature"
+                    (pair (q signature)
                       (if (string-null? formatted-arguments) (list signature)
                         (list formatted-arguments signature))))
                   (if (string-null? formatted-arguments) (list)
-                    (list (list "signature" formatted-arguments))))
+                    (list (list (q signature) formatted-arguments))))
                 (if (null? text-lines) text-lines
-                  (list (list "description" (string-join (remove string-null? text-lines) "\n")))))))
-          (list (list "type" (symbol->string (bi-type bi)))))))
+                  (list (list (q description) (string-join (remove string-null? text-lines) "\n")))))))
+          (list (list (q type) (bi-type bi))))))
     format-module-documentation (l (module-name md) md) format-modules-documentation (l (mds) mds))
 
   (set! documentation-display-formats

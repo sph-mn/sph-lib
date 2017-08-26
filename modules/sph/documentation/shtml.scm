@@ -22,19 +22,24 @@
   (define (create-binding-name-anchor-target title)
     (qq (span (@ (id "b-" (unquote title))) (unquote title))))
 
-  (define (create-binding-name-anchor title)
-    (qq (a (@ (href "#b-" (unquote title))) (unquote title))))
+  (define (create-binding-name-anchor binding)
+    (let ((title (first binding)) (type (or (alist-ref (tail binding) (q type)) "")))
+      (qq (a (@ (href "#b-" (unquote title)) (class (unquote type))) (unquote title)))))
 
   (define (shtml-bindings binding nesting-depth)
     (shtml-section nesting-depth (create-binding-name-anchor-target (first binding))
       (filter-map
         (l (a)
-          (let (content (remove string-null? (tail a)))
+          (let ((key (first a)) (content (tail a)))
             (if (null? content) #f
-              (let (lines (append-map (l (a) (string-split a #\newline)) content))
-                (shtml-section (+ 1 nesting-depth) (first a)
-                  (itml-shtml-lines lines) (list (q class) (first a)))))))
-        (tail binding))))
+              (case key ((type) (symbol->string (first content)))
+                (else
+                  (let (lines (append-map (l (a) (string-split a #\newline)) content))
+                    (shtml-section (+ 1 nesting-depth) key
+                      (if (eq? (q signature) key) (list (q pre) (string-join lines "\n"))
+                        (itml-shtml-lines lines))
+                      (list (q class) (first a)))))))))
+        (list-sort-with-accessor string>? (compose symbol->string first) (tail binding)))))
 
   (define (get-bindings module-name) "list -> ((symbol:name . list:alist) ...)"
     (list-sort-with-accessor string<? first
@@ -45,22 +50,24 @@
               (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
           (module-binding-info module-name)))))
 
-  (define (doc-shtml-library nesting-depth . library-names)
+  (define (doc-shtml-library nesting-depth library-name)
     "integer (symbol ...) -> list
      a navigatable index of all bindings from the specified libraries and
      a listing of the available documentation for bindings"
-    (let (bindings (append-map get-bindings library-names))
+    (let ((bindings (get-bindings library-name)) (description (module-description library-name)))
       (letpar
         ( (index
             (pairs (q ul) (q (@ (class "doc-n")))
-              (map (compose (l (a) (list (q li) a)) create-binding-name-anchor first) bindings)))
+              (map (compose (l (a) (list (q li) a)) create-binding-name-anchor) bindings)))
+          (description
+            (and description (map (l (a) (list (q p) a)) (string-split description #\newline))))
           (content
             (pairs (q div) (q (@ (class "doc-b")))
               (map
                 (l (a)
                   (shtml-bindings (pair (first a) (alist-delete "module" (tail a))) nesting-depth))
                 bindings))))
-        (list index content))))
+        (list description index content))))
 
   (define*
     (doc-shtml-libraries library-names #:optional

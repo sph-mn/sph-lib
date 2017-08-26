@@ -35,7 +35,7 @@
 
   (define (macro-arguments name type transformer)
     "symbol symbol macro-transformer -> argument-spec
-    get the formal arguments specification for a macro"
+     get the formal arguments specification for a macro"
     (case type
       ( (syntax-rules)
         (let (patterns (procedure-property transformer (q patterns)))
@@ -61,9 +61,10 @@
     (let
       ( (get-info
           (l (name value) "-> record"
-            ( (if (procedure? value) procedure->binding-info
-                (if (macro? value) macro->binding-info variable->binding-info))
-              value name))))
+            (let (value (variable-ref value))
+              ( (if (procedure? value) procedure->binding-info
+                  (if (macro? value) macro->binding-info variable->binding-info))
+                value name)))))
       (l (module-name)
         "(symbol ...) -> (vector ...)
         get information about all exported bindings of the given module"

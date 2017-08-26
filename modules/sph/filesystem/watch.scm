@@ -25,8 +25,9 @@
     (only (srfi srfi-1) delete-duplicates filter-map))
 
   (define sph-filesystem-watch-description
-    "observing and acting on file-system changes
-     uses inotify if available or polling as a fall-back")
+    "for acting on file-system changes. has not been updated in a while.
+     automatically chooses to use polling or inotify if on linux (guile-inotify needs to be installed then).
+     the underlying procedure that does polling is \"poll-watch\" and is defined in (sph filesystem)")
 
   (define watch-path-events (q (mtime atime attrib)))
 
@@ -61,7 +62,7 @@
 
   (define (create-inotify-watch-path)
     (lambda (paths events proc)
-      "(string ...) (symbol:event-name ...) {(symbol:event-name ...)} ->
+      "(string ...) (symbol:event-name ...) {(symbol:event-name ...) -> unspecified} -> unspecified
        the supported events are designated by the symbols mtime, atime or attrib"
       (inotify-watch paths (watch-path-events->inotify-event events)
         (l (watch-info)
@@ -71,7 +72,7 @@
 
   (define (create-poll-watch-path)
     (l (paths events proc)
-      "(string ...) (symbol:event-name ...) {(symbol:event-name ...)} ->
+      "(string ...) (symbol:event-name ...) {(symbol:event-name ...) -> unspecified} -> unspecified
       the supported events are designated by the symbols mtime, atime or attrib.
       utilises poll-watch which is defined in (sph filesystem), see its documentation for more information about the polling process"
       (poll-watch paths (watch-path-events->poll-events events)
