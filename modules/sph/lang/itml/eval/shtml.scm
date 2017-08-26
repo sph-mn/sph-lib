@@ -30,12 +30,17 @@
     inline-expr itml-eval-asc-inline-expr
     line-expr itml-eval-asc-line-expr indent-expr itml-eval-asc-indent-expr)
 
+  (define (string-if-false proc)
+    "when an itml expression evaluates to false, return a string instead, to
+     mark the place of a failed expression in the output text. nested scm expressions are not affected"
+    (l a (or (apply proc a) "_")))
+
   (define-as descend-ht ht-create-symbol
-    inline-scm-expr itml-eval-desc-inline-scm-expr
-    line-scm-expr itml-eval-desc-line-scm-expr
+    inline-scm-expr (string-if-false itml-eval-desc-inline-scm-expr)
+    line-scm-expr (string-if-false itml-eval-desc-line-scm-expr)
+    indent-scm-expr (string-if-false itml-eval-desc-indent-scm-expr)
+    indent-descend-expr (string-if-false itml-eval-desc-indent-expr)
     association descend-handle-association
-    indent-scm-expr itml-eval-desc-indent-scm-expr
-    indent-descend-expr itml-eval-desc-indent-expr
     escaped-association-infix (l a ":") double-backslash (l a "\\"))
 
   (define itml-shtml-lines

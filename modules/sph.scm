@@ -154,6 +154,7 @@
     quasiquote
     quasisyntax
     quote
+    quote-even
     quote-odd
     rational-valued?
     rational?
@@ -245,42 +246,50 @@
 
   (define sph-description
     "bindings that are fundamental to all sph libraries.
-     exports almost all of (rnrs base)")
-
-  ; affects port\string encodings
-  ; initialise locale categories based on system environment variables
-  (setlocale LC_ALL "")
-  (read-disable (quote square-brackets))
-
-  (define (debug-log . a)
-    "any-1 any-n ... -> any-1
-     writes all arguments to standard output and returns the first argument"
-    (pretty-print (cons (q --) a)) (first a))
+     exports almost all of (rnrs base).
+     # syntax
+     quote-odd
+       any ... -> list
+       quotes arguments alternatingly and returns a list
+       example: a 1 b 2 -> ((quote a) 1 (quote b) 2)
+     define-as
+       example: (define-as list 1 2 3)
+       example: (define-as (quasiquote list) 1 (unquote 3)
+     compose-s
+       (compose-s a (list 1 2)) -> (a (list 1 2))
+       (compose-s (a b) (list 1 2)) -> (a (b (list 1 2)))
+       this does not fail in the case (_ (quasiquote list) expr ...)
+     nullary
+       create a procedure that accepts zero arguments and evaluates body when called.
+       often used for thunks
+     let
+       typical scheme let and named-let extended with a simplified syntax for binding just one variable
+       example: (let (a 3) a)")
 
   (define-syntax syntax-rule
-    ;like syntax-rules but only for one syntax-rule and without keyword support
+    ; like syntax-rules but only for one syntax-rule and without keyword support
     (syntax-rules () ((_ (pattern ...) expansion) (syntax-rules () ((_ pattern ...) expansion)))))
 
   (define-syntax syntax-rules_
-    ;like syntax-rules but without keyword support
+    ; like syntax-rules but without keyword support
     (syntax-rules ()
       ((_ ((pattern ...) expansion) ...) (syntax-rules () ((_ pattern ...) expansion) ...))))
 
   (define-syntax define-syntax-rule
-    ;removes option to define multiple clauses
-    ;removes option to define keywords
+    ; removes option to define multiple clauses
+    ; removes option to define keywords
     (syntax-rule ((name pattern ...) expansion)
       (define-syntax name (syntax-rule (pattern ...) expansion))))
 
   (define-syntax define-syntax-rules
-    ;removes option to define keywords
+    ; removes option to define keywords
     (syntax-rule (name ((pattern ...) expansion) ...)
       (define-syntax name (syntax-rules () ((_ pattern ...) expansion) ...))))
 
   (define-syntax-rules define-syntax-case
-    ;removes possibility to define keywords
-    ;removes possibility to use custom lambda for define-syntax
-    ;removes possibility to define multiple clauses
+    ; removes possibility to define keywords
+    ; removes possibility to use custom lambda for define-syntax
+    ; removes possibility to define multiple clauses
     ( ( (name . pattern) syntax-name expansion)
       (define-syntax name
         (lambda (syntax-name) (syntax-case syntax-name () ((_ . pattern) expansion)))))
@@ -305,15 +314,8 @@
   (define-syntax-rule (q a) (quote a))
   (define-syntax-rule (qq a) (quasiquote a))
   (define-syntax-rule (apply-values proc producer) (call-with-values (lambda () producer) proc))
-  (define pair cons)
-  (define pairs cons*)
-  (define tail cdr)
-  (define each for-each)
-  (define null (list))
 
   (define-syntax-rules let
-    ; let and named-let extended with a simplified syntax for binding just one variable
-    ; example: (let (a 3) a)
     ((((variable-name expr) ...) body ...) ((lambda (variable-name ...) body ...) expr ...))
     (((variable-name expr) body ...) (let ((variable-name expr)) body ...))
     ( (name ((variable-name expr) ...) body ...)
@@ -321,9 +323,6 @@
     ((name (variable-name expr) body ...) (let name ((variable-name expr)) body ...)))
 
   (define-syntax-case (compose-s name expr ...) s
-    ; (compose-s a (list 1 2)) -> (a (list 1 2))
-    ; (compose-s (a b) (list 1 2)) -> (a (b (list 1 2)))
-    ; this does not fail in the case (_ (quasiquote list) expr ...)
     (let (name-datum (syntax->datum (syntax name)))
       (if (list? name-datum)
         (let (name-datum (reverse name-datum))
@@ -333,24 +332,35 @@
         (syntax (name expr ...)))))
 
   (define-syntax-rules define-as
-    ; example: (define-as list 1 2 3)
-    ; example: (define-as (quasiquote list) 1 (unquote 3)
     ((name (wrap-name ...) expr ...) (define name (compose-s (wrap-name ...) expr ...)))
     ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
-  (define-syntax-rules quote-odd
-    ;copied from (sph one) to avoid circular dependency
-    ;any ... -> list
-    ;quote each argument at odd indexes starting from one, not quoting each second argument.
-    ((a b) (list (quote a) b))
-    ((a b c ...) (quasiquote ((unquote-splicing (quote-odd a b) (quote-odd c ...))))))
+  (define-syntax-rules quote-odd (() (quote ()))
+    ((a) (quote (a))) ((a b c ...) (quasiquote (a (unquote b) (unquote-splicing (quote-odd c ...))))))
+
+  (define-syntax-rules quote-even (() (quote ()))
+    ((a) (quasiquote ((unquote a))))
+    ((a b c ...) (quasiquote ((unquote a) b (unquote-splicing (quote-even c ...))))))
+
+  (define-syntax-rule (nullary body ...) (lambda () body ...))
+  (define pair cons)
+  (define pairs cons*)
+  (define tail cdr)
+  (define each for-each)
+  (define null (list))
+
+  (define (debug-log . a)
+    "any-1 any-n ... -> any-1
+     writes all arguments to standard output and returns the first argument"
+    (pretty-print (cons (q --) a)) (first a))
 
   (define* (display-line a #:optional (port (current-output-port)))
     "any [port] -> unspecified
      like \"display\" but emits a newline at the end"
     (display a port) (newline port))
 
-  (define-syntax-rule (nullary body ...)
-    ; create a procedure that accepts zero arguments and evaluates body when called.
-    ; often used for thunks.
-    (lambda () body ...)))
+  ; affects port\string encodings
+  ; initialise locale categories based on system environment variables
+  (setlocale LC_ALL "")
+  ; fail on code that uses square brackets instead of round brackets
+  (read-disable (quote square-brackets)))

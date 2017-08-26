@@ -99,8 +99,10 @@
           (l (prefix-ht alt) "hashtable procedure list any ... -> false/any"
             (l (a . b)
               "list ascend/descend-arguments ... -> any
-              selects a handler by list prefix and calls alt if no handler could be found"
-              (let (c (ht-ref prefix-ht (first a))) (if c (apply c (tail a) b) (apply alt a b)))))))
+              selects a handler by list prefix and calls alt if no handler could be found.
+              prefix-ht is only queried for lists with a symbol as first element"
+              (let* ((prefix (first a)) (c (and (symbol? prefix) (ht-ref prefix-ht prefix))))
+                (if c (apply c (tail a) b) (apply alt a b)))))))
       (l* (descend-prefix-ht ascend-prefix-ht #:optional terminal descend-alt ascend-alt)
         "hashtable  hashtable [procedure procedure procedure] -> procedure
         returns a procedure similar to itml-eval that uses expression handler procedures from hashtables.
@@ -118,6 +120,7 @@
      and uses eval to create a procedure from it.
      the procedure is called with the itml state object from the call to evaluate the itml.
      this supports the use of syntax in itml expressions"
+    ; debugging tip: log the literal passed to eval
     (let (proc (eval (qq (lambda (s) ((unquote (first a)) s (unquote-splicing (tail a))))) env))
       (proc state)))
 
