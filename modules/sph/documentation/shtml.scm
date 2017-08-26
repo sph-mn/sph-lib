@@ -34,11 +34,14 @@
             (if (null? content) #f
               (case key ((type) (symbol->string (first content)))
                 (else
-                  (let (lines (append-map (l (a) (string-split a #\newline)) content))
-                    (shtml-section (+ 1 nesting-depth) key
-                      (if (eq? (q signature) key) (list (q pre) (string-join lines "\n"))
-                        (itml-shtml-lines lines))
-                      (list (q class) (first a)))))))))
+                  (let
+                    (lines
+                      (remove string-null? (append-map (l (a) (string-split a #\newline)) content)))
+                    (if (null? lines) ""
+                      (shtml-section (+ 1 nesting-depth) key
+                        (if (eq? (q signature) key) (list (q pre) (string-join lines "\n"))
+                          (itml-shtml-lines lines))
+                        (list (q class) (first a))))))))))
         (list-sort-with-accessor string>? (compose symbol->string first) (tail binding)))))
 
   (define (get-bindings module-name) "list -> ((symbol:name . list:alist) ...)"
@@ -50,6 +53,10 @@
               (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
           (module-binding-info module-name)))))
 
+  (define (string-indent-to-nbsp a)
+    (let (index (string-skip a #\space))
+      (if (< 0 index) (list (make-list index (q (*ENTITY* "nbsp"))) (string-drop a index)) a)))
+
   (define (doc-shtml-library nesting-depth library-name)
     "integer (symbol ...) -> list
      a navigatable index of all bindings from the specified libraries and
@@ -60,7 +67,9 @@
             (pairs (q ul) (q (@ (class "doc-n")))
               (map (compose (l (a) (list (q li) a)) create-binding-name-anchor) bindings)))
           (description
-            (and description (map (l (a) (list (q p) a)) (string-split description #\newline))))
+            (and description
+              (map (l (a) (list (q p) a))
+                (map string-indent-to-nbsp (string-split description #\newline)))))
           (content
             (pairs (q div) (q (@ (class "doc-b")))
               (map

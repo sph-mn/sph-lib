@@ -403,14 +403,16 @@
 
   (define (regexp-match-replace a replacements)
     "string ((regexp . string:replacement)/(regexp string:search-string . string:replacement) ...) -> string
-     replace strings inside string portions matched by regular expressions"
+     replace strings inside string portions matched by regular expressions
+     the two part replacement element makes a simple replace,
+     the three part version replaces search-string only inside matches with replacement"
     (fold
-      (l (e r)
-        (fold-matches (first e) r
-          r
-          (l (match r)
-            (if (pair? (tail e))
-              (string-replace-string r (match:substring match)
-                (string-replace-string (match:substring match) (first (tail e)) (tail (tail e))))
-              (string-replace-string r (match:substring match) (tail e))))))
+      (l (a result)
+        (fold-matches (first a) result
+          result
+          (l (match result)
+            (if (pair? (tail a))
+              (string-replace-string result (match:substring match)
+                (string-replace-string (match:substring match) (first (tail a)) (tail (tail a))))
+              (string-replace-string result (match:substring match) (tail a))))))
       a replacements)))

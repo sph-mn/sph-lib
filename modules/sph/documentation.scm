@@ -33,9 +33,11 @@
     (sph)
     (sph alist)
     (sph binding-info)
+    (sph lang indent-syntax)
     (sph lang parser type-signature)
     (sph module)
     (sph record)
+    (sph tree)
     (only (ice-9 regex) regexp-substitute/global)
     (only (rnrs sorting) list-sort)
     (only (sph list) fold-multiple)
@@ -152,9 +154,17 @@
     "(symbol ...) -> false/string
      get the module description from an exported variable with a specific name.
      (a b c) -> a-b-c-description"
-    (false-if-exception
-      (module-ref (resolve-module name)
-        (string->symbol (string-append (string-join (map symbol->string name) "-") "-description")))))
+    (and-let*
+      ( (a
+          (false-if-exception
+            (module-ref (resolve-module name)
+              (string->symbol
+                (string-append (string-join (map symbol->string name) "-") "-description"))))))
+      ; remove excess indentation
+      (let (a-tree (indent-tree->denoted-tree a))
+        (denoted-tree->indent-tree
+          (if (>= 1 (length a-tree)) a-tree
+            (pair (first a-tree) (denoted-tree-minimise-depth (tail a-tree))))))))
 
   (define (sort-module-information a)
     (let

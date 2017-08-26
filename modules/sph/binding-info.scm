@@ -61,14 +61,14 @@
     (let
       ( (get-info
           (l (name value) "-> record"
-            (let (value (variable-ref value))
+            (and-let* ((value (false-if-exception (variable-ref value))))
               ( (if (procedure? value) procedure->binding-info
                   (if (macro? value) macro->binding-info variable->binding-info))
                 value name)))))
       (l (module-name)
         "(symbol ...) -> (vector ...)
         get information about all exported bindings of the given module"
-        (module-map get-info (resolve-interface module-name)))))
+        (filter identity (module-map get-info (resolve-interface module-name))))))
 
   (define (sort-module-binding-info a) "(binding-info ...)"
     (list-sort (l (a b) (string< (symbol->string (bi-name a)) (symbol->string (bi-name b)))) a)))
