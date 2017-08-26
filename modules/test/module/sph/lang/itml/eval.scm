@@ -19,7 +19,7 @@
   (test-execute-procedures-lambda
     (itml-shtml-eval
       "\\#escape a b\n  c\n  d\n    e f"
-      ((pre "a b\n  c\n  d\n    e f"))
+      ((pre "a b\nc\nd\n  e f"))
       "\\#scm-qq a b\n  c\n  d\n    e f"
       ((p "a b" "c" "d" "e f"))
       "\\scm-qq a b\n  c\n  d\n    e f"
