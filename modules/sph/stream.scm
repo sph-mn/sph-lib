@@ -10,6 +10,7 @@
     stream-first
     stream-first-or-null
     stream-fold-right-multiple
+    stream-page
     stream-tail)
   (import
     (ice-9 rdelim)
@@ -32,6 +33,19 @@
   (define stream-each stream-for-each)
   (define stream-first stream-car)
   (define stream-tail stream-cdr)
+
+  (define (stream-page a entry-count number lookahead c)
+    "stream integer integer integer procedure:{stream boolean:last-page? -> any} -> any
+     pass a stream of \"entry-count\" elements at an offset of (* number entry-count),
+     eventually including \"lookahead\" number of elements if they are the last elements,
+     and a boolean indicating if it is the last page to continuation procedure \"c\""
+    ; stream-drop/-take, different from list drop/take which raise an exception,
+    ; return a null stream if not enough elements are available
+    (let*
+      ( (offset (* (- number 1) entry-count)) (rest (if (< 1 number) (stream-drop offset a) a))
+        (lookahead (stream-take lookahead (stream-drop entry-count rest)))
+        (page (stream-take entry-count rest)))
+      (if (= lookahead (stream-length lookahead)) (c page #f) (c (stream-append page lookahead) #t))))
 
   (define (stream-fold-right-multiple proc a . r) "procedure stream any:state ..."
     (if (stream-null? a) r

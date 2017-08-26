@@ -33,6 +33,7 @@
     difference+intersection
     difference+intersection-p
     difference-p
+    drop*
     each-first-middle-last
     each-in-index-range
     each-slice
@@ -78,6 +79,7 @@
     list-distribute-sorted
     list-index-value
     list-indices
+    list-page
     list-prefix?
     list-q
     list-qq
@@ -125,6 +127,7 @@
     split-at-value
     split-by-pattern
     tail-or-null
+    take*
     true->list
     true->list-s
     union
@@ -137,6 +140,7 @@
     (sph)
     (srfi srfi-31)
     (except (rnrs base) map)
+    (except (srfi srfi-1) map)
     (only (guile)
       filter
       inf
@@ -146,24 +150,7 @@
       memq
       member
       negate)
-    (only (rnrs sorting) list-sort)
-    (only (srfi srfi-1)
-      append-map
-      last
-      find
-      alist-cons
-      take-right
-      delete-duplicates
-      filter-map
-      fold-right
-      list-index
-      lset-difference
-      lset=
-      lset-adjoin
-      lset<=
-      span
-      split-at
-      take))
+    (only (rnrs sorting) list-sort))
 
   ;this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
 
@@ -174,14 +161,50 @@
   (define-syntax-rule (list-q a ...) (q (a ...)))
   (define-syntax-rule (list-qq a ...) (qq (a ...)))
 
+  (define-syntax-rule (list-bind a lambda-formals body ...)
+    ;bind elements of list "a" to "lambda-formals"
+    (apply (lambda lambda-formals body ...) a))
+
+  (define-syntax-rule (any->list-s a)
+    ;"like \"any->list\" but as syntax"
+    (if (list? a) a (list a)))
+
+  (define-syntax-rule (true->list-s a)
+    ;"like \"any->list-s\" but results in \"a\" if \"a\" is not true"
+    (if a (any->list-s a) a))
+
+  (define-syntax-rule (define-list name a ...) (define name (list a ...)))
+
+  (define-syntax-rule (pair-bind a (b c) body ...)
+    ;binds the first and second value of "a" to "b" and "c" respectively. ideally, maybe, lambda/apply should support (apply (lambda (a . b)) (pair 1 2))
+    ((lambda (b c) body ...) (first a) (tail a)))
+
+  (define (drop* count a)
+    "like srfi-1 drop but with reversed argument order (like stream-drop from srfi-41) and
+    returns null if list contains less elements than count instead of raising an exception"
+    (if (<= (length a) count) (list) (drop a count)))
+
+  (define (take* count a)
+    "like srfi-1 take but with reversed argument order (like stream-take from srfi-41) and
+    returns null if list contains less elements than count instead of raising an exception"
+    (if (<= (length a) count) a (take a count)))
+
+  (define (list-page a entry-count number lookahead c)
+    "list integer integer integer procedure:{list boolean:last-page? -> any} -> any
+     pass a list of \"entry-count\" elements at an offset of (* number entry-count),
+     eventually including \"lookahead\" number of elements if they are the last elements,
+     and a boolean indicating if it is the last page to continuation procedure \"c\""
+    (let*
+      ( (offset (* (- number 1) entry-count)) (rest (if (< 1 number) (drop* offset a) a))
+        (lookahead-entries (take* lookahead (drop* entry-count rest)))
+        (page (take* entry-count rest)))
+      (if (= lookahead (length lookahead-entries)) (c page #f)
+        (c (append page lookahead-entries) #t))))
+
   (define (flatten a)
     "list -> (non-list ...)
      replace sublists with their content, resulting in a list that does not contain lists"
     (fold-right (l (e r) (if (list? e) (append (flatten e) r) (pair e r))) (list) a))
-
-  (define-syntax-rule (list-bind a lambda-formals body ...)
-    ;bind elements of list "a" to "lambda-formals"
-    (apply (lambda lambda-formals body ...) a))
 
   (define (append-map-unless proc stop? default . a)
     "procedure:{any:list-element ... -> any} procedure:{any -> boolean} any list ... -> list/false
@@ -211,14 +234,6 @@
     "any -> list
      wraps a non-list argument in a list"
     (any->list-s a))
-
-  (define-syntax-rule (any->list-s a)
-    ;"like \"any->list\" but as syntax"
-    (if (list? a) a (list a)))
-
-  (define-syntax-rule (true->list-s a)
-    ;"like \"any->list-s\" but results in \"a\" if \"a\" is not true"
-    (if a (any->list-s a) a))
 
   (define (true->list a)
     "any -> list/false
@@ -289,8 +304,6 @@
         (if (apply pred (map first rest))
           (let (count (+ 1 count)) (if (= count limit) count (loop (map tail rest) count)))
           (loop (map tail rest))))))
-
-  (define-syntax-rule (define-list name a ...) (define name (list a ...)))
 
   (define (complement-both a b)
     "list list -> (list list)
@@ -898,8 +911,10 @@
 
   (define (splice predicate a)
     "{list -> boolean} list -> list
-    splice elements that are lists and match predicate"
-    (fold-right (l (a result) (if (list? a) ((if (predicate a) append pair) a result) (pair a result))) (list) a))
+     splice elements that are lists and match predicate"
+    (fold-right
+      (l (a result) (if (list? a) ((if (predicate a) append pair) a result) (pair a result))) (list)
+      a))
 
   (define (splice-last-list a)
     "list -> list
@@ -994,9 +1009,5 @@
     "any list -> list
      insert \"e\" as the second element into list \"a\""
     (pair (first a) (pair e (tail a))))
-
-  (define-syntax-rule (pair-bind a (b c) body ...)
-    ;binds the first and second value of "a" to "b" and "c" respectively. ideally, maybe, lambda/apply should support (apply (lambda (a . b)) (pair 1 2))
-    ((lambda (b c) body ...) (first a) (tail a)))
 
   (define (tail-or-null a) "list -> list" (if (null? a) a (tail a))))
