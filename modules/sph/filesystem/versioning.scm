@@ -7,16 +7,20 @@
   (import
     (guile)
     (sph)
-    (sph process)
-    (sph io)
     (sph hashtable)
-    (only (sph filesystem) ensure-directory-structure directory-list)
- )
+    (sph io)
+    (sph process)
+    (only (sph filesystem) ensure-directory-structure directory-list))
 
   (define sph-filesystem-versioning-description
-    "gives a path to the next version of a file and automatically archives the old version
-    optionally depends on the \"diff\" and \"patch\" utilities for storing incremental changes only.
-    version-ids are monotonically increasing integers saved with hexadecimal representation")
+    "gives a path to the next version of a file and automatically archives the old version.
+     optionally depends on the \"diff\" and \"patch\" utilities for storing incremental changes.
+     # features
+     restore old versions
+     can use diff/patch files for previous versions for text files
+     limit the number of past versions to keep
+     size limit option to exclude big files from creating multiple versions
+     version identifiers are monotonically increasing integers in hexadecimal")
 
   (define-as versioning-default-config ht-create-symbol
     max-count 3 max-size (inf) path-versions "versions/" path-temp "temp/")
@@ -54,8 +58,9 @@
 
   (define (versioning-create type path proc config)
     "symbol:text/binary string procedure:{string ->} -> integer:current-version-id
-    calls \"proc\" with a path to an empty file which is the next version, and moves the old file to
-    the directory for previous versions which is set in \"config\""
+     calls \"proc\" with a path to an empty file which is the next version, and moves the old file to
+     the directory for previous versions which is set in \"config\".
+     if type is the symbol \"text\", then only the differences are stored in the previous version"
     (if (> (get-file-size path) (ht-ref config (q max-size))) (proc path)
       (let*
         ( (path-versions (path-versions-string (basename path) config))
@@ -67,8 +72,8 @@
               (get-current-version-id existing-version-ids)))
           (path-version-file (path-version-file-string path-versions version-id)))
         (if (> (length existing-version-ids) (ht-ref config (q max-count)))
-          (delete-oldest-versions (- version-id (ht-ref config (q max-count)))
-            existing-version-ids path-versions))
+          (delete-oldest-versions (- version-id (ht-ref config (q max-count))) existing-version-ids
+            path-versions))
         (copy-file path path-version-file) (proc path)
         (if (eqv? (q text) type)
           (string->file
@@ -78,8 +83,8 @@
 
   (define (versioning-restore type path version-id config)
     "symbol:text/binary string integer -> string
-    result in a path to a file which is \"path\" at version \"version-id\".
-    the result path is not necessarily a copy"
+     result in a path to a file which is \"path\" at version \"version-id\".
+     the result path is not necessarily a copy"
     (let* ((filename (basename path)) (path-versions (path-versions-string filename config)))
       (if (eqv? (q binary) type) (path-version-file-string path-versions version-id)
         (let

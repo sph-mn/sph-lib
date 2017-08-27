@@ -15,14 +15,14 @@
     "configuration format and helpers to concatenate/preprocess code from multiple sources.
      for example to compile from many files in different preprocessor formats into one target format file.
      # data structures
-     * config: hashtable:{symbol:format-name -> (output-processor-config input-processor-config ...)}
-     * output-processor-config: false/procedure:output-processor
-     * input-processor-config: #(symbol:name procedure:source-matches? procedure:input-processor)
-     * source-matches? :: any -> boolean
-     * input-processor :: source port:output any:processor-options ->
-     * output-processor :: procedure:process-input port:output-port any:processor-options ->
-     * sources: (any:processor-dependent ...)
-     example config:
+     config: hashtable:{symbol:format-name -> (output-processor-config input-processor-config ...)}
+     output-processor-config: false/procedure:output-processor
+     input-processor-config: #(symbol:name procedure:source-matches? procedure:input-processor)
+     source-matches? :: any -> boolean
+     input-processor :: source port:output any:processor-options ->
+     output-processor :: procedure:process-input port:output-port any:processor-options ->
+     sources: (any:processor-dependent ...)
+     # example config
      (define client-ac-config
        (ht-create-symbol
          javascript
@@ -77,7 +77,9 @@
         (sources->input-processor
           (l (sources input-processors-config options)
             "list list any -> procedure
-            create a procedure that processes each source"
+            create a procedure that processes each source.
+            note: with some output formats you may want to emit a newline or similar after each source,
+              to prevent for example code being appended to a line comment from the last line of the previous file"
             (let (sources (sources->proc-and-argument sources input-processors-config))
               (l (out-port) (each (l (a) ((first a) (tail a) out-port options)) sources))))))
       (l* (config output-format sources port #:optional processor-options)
