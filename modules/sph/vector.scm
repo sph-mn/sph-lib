@@ -1,6 +1,6 @@
 ; (sph vector) - vector processing.
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2015 sph <sph@posteo.eu>
+; Copyright (C) 2010-2017 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -15,6 +15,7 @@
 (library (sph vector)
   (export
     alist-values->vector
+    sph-vector-description
     vector-append
     vector-delete-duplicates
     vector-deselect
@@ -37,6 +38,8 @@
     (only (srfi srfi-1) delete-duplicates)
     (rename (rnrs base) (vector-for-each vector-each)))
 
+  (define sph-vector-description "vector processing")
+
   (define (each-integer n proc)
     ;redefine each-integer from (one) to avoid mutual library dependency (one -> vector, vector -> one)
     "evaluate a procedure a number of times, passing the current number to proc. starts from 0"
@@ -57,8 +60,8 @@
 
   (define (vector-append a b)
     "concatenate \"b\" at the end of \"a\".
-    #(1 2) #(3 4) -> #(1 2 3 4)
-    create a new bigger vector and copy all elements of \"a\" and \"b\" to it"
+     #(1 2) #(3 4) -> #(1 2 3 4)
+     create a new bigger vector and copy all elements of \"a\" and \"b\" to it"
     (let* ((a-length (vector-length a)) (r (make-vector (+ a-length (vector-length b)))))
       (vector-each-with-index (l (e index) (vector-set! r index e)) a)
       (vector-each-with-index (l (e index) (vector-set! r (+ a-length index) e)) b) r))
@@ -78,7 +81,7 @@
 
   (define* (vector-each-with-index proc a #:optional (index-offset 0))
     "-> unspecified
-    proc is called as (proc element index)"
+     proc is called as (proc element index)"
     (let ((a-length (vector-length a)))
       (let loop ((index index-offset))
         (if (< index a-length) (begin (proc (vector-ref a index) index) (loop (+ 1 index)))))))
@@ -91,8 +94,8 @@
 
   (define (vector-map-with-index proc a)
     "procedure {any integer -> any} vector -> vector
-    map each vector element suppliing its index to the
-    mapping procedure and result in a new vector"
+     map each vector element suppliing its index to the
+     mapping procedure and result in a new vector"
     (let* ((last-index (- (vector-length a) 1)) (r (make-vector (+ last-index 1))))
       (let loop ((index 0))
         (vector-set! r index (proc (vector-ref a index) index))
@@ -100,20 +103,20 @@
 
   (define (vector-produce proc a b)
     "procedure vector vector -> #(vector ...)
-    apply proc to each possible ordered pair of a \"a\" and \"b\" element (cartesian product).
-    (#(1 2) #(4 5)) -> (proc 1 4) (proc 1 5) (proc 2 4) (proc 2 5)"
+     apply proc to each possible ordered pair of a \"a\" and \"b\" element (cartesian product).
+     (#(1 2) #(4 5)) -> (proc 1 4) (proc 1 5) (proc 2 4) (proc 2 5)"
     (vector-map (l (a) (vector-map (l (b) (proc a b)) b)) a))
 
   (define* (vector-range a start #:optional (end (- (vector-length a) 1)))
     "vector [integer integer] -> vector
-    start and end are inclusive"
+     start and end are inclusive"
     (let ((r (make-vector (+ 1 (- end start)))))
       (let loop ((b start))
         (begin (vector-set! r (- b start) (vector-ref a b)) (if (>= b end) r (loop (+ 1 b)))))))
 
   (define (vector-extend a add-size)
     "vector integer -> vector
-    increase size of vector"
+     increase size of vector"
     (let*
       ( (old-size (vector-length a)) (r (make-vector (+ old-size add-size)))
         (set (l (e index) (vector-set! r index e))))
@@ -121,5 +124,5 @@
 
   (define (vector-select a indices)
     "vector (integer ...) -> vector
-    return a new vector consisting of values at indices specified by vector indices"
+     return a new vector consisting of values at indices specified by vector indices"
     (vector-map (l (index) (vector-ref a index)) indices)))

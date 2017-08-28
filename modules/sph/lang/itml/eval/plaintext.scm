@@ -3,7 +3,8 @@
     itml-plaintext-eval
     itml-plaintext-eval-file
     itml-plaintext-eval-port
-    itml-plaintext-eval-string)
+    itml-plaintext-eval-string
+    itml-plaintext-false)
   (import
     (guile)
     (sph)
@@ -15,6 +16,7 @@
     (sph string))
 
   (define sph-lang-itml-eval-plaintext-description "evaluate inline code expressions")
+  (define itml-plaintext-false "_")
 
   (define-as ascend-ht ht-create-symbol
     line (l (a . b) (string-join a ""))
@@ -27,11 +29,16 @@
         (string-append (if (string? keyword) keyword (string-join keyword " ")) ": "
           (string-join (tail a) " ")))))
 
+  (define (string-if-false proc)
+    "when an itml expression evaluates to false, return a string instead, to
+     mark the place of a failed expression in the output text. nested scm expressions are not affected"
+    (l a (or (apply proc a) itml-plaintext-false)))
+
   (define-as descend-ht ht-create-symbol
-    inline-scm-expr itml-eval-desc-inline-scm-expr
-    line-scm-expr itml-eval-desc-line-scm-expr
-    indent-scm-expr itml-eval-desc-indent-scm-expr
-    indent-descend-expr itml-eval-desc-indent-expr double-backslash (l a "\\"))
+    inline-scm-expr (string-if-false itml-eval-desc-inline-scm-expr)
+    line-scm-expr (string-if-false itml-eval-desc-line-scm-expr)
+    indent-scm-expr (string-if-false itml-eval-desc-indent-scm-expr)
+    indent-descend-expr (string-if-false itml-eval-desc-indent-expr) double-backslash (l a "\\"))
 
   (define itml-plaintext-eval
     (let (eval (itml-eval* descend-ht ascend-ht (l (a . b) (if (eq? (q line-empty) a) "" a))))

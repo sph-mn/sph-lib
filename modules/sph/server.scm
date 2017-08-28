@@ -21,7 +21,7 @@
 
   (define sph-server-description
     "a generic socket based server
-     uses a thread-pool for parallel request processing and can use as many cpu cores as there are available. the thread-pool pattern is not a bad design.
+     uses a thread-pool for parallel request processing and can use as many cpu cores as there are available.
      basic use case: starting the server makes it listen on an existing or newly created socket. if there is a connection,
      a custom user procedure is called with the connection object and a port to receive and send data")
 

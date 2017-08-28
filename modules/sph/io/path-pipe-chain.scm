@@ -68,11 +68,12 @@
             * in port-path and path-port links, input or output are not ports but procedures that return the path that has to be opened for read or write in a separate thread or process.
               it blocks until the next procedure has opened the other end. this is typical behaviour of named pipes and there does not seem to be any applicable way around it
             * intermediate ports must be closed after read/write finished
-            * intermediate paths should be deleted after read/write finished. otherwise they accumulate in the systems temporary directory
+            * intermediate named pipe paths should be deleted after read/write finished. otherwise they accumulate in the systems temporary directory (but do not take up space in the filesystem)
             * ports are not automatically closed when an exception occurs
             * to make it possible to read while a previous procedure is writing a user might want to create threads or processes
             * named pipes are used when paths are requested. they normally block for each end until the other end is connected, and they do not send end of file before the writer is closed
-            example:
+            most of these caveats are to keep this procedure generic enough to be useful in many situations
+            usage example:
             (path-pipe-chain \"/tmp/test\" (current-output-port) (vector (q nothing) (q port) (l (in out) (file->port in out))) (vector (q path) (q port) (l (in out) (do-stuff path port))))"
             ; algorithm:
             ; * create a vector of all input/output type names to get previous, current and next type per proc

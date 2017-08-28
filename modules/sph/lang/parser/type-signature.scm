@@ -15,6 +15,9 @@
       last
       drop-right))
 
+  (define sph-lang-parser-type-signature-description
+    "a parser and writer for the sph type signature notation")
+
   (define-peg-pattern ignored-space none " ")
   (define-peg-pattern ignored-ellipsis none "...")
   (define-peg-pattern ignored-bracket-opening none "[")

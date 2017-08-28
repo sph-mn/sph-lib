@@ -121,6 +121,7 @@
     replace-value
     simplify
     simplify-list
+    sph-list-description
     splice
     splice-last-list
     split-at-last
@@ -153,6 +154,7 @@
     (only (rnrs sorting) list-sort))
 
   ;this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
+  (define sph-list-description "helpers for working with lists")
 
   (define-syntax-rule (identity-if test else ...)
     ;copied from (sph conditional)
@@ -181,12 +183,12 @@
 
   (define (drop* count a)
     "like srfi-1 drop but with reversed argument order (like stream-drop from srfi-41) and
-    returns null if list contains less elements than count instead of raising an exception"
+     returns null if list contains less elements than count instead of raising an exception"
     (if (<= (length a) count) (list) (drop a count)))
 
   (define (take* count a)
     "like srfi-1 take but with reversed argument order (like stream-take from srfi-41) and
-    returns null if list contains less elements than count instead of raising an exception"
+     returns null if list contains less elements than count instead of raising an exception"
     (if (<= (length a) count) a (take a count)))
 
   (define (list-page a entry-count number lookahead c)

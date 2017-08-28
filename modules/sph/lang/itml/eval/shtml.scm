@@ -4,6 +4,7 @@
     itml-shtml-eval-file
     itml-shtml-eval-port
     itml-shtml-eval-string
+    itml-shtml-false
     itml-shtml-lines
     sph-lang-itml-eval-shtml-description)
   (import
@@ -19,6 +20,8 @@
   (define sph-lang-itml-eval-shtml-description
     "evaluate inline code expressions and translate itml to shtml")
 
+  (define itml-shtml-false "_")
+
   (define (descend-handle-association a re-descend sources depth data)
     (let ((keyword (first a)) (re-descend* (l (a) (re-descend a sources depth data))))
       (list
@@ -33,7 +36,7 @@
   (define (string-if-false proc)
     "when an itml expression evaluates to false, return a string instead, to
      mark the place of a failed expression in the output text. nested scm expressions are not affected"
-    (l a (or (apply proc a) "_")))
+    (l a (or (apply proc a) itml-shtml-false)))
 
   (define-as descend-ht ht-create-symbol
     inline-scm-expr (string-if-false itml-eval-desc-inline-scm-expr)
