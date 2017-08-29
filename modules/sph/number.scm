@@ -3,10 +3,15 @@
     absolute-difference
     average
     bit->byte-length
+    bound
+    bound-max
+    bound-min
     call-with-multiple/
     container-length->number-max
     decrement-one
     golden-ratio
+    in-between?
+    in-range?
     increment-one
     integer-and-fraction&
     log-base
@@ -29,34 +34,53 @@
 
   (define golden-ratio 1.6180339887)
 
+  (define (in-between? n start end)
+    "number number number -> boolean
+     true if n is between and not equal to num-start or num-end"
+    (and (> n start) (< n end)))
+
+  (define (in-range? n start end)
+    "number number number -> boolean
+     true if n is between or equal to start or end"
+    (and (>= n start) (<= n end)))
+
+  (define (bound n min max)
+    "number number -> number
+     if n is smaller than min, return min.
+     if n is greater than max, return max"
+    (if (> n max) max (if (< n min) min n)))
+
+  (define-syntax-rule (bound-min a min) (max a min))
+  (define-syntax-rule (bound-max a max) (min a max))
+
   (define (round-to-increment a increment)
     "number number -> number
-    round a number to the the nearest multiple of \"increment\" (using \"round\").
-    if the number is exactly half-way in between increments, take the lower increment multiple.
-    example: (1.1 3) -> 0, (1.6 3) -> 3, (1.5 3) -> 0"
+     round a number to the the nearest multiple of \"increment\" (using \"round\").
+     if the number is exactly half-way in between increments, take the lower increment multiple.
+     example: (1.1 3) -> 0, (1.6 3) -> 3, (1.5 3) -> 0"
     (* (round (/ a increment)) increment))
 
   (define (bit->byte-length a)
     "integer -> integer
-    calculate the bytes required to store the number of bits"
+     calculate the bytes required to store the number of bits"
     (inexact->exact (ceiling (/ a 8))))
 
   (define (container-length->number-max digit-count base)
     "integer integer -> integer
-    calculate the maximum value that can represented with the given number of digits in the given base"
+     calculate the maximum value that can represented with the given number of digits in the given base"
     (- (expt base digit-count) 1))
 
   (define (number-container-length a base)
     "integer:positive-integer integer -> integer
-    results in the number of vector elements of size base required to store the individual digits of the given positive number in the given base.
-    example use case is calculating the size of a bytevector for storing an integer"
+     results in the number of vector elements of size base required to store the individual digits of the given positive number in the given base.
+     example use case is calculating the size of a bytevector for storing an integer"
     (if (= 0 a) 0 (+ 1 (inexact->exact (floor (log-base a base))))))
 
   (define (percent value base) "how many percent is value from base" (/ (* value 100) base))
 
   (define (integer-and-fraction& a c)
     "number procedure:{integer real -> any:result} -> any:result
-    splits a number into its integer and fractional part. example: 1.74 -> 1 0.74"
+     splits a number into its integer and fractional part. example: 1.74 -> 1 0.74"
     ;this implementation is slow, but it works with real numbers without rounding errors
     (apply
       (l (integer fraction)
@@ -65,12 +89,12 @@
 
   (define (log-base a base)
     "number number -> number
-    result in the logarithm with \"base\" of \"a\""
+     result in the logarithm with \"base\" of \"a\""
     (/ (log a) (log base)))
 
   (define (call-with-multiple/ proc a factor)
     "procedure:{number -> number} number number -> number
-    call proc with \"a\" multiplied by factor and afterwards divide by factor"
+     call proc with \"a\" multiplied by factor and afterwards divide by factor"
     (/ (proc (* a factor)) factor))
 
   (define (round-to-decimal-places a decimal-places) "number number -> number"
@@ -84,17 +108,17 @@
 
   (define (average . a)
     "number ... -> number
-    calculate the average of the given numbers"
+     calculate the average of the given numbers"
     (/ (apply + a) (length a)))
 
   (define (absolute-difference n-1 n-2)
     "number number -> number
-    result in the non-negative difference of two numbers"
+     result in the non-negative difference of two numbers"
     (abs (- n-1 n-2)))
 
   (define* (simple-format-number a #:optional (decimal-point-shift 0) (decimal-places 0))
     "number integer integer -> string
-    number as a string, rounded to decimal places, decimal mark shifted by n steps left (the direction where the string representation of an increasing number would grow towards)"
+     number as a string, rounded to decimal places, decimal mark shifted by n steps left (the direction where the string representation of an increasing number would grow towards)"
     (if (= 0 decimal-places) (number->string (round (/ a (expt 10 decimal-point-shift))))
       (let
         (pattern-format (simple-format #f "~~,~A,~Af" decimal-places (* -1 decimal-point-shift)))

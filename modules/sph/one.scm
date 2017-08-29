@@ -23,12 +23,7 @@
     each-integer
     guile-exception->key
     ignore
-    in-between?
-    in-range?
     integer->bytevector
-    limit
-    limit-max
-    limit-min
     pass
     procedure->cached-procedure
     procedure->temporarily-cached-procedure
@@ -155,7 +150,7 @@
         (let ((change+state (apply proc state)))
           (apply continue
             (if (= 0 (first change+state)) interval
-              (limit
+              (bound
                 (inexact->exact
                   (round
                     (* interval
@@ -179,23 +174,6 @@
           (let (len (bytevector-length e)) (bytevector-copy! e 0 r index len) (+ index len)))
         0 a)
       r))
-
-  (define (in-between? num num-start num-end)
-    "number number number -> boolean
-     true if num is between and not equal to num-start and num-end"
-    (and (> num num-start) (< num num-end)))
-
-  (define (in-range? num num-start num-end)
-    "number number number -> boolean
-     true if num is between or equal to num-start and num-end"
-    (and (>= num num-start) (<= num num-end)))
-
-  (define (limit a min max)
-    ;"-> limited-number; number number number -> number; limit the first argument to be not smaller than min and not greater than max."
-    (if (> a max) max (if (< a min) min a)))
-
-  (define-syntax-rule (limit-min a min) (max a min))
-  (define-syntax-rule (limit-max a max) (min a max))
 
   (define (procedure->cached-procedure proc)
     "procedure -> procedure procedure

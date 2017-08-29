@@ -82,6 +82,7 @@
     (time-make-date* #:optional (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0)
       (nanosecond 0)
       (offset 0))
+    "like time-make-date but the arguments are not keyword arguments"
     (record time-date year month day hour minute second nanosecond offset))
 
   (define (time-current)
@@ -206,7 +207,7 @@
 
   (define (time-start-first-week a)
     "iso standard first week of current year of time.
-    based on if thursday falls into the first week-days of the year"
+     based on if thursday falls into the first week-days of the year"
     (time-from-utc
       (let* ((year-start (time-start-year a)) (week-day (time->week-day year-start)))
         (if (< week-day 4) (- (time->utc year-start) (* utc-nanoseconds-day week-day))
