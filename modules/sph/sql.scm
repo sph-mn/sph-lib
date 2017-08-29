@@ -47,7 +47,7 @@
       contains?
       flat?
       length-one?)
-    (only (sph one) in-between?)
+    (only (sph number) in-between?)
     (only (sph string) parenthesise string-replace-chars)
     (only (sph tree)
       tree-map-lists-with-level

@@ -70,7 +70,7 @@
       (l (a c)
         "string procedure:{year month day hours minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes -> any} -> any
         parse an rfc3339 date format string and call \"c\" with the parsed parts as arguments.
-        rfc3339 is a profile of iso8601, so they are similar, with 3339 being the simpler one.
+        rfc3339 is a profile of iso8601, so they are similar, with 3339 being the smaller one.
         source format is usually: yyyy-mm-ddThh:mm:ss+hh:mm , with variations to allow second fractions and an implied utc offset with \"Z\".
         example source strings: 2003-12-13T18:30:02.25+01:00, 2003-12-13T18:30:02Z
         see https://www.ietf.org/rfc/rfc3339.txt"

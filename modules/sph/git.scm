@@ -4,7 +4,7 @@
     git-archive->file
     git-branch-exists?
     git-current-short-commit-hash
-    git-last-commit-date-iso8601-ymd
+    git-last-commit-ymd
     git-last-commit-posixtime
     git-revision-count)
   (import
@@ -50,11 +50,11 @@
           (nullary (execute->string "git" "log" "-1" "--format=%ct" "--quiet" branch))))))
 
   (define*
-    (git-last-commit-date-iso8601-ymd path-repository #:optional (branch "master") #:rest
+    (git-last-commit-ymd path-repository #:optional (branch "master") #:rest
       additional-git-arguments)
     "string string string ... -> string
     return a date formatted like this 2017-01-25 for when the last commin in branch (master by default) has been made"
-    (time->iso8601-ymd
+    (time->ymd
       (time-from-utc
         (time-s->ns
           (apply git-last-commit-posixtime path-repository branch additional-git-arguments)))))
