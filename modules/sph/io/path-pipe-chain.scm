@@ -11,7 +11,7 @@
     (sph vector))
 
   (define sph-io-path-pipe-chain-description
-    "call procedures with input output arguments set up in a chained manner to allow data flow between them.
+    "call procedures with an input and output argument in a chained manner to allow data flow between them.
     procedures can request paths or ports as arguments and the links are made compatible automatically")
 
   (define path-pipe-chain

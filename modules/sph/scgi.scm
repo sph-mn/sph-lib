@@ -28,7 +28,7 @@
     (only (rnrs io simple) eof-object? read-char))
 
   (define sph-scgi-description
-    "scgi interface. a server that accepts scgi requests and passes them to a custom procedure.
+    "scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them.
      http://python.ca/scgi/protocol.txt")
 
   (define binary-char-null (char->integer #\nul))

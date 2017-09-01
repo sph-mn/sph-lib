@@ -13,7 +13,7 @@
     (only (sph list) map-integers))
 
   (define sph-thread-pool-description
-    "generic thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type")
+    "thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type")
 
   (define-as thread-pool-queue-lifo list
     list null?

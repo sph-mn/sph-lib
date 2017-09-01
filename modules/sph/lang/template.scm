@@ -15,7 +15,7 @@
     (only (sph list) fold-multiple))
 
   (define sph-lang-template-description
-    "generic s-expression template processor
+    "s-expression quasiquote template processor
      a template engine using implicitly quasiquoted s-expressions.
      supports composition and concatenation. creates template procedures. source data can be given as files, ports or datums.
      alternative name: s-template.

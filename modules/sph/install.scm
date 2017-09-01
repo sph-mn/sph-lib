@@ -31,16 +31,16 @@
 
   (define sph-install-description
     "program and library installer
-     # features
-     installation with specific file mode. using \"cp\" or the like usually uses owner and permissions for the current user, which might be root
-     dry-run for listing what is to be done
-     command line interface with --help and other options
-     list data structure for defining source and destination  paths nested with support for some default variables
-     symlinking files instead of installing them, for development and updates in a versioned repository
-     data structures
-     destination: string:path/symbol:placeholder/(string/symbol ...):concatenated-path
-     source: string:path/symbol:placeholder/integer:mode-for-following/(string:path/symbol:placeholder ...):concatenated-path
-     install-spec: (destination source ...)")
+     features
+       installation with a specific file mode. using \"cp\" or the like usually uses owner and permissions for the current user, which might be root and undesired.
+       dry-run for listing what is to be done
+       optional automatically created command-line interface with --help and other options
+       list data-structure to define sources and destinations, with some variables available like the default guile module directory
+       option to symlink files instead of copying them, for development and updates in a versioned repository
+       data structures
+         destination: string:path/symbol:placeholder/(string/symbol ...):concatenated-path
+         source: string:path/symbol:placeholder/integer:mode-for-following/(string:path/symbol:placeholder ...):concatenated-path
+         install-spec: (destination source ...)")
 
   (define default-mode-directory 493)
   (define default-mode-regular 420)
