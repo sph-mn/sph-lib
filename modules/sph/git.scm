@@ -4,8 +4,8 @@
     git-archive->file
     git-branch-exists?
     git-current-short-commit-hash
-    git-last-commit-ymd
     git-last-commit-posixtime
+    git-last-commit-ymd
     git-revision-count)
   (import
     (guile)
@@ -26,8 +26,8 @@
   (define*
     (git-archive path-repository #:optional (branch "master") #:rest additional-git-arguments)
     "string [string] ->
-    create a compressed tar archive from the contents of a git repository without (most) git metadata.
-    uses the git built-in \"git archive\""
+     create a compressed tar archive from the contents of a git repository without (most) git metadata.
+     uses the git built-in \"git archive\""
     (zero?
       (status:exit-val
         (apply execute "git"
@@ -35,7 +35,7 @@
 
   (define* (git-current-short-commit-hash path-repository #:optional (branch "master"))
     "string -> string
-    results in the short commit hash for the latest commit in a git repository"
+     results in the short commit hash for the latest commit in a git repository"
     (execute->string "git" (cli-option "git-dir" (string-append path-repository ".git"))
       "log" (cli-option #\n 1) (cli-option "pretty" "format:%h") branch))
 
@@ -43,7 +43,7 @@
     (git-last-commit-posixtime path-repository #:optional (branch "master") #:rest
       additional-git-arguments)
     "string string string ... -> integer
-    return a timestamp for when the last commit in branch (master by default) has been made"
+     return a timestamp for when the last commit in branch (master by default) has been made"
     (string->number
       (string-trim-right
         (call-with-working-directory path-repository
@@ -53,11 +53,9 @@
     (git-last-commit-ymd path-repository #:optional (branch "master") #:rest
       additional-git-arguments)
     "string string string ... -> string
-    return a date formatted like this 2017-01-25 for when the last commin in branch (master by default) has been made"
-    (time->ymd
-      (time-from-utc
-        (time-s->ns
-          (apply git-last-commit-posixtime path-repository branch additional-git-arguments)))))
+     return a date formatted like this 2017-01-25 for when the last commin in branch (master by default) has been made"
+    (utc->ymd
+      (s->ns (apply git-last-commit-posixtime path-repository branch additional-git-arguments))))
 
   (define (git-revision-count path-repository)
     (call-with-working-directory path-repository

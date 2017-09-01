@@ -24,7 +24,7 @@ if you intend to use (sph process create) also call the following before install
 this is unfortunately necessary because guile does not come with a generic process creation procedure and it can not be adequately implemented in scheme.
 
 ## install destinations
-* /usr/share/guile/site/sph/*
+* /usr/share/guile/site/sph/
 * /usr/lib/libguile-sph-lib.so
 
 # libraries
@@ -36,7 +36,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph install) - program and library installer
 * (sph io path-pipe-chain) - call procedures with input output arguments set up in a chained manner to allow data flow between them
 * (sph lang itpn) - helpers for working with parsed itpn
-* (sph lang parser type-signature)
+* (sph lang parser type-signature) - a parser and writer for the sph type signature notation
 * (sph lang plcss) - s-expression language that compiles to css
 * (sph lang scm-format) - format scheme code
 * (sph lang template) - generic s-expression template processor
@@ -51,7 +51,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph test) - automated code testing with composable modules
 * (sph test performance) - adaptive performance testing with formatted result display
 * (sph thread-pool) - generic thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type
-* (sph time) - time as integers of international atomic time (tai) nanoseconds since the unix epoch and a vector date object. conversions for utc and the gregorian calendar
+* (sph time) - time as tai or utc nanoseconds since the unix epoch or gregorian calendar dates
 * (sph time gregorian) - gregorian calendar calculations
 * (sph time rfc3339) - parse and create strings in the rfc3339 time format
 * (sph vector selection) - create and analyse selections from sets: permutations, combinations, n-tuples
@@ -76,19 +76,19 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph exception) - rnrs exception helpers. experimental
 * (sph filesystem)
 * (sph filesystem stream)
-* (sph filesystem watch) - observing and acting on file-system changes
+* (sph filesystem watch) - for acting on file-system changes. has not been updated in a while
 * (sph git)
 * (sph hashtable) - rnrs-hashtable processing
 * (sph hashtable one) - more hashtable procedures
 * (sph ice-9-stream)
 * (sph interface-format) - for programs that offer textual input/output in multiple formats. experimental
-* (sph io) - port and file input/output
+* (sph io one) - port and file input/output
 * (sph io read-write) - port io with specifying a read and write procedure
 * (sph json) - a basic but fast json writer
+* (sph lang config) - a scheme syntax configuration file format for associative data structures
 * (sph lang ecmascript expressions) - create ecmascript syntax strings
 * (sph lang indent-syntax) - converting to and from strings with indented lines
 * (sph lang itml eval) - evaluate itml inline code expressions and possibly translate to a new format
-* (sph lang itml eval env default)
 * (sph lang itml eval env plaintext)
 * (sph lang itml eval env shtml)
 * (sph lang itml eval plaintext) - evaluate inline code expressions
@@ -101,7 +101,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph lang scm-format format) - formatters for individual expressions
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
 * (sph linux) - linux specific features
-* (sph list)
+* (sph list) - helpers for working with lists
 * (sph list one) - additional list processing procedures which depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
 * (sph module) - guile module system and rnrs library related procedures
@@ -122,10 +122,10 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph tree) - processing tree-like list structures
 * (sph tree two)
 * (sph two) - various bindings deemed less useful than the ones in (sph one)
-* (sph uniform-vector)
+* (sph uniform-vector) - helpers for srfi-4 and compatible vectors
 * (sph user-cli) - text based user interaction. for example choices or confirmations
-* (sph vector)
+* (sph vector) - vector processing
 * (sph vhash)
 * (sph web html)
 * (sph web http)
-* (sph web shtml)
+* (sph web shtml) - helpers to create html as sxml
