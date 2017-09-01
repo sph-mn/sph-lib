@@ -34,9 +34,9 @@
 
   (define (log-default-formatter categories arguments)
     "(symbol ...) (any ...) ->
-    categories is the list of symbol names for which the log-route has matched"
+     categories is the list of symbol names for which the log-route has matched"
     (simple-format #f "~A ~A\n  ~A\n"
-      (time-current-ymd-ks) (simplify categories)
+      (utc-current-ymd-ks) (simplify categories)
       (string-replace-chars (string-drop-right (string-drop (any->string arguments) 1) 1)
         (list (list #\newline #\newline #\space #\space)))))
 
@@ -45,9 +45,9 @@
 
   (define (log-message categories . arguments)
     "symbol/(symbol ...) any ... ->
-    filters log-routes and calls any matching log-route formatter with arguments.
-    categories can be a tree-like list with prefixed symbols some/every/none.
-    log-route: #(symbol/(symbol ...) procedure:{list list ->} (port:output-port ...))"
+     filters log-routes and calls any matching log-route formatter with arguments.
+     categories can be a tree-like list with prefixed symbols some/every/none.
+     log-route: #(symbol/(symbol ...) procedure:{list list ->} (port:output-port ...))"
     (let (categories (if (symbol? categories) (list categories) categories))
       (each
         (l (log-route)

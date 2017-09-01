@@ -43,5 +43,5 @@
       (eval (list (q quasiquote) (port->datums port)) eval-environment)))
 
   (define (config-write a port) "experimental" (each (l (a) (write a port) (newline)) (ht-alist a (inf))))
-  (define (config-read-string a . b) (call-with-input-string a (l (a) (applly config-read a b))))
+  (define (config-read-string a . b) (call-with-input-string a (l (a) (apply config-read a b))))
   (define (config-read-file a . b) (call-with-input-file a (l (a) (apply config-read a b)))))

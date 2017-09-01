@@ -27,7 +27,7 @@
   ;http://atomenabled.org/developers/syndication/
   ;https://tools.ietf.org/html/rfc4287
   (define-syntax-rule (if-pass-string a proc) (if (string? a) (proc a) a))
-  (define (integer/string->rfc3339 a) (if (string? a) a (time->rfc3339 a)))
+  (define (integer/string->rfc3339 a) (if (string? a) a (utc->rfc3339 a)))
 
   (define-syntax-rules sxml-element ((name value) (list (q name) value))
     ((name-and-value) (list (q name-and-value) name-and-value)))
@@ -37,7 +37,7 @@
 
   (define* (atom-person author? name #:key email uri)
     "boolean [#:email string #:uri string] -> sxml
-    author or contributor"
+     author or contributor"
     (pairs (if author? (q author) (q contributor)) (sxml-element name)
       (filter identity (list (sxml-element-optional email) (sxml-element-optional uri)))))
 
@@ -54,14 +54,14 @@
 
   (define* (atom-text tag #:key (type "text") . content)
     "symbol [#:type string] sxml ... -> sxml
-    examples for type are \"text\", \"html\", \"xhtml\""
+     examples for type are \"text\", \"html\", \"xhtml\""
     (qq
       ( (unquote tag) (@ (type (unquote type)))
         (unquote-splicing (remove-keyword-associations content)))))
 
   (define* (atom-text-xhtml tag . content)
     "symbol sxml ... -> sxml
-    wraps content in a div as required and sets the type appropriately"
+     wraps content in a div as required and sets the type appropriately"
     (qq
       ( (unquote tag) (@ (type "xhtml"))
         (div (@ (xmlns "http://www.w3.org/1999/xhtml")) (unquote-splicing content)))))
@@ -84,7 +84,7 @@
 
   (define* (atom-content-xhtml . a)
     "sxml ... -> sxml
-    wraps content in a div as required and sets the type appropriately"
+     wraps content in a div as required and sets the type appropriately"
     (apply atom-text-xhtml (q content) a))
 
   (define* (atom-rights . atom-text-arguments) "[#:type string] string/sxml ... -> sxml"
@@ -102,16 +102,16 @@
       source
       summary)
     "::
-    string string integer:posix-time/string
-    [#:authors string/atom-author/(atom-author ...)
-    #:categories string/atom-category/(atom-category ...)
-    #:contributors string/atom-contributor/(atom-contributor ...)
-    #:link string/atom-link
-    #:published integer:posix-time/string
-    #:source sxml
-    #:summary text/atom-summary]
-    ->
-    sxml"
+     string string integer:utc-posix-time/string
+     [#:authors string/atom-author/(atom-author ...)
+     #:categories string/atom-category/(atom-category ...)
+     #:contributors string/atom-contributor/(atom-contributor ...)
+     #:link string/atom-link
+     #:published integer:utc-posix-time/string
+     #:source sxml
+     #:summary text/atom-summary]
+     ->
+     sxml"
     (pairs (q entry) (sxml-element title)
       (sxml-element updated (integer/string->rfc3339 updated)) (sxml-element id)
       (filter identity
@@ -127,15 +127,15 @@
       .
       content)
     "::
-    string/number string integer:posix-time/string
-    [#:authors string/atom-author/(atom-author ...)
-    #:link string/atom-link
-    #:categories string/atom-category/(atom-category ...)
-    #:contributors string/atom-contributor/(atom-contributor ...) #:generator string
-    #:icon string #:logo string #:rights string/atom-rights/(atom-rights ...)
-    #:subtitle string/atom-subtitle/(atom-subtitles ...)]
-    ->
-    sxml"
+     string/number string integer:utc-posix-time/string
+     [#:authors string/atom-author/(atom-author ...)
+     #:link string/atom-link
+     #:categories string/atom-category/(atom-category ...)
+     #:contributors string/atom-contributor/(atom-contributor ...) #:generator string
+     #:icon string #:logo string #:rights string/atom-rights/(atom-rights ...)
+     #:subtitle string/atom-subtitle/(atom-subtitles ...)]
+     ->
+     sxml"
     (pairs (q feed) (q (@ (xmlns "http://www.w3.org/2005/Atom")))
       (sxml-element title) (sxml-element updated (integer/string->rfc3339 updated))
       (sxml-element id)

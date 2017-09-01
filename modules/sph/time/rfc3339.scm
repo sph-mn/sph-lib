@@ -1,12 +1,12 @@
 (library (sph time rfc3339)
   (export
     sph-time-rfc3339-description
-    time->rfc3339
-    time-from-rfc3339
-    time-ns-from-rfc3339
     time-rfc3339->alist
     time-rfc3339-parse&
-    time-rfc3339-parse-tree)
+    time-rfc3339-parse-tree
+    utc->rfc3339
+    utc-from-rfc3339
+    utc-ns-from-rfc3339)
   (import
     (guile)
     (ice-9 peg)
@@ -15,19 +15,19 @@
     (only (sph conditional) if-pass)
     (only (sph string) string-fill-left string-equal?)
     (only (sph time)
-      time-nanoseconds->seconds
-      time-from-date
-      time-make-date
-      time-seconds->nanoseconds)
+      nanoseconds->seconds
+      utc-from-date
+      date-create
+      seconds->nanoseconds)
     (only (sph time utc) utc-duration->hms)
     (only (sph tree) splice-lists-without-prefix-symbol)
     (only (srfi srfi-1) drop-right))
 
   (define sph-time-rfc3339-description
     "parse and create strings in the rfc3339 time format
-    rfc3339 is a subset of iso8601 and is used for example in the atom syndication format.
-    this is a comprehensive implementation that uses a parsing expression grammar.
-    ns: nanoseconds")
+     rfc3339 is a subset of iso8601 and is used for example in the atom syndication format.
+     this is a comprehensive implementation that uses a parsing expression grammar.
+     ns: nanoseconds")
 
   (define-peg-pattern digit body (range #\0 #\9))
   (define-peg-pattern year all (and digit digit digit digit))
@@ -45,11 +45,11 @@
   (define-peg-pattern offset all (and (or "+" "-") hours minutes))
   (define-peg-pattern rfc3339-date-time all (and date (? (and time (or (ignore "Z") offset)))))
 
-  (define (time-rfc3339-parse-tree a)
+  (define (rfc3339-parse-tree a)
     (if-pass (match-pattern rfc3339-date-time a)
       (l (a) (splice-lists-without-prefix-symbol (peg:tree a)))))
 
-  (define time-rfc3339-parse&
+  (define rfc3339-parse&
     (let
       ( (parse-date&
           (l (a c) (apply c (tail a) (map (compose string->number second) (tail (first a))))))
@@ -75,7 +75,7 @@
         example source strings: 2003-12-13T18:30:02.25+01:00, 2003-12-13T18:30:02Z
         see https://www.ietf.org/rfc/rfc3339.txt"
         (false-if-exception
-          (parse-date& (tail (time-rfc3339-parse-tree a))
+          (parse-date& (tail (rfc3339-parse-tree a))
             (l (a year month day)
               (parse-time& a
                 (l (a hours minutes seconds seconds-fraction)
@@ -85,8 +85,8 @@
                         day hours
                         minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes)))))))))))
 
-  (define (time-rfc3339->alist a) "string -> list/false"
-    (time-rfc3339-parse& a
+  (define (rfc3339->alist a) "string -> list/false"
+    (rfc3339-parse& a
       (l
         (year month day
           hours minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes)
@@ -99,20 +99,20 @@
           seconds-fraction seconds-fraction
           offset-negative? offset-negative? offset-hours offset-hours offset-minutes offset-minutes))))
 
-  (define (time-from-rfc3339 a)
+  (define (utc-from-rfc3339 a)
     "string -> integer:seconds:posix-time
-    does not include fractional seconds; see time-rfc3339->seconds-and-fraction for that"
-    (if-pass (time-ns-from-rfc3339 a) time-nanoseconds->seconds))
+     does not include fractional seconds; see rfc3339->seconds-and-fraction for that"
+    (if-pass (utc-ns-from-rfc3339 a) nanoseconds->seconds))
 
-  (define (time-ns-from-rfc3339 a)
+  (define (utc-ns-from-rfc3339 a)
     "string -> (integer:tai-utc-unix-seconds . integer:seconds-fraction)"
-    (time-rfc3339-parse& a
+    (rfc3339-parse& a
       (l
         (year month day
           hours minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes)
         (let (offset-factor (if offset-negative? -1 1))
-          (time-from-date
-            (time-make-date #:year year
+          (utc-from-date
+            (date-create #:year year
               #:month month
               #:day day
               #:hour hours
@@ -121,14 +121,14 @@
               ;todo: use a better conversion for this
               #:nanosecond
               (inexact->exact
-                (time-seconds->nanoseconds
+                (seconds->nanoseconds
                   (exact->inexact
                     (/ seconds-fraction (expt 10 (string-length (number->string seconds-fraction)))))))
               #:offset (+ (* offset-factor offset-hours 3600) (* offset-factor offset-minutes 60))))))))
 
   (define (number->padded-string a) (string-fill-left (number->string a) 2 #\0))
 
-  (define* (time->rfc3339 a #:optional (offset 0) (seconds-fraction 0))
+  (define* (utc->rfc3339 a #:optional (offset 0) (seconds-fraction 0))
     "integer:posix-time -> string"
     (let
       ( (date-time

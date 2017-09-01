@@ -12,11 +12,14 @@
     utc-seconds-day
     utc-tai->leap-second-difference)
   (import
-    (rnrs base)
     (sph)
     (only (guile) truncate/ assoc-ref))
 
-  (define sph-time-utc-description "utc related time calculations")
+  (define sph-time-utc-description
+    "utc related time calculations.
+     utc uses leap seconds to ensure that (/ utc-seconds 86400) is the number of elapsed days.
+     future leap second inserts are unfortunately not predictable and so future tai times can not be calculated accurately, only day dependent dates")
+
   (define utc-nanoseconds-minute 60000000000)
   (define utc-nanoseconds-hour 3600000000000)
   (define utc-nanoseconds-day 86400000000000)
@@ -47,7 +50,7 @@
 
   (define* (utc-duration-from-hms hours minutes seconds)
     "integer ... -> integer
-    utc duration are seconds from zero, unrelated to the unix epoch"
+     utc duration are seconds from zero, unrelated to the unix epoch"
     (+ (* 3600 hours) (* 60 minutes) seconds))
 
   (define* (utc-duration->hms a #:optional (c list))
