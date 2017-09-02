@@ -19,6 +19,8 @@
     alist-contains
     alist-containsq
     alist-containsv
+    alist-delete
+    alist-delete-multiple
     alist-keys
     alist-keys-map
     alist-map
@@ -58,8 +60,11 @@
   (import
     (sph)
     (only (rnrs base) set!)
-    (only (sph list) fold-multiple)
-    (only (srfi srfi-1) alist-cons filter)
+    (only (sph list) contains? fold-multiple)
+    (only (srfi srfi-1)
+      alist-cons
+      alist-delete
+      filter)
     (rename (guile)
       (acons alist-prepend)
       (assq-ref alistq-ref)
@@ -200,7 +205,8 @@
 
   (define (alist-update a b)
     "list list -> list
-     update existing entries of a with corresponding entries of b"
+     update existing entries of a with cWARNING: (sph base): `alist-delete' imported from both (srfi srfi-1) and (sph alist)
+orresponding entries of b"
     (map
       (l (pair-1)
         ((l (value) (if value (pair (first pair-1) value) pair-1)) (alist-ref b (first pair-1))))
@@ -240,4 +246,6 @@
 
   (define (alists-ref-p a keys) "like alists-ref but as a procedure that accepts a list for keys"
     (let loop ((a a) (keys keys))
-      (if (null? keys) a (and a (loop (alist-ref a (first keys)) (tail keys)))))))
+      (if (null? keys) a (and a (loop (alist-ref a (first keys)) (tail keys))))))
+
+  (define (alist-delete-multiple a . keys) (remove (l (a) (contains? keys (first a))) a)))

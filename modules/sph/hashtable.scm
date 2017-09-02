@@ -31,6 +31,7 @@
     ht-each-key
     ht-entries
     ht-equivalence-function
+    ht-object
     ht-fold
     ht-fold-right
     ht-from-alist
@@ -257,4 +258,10 @@
   (define (ht-tree-copy a)
     (ht-fold (l (k v r) (ht-set! r k (if (ht? v) (ht-tree-copy v) v)) r) (ht-copy-empty a) a))
 
-  (define (ht-tree-copy* a proc) (let (r (ht-tree-copy a)) (proc r) r)))
+  (define (ht-tree-copy* a proc) (let (r (ht-tree-copy a)) (proc r) r))
+
+  (define* (ht-object a #:optional default)
+    "hashtable [any:default] -> procedure:{any:key -> any:value/default}"
+    (l (key) (ht-ref a key default))
+    )
+  )

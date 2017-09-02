@@ -588,8 +588,9 @@
   (define (denoted-tree-minimise-depth a)
     "procedure list integer -> list
      decrease nesting-depth for all element until at least one element has a nesting-depth of zero"
-    (let (min-depth (apply min (map first a)))
-      (if (zero? min-depth) a (denoted-tree-adjust-depth a - min-depth))))
+    (if (null? a) a
+      (let (min-depth (apply min (map first a)))
+        (if (zero? min-depth) a (denoted-tree-adjust-depth a - min-depth)))))
 
   (define (prefix-tree-map-with-level->flat-list proc a . start-level)
     "{integer any -> any} list [integer] -> (any ...)

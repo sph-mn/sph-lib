@@ -7,6 +7,7 @@
     indent-tree->range-delimited-tree
     line->indent-and-content
     prefix-tree->indent-tree
+    prefix-tree-text
     read-indent-tree->denoted-tree
     read-indent-tree->prefix-tree
     read-indent-tree-element->denoted-tree
@@ -18,11 +19,11 @@
     (rnrs io ports)
     (sph)
     (sph stream)
+    (sph tree)
     (srfi srfi-41)
     (only (sph conditional) if-pass)
     (only (sph io) port->lines)
     (only (sph string) string-multiply)
-    (only (sph tree) denoted-tree->prefix-tree prefix-tree->denoted-tree)
     (only (srfi srfi-1) drop-while))
 
   (define sph-lang-indent-syntax-description "converting to and from strings with indented lines")
@@ -31,8 +32,7 @@
     (if (>= a 0) (ceiling (/ a indent-width)) a))
 
   (define* (denoted-tree->indent-tree-lines a #:optional (base-depth 0) (indent-string "  "))
-    (map (l (a)
-        (string-append (string-multiply indent-string (+ base-depth (first a))) (tail a)))
+    (map (l (a) (string-append (string-multiply indent-string (+ base-depth (first a))) (tail a)))
       a))
 
   (define (string->indent-depth a indent-width) "string integer -> integer"
@@ -119,4 +119,24 @@
               depth)))
         (port->line-stream (open-input-string a)) (list) 0)
       ( (r depth)
-        (apply string-append ((if (> depth 0) (l (r) (append r (make-list depth ")"))) identity) r))))))
+        (apply string-append ((if (> depth 0) (l (r) (append r (make-list depth ")"))) identity) r)))))
+
+  (define (prefix-tree-text source)
+    "(string/list ...) -> string
+     convert a list with strings and eventually sub-lists with strings to an indented document structure.
+     normalise indent from multiline string literals"
+    (prefix-tree->indent-tree
+      (tree-map-lists
+        (l (a)
+          (fold-right
+            (l (a result)
+              (if (string? a)
+                (let (b (indent-tree->denoted-tree a))
+                  (if (or (null? b) (null? (tail b))) (pair a result)
+                    (append
+                      (pair (tail (first b))
+                        (denoted-tree->prefix-tree (denoted-tree-minimise-depth (tail b))))
+                      result)))
+                (pair a result)))
+            (list) a))
+        source))))

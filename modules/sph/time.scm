@@ -156,7 +156,7 @@
       (if (< week-day 4) (- year-start (* utc-nanoseconds-day week-day))
         (+ year-start (* utc-nanoseconds-day (- 7 week-day))))))
 
-  (define (utc-start-last-week a)
+  (define (utc-start-last-week a) "the start of the last week of the year"
     (- (utc-start-first-week (utc-add-years a 1)) utc-nanoseconds-week))
 
   (define (utc-start-year a)
@@ -165,25 +165,15 @@
   (define (utc-start-month a)
     (let (a (utc->date a)) (utc-from-date (date-create* (date-year a) (date-month a) 1))))
 
-  (define (utc-start-day a)
-    (let (a (utc->date a)) (utc-from-date (date-create* (date-year a) (date-month a) (date-day a)))))
+  (define (utc-start-day a) (- a (modulo a utc-nanoseconds-day)))
+  (define (utc-start-hour a) (- a (modulo a utc-nanoseconds-hour)))
+  (define (utc-start-minute a) (- a (modulo a utc-nanoseconds-minute)))
+  (define (utc-start-second a) (- a (modulo a 1000000000)))
 
-  (define (utc-start-hour a)
-    (let (a (utc->date a))
-      (utc-from-date (date-create* (date-year a) (date-month a) (date-day a) (date-hour a)))))
+  (define (utc-start-week a)
+    (let (a-minus-days (- a (* (utc->week-day a) utc-nanoseconds-day)))
+      (utc-start-day a-minus-days)))
 
-  (define (utc-start-minute a)
-    (let (a (utc->date a))
-      (utc-from-date
-        (date-create* (date-year a) (date-month a) (date-day a) (date-hour a) (date-minute a)))))
-
-  (define (utc-start-second a)
-    (let (a (utc->date a))
-      (utc-from-date
-        (date-create* (date-year a) (date-month a)
-          (date-day a) (date-hour a) (date-minute a) (date-second a)))))
-
-  (define (utc-start-week a) (- a (* (utc->week-day a) utc-nanoseconds-day)))
   (define (utc-days a) (/ a utc-nanoseconds-day))
 
   (define (utc-year a)

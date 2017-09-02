@@ -303,7 +303,7 @@
   (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
 
   (define (os-seconds-at-boot)
-    (- (time-nanoseconds->seconds (time-elapsed-day (time-current))) (os-seconds-since-boot)))
+    (- (nanoseconds->seconds (utc-elapsed-day (utc-current))) (os-seconds-since-boot)))
 
   (define (os-seconds-since-boot)
     (string->number (first (string-split (shell-eval->string "cat /proc/uptime") #\space))))

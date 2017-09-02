@@ -36,9 +36,7 @@
     (let (a (inexact->exact (round a))) (+ a (modulo a 2))))
 
   (define (add-multiple-leading-parenthesis-spacing config lines) "( (content ..."
-    (if
-      (and (ht-ref config (q multiple-leading-parenthesis-spacing))
-        (length-greater-one? lines))
+    (if (and (ht-ref config (q multiple-leading-parenthesis-spacing)) (length-greater-one? lines))
       (map
         (l (e)
           (if (string-contains e "\n")
@@ -228,15 +226,15 @@
               ;probably not an evaluated lambda but data
               (tail a))))
         config current-indent
-        3 (ht-ref config (q max-exprs-per-line-middle))
-        (ht-ref config (q max-exprs-per-line-end)))
+        3 (ht-ref config (q max-exprs-per-line-middle)) (ht-ref config (q max-exprs-per-line-end)))
       #f))
 
   (define (format-let a recurse config current-indent)
     (list
       (format-application (map-recurse recurse a current-indent)
         (match a
-          ((let (? symbol?) _ ...) (ht-copy* config (l (a) (ht-set-multiple! a (q max-exprs-per-line-start) 3))))
+          ( (let (? symbol?) _ ...)
+            (ht-copy* config (l (a) (ht-set-multiple! a (q max-exprs-per-line-start) 3))))
           (else config))
         current-indent)
       #f))
@@ -307,7 +305,8 @@
 
   (define (format-list a config current-indent start middle end)
     (format-application a
-      (ht-copy* config (l (a)
+      (ht-copy* config
+        (l (a)
           (ht-set-multiple! a
             ;the line-char-length limitation has always precedence
             (q max-exprs-per-line-start) start
@@ -321,9 +320,10 @@
           (format-application
             (pairs (q let-macro)
               (format-application (map-recurse recurse assoc (+ 1 current-indent))
-                (let*
-                  ((n (ht-ref config (q max-exprs-per-line-start))) (n (- n (modulo n 2))))
-                  (ht-copy* config (l (a)(ht-set-multiple! a (q max-exprs-per-line-start)
+                (let* ((n (ht-ref config (q max-exprs-per-line-start))) (n (- n (modulo n 2))))
+                  (ht-copy* config
+                    (l (a)
+                      (ht-set-multiple! a (q max-exprs-per-line-start)
                         n (q max-exprs-per-line-end) n))))
                 (+ 1 current-indent))
               (map-recurse recurse body current-indent))
@@ -335,8 +335,7 @@
     (list
       (string-append "#;("
         (string-join (tail a)
-          (string-append "\n"
-            (string-multiply (ht-ref config (q indent-string)) current-indent)))
+          (string-append "\n" (string-multiply (ht-ref config (q indent-string)) current-indent)))
         ")")
       #f))
 

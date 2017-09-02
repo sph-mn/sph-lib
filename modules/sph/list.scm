@@ -90,6 +90,7 @@
     list-set-eqv?
     list-set-match-condition?
     list-set-match-contains?
+    list-set-match-iterate
     list-sort-by-list
     list-sort-with-accessor
     list-suffix?
@@ -673,20 +674,26 @@
      like \"list-set-equal?\" but uses \"eqv?\" for element equality comparison"
     (apply lset= eqv? a))
 
-  (define (list-set-match-contains? a match-tree)
-    "list list -> boolean
-     test for value inclusion in list by a possibly nested conditions list like ([some/all/none] value/match-condition-tree ...).
-     example:
-     (list-set-match-contains? (list 1 2 3) (quote (all 2 3 (some 4 1 5) (none 8)))) -> #t"
-    (list-set-match-iterate (l (e) (contains? a e)) match-tree))
+  (define (list-set-eqv? . a)
+    "list ... -> boolean
+     like \"list-set-equal?\" but uses \"eq?\" for element equality comparison"
+    (apply lset= eq? a))
 
-  (define (list-set-match-iterate match-one? conditions)
-    "procedure:{any -> boolean} list -> any:last-call-result
-     evaluate a possibly nested conditions list like for \"list-set-match-contains?\".
-     checking if \"match-one?\" is true for condition values in their relative condition relationships (for example some, all or none).
-     \"match-one?\" is called for each individual element of the \"conditions\" list that is not a prefixed condition name,
-     and its boolean results are automatically used for the conditions.
-     conditions: ([some/all/none] value/conditions ...)"
+  (define (list-set-match-contains? a condition)
+    "list list -> boolean
+     test for value inclusion in list by a possibly nested condition list like ([or/and/not] value/match-condition-tree ...).
+     example:
+     (list-set-match-contains? (list 1 2 3) (quote (and 2 3 (or 4 1 5) (not 8)))) -> #t"
+    (list-set-match-iterate (l (b) (contains? a b)) condition))
+
+  (define (list-set-match-iterate match-one? condition)
+    "procedure:{any -> boolean} list -> false/any:last-sub-condition-result
+     evaluate a possibly nested condition list like for \"list-set-match-contains?\".
+     checking if \"match-one?\" is true for condition values in their relative condition relationships (for example or, and or not).
+     if any call to match-one? in a required context (for example \"and\") is false, false is returned.
+     \"match-one?\" is called for each individual element of the \"condition\" list that is not a condition name prefix symbol,
+     and its boolean results are automatically used for the condition.
+     condition: ([or/and/not] value/condition ...)"
     (letrec
       ( (list-set-match-iterate-internal
           (let
@@ -695,15 +702,15 @@
                 ((if (list-set-match-condition? a) list-set-match-iterate-internal match-one?) a)))
             (l (a)
               (if (null? a) #f
-                (case (first a) ((some) (any match-one? (tail a)))
-                  ((all) (every match-one? (tail a))) ((none) (not (any match-one? (tail a))))
+                (case (first a) ((or) (any match-one? (tail a)))
+                  ((and) (every match-one? (tail a))) ((not) (not (any match-one? (tail a))))
                   (else (any match-one? (list a)))))))))
-      (list-set-match-iterate-internal conditions)))
+      (list-set-match-iterate-internal condition)))
 
   (define (list-set-match-condition? a)
     "any -> boolean
      true if \"a\" is a list-set-match condition"
-    (if (list? a) (if (null? a) #f (case (first a) ((some all none) #t) (else #f))) #f))
+    (if (list? a) (if (null? a) #f (case (first a) ((or and not) #t) (else #f))) #f))
 
   (define* (list-sort-by-list order a #:optional (accessor identity))
     "list list -> list

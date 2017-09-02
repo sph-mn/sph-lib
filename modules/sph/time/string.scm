@@ -1,6 +1,7 @@
 (library (sph time string)
   (export
     military-time->hm
+    seconds-from-hms
     sph-time-string-description
     utc->ymd
     utc->ymd-ks
@@ -9,7 +10,6 @@
     utc-current-ymd-ks
     utc-current-ymd-s
     utc-elapsed-day-string
-    utc-from-hms
     utc-from-military-time
     utc-from-ymd)
   (import
@@ -55,7 +55,7 @@
         (string-fill-left (number->string (date-month date)) 2 #\0) "-"
         (string-fill-left (number->string (date-day date)) 2 #\0))))
 
-  (define (utc->ymd-ks a) (string-append (utc->ymd a) "_" (utc-elapsed-day-string a 0 0)))
+  (define (utc->ymd-ks a) (string-append (utc->ymd a) "_" (utc-elapsed-day-string a 3 2)))
   (define (utc->ymd-s a) (string-append (utc->ymd a) "_" (utc-elapsed-day-string a 0 0)))
   (define (utc-current-ymd) (utc->ymd (utc-current)))
   (define (utc-current-ymd-ks) (utc->ymd-ks (utc-current)))
