@@ -92,5 +92,4 @@
       (eval
         (itml-eval* descend-ht ascend-ht
           (l (a . b) (if (string? a) (string-char-escape a) (if (eqv? (q line-empty) a) "" a)))))
-      (l (a) "list list -> sxml"
-        (prefix-tree->indent-tree (eval a (itml-state-create 0 #f)) 0)))))
+      (l (a) "list list -> sxml" (prefix-tree->indent-tree (eval a (itml-state-create)) 0)))))

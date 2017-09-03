@@ -31,7 +31,6 @@
     ht-each-key
     ht-entries
     ht-equivalence-function
-    ht-object
     ht-fold
     ht-fold-right
     ht-from-alist
@@ -47,6 +46,7 @@
     ht-make-eqv
     ht-map!
     ht-merge!
+    ht-object
     ht-ref
     ht-ref-q
     ht-select
@@ -203,19 +203,22 @@
           (vector-each-with-index (l (key index) (ht-set! a key (vector-ref values index))) keys)))
       b))
 
-  (define (ht-tree-merge! a b)
-    "hashtable hashtable -> unspecified
-     like ht-merge!, but for keys that occur in both hashtables and which have hashtables as value
-     ht-tree-merge! is called to merge the hashtables instead of just overwriting the value in a."
-    (call-with-values (nullary (ht-entries b))
-      (l (keys values)
-        (vector-each-with-index
-          (l (key index)
-            (let ((a-value (ht-ref a key)) (b-value (vector-ref values index)))
-              (ht-set! a key
-                (if (and (ht? a-value) (ht? b-value))
-                  (begin (ht-tree-merge! a-value b-value) a-value) b-value))))
-          keys))))
+  (define (ht-tree-merge! a . b)
+    "hashtable ... -> unspecified
+     merges hashtables b from right to left into a. nested hashtables are merged recursively"
+    (each
+      (l (b)
+        (apply-values
+          (l (keys values)
+            (vector-each-with-index
+              (l (key index)
+                (let ((a-value (ht-ref a key)) (b-value (vector-ref values index)))
+                  (ht-set! a key
+                    (if (and (ht? a-value) (ht? b-value))
+                      (begin (ht-tree-merge! a-value b-value) a-value) b-value))))
+              keys))
+          (ht-entries b)))
+      (reverse b)))
 
   (define (ht-set-multiple! ht . assoc)
     "hashtable key/value ...
@@ -262,6 +265,4 @@
 
   (define* (ht-object a #:optional default)
     "hashtable [any:default] -> procedure:{any:key -> any:value/default}"
-    (l (key) (ht-ref a key default))
-    )
-  )
+    (l (key) (ht-ref a key default))))

@@ -45,11 +45,11 @@
   (define (itml-state-data a) (list-ref a 2))
   (define (itml-state-depth a) (list-ref a 1))
 
-  (define* (itml-state-create depth env #:optional (data (ht-create-symbol)))
+  (define* (itml-state-create #:optional (depth 0) env exceptions (data (ht-create-symbol)))
     "integer environment hashtable ... -> list
      data, if passed, will be modified"
     ; is a list because the first to values get updated
-    (ht-set-q! data env env) (list (list) depth data))
+    (ht-set-multiple-q! data env env exceptions exceptions) (list (list) depth data))
 
   (define (itml-state-copy a) (list (first a) (second a) (ht-tree-copy (itml-state-data a))))
 
@@ -114,18 +114,18 @@
             (dispatch ascend-prefix-ht (or ascend-alt (l (a . b) a)))
             (or terminal default-ascend-alt))))))
 
-  (define (itml-eval-list a env state)
+  (define (itml-eval-list a env exceptions state)
     "(symbol any ...) environment list -> any
      creates the syntax for a lambda that contains the code from the itml expression,
      and uses eval to create a procedure from it.
      the procedure is called with the itml state object from the call to evaluate the itml.
      this supports the use of syntax in itml expressions"
-    ; debugging tip: log the literal passed to eval
+    ; debugging tip: log expression literal passed to eval
     (let (proc (eval (qq (lambda (s) ((unquote (first a)) s (unquote-splicing (tail a))))) env))
-      (proc state)))
+      (if exceptions (proc state) (false-if-exception (proc state)))))
 
   (define (itml-eval-descend a re-descend sources depth data) "evaluate an inline code expression"
-    (itml-eval-list a (ht-ref-q data env) (list sources depth data)))
+    (itml-eval-list a (ht-ref-q data env) (ht-ref-q data exceptions) (list sources depth data)))
 
   (define (itml-eval-descend-string a . b)
     "list procedure integer list environment -> any

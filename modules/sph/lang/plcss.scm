@@ -36,7 +36,8 @@
       ";" (q suffix)))
 
   (define (join-rule context properties-string rules)
-    (if (null? context) (string-append properties-string (rules->string rules context))
+    (if (null? context)
+      (string-append properties-string (if rules (rules->string rules context) ""))
       (string-append (join-selector context) "{"
         properties-string "}" (if rules (rules->string rules context) ""))))
 

@@ -56,7 +56,7 @@
             (if (file-exists? address) (delete-file address)
               (ensure-directory-structure (dirname address)))
             (bind r address-family address))
-          (bind r address-family (inet-pton address-family address) port-number))
+          (bind r address-family (inet-pton protocol-family address) (or port-number 6500)))
         r)))
 
   (define (call-with-signal-handling s proc)

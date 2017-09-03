@@ -11,9 +11,9 @@
     http-read-header-line
     http-read-header-value
     http-status-line
-    http-time->date
     http-uri-query-alist->string
     http-uri-query-string->alist
+    http-utc->date
     http-write-status-line
     (rename (parse-date http-parse-date))
     (rename (write-date http-write-date)))
@@ -53,7 +53,7 @@
 
   (define* (http-uri-query-string->alist a #:optional (separator #\&))
     "string -> alist
-    assumes that uri is valid"
+     assumes that uri is valid"
     (map
       (l (e)
         (apply (l (key . value) (pair key (if (null? value) #t (first value))))
@@ -88,7 +88,7 @@
 
   (define (http-parse-header-value a)
     "string -> pair
-    read the value of a header-line and result in a pair"
+     read the value of a header-line and result in a pair"
     (map
       (l (e)
         (let (split-index (string-index e #\=))
@@ -101,7 +101,7 @@
 
   (define (http-parse-header-line line)
     "string -> (name (key . value)
-    string -> (key values ...))"
+     string -> (key values ...))"
     (let (split-index (string-index line #\:))
       (pair (substring line 0 split-index)
         (http-parse-header-value (substring line (+ 1 split-index))))))
@@ -114,7 +114,7 @@
 
   (define (http-parse-cookie-header ch)
     "string -> alist
-    parse one header line for a cookie and retrieve its contents as key value pairs in an alist"
+     parse one header line for a cookie and retrieve its contents as key value pairs in an alist"
     (map
       (l (e)
         (let* ((e (string-trim-both e)) (split-index (string-index e #\=)))
@@ -124,7 +124,7 @@
 
   (define (http-header-line name value)
     "string any -> string
-    create a header line"
+     create a header line"
     (string-append name ":" (any->string value) "\r\n"))
 
   (define (http-header-lines . name/value) "string ... -> string"
@@ -132,30 +132,30 @@
 
   (define* (http-header-line-set-cookie name #:optional value config)
     "string false/string alist:((symbol . string/boolean)) -> string
-    result in a header line for setting a cookie. config can contain key value pairs for following keys
-    domain
-    path
-    expires
-    max-age
-    secure
-    http-only"
+     result in a header line for setting a cookie. config can contain key value pairs for following keys
+     domain
+     path
+     expires
+     max-age
+     secure
+     http-only"
     (http-header-line "set-cookie"
       (string-append name "=" (if value value "") (if config (cookie-config config)))))
 
   (import-unexported (web http) parse-date)
   (import-unexported (web http) write-date)
-  (define (http-current-date) "-> string" (http-date->string (time->date (time-current))))
+  (define (http-current-date) "-> string" (http-date->string (utc->date (utc-current))))
 
-  (define (time-date->srfi-19-date a)
-    (time-tai->date (make-time time-tai 0 (time-nanoseconds->seconds (time-from-date a)))))
+  (define (date->srfi-19-date a)
+    (time-utc->date (make-time time-utc 0 (nanoseconds->seconds (utc-from-date a)))))
 
-  (define (time-from-srfi-19-date a) (time-seconds->nanoseconds (time-second (date->time-tai a))))
+  (define (utc-from-srfi-19-date a) (seconds->nanoseconds (time-second (date->time-tai a))))
 
-  (define (http-date->string a) "time-date-object -> string"
-    (call-with-output-string (l (port) (write-date (time-date->srfi-19-date a) port))))
+  (define (http-date->string a) "sph-time-date-object -> string"
+    (call-with-output-string (l (port) (write-date (date->srfi-19-date a) port))))
 
   (define (http-parse-date->time a) "string -> integer:seconds/false"
-    (time-from-srfi-19-date (parse-date a)))
+    (utc-from-srfi-19-date (parse-date a)))
 
-  (define (http-time->date a) "integer:tai-nanoseconds-since-unix-epoch -> string"
-    (http-date->string (time->date a))))
+  (define (http-utc->date a) "integer:utc-nanoseconds-since-unix-epoch -> string"
+    (http-date->string (utc->date a))))
