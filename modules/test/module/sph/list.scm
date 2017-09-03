@@ -109,16 +109,16 @@
       ((1 2 3 4 5) (1 3 4))
       (2 4 5))
     (list-set-match-contains?
-      ((1 2 3) (some 5 4 3 6)) #t
-      ((1 2 3) (some 5 4 6)) #f
-      ((1 2 3) (all 2 3 4)) #f
-      ((1 2 3) (all 2 3)) #t
-      ((1 2 3) (some (all 2 4) (all 2 3))) #t
-      ((1 2 3) (some (all 2 4) (all 2 5))) #f
-      ((a b) (all b c)) #f)
+      ((1 2 3) (or 5 4 3 6)) #t
+      ((1 2 3) (or 5 4 6)) #f
+      ((1 2 3) (and 2 3 4)) #f
+      ((1 2 3) (and 2 3)) #t
+      ((1 2 3) (or (and 2 4) (and 2 3))) #t
+      ((1 2 3) (or (and 2 4) (and 2 5))) #f
+      ((a b) (and b c)) #f)
     (list-set-match-condition?
-      ((some 3 4)) #t
-      ((somex 3 4)) #f)
+      ((and 3 4)) #t
+      ((andx 3 4)) #f)
     (list-index-value
       ((1 2 3) 2) 1
       ((1 2 3) 2 (unquote eqv?)) 1)
