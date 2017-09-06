@@ -62,18 +62,18 @@
       (if (eof-object? octet) #t (begin (proc octet) (next (get-u8 port))))))
 
   (define*
-    (file->file path-input path-output #:optional (proc port-copy-all) #:key (input-binary? #t)
+    (file->file path-input path-output #:key (copy port-copy-all) (input-binary? #t)
       (output-binary? #t)
       (append? #f))
     "string string procedure:{port port -> any} [#:input-binary boolean #:output-binary? boolean] -> any
      open path-input for reading and path-output for writing and copy all contents of the input file or call proc with the ports.
-     the ports are closed when proc returns"
+     the ports are closed when copy returns"
     (let
-      ( (in (open-file path-output "r"))
+      ( (in (open-file path-input "r"))
         (out
           (open-file path-output
             (if append? (if output-binary? "ab" "a") (if output-binary? "wb" "w")))))
-      (begin-first (proc in out) (close-port out) (close-port in))))
+      (begin-first (copy in out) (close-port out) (close-port in))))
 
   (define (files->port paths output) "(string ...) port ->"
     (each (l (a) (file->port a output)) paths))
