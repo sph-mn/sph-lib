@@ -11,6 +11,7 @@
     (sph list)
     (sph time)
     (sph time string)
+    (sph vector)
     (only (guile)
       display
       simple-format
@@ -39,7 +40,7 @@
       (string-replace-chars (string-drop-right (string-drop (any->string arguments) 1) 1)
         (list (list #\newline #\newline #\space #\space)))))
 
-  (define log-default-route (vector (q and) log-default-formatter (list (current-error-port))))
+  (define log-default-route (vector (q all) log-default-formatter (list (current-error-port))))
   (define log-routes (list log-default-route))
 
   (define (log-message categories . arguments)
@@ -51,7 +52,7 @@
       (each
         (l (log-route)
           (if
-            (or (eq? (q all) (vector-ref log-route 0))
-              (list-set-match-contains? categories (vector-ref log-route 0)))
+            (or (eq? (q all) (vector-first log-route))
+              (list-set-match-contains? categories (vector-first log-route)))
             (apply-log-route log-route categories arguments)))
         log-routes))))

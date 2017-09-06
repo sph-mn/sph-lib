@@ -66,7 +66,7 @@
   (define* (shtml-hyperlink target title #:optional (attributes (list)))
     "string string -> sxml
      sxml for an html <a>"
-    (qq (a (@ (href (unquote target)) (unquote-splicing attributes)) (unquote title))))
+    (qq (a (@ (href (unquote target)) (unquote-splicing attributes)) (unquote (or title target)))))
 
   (define (shtml-alist->options a)
     "((content . string:value/false)/string ...) -> sxml:((option _ ...) ...)
