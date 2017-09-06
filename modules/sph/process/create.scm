@@ -32,7 +32,7 @@
       #:key
       env
       (keep-descriptors (list))
-      (search-path? #t)
+      search-path?
       path-open-flags)
     "string:path/file-name [(string ...) port/string/integer/false ... #:key (env (environ)) (keep-descriptors (list)) search-path? (path-open-flags integer)] -> process-id
      \"executable\" is the path or file name of a file to execute to become the new process.
@@ -56,7 +56,7 @@
   ; the following definitions are not directly dependent on the loaded extension
   ;
 
-  (define* (process-chain first-input last-output execute-arguments #:key (search-path? #t))
+  (define* (process-chain first-input last-output execute-arguments #:key search-path?)
     "port/any port/any (string/(string:executable string:argument ...) ...) -> (integer:pid ...)
      creates a new process for each execute-argument and sets standard input and output of the processes in a chaining manner:
      input is the first-input or the input from the previous process, the output is the output to the next process or the last-output.
@@ -134,7 +134,7 @@
               (let (result (apply proc proc-ports)) (values result (process-finish pid))))
             (begin (close-ports) (values #f #f)))))))
 
-  (define* (process-chain-path-pipe first-input last-output config #:key (search-path? #t))
+  (define* (process-chain-path-pipe first-input last-output config #:key search-path?)
     "port/string/any port/string/any (#(symbol symbol string/(string:executable string ...)/procedure:{false/string false/string -> string/(string:executable string ...)}) ...) -> (integer:pid ...)
      first-input last-output (#(port/path/nothing port/path/nothing path/(path argument ...)/procedure:{path-in path-out -> execute-arguments} ...) ...) -> (integer:pid ...)
      like process-chain but uses path-pipe-chain internally and so allows automatically created paths (named pipes) between processes.
