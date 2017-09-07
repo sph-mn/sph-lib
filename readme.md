@@ -1,5 +1,5 @@
 # sph-lib
-see [sph-lib](http://sph.mn/content/187).
+see also [sph.mn](http://sph.mn/c/view/2u)
 # dependencies
 * [gnu guile](https://www.gnu.org/software/guile/) >= 2
 * for the installation executable: shell
