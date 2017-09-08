@@ -14,10 +14,10 @@
     ensure-trailing-slash
     filename-extension
     fold-directory-tree
-    get-unique-target-path
     is-directory?
     last
     list->path
+    make-path-unique
     mtime-difference
     path->full-path
     path->list
@@ -171,15 +171,20 @@
      results in the last dot-separated part of string or the empty-string if no such part exists"
     (let ((r (string-split a #\.))) (if (length-greater-one? r) (last r) "")))
 
-  (define (get-unique-target-path target-path)
-    "string boolean -> string
-     find a target path that is similar to \"target-path\" but unique in the directory.
-     adds incrementing numbers or/and a file modification time date if \"add-date?\" is true (default) to find the result path"
-    (if (file-exists? target-path)
-      (let (next-path (l (count) (string-append target-path "." (number->string count 32))))
-        (let loop ((other-path (next-path 1)) (count 1))
-          (if (file-exists? other-path) (loop (next-path count) (+ 1 count)) other-path)))
-      target-path))
+  (define* (make-path-unique path #:optional suffix)
+    "string [string] -> string
+     if the given path with suffix already exists, insert a string between path and the suffix
+     so that file name is unique in its directory. suffix is empty by default.
+     eventually inserts a period and a base32 number.
+     examples
+       \"/tmp/abc\" -> \"/tmp/abc.1\"
+       \"/tmp/abc\" \".scm\" -> \"/tmp/abc.1.scm\""
+    (let* ((suffix (or suffix "")) (full-path (string-append path suffix)))
+      (if (file-exists? full-path)
+        (let (next (l (count) (string-append path "." (number->string count 32) suffix)))
+          (let loop ((path (next 1)) (count 1))
+            (if (file-exists? path) (loop (next count) (+ 1 count)) path)))
+        full-path)))
 
   (define (mtime-difference . paths)
     "string ... -> integer

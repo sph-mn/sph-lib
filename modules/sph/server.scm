@@ -2,6 +2,7 @@
   (export
     server-address-string->protocol-family
     server-create-bound-socket
+    server-default-port
     server-listen
     server-listen-queue-length
     server-protocol-family->address-family
@@ -14,6 +15,7 @@
     (rnrs bytevectors)
     (rnrs exceptions)
     (sph)
+    (sph io)
     (sph thread-pool)
     (only (sph filesystem) ensure-directory-structure)
     (only (sph list) contains?)
@@ -28,36 +30,22 @@
   (define server-listen-queue-length 1024)
   (define server-send-buffer-size 8096)
   (define server-receive-buffer-size 512)
+  (define server-default-port 6500)
 
-  (define (server-address-string->protocol-family a) "string -> integer"
-    (if (string-prefix? "/" a) PF_UNIX (if (string-index a #\:) PF_INET6 PF_INET)))
-
-  (define (server-protocol-family->address-family a) "integer -> integer"
-    (if (= PF_UNIX a) AF_UNIX (if (= PF_INET6 a) AF_INET6 AF_INET)))
-
-  (define*
-    (server-create-bound-socket address #:optional (port-number 6500) (type SOCK_STREAM)
-      (protocol 0))
+  (define* (server-create-bound-socket address #:optional port type protocol)
     "string [integer integer integer] -> socket
      create a socket, bind, and result in the socket object.
      defaults:
      * if address is a path starting with \"/\" then a local unix socket is created (no port necessary)
      * if address contains \":\" then an ip6 tcp socket is created
      * else an ip4 tcp socket is created"
-    (let (protocol-family (server-address-string->protocol-family address))
-      (let
-        ( (r (socket protocol-family type protocol))
-          (address-family (server-protocol-family->address-family protocol-family)))
-        (setsockopt r SOL_SOCKET SO_REUSEADDR 1)
-        (setsockopt r SOL_SOCKET SO_SNDBUF server-send-buffer-size)
-        (setsockopt r SOL_SOCKET SO_RCVBUF server-receive-buffer-size)
-        (if (= address-family AF_UNIX)
-          (begin
-            (if (file-exists? address) (delete-file address)
-              (ensure-directory-structure (dirname address)))
-            (bind r address-family address))
-          (bind r address-family (inet-pton protocol-family address) (or port-number 6500)))
-        r)))
+    (socket-create-bound address #:port (or port server-default-port)
+      #:type type
+      #:protocol protocol
+      #:set-options
+      (l (a) (setsockopt a SOL_SOCKET SO_REUSEADDR 1)
+        (setsockopt a SOL_SOCKET SO_SNDBUF server-send-buffer-size)
+        (setsockopt a SOL_SOCKET SO_RCVBUF server-receive-buffer-size))))
 
   (define (call-with-signal-handling s proc)
     "socket procedure -> any

@@ -5,6 +5,7 @@
     call-with-pipe
     call-with-pipes
     call-with-temp-file
+    create-socket
     each-u8
     file->bytevector
     file->datums
@@ -27,6 +28,9 @@
     port-lines-map
     port-lines-map->port
     read-until-string-proc
+    socket-address-string->protocol-family
+    socket-create-bound
+    socket-protocol-family->address-family
     sph-io-description
     string->file
     temp-file-port
@@ -37,7 +41,7 @@
     (rnrs io ports)
     (sph)
     (sph list)
-    (only (sph filesystem) ensure-trailing-slash)
+    (only (sph filesystem) ensure-trailing-slash ensure-directory-structure)
     (only (sph module) module-re-export-modules)
     (only (sph one) begin-first)
     (only (srfi srfi-1) drop))
@@ -45,6 +49,32 @@
   (define sph-io-one-description
     "port and file input/output.
      part of (sph io), which additionally exports (rnrs io ports) and (rnrs io simple)")
+
+  (define (socket-address-string->protocol-family a) "string -> integer"
+    (if (string-prefix? "/" a) PF_UNIX (if (string-index a #\:) PF_INET6 PF_INET)))
+
+  (define (socket-protocol-family->address-family a) "integer -> integer"
+    (if (= PF_UNIX a) AF_UNIX (if (= PF_INET6 a) AF_INET6 AF_INET)))
+
+  (define* (socket-create-bound address #:key port type protocol set-options)
+    "string [integer integer integer] -> socket
+     create a socket, bind, and result in the socket object.
+     defaults:
+     * if address is a path starting with \"/\" then a local unix socket is created (no port necessary)
+     * if address contains \":\" then an ip6 tcp socket is created
+     * else an ip4 tcp socket is created"
+    (let (protocol-family (socket-address-string->protocol-family address))
+      (let
+        ( (s (socket protocol-family (or type SOCK_STREAM) (or protocol 0)))
+          (address-family (socket-protocol-family->address-family protocol-family)))
+        (and set-options (set-options s))
+        (if (= address-family AF_UNIX)
+          (begin
+            (if (file-exists? address) (delete-file address)
+              (ensure-directory-structure (dirname address)))
+            (bind s address-family address))
+          (bind s address-family (inet-pton protocol-family address) (port 3000)))
+        s)))
 
   (define (rw-port->port read write port port-2)
     ;copied from io read-write to avoid circular dependency
