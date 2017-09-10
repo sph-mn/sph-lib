@@ -20,6 +20,7 @@
   (import
     (guile)
     (rnrs base)
+    (rnrs io ports)
     (sph)
     (sph time)
     (srfi srfi-19)
@@ -79,9 +80,9 @@
 
   (import-unexported (web response) code->reason-phrase)
 
-  (define (http-write-status-line code port) (display "HTTP/1.1" port)
-    (display #\space port) (display code port)
-    (display #\space port) (display (code->reason-phrase code) port) (display "\r\n" port))
+  (define (http-write-status-line code port) (put-string port "HTTP/1.1")
+    (put-char port #\space) (put-string port (number->string code 10))
+    (put-char port #\space) (put-string port (code->reason-phrase code)) (put-string port "\r\n"))
 
   (define-syntax-rule (http-status-line code)
     (call-with-output-string (l (port) (http-write-status-line code port))))

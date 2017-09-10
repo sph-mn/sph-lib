@@ -56,17 +56,18 @@
   (define (socket-protocol-family->address-family a) "integer -> integer"
     (if (= PF_UNIX a) AF_UNIX (if (= PF_INET6 a) AF_INET6 AF_INET)))
 
-  (define* (socket-create-bound address #:key port type protocol set-options)
+  (define* (socket-create-bound address #:key port type protocol non-blocking set-options)
     "string [integer integer integer] -> socket
      create a socket, bind, and result in the socket object.
-     defaults:
-     * if address is a path starting with \"/\" then a local unix socket is created (no port necessary)
-     * if address contains \":\" then an ip6 tcp socket is created
-     * else an ip4 tcp socket is created"
+     defaults
+       if address is a path starting with \"/\" then a local unix socket is created (no port necessary)
+       if address contains \":\" then an ip6 tcp socket is created
+       else an ip4 tcp socket is created"
     (let (protocol-family (socket-address-string->protocol-family address))
       (let
         ( (s (socket protocol-family (or type SOCK_STREAM) (or protocol 0)))
           (address-family (socket-protocol-family->address-family protocol-family)))
+        (if non-blocking (fcntl s F_SETFL (logior O_NONBLOCK (fcntl s F_GETFL))))
         (and set-options (set-options s))
         (if (= address-family AF_UNIX)
           (begin

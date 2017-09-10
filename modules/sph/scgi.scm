@@ -18,13 +18,13 @@
     sph-scgi-description)
   (import
     (rnrs exceptions)
-    (rnrs io ports)
     (sph)
     (sph server)
     (only (guile)
       reverse
       getuid
       set-port-encoding!)
+    (only (rnrs io ports) get-u8)
     (only (rnrs io simple) eof-object? read-char))
 
   (define sph-scgi-description
@@ -76,21 +76,28 @@
                       (loop (- count 1) (get-u8 port) (pair (integer->char octet) key) value r)))
                   r))))))))
 
-  (define scgi-default-address (string-append "/tmp/" (number->string (getuid)) "/scgi"))
+  (define (scgi-default-address) (string-append "/tmp/" (number->string (getuid)) "/scgi"))
 
   (define*
-    (scgi-handle-requests proc #:optional socket thread-count address port-number .
-      server-listen-args)
-    "procedure:{list:header:((string . string) ...) port:client-socket ->} socket/false false/integer string ->
-     start listening on a socket and call proc for each incoming request.
-     the socket protocol-family depends on the address: if it starts with a slash a local unix socket is used, if it contains colons ip6, otherwise ip4.
-     if socket is false, a socket is created with (socket AF_UNIX SOCK_STREAM 0). default port for tcp sockets is 6500.
-     server-listen-args is passed to (sph server) server-listen"
-    (apply server-listen
+    (scgi-handle-requests handle-request #:key socket address port parallelism
+      (server-listen server-listen)
+      (server-socket server-socket))
+    "procedure:{list:header:((string . string) ...) port:client -> any} _ ... -> unspecified
+     optional keyword arguments
+       #:address string
+       #:port integer
+       #:parallelism integer
+       #:server-listen procedure
+       #:server-socket procedure
+       #:socket socket-object
+     start listening on a socket and call handle-request for each new connection.
+     the socket protocol-family depends on the address: if it starts with a slash a local unix socket is used, if it contains colons then ip6, otherwise ip4.
+     if a socket is not given, a local unix socket is created with. default port for tcp sockets is 6500.
+     server-listen and server-socket can be specified to use alternative server implementations, for example (sph server fibers)"
+    (server-listen
       (l (port)
         ; set to an 8-bit encoding because we are dealing with octets
         (set-port-encoding! port "ISO-8859-1")
-        (scgi-read-header port (l (header) (proc header port))))
-      (or socket
-        (server-create-bound-socket (or address scgi-default-address) (or port-number 6500)))
-      thread-count server-listen-args)))
+        (scgi-read-header port (l (header) (handle-request header port))))
+      (or socket (server-socket (or address (scgi-default-address)) #:port port)) #:parallelism
+      parallelism)))
