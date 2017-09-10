@@ -246,7 +246,7 @@
 
   (define sph-description
     "bindings that are fundamental to all sph libraries.
-     exports almost all of (rnrs base).
+     exports (rnrs base) except set!. if you need set!, import it with (import (only (rnrs base) set!))
      # syntax
      quote-odd
        any ... -> list
@@ -254,7 +254,7 @@
        example: a 1 b 2 -> ((quote a) 1 (quote b) 2)
      define-as
        example: (define-as list 1 2 3)
-       example: (define-as (quasiquote list) 1 (unquote 3)
+       example: (define-as (quasiquote list) 1 (unquote 3))
      compose-s
        (compose-s a (list 1 2)) -> (a (list 1 2))
        (compose-s (a b) (list 1 2)) -> (a (b (list 1 2)))

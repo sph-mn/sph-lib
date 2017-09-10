@@ -17,7 +17,7 @@
   (define sph-server-description
     "a generic socket data processing server that uses a thread-pool for parallel request processing.
      starting the server with server-listen makes it listen on an existing or newly created socket.
-     if there is a new connection on the socket, a user supplied procedure is called a client port to receive and send data")
+     if there is a new connection on the socket, a user supplied procedure is called with a client port to receive and send data")
 
   (define with-signal-handling
     (let (signal-numbers (list SIGPIPE SIGINT SIGTERM))

@@ -54,12 +54,12 @@
     "vectors as records
      the main goal this library tries to archieve is to offer a dictionary data-structure where field values can be accessed by field name, but where the access happens indexed as for vectors and not using a hash function for example.
      records use less memory and less access time.
-     this library is supposed to be simpler in definition and usage than existing record libraries (rnrs, srfi) and more flexible by being based on the less restricted interobability with vectors (for records) and hashtables (for layouts).
-     any vector can be accessed as a record and records can be accessed like vectors.
+     this library is supposed to be simpler in definition and usage than existing record libraries (rnrs, srfi) and more flexible by being based on the less restricted interoperability with vectors (for records) and hashtables (for layouts).
+     any vector can be accessed as a record and records can be accessed as vectors.
      if type information is desired then it has to be added manually by storing a type name in the first record field for example.
      usage:
      (define-record my-record a b c)
-     (define-record my-other-record (a my-a-accessor-name my-a-setter-name) b (c my-c-accessor-n))
+     (define-record my-other-record (a accessor-name setter-name) b (c my-other-c))
      (define x (record my-record 1 2))
      (my-record-a x) -> 1
      (my-record-c x) -> #f

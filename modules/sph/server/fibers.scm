@@ -14,7 +14,7 @@
     "a generic socket data processing server that uses fibers for parallel request processing and non-blocking port input/output.
      fibers are cooperative, event-driven user threads. there can be multiple active fibers per kernel thread.
      starting the server with server-listen makes it listen on an existing or newly created socket.
-     if there is a new connection on the socket, a user supplied procedure is called a client port to receive and send data")
+     if there is a new connection on the socket, a user supplied procedure is called with a client port to receive and send data")
 
   (define* (server-socket-fibers address #:key port type protocol set-options)
     "create a non-blocking socket that works with server-listen-fibers"

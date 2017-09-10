@@ -74,7 +74,7 @@
     "time as tai or utc nanoseconds since the unix epoch or gregorian calendar dates.
      objects
        utc: integer: utc seconds  since the unix epoch. utc uses leap seconds to conform to (= number-of-days (/ utc-seconds 86400))
-       tai: integer: tai seconds since the unix epoch
+       tai: integer: tai seconds since the unix epoch. as elapsed, no leap seconds
        date: vector: gregorian calendar date, daytime and timezone offset")
 
   (define (seconds->nanoseconds a) (* 1000000000 a))
