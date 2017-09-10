@@ -22,14 +22,6 @@
 
   (define thread-pool-queue-fifo (list make-q q-empty? enq! deq!))
 
-  #;(nullary
-                  (or
-                    (with-mutex queue-mutex
-                      (if (q-empty? queue) (wait-condition-variable queue-not-empty queue-mutex)
-                        (deq! queue))
-                      (if (q-empty? queue) (begin (debug-log (q empty-after-wait) )#f) (deq! queue)))
-                    (get-task)))
-
   (define* (thread-pool-create #:optional size exception-handler queue-type)
     "[integer procedure:{key retry ->} true/symbol/(symbol ...) list/symbol:lifo/fifo] -> (procedure:{procedure:nullary:code-to-execute -> unspecified}:queue-add! thread ...)
      creates a list of threads that wait using condition variables to execute procedures from a queue, which is a first-in-first-out queue by default.

@@ -8,7 +8,8 @@
     (guile)
     (sph)
     (sph string)
-    (only (sph io) socket-create-bound))
+    (only (sph io) socket-create-bound)
+    (only (sph module) import-unexported))
 
   (define server-listen-queue-length 1024)
   (define server-default-port 6500)
@@ -23,6 +24,12 @@
       (l (a) (setsockopt a SOL_SOCKET SO_REUSEADDR 1)
         (fcntl a F_SETFD FD_CLOEXEC) (and set-options (set-options a)))))
 
+  (import-unexported (rnrs exceptions) exception-printer)
+
+  (define (display-error key a)
+    (let (port (current-error-port))
+      (exception-printer port key a (nullary (display (pair key a) port))) (newline port)))
+
   (define (server-connection-error-handler resume key . a)
     "do not display connection errors like broken pipe"
     (if
@@ -31,5 +38,5 @@
           (let (errno (system-error-errno (pair key a)))
             (or (= EPIPE errno) (= EIO errno)
               (= ECONNRESET errno) (= ENOMEM errno) (= error ENOBUFS)))))
-      (let (port (current-error-port)) (display a port) (newline port)))
+      (display-error key a))
     (resume)))

@@ -33,7 +33,8 @@
                 handlers)))))))
 
   (define (with-thread-pool size c)
-    (if (<= size 1) (c (l (a) (a)))
+    (if (<= size 1)
+      (c (l (a) (catch #t a (l a (apply server-connection-error-handler (nullary #t) a)))))
       (apply (l (enqueue . threads) (exception-always (thread-pool-destroy threads) (c enqueue)))
         (thread-pool-create size server-connection-error-handler))))
 
