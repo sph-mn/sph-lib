@@ -26,7 +26,8 @@
     (ice-9 match)
     (rnrs eval)
     (sph)
-    (only (sph filesystem) realpath*)
+    (sph string)
+    (only (sph filesystem) realpath* remove-trailing-slash)
     (only (srfi srfi-1) append-map))
 
   (define sph-module-description
@@ -115,6 +116,13 @@
     (let (a (string-join (map symbol->string a) "/"))
       (if filename-extension (string-append a filename-extension) a)))
 
+  (define* (path->symbol-list a #:optional (filename-extension ".scm")) "string -> (symbol ...)"
+    (map string->symbol
+      (string-split
+        (string-trim (if filename-extension (string-drop-suffix-if-exists filename-extension a) a)
+          #\/)
+        #\/)))
+
   (define (module-name->load-path-and-path a filename-extension load-path c)
     "(symbol ...) string (string ...) procedure:{string:load-path string:full-path -> any} -> any
      finds the load path under which a possibly partial (prefix) module name is saved.
@@ -150,25 +158,26 @@
       file-content-match)
     "string [#:load-path (string ...) #:guile-modules? boolean #:ignore-content? boolean] -> false/(symbol ...):module-name
      a file is considered a valid module if:
-     * it exists and is a regular file
-     * the file name extension is \".scm\"
-     * the file contains as the first expression an r6rs library or r7rs define-library form
-     * if \"guile-modules?\" is true: the file contains a define-module form
-     * it is in a load path and the module name matches the path under a load path (using %load-paths)"
-    (let (path (realpath* path))
+       it exists and is a regular file
+       the file name extension is \".scm\"
+       the file contains as the first expression an r6rs library or r7rs define-library form
+       if \"guile-modules?\" is true: the file contains a define-module form
+       it is in a load path and the module name matches the path under a load path (using %load-paths)"
+    (let (path (or path (realpath* path)))
       (and (string-suffix? ".scm" path)
-        (let (stat-info (false-if-exception (stat path)))
-          (and stat-info (path->load-path path load-path)
-            (if ignore-content? path
-              (call-with-input-file path
-                (l (file)
-                  (if file-content-match (file-content-match file)
-                    (or (module-match-rnrs-definition (read file))
-                      (and guile-modules?
-                        (begin (seek file 0 SEEK_SET)
-                          (let loop ((a (read file)))
-                            (if (eof-object? a) #f
-                              (or (module-match-guile-definition a) (loop (read file)))))))))))))))))
+        (and-let*
+          ( (stat-info (false-if-exception (stat path)))
+            (load-path-prefix (path->load-path path load-path)))
+          (if ignore-content? (path->symbol-list (string-drop-prefix load-path-prefix path))
+            (call-with-input-file path
+              (l (file)
+                (if file-content-match (file-content-match file)
+                  (or (module-match-rnrs-definition (read file))
+                    (and guile-modules?
+                      (begin (seek file 0 SEEK_SET)
+                        (let loop ((a (read file)))
+                          (if (eof-object? a) #f
+                            (or (module-match-guile-definition a) (loop (read file))))))))))))))))
 
   (define*
     (module-find path #:key (max-depth (inf)) (load-path %load-path) guile-modules? ignore-content?
@@ -194,7 +203,7 @@
       ; skip
       (l (n s r) r)
       ; error
-      (l (n s errno r) r) (list) path))
+      (l (n s errno r) r) (list) (remove-trailing-slash path)))
 
   (define (module-find-by-name name search-type load-paths)
     "(symbol ...) symbol:exact/prefix/prefix-not-exact (string ...) -> ((symbol ...):module-name ...)
