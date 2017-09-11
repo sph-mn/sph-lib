@@ -6,11 +6,9 @@
     (sph thread-pool))
 
   (define-test (thread-pool-create)
-    (let (count (current-processor-count))
+    (let (size (current-processor-count))
       (apply
-        (l (queue-add! . threads)
-          ;(queue-add! (nullary (raise (q test))))
-          (each-integer count (l (a) (queue-add! (nullary #f)))) (thread-pool-finish threads) #t)
-        (thread-pool-create count (l (key retry) key)))))
+        (l (enqueue . threads) (= (length threads) (length (thread-pool-finish enqueue threads))))
+        (thread-pool-create size (l (key retry) key)))))
 
   (test-execute-procedures-lambda (thread-pool-create)))

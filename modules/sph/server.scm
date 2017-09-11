@@ -6,9 +6,9 @@
     sph-server-description)
   (import
     (guile)
-    (rnrs bytevectors)
     (sph)
     (sph exception)
+    (sph module)
     (sph server base)
     (sph string)
     (sph thread-pool)
@@ -33,10 +33,10 @@
                 handlers)))))))
 
   (define (with-thread-pool size c)
-    (if (<= size 1)
-      (c (l (a) (catch #t a (l a (apply server-connection-error-handler (nullary #t) a)))))
-      (apply (l (enqueue . threads) (exception-always (thread-pool-destroy threads) (c enqueue)))
-        (thread-pool-create size server-connection-error-handler))))
+    (if (<= size 1) (c (l (a) (a)))
+      (apply
+        (l (enqueue . threads) (exception-always (thread-pool-finish enqueue threads) (c enqueue)))
+        (thread-pool-create size))))
 
   (define (with-accept-error-handling thunk) "continue unless socket has been closed"
     (catch (q system-error) thunk
@@ -56,8 +56,10 @@
                 (nullary
                   (let (conn (accept socket))
                     (if conn
-                      (enqueue
-                        (nullary
-                          (let (client (first conn)) (handle-request client)
-                            (force-output client) (close-port client)))))
+                      (let (client (first conn))
+                        (identity
+                          ( (nullary
+                              (catch #t (nullary (handle-request client) (force-output client))
+                                server-exception-handler)
+                              (catch #t (close-port client) (l a #t)))))))
                     (loop-accept)))))))))))
