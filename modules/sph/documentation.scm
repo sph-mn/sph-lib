@@ -15,6 +15,7 @@
   (export
     default-format-arguments
     display-module-information-short
+    doc-bindings
     docstring->lines
     docstring-split-signature
     documentation-display-formats
@@ -196,4 +197,12 @@
             (if markdown? (display "* ")) (display name)
             (if description (begin (display " - ") (display (get-first-line description)))))
           (newline))
-        a))))
+        a)))
+
+  (define* (doc-bindings libraries #:optional (pair pair))
+    "(list ...) -> ((symbol:name . list:library-name) ...)
+     get a list of all bindings and the library name they belong to for all specified library names"
+    (append-map
+      (l (library)
+        (map (l (export) (pair export library)) (module-exports (resolve-interface library))))
+      libraries)))

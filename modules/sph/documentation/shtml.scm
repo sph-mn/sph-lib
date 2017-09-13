@@ -78,22 +78,8 @@
                 bindings))))
         (list description index content))))
 
-  (define*
-    (doc-shtml-libraries library-names #:optional
-      (map-binding-name (l (name library-name) (symbol->string name)))
-      (map-library-name any->string))
-    "((symbol ...) ...) [{symbol list:library-name -> sxml} {list:library-name -> sxml}] -> list
-     a table of all bindings from all specified libraries with binding names in the first column and associated library names in the second"
-    (let
-      (binding-info
-        (map tail
-          (list-sort-with-accessor string<? first
-            (append-map
-              (l (names library-name)
-                (map
-                  (l (name)
-                    (list (symbol->string name) (map-binding-name name library-name)
-                      (map-library-name library-name)))
-                  names))
-              (map (l (a) (module-exports (resolve-interface a))) library-names) library-names))))
-      (pair (q table) (map (l (a) (pair (q tr) (map (l (a) (list (q td) a)) a))) binding-info)))))
+  (define* (doc-shtml-libraries libraries #:optional (map-data identity))
+    "create a table of all bindings in all specified libraries.
+     first column: binding name
+     second column: library name"
+    (shtml-list->table (map-apply map-data (doc-bindings libraries list)))))
