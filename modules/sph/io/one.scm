@@ -74,7 +74,7 @@
             (if (file-exists? address) (delete-file address)
               (ensure-directory-structure (dirname address)))
             (bind s address-family address))
-          (bind s address-family (inet-pton protocol-family address) (port 3000)))
+          (bind s address-family (inet-pton protocol-family address) (or port 3000)))
         s)))
 
   (define (rw-port->port read write port port-2)
