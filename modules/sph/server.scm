@@ -24,6 +24,7 @@
       (l (s c)
         "socket procedure -> any
         setup sigint and sigterm signals to break the blocking accept call.
+        accept is interrupted when the socket is closed and subsequently results in an EBADF error.
         reset signal handlers to the original ones on any kind of exit"
         (let ((handlers #f) (stop (l (n) (close-port s))))
           (dynamic-wind
@@ -33,6 +34,9 @@
                 handlers)))))))
 
   (define (with-thread-pool size c)
+    "call c with a new thread pool and pass it an enqueue procedure.
+     if size is equal or lower than 1, no thread pool is created but the passed procedures
+     work as if. the thread pool is exited waiting for the last requests to finish on any kind of exit"
     (if (<= size 1) (c (l (a) (a)))
       (apply
         (l (enqueue . threads) (exception-always (thread-pool-finish enqueue threads) (c enqueue)))
@@ -45,7 +49,11 @@
           (if (and (= EBADF errno) (string-equal? "accept" (first (tail a)))) #t (thunk))))))
 
   (define* (server-listen handle-request socket #:key parallelism)
-    "server is stopped with when it receives the signal SIGINT or SIGTERM"
+    "procedure:{port:client -> unspecified} port:socket [#:key parallelism integer/false] -> unspecified
+     listen for new connections on socket and call handle-request with a input/output port for the client.
+     handle-request is called in the next free thread in a thread-pool.
+     the server is stopped when it receives the signal SIGINT or SIGTERM.
+     currently all exceptions are catched, printed and the server continues listening"
     (listen socket server-listen-queue-length)
     (with-thread-pool (max 1 (- (or parallelism (current-processor-count)) 1))
       (l (enqueue)

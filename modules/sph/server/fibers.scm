@@ -13,6 +13,7 @@
   (define sph-server-fibers-description
     "a generic socket data processing server that uses fibers for parallel request processing and non-blocking port input/output.
      fibers are cooperative, event-driven user threads. there can be multiple active fibers per kernel thread.
+     see https://github.com/wingo/fibers/wiki/Manual for details and caveats.
      starting the server with server-listen makes it listen on an existing or newly created socket.
      if there is a new connection on the socket, a user supplied procedure is called with a client port to receive and send data")
 
@@ -22,8 +23,11 @@
       port #:type type #:protocol protocol #:set-options set-options #:non-blocking #t))
 
   (define* (server-listen-fibers handle-request socket #:key parallelism)
-    "procedure socket [#:parallelism integer/false]
-     starts a server with a new fibers scheduler"
+    "procedure:{port:client -> unspecified} port:socket [#:parallelism integer/false]
+     starts a server with a new fibers scheduler.
+     the server is stopped when it receives the signal SIGINT or SIGTERM.
+     currently all exceptions are catched automatically by (fibers) and
+     printed and the server continues listening"
     (run-fibers
       (nullary (listen socket server-listen-queue-length) (sigaction SIGPIPE SIG_IGN)
         (let loop-accept ()
