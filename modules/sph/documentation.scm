@@ -36,12 +36,12 @@
     (sph binding-info)
     (sph lang indent-syntax)
     (sph lang parser type-signature)
+    (sph list)
     (sph module)
     (sph record)
     (sph tree)
     (only (ice-9 regex) regexp-substitute/global)
     (only (rnrs sorting) list-sort)
-    (only (sph list) fold-multiple)
     (only (sph string) string-multiply string-equal?)
     (only (srfi srfi-1) remove filter-map))
 
@@ -177,13 +177,15 @@
           a))
       (map tail (list-sort (l (a b) (string<? (first a) (first b))) b))))
 
-  (define (module-find-one-information . search-path)
+  (define (module-find-one-information search-paths . module-find-one-arguments)
     (map
       (l (a) (alist-q name (first a) full-path (tail a) description (module-description (first a))))
-      (apply append (filter-map (l (a) (false-if-exception (module-find a))) search-path))))
+      (apply append
+        (filter-map (l (a) (apply module-find a module-find-one-arguments))
+          (any->list search-paths)))))
 
-  (define (module-find-one-information-sorted . search-path)
-    (sort-module-information (apply module-find-one-information search-path)))
+  (define (module-find-one-information-sorted search-paths . module-find-arguments)
+    (sort-module-information (apply module-find-one-information search-paths module-find-arguments)))
 
   (define* (display-module-information-short a #:optional markdown?)
     (let

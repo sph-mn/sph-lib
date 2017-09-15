@@ -34,7 +34,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph filesystem asset-compiler) - configuration format and helpers to concatenate/preprocess code from multiple sources
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph install) - program and library installer
-* (sph io path-pipe-chain) - call procedures with an input and output argument in a chained manner to allow data flow between them
+* (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
 * (sph lang itpn) - helpers for working with parsed itpn
 * (sph lang parser type-signature) - a parser and writer for the sph type signature notation
 * (sph lang plcss) - s-expression language that compiles to css
@@ -47,7 +47,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph record) - vectors as records
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
 * (sph scrypt) - use the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt
-* (sph server) - a generic socket based server
+* (sph server) - a generic socket data processing server that uses a thread-pool for parallel request processing
 * (sph test) - automated code testing with composable modules
 * (sph test performance) - adaptive performance testing with formatted result display
 * (sph thread-pool) - thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type
@@ -107,6 +107,8 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph module) - guile module system and rnrs library related procedures
 * (sph number)
 * (sph one) - various
+* (sph server base)
+* (sph server fibers) - a generic socket data processing server that uses fibers for parallel request processing and non-blocking port input/output
 * (sph set) - hashtables as sets
 * (sph sql) - create sql-statements from scheme data
 * (sph stream) - srfi-41 stream helper

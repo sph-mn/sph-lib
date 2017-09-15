@@ -3,7 +3,9 @@
 
 (import (sph) (sph documentation) (sph io) (srfi srfi-1) (sph alist) (sph list))
 (define highlights (file->datums "other/highlights"))
-(define module-info (module-find-one-information-sorted "modules/sph"))
+
+(define module-info
+  (module-find-one-information-sorted "modules/sph" #:load-path (list (string-append (getcwd) "/modules"))))
 
 (apply-values
   (l (highlights other) (display-line "## highlights")

@@ -157,13 +157,14 @@
     (module-find-one path #:key (load-path %load-path) ignore-content? guile-modules?
       file-content-match)
     "string [#:load-path (string ...) #:guile-modules? boolean #:ignore-content? boolean] -> false/(symbol ...):module-name
+     setting the right load-path is important because the module name is derived from it.
      a file is considered a valid module if:
        it exists and is a regular file
        the file name extension is \".scm\"
        the file contains as the first expression an r6rs library or r7rs define-library form
        if \"guile-modules?\" is true: the file contains a define-module form
        it is in a load path and the module name matches the path under a load path (using %load-paths)"
-    (let (path (or path (realpath* path)))
+    (and-let* ((path (realpath* path)))
       (and (string-suffix? ".scm" path)
         (and-let*
           ( (stat-info (false-if-exception (stat path)))
