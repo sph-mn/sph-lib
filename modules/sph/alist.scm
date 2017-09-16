@@ -176,7 +176,7 @@
   (define (alist-contains a key) (alist-contains-s a key equal?))
 
   (define (alist-map proc a) "procedure:{key value -> any} list -> list"
-    (map (l (e) (proc (first e) (tail e))) a))
+    (map (l (a) (proc (first a) (tail a))) a))
 
   (define (alist-merge a b)
     "list list -> list

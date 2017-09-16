@@ -76,7 +76,8 @@
      example use case is calculating the size of a bytevector for storing an integer"
     (if (= 0 a) 0 (+ 1 (inexact->exact (floor (log-base a base))))))
 
-  (define (percent value base) "how many percent is value from base" (/ (* value 100) base))
+  (define (percent value base) "how many percent is value from base"
+    (if (zero? base) 0 (/ (* value 100) base)))
 
   (define (integer-and-fraction& a c)
     "number procedure:{integer real -> any:result} -> any:result
