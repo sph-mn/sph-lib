@@ -85,10 +85,12 @@
      string procedure -> (string ...)
      results in a list of all paths under path, excluding path and the directory references \".\" and \"..\""
     ;breadth-first search
-    (let (entries (or (directory-read-all path (negate directory-reference?)) (list)))
+    (let*
+      ( (path (ensure-trailing-slash path))
+        (entries (or (directory-read-all path (negate directory-reference?)) (list))))
       (fold-right
         (l (a r)
-          (let (a (string-append path "/" a))
+          (let (a (string-append path a))
             (let (stat-info (stat a))
               ( (if (eqv? (q directory) (stat:type stat-info))
                   (l (r) (append (directory-tree-paths a select?) r)) identity)

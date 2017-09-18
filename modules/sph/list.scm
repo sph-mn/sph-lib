@@ -19,10 +19,10 @@
     complement-both
     consecutive
     contains-all?
-    contains-any?
+    contains-some?
     contains?
     containsq?
-    containsv-any?
+    containsv-some?
     containsv?
     count-value
     count-value-with-limit
@@ -267,12 +267,12 @@
      test if argument \"a\" contains all of the given values"
     (every (l (b) (contains? a b)) values))
 
-  (define (contains-any? a values)
+  (define (contains-some? a values)
     "list ... -> boolean
      test if argument \"a\" contains any of the given values"
     (any (l (b) (contains? a b)) values))
 
-  (define (containsv-any? a values)
+  (define (containsv-some? a values)
     "list ... -> boolean
      test if argument \"a\" contains any of the given values"
     (any (l (b) (containsv? a b)) values))

@@ -28,9 +28,9 @@
     string-camelcase->underscore
     string-case
     string-compress-space
-    string-contains-any?
+    string-contains-some?
     string-contains-char?
-    string-contains-every?
+    string-contains-all?
     string-downcase-first
     string-drop-prefix
     string-drop-prefix-if-exists
@@ -211,15 +211,15 @@
       (quasisyntax
         ((unsyntax (datum->syntax s (qq (lambda ((unquote c)) (unquote cond-datum))))) a))))
 
-  (define (string-contains-any? a patterns)
+  (define (string-contains-some? a b)
     "string (string ...) -> boolean
      result in a boolean indicating if string contains any of the patterns"
-    (any (l (e) (string-contains a e)) patterns))
+    (any (l (b) (string-contains a b)) b))
 
-  (define (string-contains-every? a patterns)
+  (define (string-contains-all? a b)
     "string (string ...) -> boolean
      result in a boolean indicating if string contains all of the patterns"
-    (every (l (e) (string-contains a e)) patterns))
+    (every (l (b) (string-contains a b)) b))
 
   (define string-each string-for-each)
 
