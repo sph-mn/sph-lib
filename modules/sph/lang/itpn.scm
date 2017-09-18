@@ -49,13 +49,13 @@
   (define (itpn-filter-all-patterns-all-parts a patterns-prefix patterns-suffix patterns-anywhere)
     "list list list -> (list list)
      filters packets where all patterns-prefix match the prefix and all patterns-suffix match the suffix"
-    (itpn-filter a patterns-prefix patterns-suffix patterns-anywhere string-contains-every? and-p))
+    (itpn-filter a patterns-prefix patterns-suffix patterns-anywhere string-contains-all? and-p))
 
   (define
     (itpn-filter-some-patterns-some-parts a patterns-prefix patterns-suffix patterns-anywhere)
     "list list list -> (list list)
      filters packets where some patterns-prefix match the prefix or some patterns-suffix match the suffix"
-    (itpn-filter a patterns-prefix patterns-suffix patterns-anywhere string-contains-any? or-p))
+    (itpn-filter a patterns-prefix patterns-suffix patterns-anywhere string-contains-some? or-p))
 
   (define (line->tags a) (string-split a #\space))
   (define (tags->line a) (string-join a " "))

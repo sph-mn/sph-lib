@@ -41,9 +41,9 @@
     sph-tree-description
     splice-lists-without-prefix-symbol
     tree->denoted-tree
-    tree-contains-any-not?
-    tree-contains-any?
-    tree-contains-every?
+    tree-contains-some-not?
+    tree-contains-some?
+    tree-contains-all?
     tree-contains?
     tree-each
     tree-each-leaf
@@ -551,22 +551,22 @@
      compares all (non-list and list) elements to search-value"
     (any (l (e) (or (equal-proc e search-value) (and (list? e) (tree-contains? e search-value)))) a))
 
-  (define (tree-contains-any? a equal-proc . search-values)
+  (define (tree-contains-some? a equal-proc . search-values)
     "list {any any -> boolean} any ... -> boolean
      like tree-contains? and true if any of the search-values is found"
     (any (l (search-value) (tree-contains? a search-value equal-proc)) search-values))
 
-  (define (tree-contains-every? a equal-proc . search-values)
+  (define (tree-contains-all? a equal-proc . search-values)
     "list {any any -> boolean} any ... -> boolean
      like tree-contains? but true only if every of the search-values has been found"
     (every (l (search-value) (tree-contains? a search-value equal-proc)) search-values))
 
-  (define* (tree-contains-any-not? a equal-proc . search-values)
+  (define* (tree-contains-some-not? a equal-proc . search-values)
     "list {any any -> boolean} any ... -> boolean
      like tree-contains? but true only if any of the search-values is not contained"
     (any
       (l (e)
-        (if (list? e) (apply tree-contains-any-not? e search-values)
+        (if (list? e) (apply tree-contains-some-not? e search-values)
           (not (contains? search-values e equal-proc))))
       a))
 
