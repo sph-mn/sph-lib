@@ -32,25 +32,43 @@
   (define sph-install-description
     "program and library installer
      features
-       installation with a specific file mode. using \"cp\" or the like usually uses owner and permissions for the current user, which might be root and undesired.
+       install with a specific file mode. using \"cp\" or the like usually uses owner and permissions
+         for the current user, which might be root and undesired.
        dry-run for listing what is to be done
-       optional automatically created command-line interface with --help and other options
-       list data-structure to define sources and destinations, with some variables available like the default guile module directory
+       optional, automatically created, command-line interface with --help and other options
+       list data-structure to define sources and destinations, with some placeholders available like the default guile module directory
        option to symlink files instead of copying them, for development and updates in a versioned repository
        data structures
-         destination: string:path/symbol:placeholder/(string/symbol ...):concatenated-path
-         source: string:path/symbol:placeholder/integer:mode-for-following/(string:path/symbol:placeholder ...):concatenated-path
-         install-spec: (destination source ...)")
+         destination: string:path/symbol:placeholder/install-spec
+         source: destination/integer:mode-for-following
+         install-spec: (destination source ...)
+     syntax
+       install-cli-guile :: install-spec ...
+         quasiquotes install-spec literals and calls install-cli-guile-p with the current program arguments
+     example config
+       (install-cli-guile
+         (path-lib-scheme \"modules/sph\" \"modules/sph.scm\")
+         (\"/usr/lib\" \"temp/libguile-sph-lib.so\"))
+     example config with custom mode and nested paths
+       (install-cli-guile
+         (path-lib-scheme \"modules/a\" #o770 \"modules/a.scm\" \"modules/b.scm\")
+         (\"/usr\"
+           (\"local\"
+             (\"lib\" \"temp/libguile-a.so\")
+             (\"bin\" \"temp/atool\"))))")
 
   (define default-mode-directory 493)
   (define default-mode-regular 420)
   (define default-path-lib-scheme "/usr/share/guile/site")
+  (define (dry-run-log . a) (display (string-join (map any->string a) " ")) (newline) #t)
 
   (define (select-mode-by-file-type a mode-regular mode-directory)
-    (if (eqv? (q directory) (stat:type (stat a))) mode-directory mode-regular))
+    (if (eq? (q directory) (stat:type (stat a))) mode-directory mode-regular))
 
   (define (every-mode-and-full-paths proc a)
-    "procedure:{integer:mode (string:path ...)} list:install-specs"
+    "procedure:{integer:mode (string:path ...) -> boolean} list:install-spec
+     custom modes can be specified in the install-spec list like (mode path path mode path).
+     this calls proc with paths that have the same mode"
     (every
       (l (paths)
         (let (maybe-mode (first paths))
@@ -58,9 +76,7 @@
             (proc #f (map path->full-path paths)))))
       (group-split-at-matches integer? a)))
 
-  (define (dry-run-log . a) (display (string-join (map any->string a) " ")) (newline) #t)
-
-  (define (system-cp-proc path-destination symlink? dry-run?)
+  (define (copy-proc path-destination symlink? dry-run?)
     (l (paths-source)
       (apply (if dry-run? dry-run-log execute-and-check-result) "cp"
         (qq
@@ -73,34 +89,33 @@
       (mode-directory default-mode-directory)
       (mode-regular default-mode-regular)
       dry-run?)
-    "automatically creates missing directories in target and sets permissions to mode-directory.
-     copies source files to target and sets permissions corresponding to mode-directory and mode-regular unless overridden in sources.
+    "automatically creates missing directories in destination and sets permissions.
      prepends path-destination-prefix to all target paths.
-     symlink source files to the destination instead of copying if \"symlink?\" is true.
+     symlinks source files instead of copying if \"symlink?\" is true.
      currently depends on the \"cp\" utility"
     (let*
       ( (destination (apply path-append path-destination-prefix (any->list destination)))
-        (system-cp (system-cp-proc destination symlink? dry-run?)))
-      ;without the umask setting the mode might not apply as specified
+        (copy (copy-proc destination symlink? dry-run?)))
+      ; without the umask setting the mode might not apply as specified
       (if (not dry-run?)
         (begin (umask 0) (ensure-directory-structure-and-new-mode destination mode-directory)))
       (every-mode-and-full-paths
         (l (mode-explicit paths)
-          ;"cp" is not that helpful here. it can not set permissions for files or directories,
-          ;and force fails on symlinks on tmpfs
-          (and (system-cp paths)
+          ; "cp" is actually not that useful here. it can not set permissions for files or directories,
+          ; and --force fails for symlinks on tmpfs
+          (and (copy paths)
+            ; set permissions
             (every
               (l (path-destination path-source)
                 (and
                   (if (is-directory? path-source)
-                    ;set permissions for the directory structure created from the source path
                     (fold-directory-tree
                       (let (path-source-length (string-length path-source))
                         (l (path stat-info r)
                           (let
                             (path
                               (path-append path-destination (string-drop path path-source-length)))
-                            (if (eqv? (q directory) (stat:type stat-info))
+                            (if (eq? (q directory) (stat:type stat-info))
                               (false-if-exception
                                 ( (if dry-run? (l a (apply dry-run-log "chmod" a)) chmod) path
                                   (or mode-explicit mode-directory)))))))
@@ -109,15 +124,16 @@
                   ( (if dry-run? (l a (apply dry-run-log "chmod" a)) chmod) path-destination
                     (or mode-explicit
                       (select-mode-by-file-type path-source mode-regular mode-directory)))))
-              (map (l (e) (path-append destination (basename e))) paths) paths)))
+              (map (l (a) (path-append destination (basename a))) paths) paths)))
         sources)))
 
   (define (install-p install-one-arguments install-specs)
     "list list -> boolean
      install multiple files or directory trees with files.
-     automatically creates missing directories in target and sets new directory permissions to default or custom specified values.
+     automatically creates missing destination directories and sets file
+     permissions to default or custom specified values.
      currently depends on the \"cp\" utility.
-     allows empty lists as install-spec"
+     allows empty lists in install-specs for conditional values"
     (every (l (e) (or (null? e) (apply install-one (first e) (tail e) install-one-arguments)))
       install-specs))
 
@@ -158,14 +174,17 @@
                   #:type integer #:description "default permissions in octal notation"))))))
       (l (program-arguments install-specs)
         "((list/string string ...) ...) -> boolean:success-status
-        a command-line interface for installation scripts for guile based projects. currently depends on the \"cp\" command-line utility.
+        a command-line interface for installation scripts for guile based projects.
+        currently depends on the common \"cp\" utility.
         parses command-line arguments and installs source files to destinations given via \"install-specs\".
-        can install multiple files and directories with default or custom filesystem permissions.
+        can install multiple files and directories with default or customised filesystem permissions.
         the symbol \"path-lib-scheme\" can be used as a placeholder in \"install-specs\".
-        see also \"install\"
+        see also \"install\".
         usage example:
-        (install-cli-guile (\"/usr/lib\" \"temp/libguile-dg.so\")
-          ((path-lib-scheme \"test\") \"test/sph\"))"
+        (install-cli-guile-p (tail (program-arguments))
+          (list
+            (list (\"/usr/lib\" \"temp/libguile-dg.so\"))
+            (list (list (quote path-lib-scheme) \"test\") \"test/sph\")))"
         (let (arguments (command-line-interface program-arguments))
           (alist-bind arguments
             (prefix path-lib-scheme symlink mode-directory mode-regular dry-run)
