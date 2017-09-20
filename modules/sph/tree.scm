@@ -27,16 +27,13 @@
     prefix-tree-map-with-depth
     prefix-tree-map-with-depth->flat-list
     prefix-tree-produce
+    prefix-tree-produce-with-context
+    prefix-tree-produce-with-context-mm
     prefix-tree-product
     prefix-tree-product-mm
     prefix-tree-replace-prefix
-    produce-prefix-context
-    produce-prefix-context-mm
     produce-prefix-trees
     produce-prefix-trees-with-depth
-    produce-tree
-    produce-tree-lists
-    produce-tree-lists-with-depths
     produce-with-iterator-tree
     sph-tree-description
     splice-lists-without-prefix-symbol
@@ -64,6 +61,9 @@
     tree-map-with-depth->flat-list
     tree-map-with-state
     tree-pair->list
+    tree-produce
+    tree-produce-lists
+    tree-produce-lists-with-depth
     tree-replace-at-once
     tree-replace-by-list
     tree-transform
@@ -127,73 +127,6 @@
     "list:((integer any ...) ...) [integer] -> list
      convert a tree representation like this ((0 a) (1 b) (2 c) (1 d)) to this (a (b (c) d))"
     (denoted-tree->tree-inner a depth-start r-2 r (pair r-2 r)))
-
-  (define* (produce-prefix-context proc a #:optional ignore-prefixes?)
-    "{context element -> any} list -> list
-     context is a list containing nested-list prefixes in bottom-to-top order.
-     for example (a (d e f) k (g h i) j) leads to proc called with each of the following arguments:
-     (d (a)), (e (d a)), (f (d a)),(k (a)), (g (a)), (h (g a)), (i (g a)), (j (a))
-     ignore-prefix-paths ignores elements that are themselves prefixes"
-    (if (null? a) a
-      (let*
-        ( (map-to-result (l (b prefix context r) (pair (proc b (pair prefix context)) r)))
-          (map-to-result-list (if ignore-prefixes? (l (b prefix context r) r) map-to-result)))
-        (reverse
-          (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (r (list)))
-            (if (null? rest) r
-              (loop (tail rest) prefix
-                context
-                (let (b (first rest))
-                  (if (and (list? b) (not (null? b)))
-                    (let (prefix-next (first b))
-                      (loop (tail b) prefix-next
-                        (pair prefix context) (map-to-result-list prefix-next prefix context r)))
-                    (map-to-result b prefix context r))))))))))
-
-  (define (prefix-tree-context-match a pattern)
-    "list list -> boolean
-     true if pattern exists in prefix-tree with the same tree interpretation as prefix-tree-context-produce.
-     example: (a b (d c)) contains patterns (a d c) and (a b) and (a d)"
-    (if (null? a) a
-      (null?
-        (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (pattern pattern))
-          (if (or (null? pattern) (null? rest)) pattern
-            (let*
-              ( (e (first rest))
-                (pattern
-                  (if (and (list? e) (not (null? e)))
-                    (let (prefix-next (first e))
-                      (loop (tail e) prefix-next
-                        (pair prefix context)
-                        (if (equal? prefix (first pattern)) (tail pattern) pattern)))
-                    (if (equal? prefix (first pattern))
-                      (let (pattern (tail pattern))
-                        (if (null? pattern) pattern
-                          (if (equal? e (first pattern)) (tail pattern) pattern)))
-                      pattern))))
-              (loop (tail rest) prefix context pattern)))))))
-
-  (define (produce-prefix-context-mm proc a)
-    "procedure:{any list -> any} list -> list
-     like produce-prefix-context but allows many-to-many relations with lists as list prefixes"
-    (if (null? a) a
-      (reverse
-        (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (result (list)))
-          (if (null? rest) result
-            (loop (tail rest) prefix
-              context
-              (let (b (first rest))
-                (if (list? prefix)
-                  (fold
-                    (if (and (list? b) (not (null? b)))
-                      (let ((b-first (first b)) (b-tail (tail b)))
-                        (l (prefix result)
-                          (append (loop b-tail b-first (pair prefix context) (list)) result)))
-                      (l (prefix result) (pair (proc b (pair prefix context)) result)))
-                    result prefix)
-                  (if (and (list? b) (not (null? b)))
-                    (loop (tail b) (first b) (pair prefix context) result)
-                    (pair (proc b (pair prefix context)) result))))))))))
 
   (define (tree-each proc a)
     "procedure:{any ->} list ->
@@ -260,19 +193,20 @@
             (if (list? (first rest)) (loop (first rest) (+ 1 depth) r)
               (pair (proc depth (first rest)) r)))))))
 
-  (define (produce-tree proc a b)
+  (define (tree-produce proc a b)
     "procedure:{any any -> any} list list -> any
      apply proc with every possible ordered combination of elements between two lists. iterates like tree-map"
     (tree-map (l (e-1) (tree-map (l (e-2) (proc e-1 e-2)) b)) a))
 
-  (define (produce-tree-lists proc a b)
-    "like produce-tree but pass only combinations of contained lists to proc"
+  (define (tree-produce-lists proc a b)
+    "like tree-produce but pass only combinations of contained lists to proc"
     (tree-map-lists (l (e-1) (tree-map-lists (l (e-2) (proc e-1 e-2)) b)) a))
 
   (define (produce-with-iterator-tree iterator proc a b)
     "procedure:{proc list:elements -> any} procedure:{any:element-a any:element-b -> any}:proc list list -> any
      call proc with each ordered combination between elements of two lists with an
-     iterator procedure that is called in a nested (each (lambda (e-1) (each (lambda (e-2) (proc e-1 e-2)) b)) a) way to create the argument combinations"
+     iterator procedure that is called in a nested (each (lambda (e-1) (each (lambda (e-2) (proc e-1 e-2)) b)) a)
+     way to create the argument combinations"
     (iterator
       (l (e-1)
         (if (list? e-1) (produce-with-iterator-tree iterator proc e-1 b)
@@ -282,9 +216,32 @@
             b)))
       a))
 
+  (define (prefix-tree-context-match a pattern)
+    "list list -> boolean
+     true if pattern exists in prefix-tree with the same tree interpretation as prefix-tree-context-produce.
+     example: (a b (d c)) contains patterns (a d c) and (a b) and (a d)"
+    (if (null? a) a
+      (null?
+        (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (pattern pattern))
+          (if (or (null? pattern) (null? rest)) pattern
+            (let*
+              ( (e (first rest))
+                (pattern
+                  (if (and (list? e) (not (null? e)))
+                    (let (prefix-next (first e))
+                      (loop (tail e) prefix-next
+                        (pair prefix context)
+                        (if (equal? prefix (first pattern)) (tail pattern) pattern)))
+                    (if (equal? prefix (first pattern))
+                      (let (pattern (tail pattern))
+                        (if (null? pattern) pattern
+                          (if (equal? e (first pattern)) (tail pattern) pattern)))
+                      pattern))))
+              (loop (tail rest) prefix context pattern)))))))
+
   (define (prefix-tree-replace-prefix a replacements)
     "list ((to-replace . replacement) ...) -> list
-     replace list prefixes (the first elements) in tree based on the given replacements structure"
+     replace all list prefixes, the first element of a list, in tree based on the given replacements structure"
     (tree-map
       (l (a depth)
         (if (list? a)
@@ -295,13 +252,13 @@
 
   (define (prefix-tree-produce proc a)
     "{any ... -> any} list:prefix-tree -> list
-     calls proc for each combination of a prefix and tail-elements"
-    (produce-prefix-context (l (context a) (apply proc (reverse (pair context a)))) a))
+     calls proc for each combination of prefix and tail"
+    (prefix-tree-produce-with-context (l (context a) (apply proc (reverse (pair context a)))) a))
 
   (define (prefix-tree->path-list a)
     "list -> (string ...)
      regard tree as a nested list representation of a filesystem file and directory structure
-     and return a flat list of corresponding filesystem path strings.
+     and return a flat list of filesystem path strings.
      example:
      (prefix-tree->path-list (list \"/usr\" (list \"bin\" (list \"share\" \"guile\") \"include\") \"/var\"))
      creates
@@ -315,13 +272,13 @@
   (define* (prefix-tree-product a #:optional ignore-prefixes?) "list -> list"
     "combines prefixex and tails as a one-to-many (prefix to tail elements) relation.
     example (a (d e f) (g h i) j) -> ((a d e) (a d f) (a g h) (a g i) (a j))"
-    (produce-prefix-context (l (context a) (reverse (pair context a))) a ignore-prefixes?))
+    (prefix-tree-produce-with-context (l (context a) (reverse (pair context a))) a ignore-prefixes?))
 
   (define (prefix-tree-product-mm a) "list -> list"
     "like prefix-tree-product, but also interprets lists as prefixes as many-to-many relations
     (many prefixes to tail elements).
     example ((a b) c) -> ((a c) (b c))"
-    (produce-prefix-context-mm (l (context a) (reverse (pair context a))) a))
+    (prefix-tree-produce-with-context-mm (l (context a) (reverse (pair context a))) a))
 
   (define (prefix-tree->relations a)
     "list -> (pair ...)
@@ -393,7 +350,7 @@
     (if (null? a) a
       (let (prefix (first a))
         (proc (if (list? prefix) (prefix-tree-map proc prefix) prefix)
-          (map (l (e) (if (list? e) (prefix-tree-map proc e) e)) (tail a))))))
+          (map (l (b) (if (list? b) (prefix-tree-map proc b) b)) (tail a))))))
 
   (define* (prefix-tree-map-with-depth proc a #:optional (initial-depth 0))
     "{any:prefix list:tail integer:nesting-depth -> any} list [integer] -> list
@@ -406,7 +363,9 @@
 
   (define (produce-prefix-trees proc a b)
     "{any:prefix-1 any:prefix-2 any:tail-1 any:tail-2 -> any} list list -> list
-     produce two prefix-trees, that is, for every odered combination of element and sub-list element of \"a\" and \"b\""
+     produce two prefix-trees. calls proc for each ordered combination of
+     prefix and tail element of \"a\" and \"b\".
+     nested application of prefix-tree-map and all arguments passed to proc"
     (prefix-tree-map
       (l (prefix-1 tail-1)
         (prefix-tree-map (l (prefix-2 tail-2) (proc prefix-1 prefix-2 tail-1 tail-2)) b))
@@ -414,7 +373,7 @@
 
   (define (produce-prefix-trees-with-depth proc a b)
     "{any:prefix-1 any:prefix-2 any:tail-1 any:tail-2 integer:depth-1 integer:depth-2 -> any} list list -> list
-     like produce-prefix-trees but with an argument for the current nesting-depths"
+     like produce-prefix-trees but with an argument for the current nesting-depth"
     (prefix-tree-map-with-depth
       (l (prefix-1 tail-1 depth-1)
         (prefix-tree-map-with-depth
@@ -442,14 +401,14 @@
         (proc (first rest) (map (l (e) (if (list? e) (continue& e proc loop) e)) (tail rest))))))
 
   (define*
-    (prefix-tree-map-with-continue-with-depth proc continue& a #:optional (depth-proc 1+)
+    (prefix-tree-map-with-continue-with-depth proc continue a #:optional (depth-proc 1+)
       (depth-init 1))
     "{any:prefix list:tail any} {list procedure:proc {list ->} any}:continue list [{integer -> integer}] -> list
      like prefix-tree-map-with-continue but with additional arguments for the current nesting-depth"
     (let loop ((rest a) (depth depth-init))
       (if (null? rest) rest
         (proc (first rest)
-          (map (l (e) (if (list? e) (continue& e proc loop (depth-proc depth)) e)) (tail rest)) depth))))
+          (map (l (a) (if (list? a) (continue a proc loop (depth-proc depth)) a)) (tail rest)) depth))))
 
   (define prefix-tree-map-with-context
     (letrec
@@ -464,7 +423,51 @@
         like (prefix-tree-map) but with an additional argument for parent prefixes"
         (loop proc a (list)))))
 
-  (define* (produce-tree-lists-with-depths proc a b #:optional (depth-proc 1+) (depth-init 1))
+  (define* (prefix-tree-produce-with-context proc a #:optional ignore-prefixes)
+    "{element context -> any} list -> list
+     context is a list containing nested-list prefixes in bottom-to-top order.
+     for example (a (d e f) k (g h i) j) leads to proc called with each of the following arguments:
+     (d (a)), (e (d a)), (f (d a)),(k (a)), (g (a)), (h (g a)), (i (g a)), (j (a))
+     ignore-prefixes ignores lists that are themselves prefixes"
+    (if (null? a) a
+      (let*
+        ( (map-to-result (l (b prefix context r) (pair (proc b (pair prefix context)) r)))
+          (map-to-result-list (if ignore-prefixes (l (b prefix context r) r) map-to-result)))
+        (reverse
+          (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (r (list)))
+            (if (null? rest) r
+              (loop (tail rest) prefix
+                context
+                (let (b (first rest))
+                  (if (and (list? b) (not (null? b)))
+                    (let (prefix-next (first b))
+                      (loop (tail b) prefix-next
+                        (pair prefix context) (map-to-result-list prefix-next prefix context r)))
+                    (map-to-result b prefix context r))))))))))
+
+  (define (prefix-tree-produce-with-context-mm proc a)
+    "procedure:{any list -> any} list -> list
+     like prefix-tree-produce-with-context but creates many-to-many relations from lists as list prefixes"
+    (if (null? a) a
+      (reverse
+        (let loop ((rest (tail a)) (prefix (first a)) (context (list)) (result (list)))
+          (if (null? rest) result
+            (loop (tail rest) prefix
+              context
+              (let (b (first rest))
+                (if (list? prefix)
+                  (fold
+                    (if (and (list? b) (not (null? b)))
+                      (let ((b-first (first b)) (b-tail (tail b)))
+                        (l (prefix result)
+                          (append (loop b-tail b-first (pair prefix context) (list)) result)))
+                      (l (prefix result) (pair (proc b (pair prefix context)) result)))
+                    result prefix)
+                  (if (and (list? b) (not (null? b)))
+                    (loop (tail b) (first b) (pair prefix context) result)
+                    (pair (proc b (pair prefix context)) result))))))))))
+
+  (define* (tree-produce-lists-with-depth proc a b #:optional (depth-proc 1+) (depth-init 1))
     "{any:element-a any:element-b integer:nesting-depth-a integer:nesting-depth-b} list:list-a list:list-b [{integer -> integer} integer] -> list"
     (tree-map-lists-with-depth
       (l (e-1 depth-1)
@@ -614,13 +617,13 @@
      (a b (c (d e)) f) -> ((0 . a) (1 . b) (2 . c) (3 . d) (3 . e) (0 . 4))"
     (apply prefix-tree-map-with-depth->flat-list pair a initial-depth))
 
-  (define (tree-filter->flat-list proc a)
+  (define (tree-filter->flat-list predicate a)
     "procedure:{any -> boolean} list -> list
-     results in a flat list of all elements (non-lists and lists) of tree that matched for which proc resulted in a true value"
+     results in a flat list of all elements (non-lists and lists) of tree that match predicate"
     (let loop ((rest a) (r (list)))
       (if (null? rest) r
         (loop (tail rest)
-          (let (e (first rest)) (if (proc e) (pair e r) (if (list? e) (loop e r) r)))))))
+          (let (b (first rest)) (if (predicate b) (pair b r) (if (list? b) (loop b r) r)))))))
 
   (define (tree-pair->list a)
     "list -> list

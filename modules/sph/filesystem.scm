@@ -1,6 +1,7 @@
 (library (sph filesystem)
   (export
     call-with-directory
+    copy-file-recursive
     directory-fold
     directory-list
     directory-list-full-path
@@ -8,6 +9,7 @@
     directory-reference?
     directory-tree-each
     directory-tree-paths
+    directory?
     dotfile?
     ensure-directory-structure
     ensure-directory-structure-and-new-mode
@@ -47,10 +49,34 @@
     (sph string)
     (except (srfi srfi-1) map))
 
+  (define*
+    (copy-file-recursive source destination #:key stop-on-error display-errors
+      (copy-file copy-file)
+      (ensure-directory ensure-directory-structure))
+    "copy source to become destination.
+     if source is a directory, copy the whole directory structure to destination"
+    (if (directory? source)
+      (let*
+        ( (destination
+            (if (eq? #\/ (string-ref source 0)) destination (ensure-trailing-slash destination)))
+          (prefix (let (a (dirname source)) (if (string-equal? "." a) "" a)))
+          (dest (l (name) (string-append destination (string-drop-prefix prefix name)))))
+        (ftw source
+          (l (name stat-info flag)
+            (case flag ((directory) (ensure-directory (dest name)) #t)
+              ((regular) (copy-file name (dest name)) #t)
+              (else
+                (and display-errors
+                  (display (string-append "error copying file " name "\n") (current-error-port)))
+                (not stop-on-error))))))
+      (copy-file source destination)))
+
   (define directory-read-all scandir)
 
-  (define (is-directory? path) "test if path exists and is a directory"
-    (eqv? (q directory) (stat:type (stat path))))
+  (define (directory? path) "test if path exists and is a directory"
+    (eq? (q directory) (stat:type (stat path))))
+
+  (define is-directory? directory?)
 
   (define (directory-fold path proc init)
     (let (d (if (string? path) (opendir path) path))

@@ -21,7 +21,7 @@
       ((a (b)) c)
       (((0 . a) (2 . b) (1 . c)))
       ((a (b) c)))
-    (produce-prefix-context
+    (prefix-tree-produce-with-context
       ((unquote list) (a (d e f) (g h i) j) #t)
       ((e (d a)) (f (d a)) (h (g a)) (i (g a)) (j (a)))
       ((unquote list) (a b (b (c (d e) f))) #t)
@@ -41,7 +41,7 @@
       ((unquote list) () #f) ()
       ((unquote list) (a c d) #f)
       ((c (a)) (d (a))))
-    (produce-prefix-context-mm
+    (prefix-tree-produce-with-context-mm
       ((unquote list) ((a b) c d))
       ((c (a)) (c (b)) (d (a)) (d (b)))
       ((unquote list) ((d e) ((a b) c)))

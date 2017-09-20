@@ -27,7 +27,8 @@
     (sph filesystem)
     (sph list)
     (sph process)
-    (sph string))
+    (sph string)
+    (sph tree))
 
   (define sph-install-description
     "program and library installer
@@ -83,6 +84,23 @@
           ("--recursive" "--remove-destination"
             (unquote-splicing (if symlink? (list "--symbolic-link") (list)))
             (unquote-splicing paths-source) (unquote path-destination))))))
+
+  (define (install-one-2 spec)
+    "work in progress. for the next version of install-p.
+     * does not depend on the cp utility
+     * allows path production with lists as prefix
+     * copy and permission setting in one loop
+     * less code
+     todo: stop on error"
+    (let
+      ( (ensure-directory (l (path) (debug-log (q ensure) path)))
+        (copy-file (l (a b) (debug-log (q copy) a b) #t)))
+      (prefix-tree-produce-with-context-mm
+        (l (source parents)
+          (let (dir (string-join (reverse parents) "/" (q suffix))) (ensure-directory dir)
+            (copy-file-recursive source (string-append dir (basename source))
+              #:copy-file copy-file #:ensure-directory ensure-directory)))
+        spec)))
 
   (define*
     (install-one destination sources #:key (path-destination-prefix "") symlink?
