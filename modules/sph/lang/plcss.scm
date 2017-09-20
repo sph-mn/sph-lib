@@ -26,7 +26,8 @@
   (define (symbol?->string a) (if (symbol? a) (symbol->string a) a))
   (define-syntax-rule (at-prefix? a) (eqv? #\@ (string-ref a 0)))
 
-  (define-syntax-rule (join-selector a) "list -> string"
+  (define-syntax-rule (join-selector a)
+    ; list -> string
     (apply string-append
       (tail
         (fold

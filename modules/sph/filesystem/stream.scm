@@ -21,7 +21,7 @@
       (stream-each
         (l (a)
           (let (a (string-append path a))
-            (if (is-directory? a) (begin (directory-delete-content a) (rmdir a)) (delete-file a))))
+            (if (directory? a) (begin (directory-delete-content a) (rmdir a)) (delete-file a))))
         (directory-stream path))))
 
   (define (directory-stream a) "directory-handle/string:path -> stream"

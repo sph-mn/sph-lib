@@ -126,7 +126,7 @@
             (every
               (l (path-destination path-source)
                 (and
-                  (if (is-directory? path-source)
+                  (if (directory? path-source)
                     (fold-directory-tree
                       (let (path-source-length (string-length path-source))
                         (l (path stat-info r)
