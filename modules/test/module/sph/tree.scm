@@ -70,13 +70,13 @@
     (denoted-tree->tree
       (((0 . a) (0 . b) (1 . c) (2 . d) (2 . e) (1 . f) (0 . g)))
       (a b (c (d e) f) g)
-      ;level skip at the end
+      ;depth skip at the end
       (((0 . a) (1 . b) (2 . c) (0 . d)))
       (a (b (c)) d)
-      ;ending with a non-zero level
+      ;ending with a non-zero depth
       (((0 . a) (1 . b) (2 . c)))
       (a (b (c)))
-      ;starting with a non-zero level
+      ;starting with a non-zero depth
       (((2 . a) (0 . b) (1 . c)))
       (((a)) b (c))
       (((0 . a) (1 . b) (1 . c) (2 . d) (1 . e) (0 . f) (1 . g)))

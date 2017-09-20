@@ -14,15 +14,19 @@
     (only (sph string) any->string)
     (only (srfi srfi-1) break))
 
-  (define sph-lang-plcss-description
-    "s-expression language that compiles to css
-     can also be used inline with other scheme code")
+  ; plcss: prefixed-list-css
 
-  ;the name is an abbreviation of prefixed-list-css
+  (define sph-lang-plcss-description
+    "s-expression language that compiles to css.
+     can also be used inline with other scheme code.
+     syntax
+       css-style :: properties-key/value ...
+       for css properties without selectors. use case: inline-styles in xml attributes")
+
   (define (symbol?->string a) (if (symbol? a) (symbol->string a) a))
   (define-syntax-rule (at-prefix? a) (eqv? #\@ (string-ref a 0)))
 
-  (define-syntax-rule (join-selector a)
+  (define-syntax-rule (join-selector a) "list -> string"
     (apply string-append
       (tail
         (fold
@@ -32,16 +36,18 @@
           (list) a))))
 
   (define-syntax-rule (join-properties a)
-    (string-join (map-slice 2 (l (a b) (string-append (symbol?->string a) ":" (any->string b))) a)
+    ; list -> string
+    (string-join (map-slice 2 (l (b c) (string-append (symbol?->string b) ":" (any->string c))) a)
       ";" (q suffix)))
 
-  (define (join-rule context properties-string rules)
+  (define (join-rule context properties-string rules) "list string false/list -> string"
     (if (null? context)
       (string-append properties-string (if rules (rules->string rules context) ""))
       (string-append (join-selector context) "{"
         properties-string "}" (if rules (rules->string rules context) ""))))
 
   (define-syntax-rule (rule->string-without-rules prefix context properties-string)
+    ; _ list string -> string
     (if (at-prefix? prefix) (string-append prefix "{" (join-rule context properties-string #f) "}")
       (let (context (pair prefix context)) (join-rule context properties-string #f))))
 
@@ -81,7 +87,4 @@
   (define (plcss->css exprs port) "(rule ...) port ->" (display (plcss->css-string exprs) port))
   (define-syntax-rule (css rules ...) (plcss->css-string (quasiquote (rules ...))))
   (define (plcss-element-style->css-string a) (join-properties a))
-
-  (define-syntax-rule (css-style rules ...)
-    ;without selectors. use case: inline-styles in xml tag attributes
-    (join-properties (quasiquote (rules ...)))))
+  (define-syntax-rule (css-style properties ...) (join-properties (quasiquote (properties ...)))))
