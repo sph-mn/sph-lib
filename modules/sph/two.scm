@@ -37,12 +37,6 @@
     define-syntax-identifier
     display-formatted
     display-line*
-    eq-any?
-    eq-every?
-    equal-any?
-    equal-every?
-    eqv-any?
-    eqv-every?
     every-s
     file-append
     file-append-one
@@ -239,24 +233,6 @@
           (string-append (ensure-trailing-slash target-path) (basename source-path))
           (dirname source-path)))))
 
-  (define-syntax-rule (create-equal-any list-pred member-pred equality-pred)
-    ;see *-any?/every? definitions
-    (lambda (a b)
-      "any/list any/list -> boolean
-       check if there is either equality or inclusion between the arguments.
-       examples
-       eqv-any? (4 2 6) (3 1 2) -> true
-       eqv-any? (3 1 2) 2 -> true
-       eqv-any? 4 (3 1 2) -> false"
-      (if (list? a) (if (list? b) (list-pred (l (e) (member-pred e b)) a) (member-pred b a))
-        (if (list? b) (member-pred a b) (equality-pred a b)))))
-
-  (define eqv-any? (create-equal-any any memv eqv?))
-  (define eqv-every? (create-equal-any every memv eqv?))
-  (define equal-any? (create-equal-any any member equal?))
-  (define equal-every? (create-equal-any every member equal?))
-  (define eq-any? (create-equal-any any memq eq?))
-  (define eq-every? (create-equal-any every memq eq?))
   (define (not-null? a) (not (null? a)))
 
   (define-syntax-rules every-s

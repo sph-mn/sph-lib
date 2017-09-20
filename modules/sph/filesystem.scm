@@ -4,11 +4,12 @@
     copy-file-recursive
     directory-fold
     directory-list
-    directory-list-full-path
-    directory-read-all
+    directory-list-full
+    directory-prefix-tree
     directory-reference?
+    directory-tree
     directory-tree-each
-    directory-tree-paths
+    directory-tree-leaf-directories
     directory?
     dotfile?
     ensure-directory-structure
@@ -16,7 +17,6 @@
     ensure-trailing-slash
     filename-extension
     fold-directory-tree
-    is-directory?
     last
     list->path
     make-path-unique
@@ -45,6 +45,7 @@
     (sph)
     (sph hashtable)
     (sph list)
+    (sph list one)
     (sph one)
     (sph string)
     (except (srfi srfi-1) map))
@@ -71,12 +72,8 @@
                 (not stop-on-error))))))
       (copy-file source destination)))
 
-  (define directory-read-all scandir)
-
   (define (directory? path) "test if path exists and is a directory"
     (eq? (q directory) (stat:type (stat path))))
-
-  (define is-directory? directory?)
 
   (define (directory-fold path proc init)
     (let (d (if (string? path) (opendir path) path))
@@ -92,36 +89,40 @@
   (define (call-with-directory path proc) "string procedure:{directory-port -> any} -> any"
     (let (d (opendir path)) (begin-first (proc d) (closedir d))))
 
-  (define (directory-list path . include?)
-    "path procedure:{filename -> boolean} ... -> (string ...)
-     return a list of filename-entries in a directory, optionally filtered by one or multiple filter procedures"
-    (let (include? (if (null? include?) (pair (negate directory-reference?) include?) include?))
-      (call-with-directory path
-        (l (d)
-          (let loop ((e (readdir d)) (r (list)))
-            (if (eof-object? e) r
-              (loop (readdir d) (if (every (l (p) (p e)) include?) (pair e r) r))))))))
+  (define directory-list scandir)
 
-  (define (directory-list-full-path path . filter-proc) "string procedure ... -> (string ...)"
+  (define* (directory-list-full path #:optional (select? identity))
+    "string procedure ... -> (string ...)"
     (let (path (ensure-trailing-slash path))
-      (map (l (e) (path->full-path (string-append path e))) (apply directory-list path filter-proc))))
+      (map (l (a) (path->full-path (string-append path a))) (directory-list path select?))))
 
-  (define* (directory-tree-paths path #:optional (select? (const #t)))
-    "string [procedure:{any -> boolean}] -> (full-path ...)
+  (define* (directory-tree path #:optional (select? (const #t)))
+    "string [procedure:{any -> boolean}] -> (string:full-path ...)
      string procedure -> (string ...)
-     results in a list of all paths under path, excluding path and the directory references \".\" and \"..\""
-    ;breadth-first search
-    (let*
+     results in a list of all paths under path, excluding path and the directory references \".\" and \"..\".
+     select? is called for all paths"
+    ; breadth-first search
+    (let
       ( (path (ensure-trailing-slash path))
-        (entries (or (directory-read-all path (negate directory-reference?)) (list))))
+        (entries (directory-list path (negate directory-reference?))))
       (fold-right
-        (l (a r)
-          (let (a (string-append path a))
-            (let (stat-info (stat a))
-              ( (if (eqv? (q directory) (stat:type stat-info))
-                  (l (r) (append (directory-tree-paths a select?) r)) identity)
-                (if (select? a stat-info) (pair a r) r)))))
+        (l (a result)
+          (let* ((a (string-append path a)) (stat-info (stat a)))
+            ( (if (and (not (directory-reference? a)) (eq? (q directory) (stat:type stat-info)))
+                (l (result) (append (directory-tree a select?) result)) identity)
+              (if (select? a stat-info) (pair a result) result))))
         (list) entries)))
+
+  (define (directory-tree-leaf-directories start) "string:path -> (string ...)"
+    (directory-tree start
+      (l (a stat-info) (and (eq? (q directory) (stat:type stat-info)) (= 2 (stat:nlink stat-info))))))
+
+  (define* (directory-prefix-tree start #:optional (directory-tree directory-tree))
+    "-> (string/list ...)
+     example
+     (directory-prefix-tree (list \"/usr/local/bin\" \"/usr/local/lib\"))
+     -> (\"/usr\" (\"local\" (\"bin\" \"lib\")))"
+    (first (group-recursively (map path->list (directory-tree start)))))
 
   (define (dotfile? name)
     "string -> boolean
@@ -129,10 +130,11 @@
     (and (not (string-null? name)) (eqv? (string-ref name 0) #\.)))
 
   (define (ensure-directory-structure path)
-    "string -> boolean
+    "string -> boolean:exists
      try to create any directories of path that do not exist.
+     true if the path exists either because it has been created or otherwise
      every path part is considered a directory"
-    (or (file-exists? path) (begin (ensure-directory-structure (dirname path)) (mkdir path))))
+    (or (file-exists? path) (begin-first (ensure-directory-structure (dirname path)) (mkdir path))))
 
   (define (ensure-directory-structure-and-new-mode path mode)
     "string -> boolean
@@ -146,7 +148,7 @@
       (string-append str "/") str))
 
   (define (path-directories a)
-    "string -> (string ...)
+    "string -> (string:parent-path ...)
      creates a list of the full paths of all directories above the given path"
     (unfold (l (e) (or (string-equal? "/" e) (string-equal? "." e))) identity dirname a))
 
@@ -184,14 +186,14 @@
       (fold
         (l (e r)
           (let* ((full-path (string-append path e)) (stat-info (stat full-path)))
-            (if (and (eqv? (q directory) (stat:type stat-info)) (< 1 max-depth))
+            (if (and (eq? (q directory) (stat:type stat-info)) (< 1 max-depth))
               (fold-directory-tree proc (proc full-path stat-info r)
                 (string-append full-path "/") (- max-depth 1))
               (proc full-path stat-info r))))
         init (directory-list path (negate directory-reference?)))))
 
   (define* (directory-tree-each proc path #:optional (max-depth (inf)))
-    "procedure:{string stat-object ->} string [integer] ->"
+    "procedure:{string stat-object -> unspecified} string [integer] -> unspecified"
     (fold-directory-tree (l (path stat-info r) (proc path stat-info)) #f path max-depth))
 
   (define (filename-extension a)

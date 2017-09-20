@@ -1,6 +1,7 @@
 (library (sph list one)
   (export
     group
+    group-recursively
     list-ref-random
     list-ref-randomise-cycle
     list-replace-from-hashtable
@@ -12,10 +13,11 @@
     (sph hashtable)
     (sph list)
     (sph random-data)
+    (only (guile) compose)
     (only (rnrs base) set!))
 
   (define sph-list-one-description
-    "additional list processing procedures which depend on libraries that depend on (sph list). to avoid circular dependencies")
+    "additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies")
 
   (define (list-replace-from-hashtable a ht)
     "list rnrs-hashtable -> list
@@ -35,6 +37,19 @@
       (if (null? rest) (map (l (a) (pair (first a) (reverse (tail a)))) groups)
         (let* ((a (first rest)) (key (accessor a)) (group (alist-ref groups key)))
           (loop (tail rest) (alist-set groups key (if group (pair a group) (list a))))))))
+
+  (define* (group-recursively a #:optional (accessor first))
+    "((any ...) ...) [procedure] -> list
+     group lists and the elements of groups until no further sub-groups are possible.
+     example
+       (group-recursively (list (list 1 2 3) (list 1 2 6) (list 1 7)) first)
+       -> ()"
+    (map
+      (l (a)
+        ; (group-name element ...)
+        (let (rest (map tail (remove (compose null? tail) (tail a))))
+          (if (null? rest) (first a) (pair (first a) (group-recursively rest)))))
+      (group a accessor)))
 
   (define (list-ref-random a)
     "list -> any

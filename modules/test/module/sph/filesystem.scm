@@ -1,6 +1,8 @@
 (define-test-module (test module sph filesystem)
   (import
     (sph string)
+    (sph list)
+    (sph tree)
     (sph filesystem))
 
   (define cwd (getcwd))
@@ -21,7 +23,16 @@
       (equal? (dirname (dirname cwd)) (realpath* "../../"))
       (equal? (dirname cwd) (realpath* ".././"))))
 
-  (test-execute-procedures-lambda
+  (define-test (directory-tree) (every string? (directory-tree cwd)))
+
+  (define-test (directory-tree-leaf-directories)
+    (every (l (a) (and (string? a) (directory? a))) (directory-tree-leaf-directories cwd)))
+
+  (define-test (directory-prefix-tree)
+    (every string? (prefix-tree->paths (directory-prefix-tree cwd))))
+
+  (test-execute-procedures-lambda directory-tree directory-tree-leaf-directories
+    directory-prefix-tree
     (path->full-path "/a/b/c" "/a/b/c" "a/b/c" (unquote (string-append cwd "/a/b/c")))
     (set-up-realpath*) (realpath*)
     (tear-down-realpath*) (filename-extension ("ab.d.e.fg") "fg" ("ab") "" ("") "")

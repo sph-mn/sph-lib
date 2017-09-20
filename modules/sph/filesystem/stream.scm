@@ -2,34 +2,30 @@
   (export
     directory-delete-content
     directory-stream
+    eof-stream
     merge-files)
   (import
+    (guile)
     (sph)
     (sph filesystem)
-    (guile)
     (sph stream))
+
+  (define sph-filesystem-stream-description
+    "bindings that create or use srfi-41 streams for reading from directories")
 
   (define (directory-delete-content path)
     "string ->
      delete all files and directories under path.
-     a bit safer than \"rm -r\" because it only works on directories"
+     a bit safer than \"rm -r\" because it works only on directories"
     (let (path (ensure-trailing-slash path))
       (stream-each
-        (l (e)
-          (let (e (string-append path e))
-            (if (is-directory? e) (begin (directory-delete-content e) (rmdir e))
-              (delete-file e))))
+        (l (a)
+          (let (a (string-append path a))
+            (if (is-directory? a) (begin (directory-delete-content a) (rmdir a)) (delete-file a))))
         (directory-stream path))))
 
-  (define (directory-stream directory . filter-proc)
-    "string/directory-port [procedure ...] -> srfi-41-stream"
-    (let
-      ( (filter-proc (if (null? filter-proc) (list (negate directory-reference?)) filter-proc))
-        (port (if (string? directory) (opendir directory) directory)))
-      (stream-let loop ((e (readdir port)))
-        (if (eof-object? e) (begin (closedir port) stream-null)
-          (if (every (l (proc) (proc e)) filter-proc) (stream-cons e (loop (readdir port)))
-            (loop (readdir port)))))))
+  (define (directory-stream a) "directory-handle/string:path -> stream"
+    (port->stream (if (string? a) (opendir a) a) readdir closedir))
 
   (define (merge-files target-path . source-paths)
     "string string ... ->

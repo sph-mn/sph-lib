@@ -17,7 +17,7 @@
     denoted-tree-adjust-depth
     denoted-tree-minimise-depth
     prefix-tree->denoted-tree
-    prefix-tree->path-list
+    prefix-tree->paths
     prefix-tree->relations
     prefix-tree-context-match
     prefix-tree-map
@@ -255,12 +255,12 @@
      calls proc for each combination of prefix and tail"
     (prefix-tree-produce-with-context (l (context a) (apply proc (reverse (pair context a)))) a))
 
-  (define (prefix-tree->path-list a)
+  (define (prefix-tree->paths a)
     "list -> (string ...)
      regard tree as a nested list representation of a filesystem file and directory structure
      and return a flat list of filesystem path strings.
      example:
-     (prefix-tree->path-list (list \"/usr\" (list \"bin\" (list \"share\" \"guile\") \"include\") \"/var\"))
+     (prefix-tree->paths (list \"/usr\" (list \"bin\" (list \"share\" \"guile\") \"include\") \"/var\"))
      creates
      (list
        \"/usr/bin\"
