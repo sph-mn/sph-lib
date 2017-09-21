@@ -42,8 +42,8 @@
     "((any ...) ...) [procedure] -> list
      group lists and the elements of groups until no further sub-groups are possible.
      example
-       (group-recursively (list (list 1 2 3) (list 1 2 6) (list 1 7)) first)
-       -> ()"
+       (group-recursively (list (list 1 2 3) (list 1 2 6) (list 1 3 7) (list 8 9)) first)
+       -> ((1 (2 3 6) (3 7)) (8 9))"
     (map
       (l (a)
         ; (group-name element ...)

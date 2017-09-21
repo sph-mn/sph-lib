@@ -2,8 +2,8 @@
   (export
     directory-delete-content
     directory-stream
-    eof-stream
-    merge-files)
+    merge-files
+    sph-filesystem-stream-description)
   (import
     (guile)
     (sph)

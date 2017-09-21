@@ -75,7 +75,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph error) - an error object type
 * (sph exception) - rnrs exception helpers. experimental
 * (sph filesystem)
-* (sph filesystem stream)
+* (sph filesystem stream) - bindings that create or use srfi-41 streams for reading from directories
 * (sph filesystem watch) - for acting on file-system changes. has not been updated in a while
 * (sph git)
 * (sph hashtable) - rnrs-hashtable processing
@@ -102,7 +102,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
 * (sph linux) - linux specific features
 * (sph list) - helpers for working with lists
-* (sph list one) - additional list processing procedures which depend on libraries that depend on (sph list). to avoid circular dependencies
+* (sph list one) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
 * (sph module) - guile module system and rnrs library related procedures
 * (sph number)
@@ -111,7 +111,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph server fibers) - a generic socket data processing server that uses fibers for parallel request processing and non-blocking port input/output
 * (sph set) - hashtables as sets
 * (sph sql) - create sql-statements from scheme data
-* (sph stream) - srfi-41 stream helper
+* (sph stream) - srfi-41 stream helpers
 * (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph system reader) - a scheme reader that can include comments
 * (sph test base)
