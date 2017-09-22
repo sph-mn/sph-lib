@@ -154,6 +154,7 @@
     quasiquote
     quasisyntax
     quote
+    quote-duplicate
     quote-even
     quote-odd
     rational-valued?
@@ -251,7 +252,19 @@
      quote-odd
        any ... -> list
        quotes arguments alternatingly and returns a list
-       example: a 1 b 2 -> ((quote a) 1 (quote b) 2)
+       example: a b c d -> ((quote a) b (quote c) d)
+     quote-even
+       any ... -> list
+       like quote-odd but quotes each second argument instead
+       example: a b c d -> (a (quote b) c (quote d))
+     quote-duplicate
+       any ... -> list
+       create two elements from each identifier: one the literal identifier symbol,
+       the other the value of the variable bound to identifier.
+       example: a b c -> ((quote a) a (quote b) b (quote c) c)
+       example 2
+         (let ((a 1) (b 2) (c 3)) (quote-duplicate a b c))
+         -> (list a 1 b 2 c 3)
      define-as
        example: (define-as list 1 2 3)
        example: (define-as (quasiquote list) 1 (unquote 3))
@@ -341,6 +354,9 @@
   (define-syntax-rules quote-even (() (quote ()))
     ((a) (quasiquote ((unquote a))))
     ((a b c ...) (quasiquote ((unquote a) b (unquote-splicing (quote-even c ...))))))
+
+  (define-syntax-rules quote-duplicate ((a) (list (quote a) a))
+    ((a b ...) (quasiquote ((unquote-splicing (quote-duplicate a) (quote-duplicate b ...))))))
 
   (define-syntax-rule (nullary body ...) (lambda () body ...))
   (define pair cons)

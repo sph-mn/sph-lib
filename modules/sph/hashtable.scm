@@ -93,10 +93,19 @@
       (make-eq-hashtable ht-make-eq)
       (make-eqv-hashtable ht-make-eqv)))
 
-  (define sph-hashtable-description "rnrs-hashtable processing")
+  (define sph-hashtable-description
+    "rnrs-hashtable processing.
+     syntax
+       ht-bind :: hashtable (key ...) body ... -> any
+         selectively bind keys of hashtable to variables.
+         keys are unquoted literals.
+         example: (ht-bind my-ht (a b c) (+ 1 c b a))
+       ht-ref :: hashtable key [default] -> any
+         rnrs ht-ref with an optional default argument
+       ht-ref-q :: hashtable hashtable key -> any
+         key is implicitly quoted")
 
   (define-syntax-rules ht-ref
-    ; ht-ref with an optional default argument
     ; h:hashtable k:key d:default-if-not-found
     ((h k d) (rnrs-ht-ref h k d)) ((h k) (rnrs-ht-ref h k #f)))
 
@@ -121,9 +130,6 @@
     (() (ht-make ht-hash-symbol eq?))
     ((associations ...) (ht-from-list (quote-odd associations ...) eq? ht-hash-symbol)))
 
-  (define-syntax-rules quote-duplicate ((a) (list (quote a) a))
-    ((a b ...) (quasiquote ((unquote-splicing (quote-duplicate a) (quote-duplicate b ...))))))
-
   (define-syntax-rules ht-create-binding
     ; equivalent to (ht-create-symbol (q name) name ...)
     (() (ht-make ht-hash-symbol eq?))
@@ -144,7 +150,6 @@
     ((associations ...) (ht-from-list (quote-odd associations ...) eqv? ht-hash-equal)))
 
   (define-syntax-rule (ht-bind ht (key ...) body ...)
-    ; selectively bind keys of hashtable to variables
     ((lambda (key ...) body ...) (ht-ref ht (quote key)) ...))
 
   (define-syntax-rule (ht-each-key proc ht) (vector-each proc (ht-keys ht)))

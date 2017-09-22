@@ -17,6 +17,7 @@
     alist-values->vector
     sph-vector-description
     vector-append
+    vector-copy*
     vector-delete-duplicates
     vector-deselect
     vector-each
@@ -30,18 +31,21 @@
     vector-second
     vector-select
     vector-shrink
-    vector-third)
+    vector-third
+    vector-update)
   (import
     (sph)
+    (only (guile) vector-copy)
     (only (rnrs sorting) list-sort)
     (only (sph alist) alist-values)
+    (only (sph list) map-slice)
     (only (srfi srfi-1) delete-duplicates)
     (rename (rnrs base) (vector-for-each vector-each)))
 
   (define sph-vector-description "vector processing")
 
   (define (each-integer n proc)
-    ;redefine each-integer from (one) to avoid mutual library dependency (one -> vector, vector -> one)
+    ; redefine each-integer from (one) to avoid circular dependency (one -> vector, vector -> one)
     "evaluate a procedure a number of times, passing the current number to proc. starts from 0"
     (let loop ((e-n 0) (prev #f)) (if (<= e-n n) (loop (+ 1 e-n) (proc n)) prev)))
 
@@ -53,10 +57,11 @@
   (define (vector-third a) (vector-ref a 2))
 
   (define (vector-any proc a)
-    (let ((a-length (vector-length a)))
+    "procedure:{any:element -> any} vector -> any
+     call proc for each element of a and return the first true result or false if there is none"
+    (let (a-length (vector-length a))
       (let loop ((index 0))
-        (if (< index a-length)
-          ((l (e-result) (if e-result e-result (loop (+ 1 index)))) (proc (vector-ref a index))) #f))))
+        (if (< index a-length) (let (b (proc (vector-ref a index))) (if b b (loop (+ 1 index)))) #f))))
 
   (define (vector-append a b)
     "concatenate \"b\" at the end of \"a\".
@@ -66,10 +71,17 @@
       (vector-each-with-index (l (e index) (vector-set! r index e)) a)
       (vector-each-with-index (l (e index) (vector-set! r (+ a-length index) e)) b) r))
 
-  (define (vector-delete-duplicates a) (list->vector (delete-duplicates (vector->list a))))
+  (define (vector-copy* a proc) "call proc with a copy of vector and after proc finishes return it"
+    (let (r (vector-copy a)) (proc r) r))
+
+  (define* (vector-delete-duplicates a #:optional (equal? equal?))
+    "vector [procedure] -> vector
+     creates a new vector with duplicate elements removed"
+    (list->vector (delete-duplicates (vector->list a) equal?)))
 
   (define (vector-deselect a indices)
-    "return a new vector consisting of values not at indices specified by list indices"
+    "vector (integer ...) -> vector
+     return a new, possibly smaller, vector consisting of values not at specified indices"
     (let*
       ( (a-length (vector-length a)) (indices (list-sort < indices))
         (r (make-vector (- a-length (length indices)))))
@@ -80,13 +92,25 @@
           r))))
 
   (define* (vector-each-with-index proc a #:optional (index-offset 0))
-    "-> unspecified
-     proc is called as (proc element index)"
+    "procedure vector [integer] -> unspecified
+     proc is called as (proc element index).
+     index-offset is added to the actual index that is passed to proc"
     (let ((a-length (vector-length a)))
       (let loop ((index index-offset))
         (if (< index a-length) (begin (proc (vector-ref a index) index) (loop (+ 1 index)))))))
 
+  (define (vector-extend a add-size)
+    "vector integer -> vector
+     increase size of vector.
+     new slots are appended to vector"
+    (let*
+      ( (old-size (vector-length a)) (r (make-vector (+ old-size add-size)))
+        (set (l (a index) (vector-set! r index a))))
+      (vector-each-with-index set r) r))
+
   (define* (vector-index-value a value #:optional (equal-proc equal?))
+    "vector any [procedure] -> integer/falso
+     find the index in vector at which value occurs or return false"
     (let (a-length (vector-length a))
       (let loop ((index 0))
         (if (< index a-length)
@@ -109,20 +133,20 @@
 
   (define* (vector-range a start #:optional (end (- (vector-length a) 1)))
     "vector [integer integer] -> vector
+     get a sub-vector.
      start and end are inclusive"
     (let ((r (make-vector (+ 1 (- end start)))))
       (let loop ((b start))
         (begin (vector-set! r (- b start) (vector-ref a b)) (if (>= b end) r (loop (+ 1 b)))))))
 
-  (define (vector-extend a add-size)
-    "vector integer -> vector
-     increase size of vector"
-    (let*
-      ( (old-size (vector-length a)) (r (make-vector (+ old-size add-size)))
-        (set (l (e index) (vector-set! r index e))))
-      (vector-each-with-index set r) r))
-
   (define (vector-select a indices)
     "vector (integer ...) -> vector
      return a new vector consisting of values at indices specified by vector indices"
-    (vector-map (l (index) (vector-ref a index)) indices)))
+    (vector-map (l (index) (vector-ref a index)) indices))
+
+  (define (vector-update a . index/value)
+    "vector [integer any] ... -> vector
+     create a copy of the given vector with values at indices set to new values.
+     index and value are given alternatingly.
+     example: (vector-update myvector 1 #\a 4 #\b)"
+    (vector-copy* a (l (a) (map-slice 2 (l (index value) (vector-set! a index value)) index/value)))))

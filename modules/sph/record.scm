@@ -40,7 +40,8 @@
     record-setters
     record-take
     record-update
-    record-update-p
+    record-update-b
+    record-update-q
     record?
     vector->record)
   (import
@@ -53,7 +54,7 @@
   (define sph-record-description
     "vectors as records
      the main goal this library tries to archieve is to offer a dictionary data-structure where field values can be accessed by field name, but where the access happens indexed as for vectors and not using a hash function for example.
-     records use less memory and less access time.
+     records use less memory and have shorter access times.
      this library is supposed to be simpler in definition and usage than existing record libraries (rnrs, srfi) and more flexible by being based on the less restricted interoperability with vectors (for records) and hashtables (for layouts).
      any vector can be accessed as a record and records can be accessed as vectors.
      if type information is desired then it has to be added manually by storing a type name in the first record field for example.
@@ -63,7 +64,12 @@
      (define x (record my-record 1 2))
      (my-record-a x) -> 1
      (my-record-c x) -> #f
-     (my-record-c-set! x 3)")
+     (my-record-c-set! x 3)
+     syntax
+       record-update-b :: record-layout a field-names ...
+         create a new vector with field name and value taken from given identifier and variable value.
+         example: (record-update layout instance name name-2)
+         same as (record-update layout instance (q name) name (q name-2) name ...)")
 
   (define (any->symbol a)
     "any -> symbol/false
@@ -71,15 +77,21 @@
     (cond ((string? a) (string->symbol a)) ((number? a) (string->symbol (number->string a)))
       ((symbol? a) a) (else #f)))
 
-  (define (record-update-p record-layout a . field-name/value)
-    (let (a (vector-copy a))
-      (let loop ((b field-name/value))
-        (if (null? b) a
-          (let (b-tail (tail b)) (vector-set! a (ht-ref record-layout (first b) #f) (first b-tail))
-            (loop (tail b-tail)))))))
+  (define (record-update record-layout a . field-name/value)
+    "vector [integer any] ... -> vector
+     create a copy of the given record with values in fields set to new values.
+     field name and value are given alternatingly.
+     example: (record-update myrecord (quote a) #\\c (quote b) #\\d)"
+    (vector-copy* a
+      (l (a)
+        (map-slice 2 (l (field value) (vector-set! a (ht-ref record-layout field #f) value))
+          field-name/value))))
 
-  (define-syntax-rule (record-update record-layout a field-name/value ...)
-    (apply record-update-p record-layout a (quote-odd field-name/value ...)))
+  (define-syntax-rule (record-update-q record-layout a field-name/value ...)
+    (apply record-update record-layout a (quote-odd field-name/value ...)))
+
+  (define-syntax-rule (record-update-b record-layout a field-name ...)
+    (apply record-update record-layout a (quote-duplicate field-name ...)))
 
   (define* (alist->record a record-layout)
     "alist record-layout -> record
