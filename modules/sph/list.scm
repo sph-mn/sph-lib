@@ -75,6 +75,7 @@
     length-greater-one?
     length-one?
     list-bind
+    list-deselect
     list-distribute
     list-distribute-sorted
     list-index-value
@@ -179,7 +180,8 @@
   (define-syntax-rule (define-list name a ...) (define name (list a ...)))
 
   (define-syntax-rule (pair-bind a (b c) body ...)
-    ;binds the first and second value of "a" to "b" and "c" respectively. ideally, maybe, lambda/apply should support (apply (lambda (a . b)) (pair 1 2))
+    ; bind the first and second value of "a" to "b" and "c" respectively.
+    ; ideally, maybe, lambda/apply should support (apply (lambda (a . b)) (pair 1 2))
     ((lambda (b c) body ...) (first a) (tail a)))
 
   (define (drop* count a)
@@ -661,7 +663,15 @@
   (define (list-select a indices)
     "list (integer ...) -> list
      return a new list consisting of values at indices"
-    (map (l (e) (list-ref a e)) indices))
+    (map (l (b) (list-ref a b)) indices))
+
+  (define (list-deselect a indices)
+    "list (integer ...) -> list
+     return a new, possibly smaller, list consisting of values not at specified indices"
+    (let loop ((rest a) (index 0))
+      (if (null? rest) rest
+        (if (containsv? indices index) (loop (tail rest) (+ 1 index))
+          (pair (first rest) (loop (tail rest) (+ 1 index)))))))
 
   (define (list-set-equal? . a)
     "list ... -> boolean

@@ -6,7 +6,7 @@
     bound
     bound-max
     bound-min
-    call-with-multiple/
+    call-with-product-then-divide
     container-length->number-max
     decrement-one
     golden-ratio
@@ -16,21 +16,22 @@
     integer-and-fraction&
     log-base
     number-container-length
+    number-format-float
     percent
     round-to-decimal-places
     round-to-increment
-    simple-format-number
     truncate-to-decimal-places)
   (import
     (ice-9 format)
     (rnrs arithmetic flonums)
-    (rnrs base)
     (sph)
     (only (guile)
-      simple-format
       string-split
+      string-rindex
+      floor
       inexact->exact
-      exact->inexact))
+      exact->inexact)
+    (only (sph string) string-multiply))
 
   (define golden-ratio 1.6180339887)
 
@@ -93,16 +94,16 @@
      result in the logarithm with \"base\" of \"a\""
     (/ (log a) (log base)))
 
-  (define (call-with-multiple/ proc a factor)
+  (define (call-with-product-then-divide proc a factor)
     "procedure:{number -> number} number number -> number
      call proc with \"a\" multiplied by factor and afterwards divide by factor"
     (/ (proc (* a factor)) factor))
 
   (define (round-to-decimal-places a decimal-places) "number number -> number"
-    (call-with-multiple/ round a (expt 10 decimal-places)))
+    (call-with-product-then-divide round a (expt 10 decimal-places)))
 
   (define (truncate-to-decimal-places a decimal-places) "number number -> number"
-    (call-with-multiple/ truncate a (expt 10 decimal-places)))
+    (call-with-product-then-divide truncate a (expt 10 decimal-places)))
 
   (define (increment-one a) (+ 1 a))
   (define (decrement-one a) (- a 1))
@@ -117,10 +118,13 @@
      result in the non-negative difference of two numbers"
     (abs (- n-1 n-2)))
 
-  (define* (simple-format-number a #:optional (decimal-point-shift 0) (decimal-places 0))
-    "number integer integer -> string
-     number as a string, rounded to decimal places, decimal mark shifted by n steps left (the direction where the string representation of an increasing number would grow towards)"
-    (if (= 0 decimal-places) (number->string (round (/ a (expt 10 decimal-point-shift))))
-      (let
-        (pattern-format (simple-format #f "~~,~A,~Af" decimal-places (* -1 decimal-point-shift)))
-        (format #f pattern-format a)))))
+  (define* (number-format-float a #:key decimal-min decimal-max truncate* (base 10)) "number"
+    (let*
+      ( (a (call-with-product-then-divide (or truncate* truncate) a (expt base (or decimal-max 0))))
+        (a (number->string (if (integer? a) (inexact->exact a) (exact->inexact a)) base))
+        (decimal-min (or decimal-min 0))
+        (decimal-length (let (b (string-rindex a #\.)) (if b (- (string-length a) b 1) 0))))
+      (if (< decimal-length decimal-min)
+        (string-append a (if (zero? decimal-length) "." "")
+          (string-multiply "0" (- decimal-min decimal-length)))
+        a))))

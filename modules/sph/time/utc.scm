@@ -54,7 +54,8 @@
     (+ (* 3600 hours) (* 60 minutes) seconds))
 
   (define* (utc-duration->hms a #:optional (c list))
-    "integer [procedure:{hour minute second} -> any] -> (integer integer integer)"
+    "integer [procedure:{hour minute second} -> any] -> (integer integer integer)
+     utc-seconds to hours, minutes and seconds of hour"
     (apply-values
       (l (hours rest)
         (apply-values (l (minutes seconds) (c hours minutes seconds)) (truncate/ rest 60)))

@@ -28,6 +28,7 @@
     procedure->cached-procedure
     procedure->temporarily-cached-procedure
     procedure-append
+    procedure-append*
     procedure-append-ignore-result
     procedure-cond
     program-name
@@ -221,8 +222,15 @@
 
   (define (procedure-append . proc)
     "procedure ... -> procedure:{any ... -> (any ...)}
-     creates a new procedure that applies every appended procedure with all arguments and returns all results in a list"
+     creates a new procedure that applies each appended procedure with given arguments
+     and returns the results of each call in a list"
     (l a (map (l (b) (apply b a)) proc)))
+
+  (define (procedure-append* . proc)
+    "procedure ... -> procedure:{any ... -> unspecified}
+     like procedure-append but procedure call results must be lists
+     which are appended"
+    (l a (append-map (l (b) (apply b a)) proc)))
 
   (define (procedure-append-ignore-result . proc)
     "procedure ... -> procedure:{any ... -> unspecified}
