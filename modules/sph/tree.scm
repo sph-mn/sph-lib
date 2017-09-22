@@ -31,6 +31,7 @@
     prefix-tree-produce-with-context-mm
     prefix-tree-product
     prefix-tree-product-mm
+    tree-fold-right-depth
     prefix-tree-replace-prefix
     produce-prefix-trees
     produce-prefix-trees-with-depth
@@ -149,11 +150,12 @@
   (define (tree-fold-right p r t)
     "procedure:{any:element any:result -> any:result} any:result list:tree -> any
      fold over all lists and non-list elements in tree
-     non-lists from left-to-right, lists bottom-to-top"
+    non-lists from left-to-right, lists bottom-to-top"
     (fold-right (l (e r) (if (list? e) (p (tree-fold-right p (list) e) r) (p e r))) r t))
 
   (define (tree-fold-lists-right enter? p r t)
-    "procedure:{any -> boolean} procedure:{any any -> any} list -> any"
+    "procedure:{any -> boolean} procedure:{any any -> any} list -> any
+    experimental."
     (fold-right
       (l (e r) (if (list? e) (if (enter? e) (tree-fold-lists-right enter? p r e) (p e r)) r)) r t))
 
@@ -168,9 +170,16 @@
     (fold (l (e r) (if (list? e) (p (tree-fold-with-depth p (list) e (inc n) inc) r n) (p e r n)))
       r t))
 
+   (define* (tree-fold-right-depth p r t #:optional (depth 1) (inc 1+))
+    "procedure:{any:element any:result -> any:result} any:result list:tree -> any
+     fold over all lists and non-list elements in tree
+    non-lists from left-to-right, lists bottom-to-top"
+    (fold-right (l (b r) (if (list? b) (p (tree-fold-right-depth p (list) b (inc depth) inc) r depth) (p b r depth))) r t))
+
   (define* (tree-fold-reverse-with-depth p r t #:optional (n 1) (inc 1+))
     "procedure:{any:element any:result integer:nesting-depth} any tree integer:depth-init procedure:{integer -> integer} -> any
-     like tree-fold-reverse but with additional arguments for keeping information about the nesting-depth of currently processed sub-lists"
+     like tree-fold-reverse but with additional arguments for keeping information about the depth of currently processed sub-lists.
+    experimental."
     (reverse
       (fold
         (l (e r)
@@ -297,7 +306,7 @@
           (list a)))
       a))
 
-  (define (tree-map proc a)
+ (define (tree-map proc a)
     "procedure:{any -> any} list -> list
      maps lists bottom-to-top. does not map the topmost tree structure itself."
     (map (l (a) (proc (if (list? a) (tree-map proc a) a))) a))

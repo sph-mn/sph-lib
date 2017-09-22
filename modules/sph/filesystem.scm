@@ -122,7 +122,7 @@
      example
      (directory-prefix-tree (list \"/usr/local/bin\" \"/usr/local/lib\"))
      -> (\"/usr\" (\"local\" (\"bin\" \"lib\")))"
-    (first (group-recursively (map path->list (directory-tree start)))))
+    (group-recursively (map path->list (directory-tree start))))
 
   (define (dotfile? name)
     "string -> boolean
