@@ -77,7 +77,7 @@
             (parsed-type-signature->string (type-signature-simplify-tree (peg:tree signature))
               line-prefix)
             (docstring-format (string-trim (string-drop a (peg:end signature)))))
-          (c #f (docstring-format (string-drop a (peg:end signature))))))
+          (c #f (docstring-format a))))
       (c #f #f)))
 
   (define (lines->docstring a indent) "list (string ...) -> string"

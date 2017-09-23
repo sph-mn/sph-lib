@@ -24,12 +24,13 @@
 
   (define thread-pool-queue-fifo (list make-q q-empty? enq! deq!))
 
-  (define* (thread-pool-create #:optional size exception-handler queue-type wait-timeout)
+  (define* (thread-pool-create #:optional size exception-handler queue-type)
     "[integer procedure:{key retry ->} true/symbol/(symbol ...) list/symbol:lifo/fifo] -> (procedure:{procedure:nullary:code-to-execute -> any/false}:enqueue! thread ...)
      creates a list of threads that wait using condition variables to execute procedures from a queue, which is a first-in-first-out queue by default.
      the last-in-first-out queue just uses scheme lists and earlier tasks wait if there are not enough threads available to handle all tasks.
      the returned enqueue! procedure can be used to add procedures to the queue.
-     if a procedure from the queue evaluates to false, the thread it was called in exits. by filling the queue with procedures like this,
+     if a procedure from the queue evaluates to false, the thread it was called in exits.
+     by adding as many procedures like this as there are threads in the pool,
      all threads can be closed without having to cancel them by other more obscure means.
      the default size is the current processor count.
      queue-type can be a custom queue given as a list with the following signature
