@@ -34,14 +34,11 @@
             (if (null? content) #f
               (case key ((type) (symbol->string (first content)))
                 (else
-                  (let
-                    (lines
-                      (remove string-null? (append-map (l (a) (string-split a #\newline)) content)))
-                    (if (null? lines) ""
-                      (shtml-section (+ 1 nesting-depth) key
-                        (if (eq? (q signature) key) (list (q pre) (string-join lines "\n"))
-                          (itml-shtml-lines lines))
-                        (list (q class) (first a))))))))))
+                  (let (content (string-join content "\n"))
+                    (shtml-section (+ 1 nesting-depth) key
+                      (itml-shtml-lines
+                        (string-split content #\newline))
+                      (list (q class) key))))))))
         (list-sort-with-accessor string>? (compose symbol->string first) (tail binding)))))
 
   (define (get-bindings module-name) "list -> ((symbol:name . list:alist) ...)"

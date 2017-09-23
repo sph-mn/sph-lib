@@ -36,6 +36,7 @@
     (sph binding-info)
     (sph lang indent-syntax)
     (sph lang parser type-signature)
+    (sph lang scm-format format)
     (sph list)
     (sph module)
     (sph record)
@@ -46,10 +47,25 @@
     (only (srfi srfi-1) remove filter-map))
 
   (define sph-documentation-description "extract and display guile scheme code documentation")
+  (define indent-string (list->string (make-list 2 #\space)))
 
-  (define (docstring->lines a) "string -> (string ...)"
-    (let (a (regexp-substitute/global #f " +" a (q pre) " " (q post)))
-      (map (l (a) (string-trim a)) (string-split a #\newline))))
+  (define (docstring-format a) "string -> string"
+    (if (string-null? a) a
+      (let*
+        ( (a (format-docstring a #f indent-string 0))
+          (a
+            ; drop doublequotes of formatted string literal
+            (substring a 1 (- (string-length a) 1))))
+        (if (string-null? a) ""
+          (string-join
+            (map
+              (l (line)
+                "remove one eventual extra space from the beginning of lines when the docstring
+                is formatted to offset the doublequote of the string literal"
+                (let (index (string-skip line #\space))
+                  (if (and index (odd? index)) (string-drop line 1) line)))
+              (string-split a #\newline))
+            "\n")))))
 
   (define (docstring-split-signature a line-prefix c)
     "string string procedure:{string:type-signatures string:rest-of-docstring} -> any
@@ -60,9 +76,9 @@
           (c
             (parsed-type-signature->string (type-signature-simplify-tree (peg:tree signature))
               line-prefix)
-            (docstring->lines (string-drop a (peg:end signature))))
-          (c #f (docstring->lines a))))
-      (c #f (list))))
+            (docstring-format (string-trim (string-drop a (peg:end signature)))))
+          (c #f (docstring-format (string-drop a (peg:end signature))))))
+      (c #f #f)))
 
   (define (lines->docstring a indent) "list (string ...) -> string"
     (let (a (remove string-null? a))

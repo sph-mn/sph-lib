@@ -47,7 +47,7 @@
     tree-filter
     tree-filter-leafs
     tree-filter-lists
-    tree-filter-map-flat
+    tree-filter-flat
     tree-find
     tree-finder
     tree-fold
@@ -320,7 +320,7 @@
      results in the tree with the matched elements are replaced in order by the result elements from calling f"
     (tree-replace-by-list a predicate (f (tree-filter-flat predicate a))))
 
-  (define (tree-filter-map-flat predicate a)
+  (define (tree-filter-flat predicate a)
     "procedure:{any -> boolean/any} list -> list
      results in a possibly flat list of all list and non-lists elements of tree
      for which predicate returned true"

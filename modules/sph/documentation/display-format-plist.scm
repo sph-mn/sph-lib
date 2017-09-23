@@ -21,7 +21,7 @@
       (pair (symbol->string (bi-name bi))
         (append
           (docstring-split-signature (bi-documentation bi) ""
-            (l (signature text-lines)
+            (l (signature text)
               (append
                 (if signature
                   (list
@@ -30,8 +30,7 @@
                         (list formatted-arguments signature))))
                   (if (string-null? formatted-arguments) (list)
                     (list (list (q signature) formatted-arguments))))
-                (if (null? text-lines) text-lines
-                  (list (list (q description) (string-join (remove string-null? text-lines) "\n")))))))
+                (if (or (not text) (string-null? text)) null (list (list (q description) text))))))
           (list (list (q type) (bi-type bi))))))
     format-module-documentation (l (module-name md) md) format-modules-documentation (l (mds) mds))
 

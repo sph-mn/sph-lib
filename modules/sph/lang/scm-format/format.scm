@@ -32,15 +32,15 @@
 
   (define (round-even a)
     "number -> integer
-     floor to the nearest even integer"
+         floor to the nearest even integer"
     (let (a (inexact->exact (round a))) (+ a (modulo a 2))))
 
   (define (add-multiple-leading-parenthesis-spacing config lines) "( (content ..."
     (if (and (ht-ref config (q multiple-leading-parenthesis-spacing)) (length-greater-one? lines))
       (map
-        (l (e)
-          (if (string-contains e "\n")
-            (consecutive-parentheses-indentation e (ht-ref config (q indent-string))) e))
+        (l (a)
+          (if (string-contains a "\n")
+            (consecutive-parentheses-indentation a (ht-ref config (q indent-string))) a))
         lines)
       lines))
 
@@ -138,7 +138,7 @@
 
   (define (consecutive-parentheses-indentation a indent-string)
     "string string -> string
-     offsets leading parentheses on one line by the level of idendation. example: ( ("
+         offsets leading parentheses on one line by the level of idendation. example: ( ("
     (let (index (string-skip a #\())
       (if (and index (> index 1))
         (string-append
@@ -149,7 +149,7 @@
 
   (define (format-application a config current-indent)
     "list hashtable integer -> string
-     format the standard list application form. example (append a b)"
+         format the standard list application form. example (append a b)"
     (let*
       ((indent (create-indent config current-indent)) (line-spacing (string-append "\n" indent)))
       (apply
@@ -165,42 +165,42 @@
           ;the following 1 is the initial line-length including the beginning parenthesis
           (list) (list) 1 0))))
 
-  (define (format-docstring a config current-indent)
+  (define (format-docstring a offset-doublequote indent-string current-indent)
     "string hashtable integer -> string
-     parses a string and removes outside string indent from using newlines in a continuous string that is indented.
-     adds current indent to all lines except the first.
-     since old-indent is not available here, old-indent is guessed from the second line.
-     if the second line is indented relative to the first line, this indent will unfortunately be removed for all lines"
-    (let*
-      ( (a (string-trim-both a)) (indent-string (ht-ref config (q indent-string)))
-        (indent (string-multiply indent-string current-indent))
-        (second-line-index (string-index a #\newline)))
-      (format-string
-        (if second-line-index
-          (let*
-            ( (indent-length
-                (or (string-skip-string (substring a (+ 1 second-line-index)) indent-string) 0))
-              (indent-end-index (+ second-line-index indent-length))
-              (indent-to-remove
-                (if (= second-line-index indent-end-index) ""
-                  (substring a (+ 1 second-line-index) indent-end-index))))
-            (if (ht-ref config (q docstring-offset-doublequote))
-              (let (lines (string-split a #\newline))
-                ; add one extra space to offset the initial doublequote
-                (string-join
-                  (pair (first lines)
-                    (map
-                      (l (a)
-                        (let*
-                          ( (a (string-drop-prefix-if-exists indent-to-remove a))
-                            (space-count (or (string-skip a #\space) 0)))
-                          (if (even? space-count) (string-append indent " " a)
-                            (string-append indent a))))
-                      (tail lines)))
-                  "\n"))
-              (string-replace-string a (string-append "\n" indent-to-remove)
-                (string-append "\n" indent))))
-          a))))
+         parses a string and removes outside string indent from using newlines in a continuous string that is indented.
+         adds current indent to all lines except the first.
+         since old-indent is not available here, old-indent is guessed from the second line.
+         if the second line is indented relative to the first line, this indent will unfortunately be removed for all lines"
+    (if (string-null? indent-string) (raise (pair (q invalid-indent-string) indent-string))
+      (let*
+        ( (indent (string-multiply indent-string current-indent))
+          (second-line-index (string-index a #\newline)))
+        (format-string
+          (if second-line-index
+            (let*
+              ( (indent-length
+                  (or (string-skip-string (substring a (+ 1 second-line-index)) indent-string) 0))
+                (indent-end-index (+ second-line-index indent-length))
+                (indent-to-remove
+                  (if (= second-line-index indent-end-index) ""
+                    (substring a (+ 1 second-line-index) indent-end-index))))
+              (if offset-doublequote
+                (let (lines (string-split a #\newline))
+                  ; add one extra space to offset the initial doublequote
+                  (string-join
+                    (pair (first lines)
+                      (map
+                        (l (a)
+                          (let*
+                            ( (a (string-drop-prefix-if-exists indent-to-remove a))
+                              (space-count (or (string-skip a #\space) 0)))
+                            (if (even? space-count) (string-append indent " " a)
+                              (string-append indent a))))
+                        (tail lines)))
+                    "\n"))
+                (string-replace-string a (string-append "\n" indent-to-remove)
+                  (string-append "\n" indent))))
+            a)))))
 
   (define (format-hash-bang a recurse config current-indent)
     (list (string-append "#!" (first (tail a)) "\n!#") #f))
@@ -218,7 +218,9 @@
                   formals)
                 (if (and (list? body) (not (null? body)))
                   (if (string? (first body))
-                    (pair (format-docstring (first body) config current-indent)
+                    (pair
+                      (format-docstring (first body) (ht-ref-q config docstring-offset-doublequote)
+                        (ht-ref-q config indent-string) current-indent)
                       (map-recurse recurse (tail body) current-indent))
                     (map-recurse recurse body current-indent))
                   body)))

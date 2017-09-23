@@ -15,20 +15,23 @@
     (only (sph list) fold-multiple))
 
   (define sph-lang-template-description
-    "s-expression quasiquote template processor
-     a template engine using implicitly quasiquoted s-expressions.
-     supports composition and concatenation. creates template procedures. source data can be given as files, ports or datums.
-     alternative name: s-template.
+    "s-expression template processor.
+     a template engine that interprets expressions as elements of a quasiquoted list.
+     supports concatenation and composition. creates template procedures. source data can be given as files, ports or datums.
+     alternative name: s-template
      # data structures
-     template-procedure :: procedure:ref:{key default -> any:template-variable-value} any:content -> any
-     template-source: single-element/(concatenated-element/(composed-element ...) ...)
+     template-procedure :: procedure:{symbol:key [default] -> variable-value} any:content -> any
      template-source: element/(element/(element ...) ...)
-     element: string:path/procedure:template-procedure/port")
+     template-source: single-elements/(concatenated-elements/(composed-elements ...) ...)
+     element: string:path/procedure:template-procedure/port/any")
 
   (define (template-datum->template-proc a env)
     "any:scheme-datum environment -> procedure:template-proc
-     creates a template-proc from an unevaluated template scheme datum"
-    (eval (quasiquote (lambda (ref content) (unquote (list (q quasiquote) a)))) env))
+     creates a template-procedure from an unevaluated template scheme datum.
+     additionally to the bindings from the given environment, the bindings \"v\" and \"content\" are available in scope.
+     v can be used as (v (quote variable-name)) to insert template variables. content contains the value
+     eventually inserted via composition"
+    (eval (quasiquote (lambda (v content) (unquote (list (q quasiquote) a)))) env))
 
   (define (template-get env a) "environment procedure/string/port/any -> procedure"
     (if (procedure? a) a
@@ -38,7 +41,7 @@
   (define (template-compose env . source)
     "environment template-source ... -> procedure:template-proc
      evaluated templates from source are passed as content to the templates before them like function composition"
-    (l (ref content) (fold-right (l (a prev) ((template-get env a) ref prev)) content source)))
+    (l (v content) (fold-right (l (a prev) ((template-get env a) v prev)) content source)))
 
   (define (template-bindings-proc data)
     (case-lambda (() data)
@@ -57,14 +60,25 @@
 
   (define (template-fold fold-proc bindings env source . custom-values)
     "procedure:{procedure any -> any} list environment template-source any -> any
-     template-fold processes multiple template sources with or without template composition depending on the nesting of sources in the \"source\" specification.
-     example call:
-     (template-fold
-       (l (template-result . custom-values) (pair template-result custom-values))
-       (list file.sxml appended-file.sxml (list layout.sxml included-in-layout.sxml))
-       (alist (q a) 1)
-       (environment (rnrs base))
-       (list))"
+     template-fold processes multiple template sources. it creates the s-expression structure
+     with variables replaced and passes individual expressions to fold-proc which can then process them further,
+     for example translate sxml to an xml string.
+     how sources are combined depends on the nesting depth they are specified with.
+     first nesting level: (a b c ...)
+       templates are appended
+     second nesting level: (a (b c d) ...)
+       templates are composed/inserted. similar to function application, template b receives the result of template c,
+       which receives the result of template d. this is appended to a
+     source elements can be filesystem path strings, template procedures or other scheme datums.
+     if the datums to insert are lists, then they should be nested in two lists (((content ...))) to avoid the automatic
+     concatenation or composition.
+     example call
+       (template-fold
+         (l (template-result . custom-values) (pair template-result custom-values))
+         (list \"file.sxml\" \"appended-file.sxml\" (list \"layout.sxml\" \"inserted-into-layout.sxml\"))
+         (alist-q a 1)
+         (environment (rnrs base))
+         (list))"
     (apply template-source-fold source
       (let (bindings-accessor (template-bindings-proc bindings))
         (l (template . custom-values)
