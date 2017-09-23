@@ -147,7 +147,7 @@
   (define (iq-file-hashtable path)
     "string -> list
      read file like iq-file and then convert the resulting list to an association list by interpreting elements as key and value alternatingly"
-    (tree-map-lists-and-self (compose ht-from-alist list->alist) (iq-file path)))
+    (tree-map-lists-self (compose ht-from-alist list->alist) (iq-file path)))
 
   (define (path->symbol-list a)
     (let (a (string-trim-both a #\/))
@@ -276,7 +276,7 @@
     (if (list? a) (map (l (b) (any-ht-values->keys ht b)) a)
       (if (or (symbol? a) (integer? a)) (ht-ref ht a a) a)))
 
-  (define (seconds->short-kiloseconds-string a) (simple-format-number (inexact->exact a) 3 2))
+  (define (seconds->short-kiloseconds-string a) (number-format-float (inexact->exact a) 3 2))
 
   (define (os-seconds-at-boot)
     (- (nanoseconds->seconds (utc-elapsed-day (utc-current))) (os-seconds-since-boot)))
