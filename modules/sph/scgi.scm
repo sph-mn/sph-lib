@@ -79,7 +79,7 @@
   (define (scgi-default-address) (string-append "/tmp/" (number->string (getuid)) "/scgi"))
 
   (define*
-    (scgi-handle-requests handle-request #:key socket address port parallelism
+    (scgi-handle-requests handle-request #:key socket address port parallelism (exception-keys #t)
       (server-listen server-listen)
       (server-socket server-socket))
     "procedure:{list:header:((string . string) ...) port:client -> any} _ ... -> unspecified
@@ -100,4 +100,4 @@
         (set-port-encoding! port "ISO-8859-1")
         (scgi-read-header port (l (header) (handle-request header port))))
       (or socket (server-socket (or address (scgi-default-address)) #:port port)) #:parallelism
-      parallelism)))
+      parallelism #:exception-keys exception-keys)))
