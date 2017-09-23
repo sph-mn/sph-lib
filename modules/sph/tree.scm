@@ -14,30 +14,27 @@
   (export
     denoted-tree->prefix-tree
     denoted-tree->tree
+    denoted-tree->tree-inner
     denoted-tree-adjust-depth
     denoted-tree-minimise-depth
     prefix-tree->denoted-tree
+    prefix-tree->infix-tree
     prefix-tree->paths
     prefix-tree->relations
     prefix-tree-context-match
     prefix-tree-map
+    prefix-tree-map-c
     prefix-tree-map-c-depth
     prefix-tree-map-depth
     prefix-tree-map-depth-flat
     prefix-tree-map-with-context
-    prefix-tree-map-with-continue
-    prefix-tree-map-with-continue-depth
     prefix-tree-produce
     prefix-tree-produce-with-context
     prefix-tree-produce-with-context-mm
     prefix-tree-product
     prefix-tree-product-mm
     prefix-tree-replace-prefix
-    produce-prefix-trees
-    produce-prefix-trees-depth
-    produce-with-iterator-tree
     sph-tree-description
-    splice-lists-without-prefix-symbol
     tree->denoted-tree
     tree-any
     tree-contains-all?
@@ -48,30 +45,27 @@
     tree-each-leaf
     tree-extract
     tree-filter
-    tree-filter-flat
     tree-filter-leafs
     tree-filter-lists
+    tree-filter-map-flat
     tree-find
     tree-finder
     tree-fold
     tree-fold-depth
-    tree-fold-lists-right
-    tree-fold-reverse
-    tree-fold-reverse-depth
     tree-fold-right
     tree-fold-right-depth
     tree-map
-    tree-map-and-self
     tree-map-depth
     tree-map-depth-flat
     tree-map-leafs
     tree-map-lists
-    tree-map-lists-and-self
     tree-map-lists-depth
+    tree-map-lists-self
+    tree-map-self
     tree-map-with-state
     tree-mapper
+    tree-mapper-produce
     tree-mapper-top
-    tree-pair->list
     tree-produce
     tree-produce-lists
     tree-produce-lists-depth
@@ -80,6 +74,7 @@
     tree-splice
     tree-transform
     tree-transform*
+    tree-transform-ascend
     tree-transform-descend-identity)
   (import
     (sph)
@@ -223,12 +218,12 @@
      like tree-map but pass only the lists in tree to f, skipping and keeping non-list elements. bottom-to-top"
     (tree-mapper map (l (a) (if (list? a) (f a) a)) a))
 
-(define (tree-map-leafs f a)
+  (define (tree-map-leafs f a)
     "procedure:{any -> any} list -> list
      call f only with non-list elements, all other elements are kept"
-  (tree-mapper map (l (a) (if (list? a) a (f a))) a))
+    (tree-mapper map (l (a) (if (list? a) a (f a))) a))
 
-(define (tree-map-lists-self f a)
+  (define (tree-map-lists-self f a)
     "{list -> any} list -> list
      like tree-map-and-self but calls f only for list elements"
     (f (tree-map-lists f a)))
@@ -653,6 +648,7 @@
     (map (l (a) (pair (max 0 (apply operator (first a) arguments)) (tail a))) a))
 
   (define-syntax-rule (denoted-tree->tree-inner a depth-start r-2 r update-r ...)
+    ; todo: dispense of this syntax
     (first
       (let loop ((rest a) (depth depth-start) (r (list)))
         (if (null? rest) (list (reverse r))

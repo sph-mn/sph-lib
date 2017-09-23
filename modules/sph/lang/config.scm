@@ -11,7 +11,7 @@
     (sph hashtable)
     (sph io)
     (only (guile) call-with-input-string call-with-input-file)
-    (only (sph tree) tree-map-lists-and-self))
+    (only (sph tree) tree-map-lists-self))
 
   (define sph-lang-config-description
     "a scheme syntax configuration file format for associative data structures.
@@ -36,7 +36,7 @@
   (define config-env (environment (q (sph))))
 
   (define* (config-read port #:optional (eval-environment config-env))
-    (tree-map-lists-and-self
+    (tree-map-lists-self
       (l (a)
         (if (null? a) (ht-make-eq 0)
           (if (eq? (q ..) (first a)) (tail a) (ht-from-list a eq? ht-hash-symbol))))
