@@ -276,7 +276,8 @@
     (if (list? a) (map (l (b) (any-ht-values->keys ht b)) a)
       (if (or (symbol? a) (integer? a)) (ht-ref ht a a) a)))
 
-  (define (seconds->short-kiloseconds-string a) (number-format-float (inexact->exact a) 3 2))
+  (define (seconds->short-kiloseconds-string a)
+    (number-format-float (inexact->exact a) #:decimal-max 3 #:decimal-min 2))
 
   (define (os-seconds-at-boot)
     (- (nanoseconds->seconds (utc-elapsed-day (utc-current))) (os-seconds-since-boot)))
