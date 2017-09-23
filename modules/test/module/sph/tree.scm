@@ -1,10 +1,33 @@
 (define-test-module (test module sph tree)
   (import
     (sph tree))
+
+  (define data-tree (list 1 2 3 (list 4 5 (list 6 7) (list 8 9 10))))
+
   (test-execute-procedures-lambda
-    (prefix-tree->denoted-tree
-      ((a (b (c d))))
-      ((0 . a) (0 . b) (1 . c) (2 . d)))
+    (tree-find
+      (unquote (list(l (a) (or (list? a) (= 6 a))) data-tree))
+      (4 5 (6 7) (8 9 10)))
+    (tree-any
+      (unquote (list (l (a) (and (integer? a) (= 6 a) a)) data-tree))
+      6)
+    (tree-fold-right
+      (unquote (list (l (a r) (pair a r)) null data-tree))
+      (unquote data-tree)
+      (unquote (list (l (a r) (if (list? a) a (pair (even? a) r))) null data-tree))
+      (#f #t #f #t #f #t #f))
+    (tree-fold-depth
+      (unquote (list (l (a r d) (if (list? a) (pair a r) (pair d r))) null data-tree))
+      (((3 3 3) (3 3) 2 2) 1 1 1))
+    (tree-filter
+      (unquote (list (l (a) (or (list? a) (even? a))) data-tree))
+      (2 (4 (6) (8 10))))
+    (tree-filter-lists
+      (unquote (list (l (a) (< 3 (length a))) data-tree))
+      (1 2 3))
+    (tree-map-leafs
+      (unquote (list even? data-tree))
+      (#f #t #f (#t #f (#t #f) (#t #f #t))))
     (denoted-tree->prefix-tree
       (((0 . a) (1 . b) (2 . c))) ((a (b c)))
       (((3 . b) (3 . c) (0 . d)))
@@ -21,6 +44,9 @@
       ((a (b)) c)
       (((0 . a) (2 . b) (1 . c)))
       ((a (b) c)))
+    (prefix-tree->denoted-tree
+      ((a (b (c d))))
+      ((0 . a) (0 . b) (1 . c) (2 . d)))
     (prefix-tree-produce-with-context
       ((unquote list) (a (d e f) (g h i) j) #t)
       ((e (d a)) (f (d a)) (h (g a)) (i (g a)) (j (a)))

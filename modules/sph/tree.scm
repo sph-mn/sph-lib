@@ -21,8 +21,9 @@
     prefix-tree->relations
     prefix-tree-context-match
     prefix-tree-map
+    prefix-tree-map-c-depth
     prefix-tree-map-depth
-    prefix-tree-map-depth->flat-list
+    prefix-tree-map-depth-flat
     prefix-tree-map-with-context
     prefix-tree-map-with-continue
     prefix-tree-map-with-continue-depth
@@ -31,9 +32,6 @@
     prefix-tree-produce-with-context-mm
     prefix-tree-product
     prefix-tree-product-mm
-    tree-map-lists-depth
-    prefix-tree-map-c-depth
-    tree-splice
     prefix-tree-replace-prefix
     produce-prefix-trees
     produce-prefix-trees-depth
@@ -49,7 +47,10 @@
     tree-each
     tree-each-leaf
     tree-extract
-    tree-filter->flat-list
+    tree-filter
+    tree-filter-flat
+    tree-filter-leafs
+    tree-filter-lists
     tree-find
     tree-finder
     tree-fold
@@ -62,7 +63,7 @@
     tree-map
     tree-map-and-self
     tree-map-depth
-    tree-map-depth->flat-list
+    tree-map-depth-flat
     tree-map-leafs
     tree-map-lists
     tree-map-lists-and-self
@@ -76,6 +77,7 @@
     tree-produce-lists-depth
     tree-replace-at-once
     tree-replace-by-list
+    tree-splice
     tree-transform
     tree-transform*
     tree-transform-descend-identity)
@@ -149,13 +151,28 @@
   (define (tree-fold p r t)
     "procedure:{any:element any:result -> any:result} any:result list:tree -> any
      fold over all lists and non-list elements in tree
-     elements from left to right, nested lists bottom to top"
+     elements from left to right, nested lists bottom to top.
+     lists passed to f will be fold results from list elements that have already been processed.
+     see tree-fold-right for examples"
     (fold (l (a r) (if (list? a) (p (tree-fold p (list) a) r) (p a r))) r t))
 
   (define (tree-fold-right p r t)
     "procedure:{any:element any:result -> any:result} any:result list:tree -> any:result
      fold over all list and non-list elements in tree.
-     elements from left to right, nested lists bottom to top"
+     elements from left to right, nested lists bottom to top
+     example 1
+       (tree-fold-right
+         (l (a r) (pair a r))
+         (list)
+         (q (1 2 3 (4 5 (6 7) (8 9 10)))))
+       ->
+       (q (1 2 3 (4 5 (6 7) (8 9 10))))
+     example 1
+       (tree-fold-right
+         (l (a r) (if (list? a) a (if (even? a) (pair a r) r)))
+         (list) (q (1 2 3 (4 5 (6 7) (8 9 10)))))
+       ->
+       (q (1 2 3 (4 5 (6 7) (8 9 10))))"
     (fold-right (l (a r) (if (list? a) (p (tree-fold-right p (list) a) r) (p a r))) r t))
 
   (define* (tree-fold-depth p r t #:optional (n 1) (inc 1+))
@@ -188,15 +205,65 @@
     (tree-filter (l (a) (or (list? a) (predicate a))) a))
 
   (define (tree-filter-lists predicate a)
-    "like tree-filter but calls predicate only for list elements"
+    "like tree-filter but calls predicate only for list elements.
+     example - keep only lists with more than 3 elements
+       (tree-filter-lists (l (a) (< 3 (length a))) (q (1 2 3 (4 5 (6 7) (8 9 10)))))
+       ->
+       (1 2 3)"
     (tree-filter (l (a) (if (list? a) (predicate a) #t)) a))
 
-  (define (tree-map-leafs f a)
+  (define (tree-map f a)
+    "procedure:{any -> any} list -> list
+     maps elements left to right and nested lists bottom to top.
+     not map the topmost tree structure itself."
+    (tree-mapper map f a))
+
+  (define (tree-map-lists f a)
+    "{list -> any} list -> list
+     like tree-map but pass only the lists in tree to f, skipping and keeping non-list elements. bottom-to-top"
+    (tree-mapper map (l (a) (if (list? a) (f a) a)) a))
+
+(define (tree-map-leafs f a)
     "procedure:{any -> any} list -> list
      call f only with non-list elements, all other elements are kept"
-    (map (l (a) (if (list? a) (tree-map-leafs f a) (f a))) a))
+  (tree-mapper map (l (a) (if (list? a) a (f a))) a))
 
-  (define (tree-map-depth->flat-list f a . initial-depth)
+(define (tree-map-lists-self f a)
+    "{list -> any} list -> list
+     like tree-map-and-self but calls f only for list elements"
+    (f (tree-map-lists f a)))
+
+  (define (tree-map-self f a)
+    "{any -> any} list -> list
+     like tree-map-lists but also map the given list itself"
+    (f (tree-map f a)))
+
+  (define* (tree-map-depth f a #:optional (initial-depth 0))
+    "procedure:{any:element integer:depth} list [integer] -> list
+     like tree-map but also passes a number for the current nesting depth to f"
+    (let loop ((rest a) (depth initial-depth) (r (list)))
+      (if (null? rest) (f (reverse r) depth)
+        (loop (tail rest) depth
+          (pair
+            (if (list? (first rest)) (loop (first rest) (+ 1 depth) (list)) (f (first rest) depth)) r)))))
+
+  (define* (tree-map-lists-depth f a #:optional (depth-init 1) (map-depth 1+))
+    "{list integer:depth -> any} list [integer {integer -> integer:next-depth}] -> list
+     like tree-map-lists with additional arguments for the current nesting depth"
+    (let loop ((e a) (depth depth-init))
+      (map (l (e) (if (list? e) (f (loop e (map-depth depth)) depth) e)) e)))
+
+  (define (tree-map-with-state f a . init)
+    "{any any:custom-state-value ... -> list:custom-state-values} -> (list:mapped-elements any:custom-state-value ...)
+     like tree-map but can carry and update a number of custom values per call, similar to fold-multiple"
+    (apply (l (r . state) (apply list (reverse r) state))
+      (apply fold-multiple
+        (l (e r . state)
+          (apply (l (map-r . state) (apply list (pair map-r r) state))
+            (if (list? e) (apply tree-map-with-state f e state) (apply f e state))))
+        a (list) init)))
+
+  (define (tree-map-depth-flat f a . initial-depth)
     "procedure:{integer:depth any:element -> any:result-element} list [integer] -> (any ...)
      map elements of tree to a flat list. apply f with a number
      stating how deeply the element is nested in other lists and the current element"
@@ -209,69 +276,23 @@
 
   (define (tree-produce f a b)
     "procedure:{any any -> any} list list -> any
-     apply f with every possible ordered combination of elements between two lists. iterates like tree-map"
-    (tree-map (l (e-1) (tree-map (l (e-2) (f e-1 e-2)) b)) a))
+     apply f with every possible ordered combination of list and non-list elements of trees.
+     traverses like tree-map"
+    (tree-map (l (a) (tree-map (l (b) (f a b)) b)) a))
 
-  (define (tree-produce-lists f a b)
-    "like tree-produce but pass only combinations of contained lists to f"
-    (tree-map-lists (l (e-1) (tree-map-lists (l (e-2) (f e-1 e-2)) b)) a))
+  (define (tree-produce-lists f a b) "like tree-produce only for list elements"
+    (tree-map-lists (l (a) (tree-map-lists (l (b) (f a b)) b)) a))
 
-  (define (produce-with-iterator-tree iterator f a b)
+  (define (tree-mapper-produce map f a b)
     "procedure:{f list:elements -> any} procedure:{any:element-a any:element-b -> any}:f list list -> any
-     call f with each ordered combination between elements of two lists with an
-     iterator procedure that is called in a nested (each (lambda (e-1) (each (lambda (e-2) (f e-1 e-2)) b)) a)
-     way to create the argument combinations"
-    (iterator
-      (l (e-1)
-        (if (list? e-1) (produce-with-iterator-tree iterator f e-1 b)
-          (iterator
-            (l (e-2) (if (list? e-2) (produce-with-iterator-tree iterator f e-1 e-2) (f e-1 e-2))) b)))
+     call f with each ordered combination between elements of two lists with a
+     map procedure that is called nested like
+     (each (lambda (a) (each (lambda (b) (f a b)) b)) a)"
+    (map
+      (l (a)
+        (if (list? a) (tree-mapper-produce map f a b)
+          (map (l (b) (if (list? b) (tree-mapper-produce map f a b) (f a b))) b)))
       a))
-
-  (define (tree-map f a)
-    "procedure:{any -> any} list -> list
-     maps lists bottom-to-top. does not map the topmost tree structure itself."
-    (map (l (a) (f (if (list? a) (tree-map f a) a))) a))
-
-  (define (tree-map-lists f a)
-    "{list -> any} list -> list
-     like tree-map but pass only the lists in tree to f, skipping and keeping non-list elements. bottom-to-top"
-    (map (l (a) (if (list? a) (f (tree-map-lists f a)) a)) a))
-
-  (define (tree-map-lists-and-self f a)
-    "{list -> any} list -> list
-     like tree-map-lists but additionally passes the result to f in the last call"
-    (f (tree-map-lists f a)))
-
-  (define (tree-map-and-self f a)
-    "{any -> any} list -> list
-     like tree-map but additionally passes the result to f in the last call"
-    (f (tree-map f a)))
-
-  (define* (tree-map-depth f a #:optional (initial-depth 0))
-    "procedure:{any:element integer:depth} list [integer] -> list
-     like tree-map but with additional arguments for the current nesting-depth"
-    (let loop ((rest a) (depth initial-depth) (r (list)))
-      (if (null? rest) (f (reverse r) depth)
-        (loop (tail rest) depth
-          (pair
-            (if (list? (first rest)) (loop (first rest) (+ 1 depth) (list)) (f (first rest) depth)) r)))))
-
-  (define* (tree-map-lists-depth f a #:optional (depth-init 1) (map-depth 1+))
-    "{list integer:depth -> any} list [integer {integer -> integer:next-depth}] -> list
-     like tree-map-lists with additional arguments for the current nesting-depth"
-    (let loop ((e a) (depth depth-init))
-      (map (l (e) (if (list? e) (f (loop e (map-depth depth)) depth) e)) e)))
-
-  (define (tree-map-with-state f a . init)
-    "{any any:custom-state-value ... -> list:custom-state-values} -> (list:mapped-elements any:custom-state-value ...)
-     like tree-map but can carry and update a number of custom values per call, similar to fold"
-    (apply (l (r . state) (apply list (reverse r) state))
-      (apply fold-multiple
-        (l (e r . state)
-          (apply (l (map-r . state) (apply list (pair map-r r) state))
-            (if (list? e) (apply tree-map-with-state f e state) (apply f e state))))
-        a (list) init)))
 
   (define* (tree-produce-lists-depth f a b #:optional (inc 1+) (depth-init 1))
     "{any:element-a any:element-b integer:depth-a integer:depth-b} list:list-a list:list-b [{integer -> integer} integer] -> list"
@@ -302,7 +323,7 @@
      searches through tree recursively, collecting all elements (including lists) that match collect-proc, then calls
      f with a list of matched elements. the result of f must of length zero (no replacement) or matched-element-count (replaces all matches).
      results in the tree with the matched elements are replaced in order by the result elements from calling f"
-    (tree-replace-by-list a predicate (f (tree-filter->flat-list predicate a))))
+    (tree-replace-by-list a predicate (f (tree-filter-flat predicate a))))
 
   (define (tree-filter-map-flat predicate a)
     "procedure:{any -> boolean/any} list -> list
@@ -585,9 +606,9 @@
                     (loop (tail b) (first b) (pair prefix context) result)
                     (pair (f b (pair prefix context)) result))))))))))
 
-  (define (prefix-tree-map-depth->flat-list proc a . initial-depth)
+  (define (prefix-tree-map-depth-flat proc a . initial-depth)
     "{integer any -> any} list [integer] -> (any ...)
-     like tree->denoted-tree->flat-list but the nesting-depth number corresponds to prefix-tree interpretation"
+     like tree->denoted-tree-->flat but the nesting-depth number corresponds to prefix-tree interpretation"
     (reverse
       (let loop
         ( (rest a) (depth (if (null? initial-depth) 0 (first initial-depth))) (is-prefix #t)
@@ -605,7 +626,7 @@
     "list [integer] -> list
      like tree->denoted-tree but the nesting-depth number corresponds to prefix-tree interpretation. example
      (a b (c (d e)) f) -> ((0 . a) (1 . b) (2 . c) (3 . d) (3 . e) (0 . 4))"
-    (apply prefix-tree-map-depth->flat-list pair a initial-depth))
+    (apply prefix-tree-map-depth-flat pair a initial-depth))
 
   ;-- "denoted" trees
 
@@ -621,7 +642,7 @@
      convert a tree to an association list where each element is a list having a nesting-depth number
      as the first element. similar to this is the usage of indentation for nesting depth.
      (a b (c (d e)) f) -> ((0 . a) (0 . b) (1 . c) (2 . d) (2 . e) (0 . f))"
-    (apply tree-map-depth->flat-list pair a initial-depth))
+    (apply tree-map-depth-flat pair a initial-depth))
 
   (define (denoted-tree-adjust-depth a operator . arguments)
     "procedure list integer -> list
