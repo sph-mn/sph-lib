@@ -54,7 +54,6 @@
           input-port output-port error-port env keep-descriptors path-open-flags))))
 
   ; the following definitions are not directly dependent on the loaded extension
-  ;
 
   (define* (process-chain first-input last-output execute-arguments #:key search-path?)
     "port/any port/any (string/(string:executable string:argument ...) ...) -> (integer:pid ...)
@@ -150,16 +149,16 @@
         (pids
           (apply path-pipe-chain first-input
             last-output
+            ; creates a path-pipe-chain configuration
             (map
               (l (a)
                 (vector (vector-ref a 0) (vector-ref a 1)
                   (let (b (vector-ref a 2))
                     (l (in out)
-                      (let
-                        (executable-and-arguments
-                          (any->list
-                            (if (procedure? b) (b (and (string? in) in) (and (string? out) out)) b)))
+                      "map a process-chain-path-pipe config element to a path-pipe-chain config element"
+                      (let (executable-and-arguments (any->list (if (procedure? b) (b in out) b)))
                         (begin-first
+                          ; returns false when it could not create the process
                           (process-create (first executable-and-arguments)
                             (tail executable-and-arguments)
                             (if (port? in) in (and (procedure? in) (in)))

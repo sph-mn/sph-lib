@@ -12,7 +12,7 @@
 
   (define sph-io-path-pipe-chain-description
     "call procedures with input/output arguments in a chained manner to allow data flow between them.
-    procedures can request paths or ports as arguments and the links are made compatible automatically")
+     procedures can be configured to take paths or ports as arguments and the links are made compatible automatically")
 
   (define path-pipe-chain
     (let-syntax
@@ -65,13 +65,17 @@
             like pipe-chain but additionally supports specifying the type of port between procedures.
             procedures can take file paths or ports for input or output. input output combinations between procedures are automatically made compatible.
             caveats:
-            * in port-path and path-port links, input or output are not ports but procedures that return the path that has to be opened for read or write in a separate thread or process.
-              it blocks until the next procedure has opened the other end. this is typical behaviour of named pipes and there does not seem to be any applicable way around it
+            * in port-path and path-port links, input or output are not ports but procedures that return
+              the path that has to be opened for read or write in a separate thread or process.
+              it blocks until the next procedure has opened the other end. this is typical behaviour of
+              named pipes and there does not seem to be any applicable way around it
             * intermediate ports must be closed after read/write finished
-            * intermediate named pipe paths should be deleted after read/write finished. otherwise they accumulate in the systems temporary directory (but do not take up space in the filesystem)
+            * intermediate named pipe paths should be deleted after read/write finished. otherwise they accumulate
+              in the systems temporary directory (but do not take up space in the filesystem)
             * ports are not automatically closed when an exception occurs
             * to make it possible to read while a previous procedure is writing a user might want to create threads or processes
-            * named pipes are used when paths are requested. they normally block for each end until the other end is connected, and they do not send end of file before the writer is closed
+            * named pipes are used when paths are requested. they normally block for each end until the other end is connected,
+              and they do not send end of file before the writer is closed
             most of these caveats are to keep this procedure generic enough to be useful in many situations
             usage example:
             (path-pipe-chain \"/tmp/test\" (current-output-port) (vector (q nothing) (q port) (l (in out) (file->port in out))) (vector (q path) (q port) (l (in out) (do-stuff path port))))"
@@ -81,6 +85,7 @@
             ; * handle first and last input/output separately because they are foreign objects not to be created by path-pipe-chain
             ; * prepare and call procedures in order to complete the chain at the last input.
             ;   the output is passed to the current and the input to the next procedure.
+            ; one of the biggest issues when developing this was to avoid blocking deadlocks with named pipes
             (if (null? config) config
               (let (types (get-types first-input last-output config))
                 (map-first-input (any->type first-input) (vector-ref types 0)
