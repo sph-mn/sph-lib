@@ -30,8 +30,9 @@
     sql-where-expr)
   (import
     (ice-9 match)
-    (sph)
     (rnrs exceptions)
+    (sph)
+    (sph tree)
     (only (guile)
       identity
       object->string
@@ -48,8 +49,7 @@
       flat?
       length-one?)
     (only (sph number) in-between?)
-    (only (sph string) parenthesise string-replace-chars)
-    (sph tree))
+    (only (sph string) parenthesise string-replace-chars))
 
   (define sph-sql-description "create sql-statements from scheme data")
 
@@ -106,7 +106,7 @@
       ( (join-values
           (l (c values operator sql-operator)
             (first
-              (tree-map-lists-with-depth
+              (tree-map-lists-depth
                 (l (values value-state)
                   (let
                     ( (value-combinator (state->combinator value-state))
@@ -137,7 +137,7 @@
         (join-columns-values
           (l (columns values operator sql-operator)
             (first
-              (tree-map-lists-with-depth
+              (tree-map-lists-depth
                 (l (columns column-state)
                   (let (column-combinator (state->combinator column-state))
                     ( (if (eq? 1 column-state) identity list)
@@ -184,7 +184,7 @@
               level))))
       (lambda (expr) "sql-where-expr -> sql-string"
         (if (sql-where-filter? expr)
-          (prefix-tree-map-with-continue-with-depth handle-row-expr
+          (prefix-tree-map-c-depth handle-row-expr
             (l (lis proc continue level)
               (if (or (null? lis) (contains? row-expr-prefixes (first lis))) (continue lis level)
                 (column-expr (first lis) (tail lis))))

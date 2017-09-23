@@ -20,7 +20,7 @@
       date-create
       seconds->nanoseconds)
     (only (sph time utc) utc-duration->hms)
-    (only (sph tree) splice-lists-without-prefix-symbol)
+    (only (sph tree) tree-splice)
     (only (srfi srfi-1) drop-right))
 
   (define sph-time-rfc3339-description
@@ -47,7 +47,8 @@
 
   (define (rfc3339-parse-tree a)
     (if-pass (match-pattern rfc3339-date-time a)
-      (l (a) (splice-lists-without-prefix-symbol (peg:tree a)))))
+      (l (a)
+        (tree-splice (l (a) (and (list? a) (or (null? a) (not (symbol? (first a)))))) (peg:tree a)))))
 
   (define rfc3339-parse&
     (let
@@ -74,16 +75,15 @@
         source format is usually: yyyy-mm-ddThh:mm:ss+hh:mm , with variations to allow second fractions and an implied utc offset with \"Z\".
         example source strings: 2003-12-13T18:30:02.25+01:00, 2003-12-13T18:30:02Z
         see https://www.ietf.org/rfc/rfc3339.txt"
-        (false-if-exception
-          (parse-date& (tail (rfc3339-parse-tree a))
-            (l (a year month day)
-              (parse-time& a
-                (l (a hours minutes seconds seconds-fraction)
-                  (parse-offset& a
-                    (l (offset-negative? offset-hours offset-minutes)
-                      (c year month
-                        day hours
-                        minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes)))))))))))
+        (parse-date& (tail (rfc3339-parse-tree a))
+          (l (a year month day)
+            (parse-time& a
+              (l (a hours minutes seconds seconds-fraction)
+                (parse-offset& a
+                  (l (offset-negative? offset-hours offset-minutes)
+                    (c year month
+                      day hours
+                      minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes))))))))))
 
   (define (rfc3339->alist a) "string -> list/false"
     (rfc3339-parse& a
@@ -118,7 +118,7 @@
               #:hour hours
               #:minute minutes
               #:second seconds
-              ;todo: use a better conversion for this
+              ; todo: improve conversion process
               #:nanosecond
               (inexact->exact
                 (seconds->nanoseconds

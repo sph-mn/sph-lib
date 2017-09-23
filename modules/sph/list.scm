@@ -96,6 +96,7 @@
     list-sort-with-accessor
     list-suffix?
     map-apply
+    map-c
     map-consecutive
     map-first
     map-integers
@@ -106,7 +107,6 @@
     map-slice
     map-span
     map-unless
-    map-with-continue
     map-with-index
     map-with-state
     pair->list
@@ -563,15 +563,15 @@
   (define iterate-three
     (letrec
       ( (loop
-          (l (proc prev current next . states)
-            (if (null? next) (apply proc prev current next states)
-              (apply loop proc
-                (pair current prev) (first next) (tail next) (apply proc prev current next states))))))
-      (l (proc a . states)
+          (l (f prev current next . states)
+            (if (null? next) (apply f prev current next states)
+              (apply loop f
+                (pair current prev) (first next) (tail next) (apply f prev current next states))))))
+      (l (f a . states)
         "procedure:{list:prev any:current list:next any:state ... -> any:state ...} list any:state-init ... -> list:state
-        calls \"proc\" for each list element, a list of unmodified previous list elements, a list of the following list elements
-        and an arbitrary count of custom values that are updated to the result of the call to \"proc\""
-        (apply loop proc (list) (first a) (tail a) states))))
+        calls \"f\" for each list element, a list of unmodified previous list elements, a list of the following list elements
+        and an arbitrary count of custom values that are updated to the result of the call to \"f\""
+        (apply loop f (list) (first a) (tail a) states))))
 
   (define iterate-three-with-stop+end
     (letrec
@@ -746,39 +746,44 @@
      apply proc only to elements for which \"select?\" is true. non-matched items are included in the result list.
      if multiple lists are given, it works like \"map\" except that the elements from the multiple lists for one call that are not selected are saved as a list.
      map-some/map-only"
-    ;as a possible enhancement, a second procedure for non-matches could be specified
+    ; as a possible enhancement, a second procedure for non-matches could be specified
     (apply map (l e (if (apply select? e) (apply proc e) (if (null? (tail e)) (first e) e))) a))
 
-  (define (map-apply proc . a)
+  (define (map-apply f . a)
     "procedure:{any ... -> any} (list ...) ... -> list
      like map but the procedure is applied with elements of \"a\" as arguments.
-     example:
-     (map-apply proc (list (list 1 2) (list 3 4)))
-     instead of calling proc like (proc (list 1 2)) like \"map\" would do, proc is called like (proc 1 2)"
-    (apply map (l e (apply proc (apply append e))) a))
+     instead of calling f like (f (list 1 2)) like \"map\" would do, f is called like (f 1 2)
+     example
+       (map-apply f (list (list 1 2) (list 3 4)))"
+    (apply map (l a (apply f (apply append a))) a))
 
-  (define (map-map proc . lists)
+  (define (map-map f . a)
     "procedure (list ...) ... -> list
-     map with appling map to every list in list"
-    (apply map (l e (apply map proc e)) lists))
+     given a list of lists, maps over the elements of lists.
+     like (map (l (a) (map f a) a))"
+    (apply map (l a (apply map f a)) a))
 
-  (define (map-with-continue proc . lists)
-    "procedure:{procedure:{any:result}:continue any ... -> any:last-result} list ... -> list
-     map over list with explicitly continuing the mapping by calling \"continue\" with the result.
-     if \"continue\" is not called, the result will be the tail of the list, which means it must be a list to create a proper list.
-     maps only the length of the shortest list if multiple lists are given"
+  (define (map-c f . lists)
+    "procedure:{procedure:{any:new-element -> any}:continue any:element ... -> any:last-result} list ... -> list
+     map over list with a procedure that when called with the current map result continues the mapping.
+     if the procedure is not called, the result of the current call will become the tail of the result list.
+     maps only the length of the shortest list if multiple lists are given
+     example
+       (map-c (l (c a) (if (> 3 a) (c (+ 1 a)) (list))) (list 1 2 3 4 5))
+       ->
+       (2 3 4)"
     (let loop ((rest lists) (len (apply min (map length lists))))
       (if (zero? len) (list)
-        (apply proc (l (result) (pair result (loop (map tail rest) (- len 1)))) (map first rest)))))
+        (apply f (l (result) (pair result (loop (map tail rest) (- len 1)))) (map first rest)))))
 
-  (define (map-one match? proc a)
+  (define (map-one predicate proc a)
     "{any -> any}:predicate {any:element -> any} list -> list
-     apply proc only to the first element that matches \"match?\".
+     apply proc only to the first element that matches predicate.
      all elements that do not match are mapped with the \"identity\" function"
     (let loop ((rest a) (r (list)))
       (if (null? rest) r
         (let (e (first rest))
-          (if (match? e) (append (reverse (pair (proc e) r)) (tail rest))
+          (if (predicate e) (append (reverse (pair (proc e) r)) (tail rest))
             (loop (tail rest) (pair e r)))))))
 
   (define (map-segments proc len a)
