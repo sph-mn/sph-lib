@@ -10,6 +10,7 @@
     (sph conditional)
     (sph hashtable)
     (sph lang indent-syntax)
+    (sph lang parser)
     (sph list)
     (sph string)
     (sph tree)
@@ -22,7 +23,6 @@
       const
       read
       string-drop-right)
-    (only (sph one) string->datum)
     (only (srfi srfi-1) remove split-at))
 
   (define sph-lang-itml-read-description "parse itml")

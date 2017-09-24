@@ -96,26 +96,31 @@
     (let (path (ensure-trailing-slash path))
       (map (l (a) (path->full-path (string-append path a))) (directory-list path select?))))
 
-  (define* (directory-tree path #:optional (select? (const #t)))
-    "string [procedure:{any -> boolean}] -> (string:full-path ...)
+  (define* (directory-tree path #:key select? enter? (stat stat))
+    "string [procedure:{any -> boolean}] -> (string:path ...)
      string procedure -> (string ...)
-     results in a list of all paths under path, excluding path and the directory references \".\" and \"..\".
-     select? is called for all paths"
-    ; breadth-first search
-    (let
-      ( (path (ensure-trailing-slash path))
-        (entries (directory-list path (negate directory-reference?))))
-      (fold-right
-        (l (a result)
-          (let* ((a (string-append path a)) (stat-info (stat a)))
-            ( (if (and (not (directory-reference? a)) (eq? (q directory) (stat:type stat-info)))
-                (l (result) (append (directory-tree a select?) result)) identity)
-              (if (select? a stat-info) (pair a result) result))))
-        (list) entries)))
+     results in a list of all paths under path, excluding path and the directory references \".\" and \"..\""
+    (file-system-fold
+      ; enter?
+      (if enter? (l (n s r) (enter? n s)) (const #t))
+      ; leaf
+      (if select? (l (n s r) (if (select? n s) (pair n r) r)) (l (n s r) (pair n r)))
+      ; down
+      (if select? (l (n s r) (if (select? n s) (pair n r) r)) (l (n s r) (pair n r)))
+      ; up
+      (l (n s r) r)
+      ; skip
+      (l (n s r) r)
+      ; error
+      (l (n s error r) (display-line error (current-error-port)) r) null path stat))
 
-  (define (directory-tree-leaf-directories start) "string:path -> (string ...)"
-    (directory-tree start
-      (l (a stat-info) (and (eq? (q directory) (stat:type stat-info)) (= 2 (stat:nlink stat-info))))))
+  (define* (directory-tree-leaf-directories start #:key (select? (const #t)) enter? (stat stat))
+    "string:path -> (string ...)"
+    (directory-tree start #:enter?
+      enter? #:select?
+      (l (a stat-info)
+        (and (eq? (q directory) (stat:type stat-info)) (= 2 (stat:nlink stat-info))
+          (select? a stat-info)))))
 
   (define* (directory-prefix-tree start #:optional (directory-tree directory-tree))
     "-> (string/list ...)

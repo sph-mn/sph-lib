@@ -40,8 +40,6 @@
     search-env-path-one
     socket-bind
     sph-one-description
-    string->datum
-    string->datums
     values->list)
   (import
     (guile)
@@ -62,13 +60,6 @@
 
   (define sph-one-description "various")
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
-
-  (define* (string->datum a #:optional (reader read))
-    "get the first scheme expression from a string" (call-with-input-string a reader))
-
-  (define* (string->datums a #:optional (reader read)) "get all scheme expression from a string"
-    (let (a (open-input-string a))
-      (let loop () (let (b (reader a)) (if (eof-object? b) (list) (pair b (loop)))))))
 
   (define (ignore . a)
     "any ... -> unspecified

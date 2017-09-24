@@ -1,15 +1,16 @@
 (library (sph lang config)
   (export
-    config-write
     config-read
     config-read-file
-    config-read-string)
+    config-read-string
+    config-write)
   (import
     (rnrs eval)
     (sph)
     (sph alist)
     (sph hashtable)
     (sph io)
+    (sph lang parser)
     (only (guile) call-with-input-string call-with-input-file)
     (only (sph tree) tree-map-lists-self))
 
@@ -42,6 +43,8 @@
           (if (eq? (q ..) (first a)) (tail a) (ht-from-list a eq? ht-hash-symbol))))
       (eval (list (q quasiquote) (port->datums port)) eval-environment)))
 
-  (define (config-write a port) "experimental" (each (l (a) (write a port) (newline)) (ht-alist a (inf))))
+  (define (config-write a port) "experimental"
+    (each (l (a) (write a port) (newline)) (ht-alist a (inf))))
+
   (define (config-read-string a . b) (call-with-input-string a (l (a) (apply config-read a b))))
   (define (config-read-file a . b) (call-with-input-file a (l (a) (apply config-read a b)))))

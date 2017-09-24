@@ -8,7 +8,6 @@
     create-socket
     each-u8
     file->bytevector
-    file->datums
     file->file
     file->port
     file->string
@@ -17,7 +16,6 @@
     named-pipe-chain
     pipe-chain
     port->bytevector
-    port->datums
     port->file
     port->lines
     port->string
@@ -260,16 +258,6 @@
                           (min (length before-chars) (- (string-length match/table) 1))))))
                   match/table)
                 (loop (read-char port) (pair char before-chars) match/table))))))))
-
-  (define* (port->datums port #:optional (get-datum get-datum))
-    "string procedure:reader -> list
-     read all scheme datums from a port"
-    (let loop ((a (get-datum port))) (if (eof-object? a) (list) (pair a (loop (get-datum port))))))
-
-  (define* (file->datums path #:optional (get-datum get-datum))
-    "string procedure:reader -> list
-     read all scheme datums of a file specified by path"
-    (call-with-input-file path (l (port) (port->datums port get-datum))))
 
   (define*
     (port-lines-each proc #:optional (port (current-input-port)) #:key (handle-delim (q trim)))

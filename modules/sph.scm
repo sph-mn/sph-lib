@@ -251,11 +251,11 @@
      # syntax
      quote-odd
        any ... -> list
-       quotes arguments alternatingly and returns a list
+       quotes each second argument starting from the first
        example: a b c d -> ((quote a) b (quote c) d)
      quote-even
        any ... -> list
-       like quote-odd but quotes each second argument instead
+       quotes each second argument starting from the second
        example: a b c d -> (a (quote b) c (quote d))
      quote-duplicate
        any ... -> list
