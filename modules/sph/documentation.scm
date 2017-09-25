@@ -222,5 +222,8 @@
      get a list of all bindings and the library name they belong to for all specified library names"
     (append-map
       (l (library)
-        (map (l (export) (pair export library)) (module-exports (resolve-interface library))))
+        (or
+          (false-if-exception
+            (map (l (export) (pair export library)) (module-exports (resolve-interface library))))
+          null))
       libraries)))

@@ -154,48 +154,53 @@
     (if (module-file->name path) #t #f))
 
   (define*
-    (module-find-one path #:key (load-path %load-path) ignore-content? guile-modules?
+    (module-find-one path #:key (load-path %load-path) ignore-content ignore-load-path
+      guile-modules
       file-content-match)
-    "string [#:load-path (string ...) #:guile-modules? boolean #:ignore-content? boolean] -> false/(symbol ...):module-name
+    "string [#:load-path (string ...) #:guile-modules boolean #:ignore-content boolean] -> false/(symbol ...):module-name
      setting the right load-path is important because the module name is derived from it.
      a file is considered a valid module if:
        it exists and is a regular file
        the file name extension is \".scm\"
        the file contains as the first expression an r6rs library or r7rs define-library form
-       if \"guile-modules?\" is true: the file contains a define-module form
+       if \"guile-modules\" is true: the file contains a define-module form
        it is in a load path and the module name matches the path under a load path (using %load-paths)"
     (and-let* ((path (realpath* path)))
       (and (string-suffix? ".scm" path)
         (and-let*
           ( (stat-info (false-if-exception (stat path)))
-            (load-path-prefix (path->load-path path load-path)))
-          (if ignore-content? (path->symbol-list (string-drop-prefix load-path-prefix path))
+            (load-path-prefix (or ignore-load-path (path->load-path path load-path))))
+          (if (and (not ignore-load-path) ignore-content)
+            (path->symbol-list (string-drop-prefix load-path-prefix path))
             (call-with-input-file path
               (l (file)
                 (if file-content-match (file-content-match file)
                   (or (module-match-rnrs-definition (read file))
-                    (and guile-modules?
+                    (and guile-modules
                       (begin (seek file 0 SEEK_SET)
                         (let loop ((a (read file)))
                           (if (eof-object? a) #f
                             (or (module-match-guile-definition a) (loop (read file))))))))))))))))
 
   (define*
-    (module-find path #:key (max-depth (inf)) (load-path %load-path) guile-modules? ignore-content?
-      file-content-match)
+    (module-find path #:key (max-depth (inf)) (load-path %load-path) guile-modules ignore-content
+      file-content-match
+      ignore-load-path
+      enter?)
     "string module-find-one-arguments ... -> ((module-name . path) ...)
      get all names for modules under or at path using module-find-one"
     (file-system-fold
       ; enter?
-      (l (n s r) #t)
+      (if enter? (l (n s r) (enter? n s)) (const #t))
       ; leaf
       (l (n s r)
         (let
           (name
             (module-find-one n #:load-path
-              load-path #:guile-modules?
-              guile-modules? #:ignore-content?
-              ignore-content? #:file-content-match file-content-match))
+              load-path #:guile-modules
+              guile-modules #:ignore-content
+              ignore-content #:file-content-match
+              file-content-match #:ignore-load-path ignore-load-path))
           (if name (pair (pair name n) r) r)))
       ; down
       (l (n s r) r)

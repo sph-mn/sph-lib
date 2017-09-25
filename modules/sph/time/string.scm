@@ -40,7 +40,8 @@
 
   (define (seconds-from-hms a)
     "string -> integer
-     converts a string time representation of hours:minutes:seconds, where minutes and seconds are optional, to seconds"
+     converts a string time representation of hours:minutes:seconds,
+    where minutes and seconds are optional, to seconds"
     (apply
       (l* (hours #:optional (minutes 0) (seconds 0)) (utc-duration-from-hms hours minutes seconds))
       (map string->number (string-split a #\:))))
@@ -60,7 +61,7 @@
         (string-fill-left (number->string (date-month date)) 2 #\0) "-"
         (string-fill-left (number->string (date-day date)) 2 #\0))))
 
-  (define ymd-daytime-delimiter ":")
+  (define ymd-daytime-delimiter "_")
 
   (define (utc->ymd-ks a)
     (string-append (utc->ymd a) ymd-daytime-delimiter (utc-elapsed-day-string a 3 0)))

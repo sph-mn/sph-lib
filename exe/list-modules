@@ -1,14 +1,25 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph documentation) (sph io) (srfi srfi-1) (sph alist) (sph list))
-(define highlights (file->datums "other/highlights"))
+(import (sph) (sph documentation) (sph filesystem)
+  (sph io) (sph lang parser) (only (srfi srfi-1) partition) (sph alist) (sph list))
 
-(define module-info
-  (module-find-one-information-sorted "modules/sph" #:load-path (list (string-append (getcwd) "/modules"))))
+(define (library-modules-list highlights-file module-path load-path)
+  (let
+    ( (highlights (file->datums highlights-file))
+      (module-info (module-find-one-information-sorted module-path #:load-path (list load-path))))
+    (apply-values
+      (l (highlights other) (display-line "## highlights")
+        (display-module-information-short highlights #t) (display-line "\n## other")
+        (display-module-information-short other #t))
+      (partition (l (a) (list-index-value highlights (alist-ref a (q name)))) module-info))))
 
-(apply-values
-  (l (highlights other) (display-line "## highlights")
-    (display-module-information-short highlights #t) (display-line "\n## other")
-    (display-module-information-short other #t))
-  (partition (l (a) (list-index-value highlights (alist-ref a (q name)))) module-info))
+(define (list-modules-cli a)
+  (let*
+    ( (path-prefix (ensure-trailing-slash (if (null? a) (getcwd) (first a))))
+      (paths
+        (map (l (a) (string-append path-prefix a))
+          (list "other/highlights" "modules/sph" "modules"))))
+    (apply library-modules-list paths)))
+
+(list-modules-cli (tail (program-arguments)))
