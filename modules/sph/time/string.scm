@@ -48,7 +48,7 @@
   ;-- writing
 
   (define* (utc-elapsed-day-string a #:optional (shift 3) (decimal-min 0))
-    (number-format-float (/ (nanoseconds->seconds (utc-elapsed-day a)) (expt 10 3)) #:decimal-min
+    (number-format-float (/ (nanoseconds->seconds (utc-elapsed-day a)) (expt 10 shift)) #:decimal-min
       decimal-min))
 
   (define (military-time->hm a) "-> (hours . minutes)"
