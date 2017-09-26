@@ -531,7 +531,7 @@
     "[string] -> (string ...)
      get all filename extensions from \"/etc/mime.types\""
     (delete-duplicates
-      (fold (l (e r) (if (null? e) r (let ((t (tail e))) (append t r)))) (list)
+      (fold (l (a r) (if (null? a) r (let ((t (tail a))) (append t r)))) (list)
         (read-mime.types path))))
 
   (define get-mime-extensions-cached (procedure->cached-procedure get-mime-extensions))
