@@ -41,16 +41,16 @@
   (define (seconds-from-hms a)
     "string -> integer
      converts a string time representation of hours:minutes:seconds,
-    where minutes and seconds are optional, to seconds"
+     where minutes and seconds are optional, to seconds"
     (apply
       (l* (hours #:optional (minutes 0) (seconds 0)) (utc-duration-from-hms hours minutes seconds))
       (map string->number (string-split a #\:))))
 
   ;-- writing
 
-  (define* (utc-elapsed-day-string a #:optional (shift 3) (decimal-min 0))
-    (number-format-float (/ (nanoseconds->seconds (utc-elapsed-day a)) (expt 10 shift)) #:decimal-min
-      decimal-min))
+  (define* (utc-elapsed-day-string a #:optional (scale 3) (decimal-min 0))
+    (number-format-float (/ (nanoseconds->seconds (utc-elapsed-day a)) (expt 10 scale))
+      #:decimal-max 2 #:decimal-min decimal-min))
 
   (define (military-time->hm a) "-> (hours . minutes)"
     (pair (string->number (substring a 0 2)) (string->number (substring a 2 4))))
