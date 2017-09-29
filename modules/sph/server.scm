@@ -48,7 +48,7 @@
         (let (errno (system-error-errno a))
           (if (and (= EBADF errno) (string-equal? "accept" (first (tail a)))) #t (thunk))))))
 
-  (define* (server-listen handle-request socket #:key parallelism (exception-keys #t))
+  (define* (server-listen handle-request socket #:key parallelism (exception-key #t))
     "procedure:{port:client -> unspecified} port:socket [#:key parallelism integer/false] -> unspecified
      listen for new connections on socket and call handle-request with a input/output port for the client.
      handle-request is called in the next free thread in a thread-pool.
@@ -67,7 +67,7 @@
                       (let (client (first conn))
                         (enqueue
                           (nullary
-                            (catch exception-keys
+                            (catch exception-key
                               (nullary (handle-request client) (force-output client))
                               server-exception-handler)
                             (catch #t (close-port client) (l a #t))))))

@@ -17,7 +17,8 @@
   (define sph-lang-template-description
     "s-expression template processor.
      a template engine that interprets expressions as elements of a quasiquoted list.
-     supports concatenation and composition. creates template procedures. source data can be given as files, ports or datums.
+     supports concatenation and composition. source data can be given as files, ports or datums.
+     creates template procedures.
      alternative name: s-template
      # data structures
      template-procedure :: procedure:{symbol:key [default] -> variable-value} any:content -> any
