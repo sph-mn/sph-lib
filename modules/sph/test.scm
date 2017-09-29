@@ -312,7 +312,7 @@
             (d-tail (tail d)) (expected (first d-tail))
             (r (test-proc arguments expected settings))
             (r
-              (if (test-result? r) (record-update test-result r title title index index)
+              (if (test-result? r) (record-update-q test-result r title title index index)
                 (test-create-result (equal? r expected) title #f index r arguments expected))))
           (hook-data-after settings index-procedure index r)
           (report-data-after settings index-procedure index r)
@@ -333,7 +333,7 @@
         (r (test-proc (list) #t settings))
         (r
           (if (test-result? r)
-            (record-update test-result r
+            (record-update-q test-result r
               title
               (let (sub-title (test-result-title r))
                 (if sub-title (string-append title " " sub-title) title)))
@@ -421,7 +421,7 @@
   (define (assert-failure-result result expected title arguments)
     "vector/any any false/string any -> vector:test-result"
     (if (test-result? result)
-      (if (string? title) (record-update test-result result assert-title title) result)
+      (if (string? title) (record-update-q test-result result assert-title title) result)
       (if (string? title) (test-create-result #f title #f #f result arguments expected)
         (test-create-result #f #f "assertion" #f result arguments expected))))
 
