@@ -36,9 +36,7 @@
                 (else
                   (let (content (string-join content "\n"))
                     (shtml-section (+ 1 nesting-depth) key
-                      (itml-shtml-lines
-                        (string-split content #\newline))
-                      (list (q class) key))))))))
+                      (itml-shtml-lines (string-split content #\newline)) (list (q class) key))))))))
         (list-sort-with-accessor string>? (compose symbol->string first) (tail binding)))))
 
   (define (get-bindings module-name) "list -> ((symbol:name . list:alist) ...)"
@@ -79,4 +77,7 @@
     "create a table of all bindings in all specified libraries.
      first column: binding name
      second column: library name"
-    (shtml-list->table (map-apply map-data (doc-bindings libraries list)))))
+    (shtml-list->table
+      (map-apply map-data
+        (list-sort-with-accessor string<? (compose symbol->string first)
+          (doc-bindings libraries list))))))

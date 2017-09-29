@@ -1,17 +1,53 @@
 (library (sph stream)
   (export
+    define-stream
+    list->stream
     port->buffered-octet-stream
     port->delimited-stream
     port->line-stream
     port->stream
+    stream
+    stream->list
     stream-any
+    stream-append
+    stream-car
+    stream-cdr
+    stream-concat
+    stream-cons
+    stream-constant
     stream-deduplicate
+    stream-drop
+    stream-drop-while
     stream-each
+    stream-filter
     stream-first
     stream-first-or-null
+    stream-fold
     stream-fold-right-multiple
+    stream-for-each
+    stream-from
+    stream-iterate
+    stream-lambda
+    stream-length
+    stream-let
+    stream-map
+    stream-match
+    stream-null
+    stream-null?
+    stream-of
     stream-page
-    stream-tail)
+    stream-pair?
+    stream-range
+    stream-ref
+    stream-reverse
+    stream-scan
+    stream-tail
+    stream-take
+    stream-take-while
+    stream-unfold
+    stream-unfolds
+    stream-zip
+    stream?)
   (import
     (ice-9 rdelim)
     (rnrs io ports)
@@ -29,7 +65,6 @@
     "srfi-41 stream helpers.
      re-exports (srfi srfi-41)")
 
-  (module-re-export-modules (except (srfi srfi-41) port->stream))
   (define stream-each stream-for-each)
   (define stream-first stream-car)
   (define stream-tail stream-cdr)
