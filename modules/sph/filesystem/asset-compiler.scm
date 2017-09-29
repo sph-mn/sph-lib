@@ -26,7 +26,7 @@
     (sph record))
 
   (define sph-filesystem-asset-compiler-description
-    "configuration format and helpers to concatenate/preprocess code from multiple sources.
+    "configuration format and helpers to process and concatenate files from multiple sources.
      for example to compile from many files in different preprocessor formats into one target format file.
      data structures
        config: hashtable:{symbol:output-format -> (config-output config-input ...)}
@@ -37,10 +37,6 @@
        processor-input :: source-element port:output any:processor-options ->
        processor-output :: procedure:input->port port:output-port any:processor-options ->
        sources: (any:processor-dependent ...)
-     notes
-       config-output config-input
-       source-match?
-
      syntax
        ac-config :: (out-id suffix out-proc) (in-id matcher in-proc) ... -> hashtable
        ac-config-input :: id matcher processor -> vector
@@ -48,12 +44,12 @@
      example config
        (define my-ac-config
          (ac-config
-           ( (html \".html\" (l (process-input out-port options) (process-input out-port)))
-             (html (q ext) (l (source out-port options) (file->port source out-port)))
+           ( (html \".htm\" (l (process-input out-port options) (process-input out-port)))
+             (html #t (l (source out-port options) (file->port source out-port)))
              (sxml #t s-template-sxml->html))
-           ( (js (q ext) js-output-processor)
-             (js (q ext) ac-input-copy)
-             (sjs (q ext) s-template-sescript->js))))")
+           ( (js #t js-output-processor)
+             (js #t ac-input-copy)
+             (sjs #t s-template-sescript->js))))")
 
   (define-syntax-rule (ac-config ((out-id suffix out-proc) (in-id matcher in-proc) ...) ...)
     (ac-config-p
@@ -187,7 +183,7 @@
           (ac-destination dest-directory output-format
             sources-flat dest-name (ac-output-suffix config-output))))
       (if
-        (or #t (eq? (q always) when)
+        (or (eq? (q always) when)
           (not (every string? sources-flat)) (not (file-exists? path-destination))
           (ac-source-files-updated? path-destination sources-flat))
         (and (ensure-directory-structure (dirname path-destination))

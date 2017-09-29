@@ -64,7 +64,7 @@
     (let
       (empty-line->indent-and-content
         (l (a following-lines indent-width)
-          (list
+          (pair
             (let (lines-next (drop-while string-null? following-lines))
               (if (null? lines-next) 0 (string->indent-depth (first lines-next) indent-width)))
             a)))
