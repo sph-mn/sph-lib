@@ -112,7 +112,8 @@
       ; skip
       (l (n s r) r)
       ; error
-      (l (n s error r) (display-line error (current-error-port)) r) null path stat))
+      (l (n s error r) (display-line (string-append (strerror error) " " n) (current-error-port)) r)
+      null path stat))
 
   (define* (directory-tree-leaf-directories start #:key (select? (const #t)) enter? (stat stat))
     "string:path -> (string ...)"

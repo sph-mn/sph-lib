@@ -10,7 +10,7 @@
     (sph alist)
     (sph hashtable)
     (sph io)
-    (sph lang parser)
+    (sph lang scheme)
     (only (guile) call-with-input-string call-with-input-file)
     (only (sph tree) tree-map-lists-self))
 

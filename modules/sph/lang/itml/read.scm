@@ -10,7 +10,7 @@
     (sph conditional)
     (sph hashtable)
     (sph lang indent-syntax)
-    (sph lang parser)
+    (sph lang scheme)
     (sph list)
     (sph string)
     (sph tree)

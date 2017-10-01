@@ -1,4 +1,4 @@
-(library (sph lang parser)
+(library (sph lang scheme)
   (export
     file->datums
     iq-file

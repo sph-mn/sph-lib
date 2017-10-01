@@ -2,7 +2,7 @@
 !#
 
 (import (sph) (sph documentation) (sph filesystem)
-  (sph io) (sph lang parser) (only (srfi srfi-1) partition) (sph alist) (sph list))
+  (sph io) (sph lang scheme) (only (srfi srfi-1) partition) (sph alist) (sph list))
 
 (define (library-modules-list highlights-file module-path load-path)
   (let
