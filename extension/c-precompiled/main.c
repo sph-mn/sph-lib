@@ -73,7 +73,7 @@ void imht_set_destroy(imht_set_t *a) {
 /** returns the address of the element in the set, 0 if it was not found.
   caveat: if imht-set-can-contain-zero? is defined, which is the default,
   dereferencing a returned address for the found value 0 will return 1 instead
-  */
+*/
 imht_set_key_t *imht_set_find(imht_set_t *a, imht_set_key_t value) {
   imht_set_key_t *h = ((*a).content + imht_set_hash(value, (*a)));
   if ((*h)) {
@@ -250,7 +250,7 @@ void close_file_descriptors_from(int start_fd, imht_set_t *keep) {
   }
 /** variable integer null/path ->
   if "a" is -1, set it to a newly opened filed descriptor for path or /dev/null
-  */
+*/
 #define ensure_fd(a, open_flags, path)                                         \
   if ((-1 == a)) {                                                             \
     a = open((path ? path : "/dev/null"), open_flags);                         \

@@ -24,6 +24,7 @@
     containsq?
     containsv-some?
     containsv?
+    convolve
     count-value
     count-value-with-limit
     count-with-limit
@@ -99,6 +100,7 @@
     map-c
     map-consecutive
     map-first
+    map-fold
     map-integers
     map-map
     map-one
@@ -108,7 +110,6 @@
     map-span
     map-unless
     map-with-index
-    map-with-state
     pair->list
     pair-bind
     pair-fold-multiple
@@ -309,6 +310,16 @@
         (if (apply pred (map first rest))
           (let (count (+ 1 count)) (if (= count limit) count (loop (map tail rest) count)))
           (loop (map tail rest))))))
+
+  (define (convolve a b)
+    "list list -> list
+     returns the discrete, linear convolution of two one-dimensional sequences.
+     the length of the result will be (a-length + b-length - 1).
+     example use case: modelling the effect of a linear time-invariant system on a signal"
+    (let loop ((result null) (products (produce * (list (first a)) b)) (a (tail a)))
+      (if (null? a) (append (reverse result) products)
+        (loop (pair (first products) result)
+          (map + (append (tail products) (list 0)) (produce * (list (first a)) b)) (tail a)))))
 
   (define (complement-both a b)
     "list list -> (list list)
@@ -786,10 +797,10 @@
           (if (predicate e) (append (reverse (pair (proc e) r)) (tail rest))
             (loop (tail rest) (pair e r)))))))
 
-  (define (map-segments proc len a)
+  (define (map-segments f len a)
     "procedure:{any ... -> any} integer list -> list
      map over each overlapping segment of length len"
-    (fold-segments (l (r . e) (append r (list (apply proc e)))) len (list) a))
+    (fold-segments (l (result . a) (append result (list (apply f a)))) len (list) a))
 
   (define (map-slice slice-length proc a)
     "integer procedure:{any ... -> any} list -> list
@@ -836,12 +847,16 @@
       (if (any null? rest) (list)
         (pair (apply proc index (map first rest)) (loop (map tail rest) (+ 1 index))))))
 
-  (define (map-with-state proc a . init)
+  (define (map-fold f a . init)
     "procedure list any ... -> list any ...
-     {(list-element state-variable ...) -> list-element state-variable ...}
-     call proc with each list element and with state variables initialised by init.
-     each proc call should return a list of multiple elements, one for the mapped element, and one for each new state value."
-    (apply fold-multiple (l (e r . states) (pair (apply proc e states) r)) a (list) init))
+     procedure:{(list-element state ...) -> list-element state ...}
+     combination of map and fold.
+     call f with each list element and state values, which are set to init for the first call.
+     each call to f must return a list of: the mapped result element and one
+     element for the each new value of states.
+     example: (map-fold (l (a index) (list (+ a index) (+ 1 index))) (list 1 2 3) 0)"
+    (apply fold-multiple (l (b result-list . state) (pair (apply f b state) result-list))
+      a (list) init))
 
   (define (map-integers count proc)
     "integer {integer -> any} -> list
@@ -858,12 +873,12 @@
      like fold-multiple but applying proc to the pairs of list"
     (if (null? a) init (apply pair-fold-multiple proc (tail a) (apply proc a init))))
 
-  (define (pair-map proc a)
+  (define (pair-map f a)
     "procedure list -> list
-     like map but not the list elements are passed to \"proc\" but the pairs of the list.
+     like map but not the list elements are passed to \"f\" but the pairs of the list.
      for example (1 2 3) is just another notation for the pair notation (1 . (2 . (3 . ())))
      instead of mapping (1 2 3) pair-map maps ((1 2 3) (2 3) (3))"
-    (let loop ((rest a)) (if (null? rest) (list) (pair (proc rest) (loop (tail rest))))))
+    (let loop ((rest a)) (if (null? rest) (list) (pair (f rest) (loop (tail rest))))))
 
   (define (pair-reverse a)
     "pair -> pair
@@ -873,19 +888,20 @@
 
   (define (pair->list a) "pair -> list" (list (first a) (tail a)))
 
-  (define (produce proc . a)
-    "procedure:{any ... -> any} any/list ... -> list
-     apply \"proc\" with each ordered combination of elements from lists, the cartesian product, and return the results in a list.
-     can handle multiple lists and non-list arguments.
-     for example (produce proc (1 2) (4 5) 6) is equivalent to ((proc 1 4 6) (proc 1 5 6) (proc 2 4 6) (proc 2 5 6))"
-    (let loop ((rest (map any->list a)) (args (list)))
-      (if (null? rest) (apply proc args)
-        (let (tail-rest (tail rest))
-          ( (if (null? tail-rest) map append-map) (l ele (loop tail-rest (append args ele)))
-            (first rest))))))
+  (define (produce f . a)
+    "procedure:{any ... -> any} list ... -> list
+     apply \"f\" with each ordered combination of elements from all lists, the cartesian product, and return the results in a list.
+     for example (produce f (1 2) (4 5) (6)) is equivalent to ((f 1 4 6) (f 1 5 6) (f 2 4 6) (f 2 5 6))"
+    ; algorithm: append each entry of each list once to arguments and apply f.
+    ; loop results are nested map results except when at the last list
+    (let loop ((a a) (arguments null))
+      (if (null? a) (apply f arguments)
+        (let (rest (tail a))
+          ((if (null? rest) map append-map) (l a (loop rest (append arguments a))) (first a))))))
 
   (define (produce-controlled proc mappers . lists)
     "{any ... -> any} (procedure:{procedure:{any -> any} list -> list} ...) any/list ... -> list
+     experimental.
      apply \"proc\" to each ordered combination of elements from one or multiple lists, the cartesian product, and return the results in a list.
      the combinations passed to \"proc\" are obtained by nested application of the procedures in the second argument list.
      there should be as many lists as mappers.
@@ -901,17 +917,17 @@
             (l e (loop tail-mappers tail-lists (append a e))))
           (first rest-lists)))))
 
-  (define (produce-unless proc stop? default a b)
-    "{any any -> any} {any -> boolean} any list list -> any
-     produce unless \"stop?\" is true for a production-result. result in false otherwise"
-    (append-map-unless (l (e-1) (map-unless (l (e-2) (proc e-1 e-2)) stop? #f b)) not default a))
+  (define (produce-unless f stop? default a b)
+    "{any any -> any} {any -> boolean} any list list -> false/any
+     produce two lists unless \"stop?\" is true for a production-result. if stop? is true, result in false"
+    (append-map-unless (l (a) (map-unless (l (b) (f a b)) stop? #f b)) not default a))
 
   (define* (replace-value a search-value replacement #:optional (equal-proc equal?))
     "list any any [procedure:{any any -> boolean}] -> list"
-    (replace a (l (e) (equal-proc e search-value)) replacement))
+    (replace a (l (b) (equal-proc b search-value)) replacement))
 
   (define* (replace a select? replacement) "list procedure any -> list"
-    (map (l (e) (if (select? e) replacement e)) a))
+    (map (l (b) (if (select? b) replacement b)) a))
 
   (define (simplify a)
     "any/list -> list/pair/any

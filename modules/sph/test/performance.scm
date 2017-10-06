@@ -24,7 +24,7 @@
 
   (define sph-test-performance-description
     "adaptive performance testing with formatted result display.
-    adapts the number of calls until a meaningful run time difference has been found")
+     adapts the number of calls until a meaningful run time difference has been found")
 
   (define (multiply-until proc base factor)
     (if (proc base factor) base (multiply-until proc (* base factor) factor)))
@@ -32,8 +32,8 @@
   (define (execute-tests tests iterations)
     (map
       (l (test)
-        (let ((start-time (time-current))) (each-integer iterations (tail test))
-          (- (time-current) start-time)))
+        (let ((start-time (utc-current))) (each-integer iterations (tail test))
+          (- (utc-current) start-time)))
       tests))
 
   (define (multiply-iterations-factor result-max min-nanoseconds)
@@ -45,13 +45,13 @@
   (define (execute-w-managed-iterations tests nanoseconds)
     (let next ((iterations 3))
       (let* ((results (execute-tests tests iterations)) (result-max (apply max results)))
-        (if (< result-max (- nanoseconds 500000))
-          (next (adapt-iterations iterations result-max nanoseconds)) results))))
+        (if (< result-max nanoseconds) (next (adapt-iterations iterations result-max nanoseconds))
+          results))))
 
   (define (evaluate-result seconds tests)
     (if (integer? seconds)
       (let*
-        ( (seconds (* 1000000 seconds)) (results (execute-w-managed-iterations tests seconds))
+        ( (seconds (s->ns seconds)) (results (execute-w-managed-iterations tests seconds))
           (result-average (apply average results)) (result-max (apply max results))
           (result-percent-factor (/ 100 result-max))
           (results

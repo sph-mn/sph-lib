@@ -26,7 +26,6 @@
     vector-first
     vector-index-value
     vector-map-with-index
-    vector-produce
     vector-range
     vector-second
     vector-select
@@ -124,12 +123,6 @@
       (let loop ((index 0))
         (vector-set! r index (proc (vector-ref a index) index))
         (if (< index last-index) (loop (+ 1 index)) r))))
-
-  (define (vector-produce proc a b)
-    "procedure vector vector -> #(vector ...)
-     apply proc to each possible ordered pair of a \"a\" and \"b\" element (cartesian product).
-     (#(1 2) #(4 5)) -> (proc 1 4) (proc 1 5) (proc 2 4) (proc 2 5)"
-    (vector-map (l (a) (vector-map (l (b) (proc a b)) b)) a))
 
   (define* (vector-range a start #:optional (end (- (vector-length a) 1)))
     "vector [integer integer] -> vector
