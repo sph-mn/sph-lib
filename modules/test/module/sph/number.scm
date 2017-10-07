@@ -8,6 +8,9 @@
     (map-integers (first arguments) (l (n) (container-length->number-max n (second arguments)))))
 
   (test-execute-procedures-lambda
+    (float-sum
+      (1 1.0e100 1 -1.0e100)
+      2.0)
     (number-container-length (1383213160 2) 31
       (1 2) 1 (0 2) 0 (8 2) 4 (255 2) 8 (256 2) 9 (9 10) 1 (11 10) 2 (16 16) 2 (15 16) 1)
     (container-length->number-max (10 2) (0 1 3 7 15 31 63 127 255 511)

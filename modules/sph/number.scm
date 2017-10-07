@@ -9,6 +9,7 @@
     call-with-product-then-divide
     container-length->number-max
     decrement-one
+    float-sum
     golden-ratio
     in-between?
     in-range?
@@ -34,6 +35,16 @@
     (only (sph string) string-multiply))
 
   (define golden-ratio 1.6180339887)
+
+  (define (float-sum . a)
+    "return the sum of the given numbers calculated with rounding error compensation.
+     uses kahan summation with the neumaier modification"
+    (let loop ((rest (tail a)) (result (first a)) (correction 0.0))
+      (if (null? rest) (+ correction result)
+        (let* ((a (first rest)) (b (+ a result)))
+          (loop (tail rest) b
+            ; the summation with "correction" must be a separate call, did not work otherwise
+            (+ correction (if (>= result a) (+ (- result b) a) (+ (- a b) result))))))))
 
   (define (in-between? n start end)
     "number number number -> boolean
