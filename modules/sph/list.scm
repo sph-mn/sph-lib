@@ -311,15 +311,18 @@
           (let (count (+ 1 count)) (if (= count limit) count (loop (map tail rest) count)))
           (loop (map tail rest))))))
 
+  (define (produce-one f a b) "procedure any list -> list" (map (l (b) (f a b)) b))
+
   (define (convolve a b)
     "list list -> list
      returns the discrete, linear convolution of two one-dimensional sequences.
      the length of the result will be (a-length + b-length - 1).
      example use case: modelling the effect of a linear time-invariant system on a signal"
-    (let loop ((result null) (products (produce * (list (first a)) b)) (a (tail a)))
-      (if (null? a) (append (reverse result) products)
-        (loop (pair (first products) result)
-          (map + (append (tail products) (list 0)) (produce * (list (first a)) b)) (tail a)))))
+    ; algorithm: sum the tails of productions for each element of "a"
+    (let loop ((products (produce-one * (first a) b)) (a (tail a)))
+      (if (null? a) products
+        (pair (first products)
+          (loop (map + (append (tail products) (list 0)) (produce-one * (first a) b)) (tail a))))))
 
   (define (complement-both a b)
     "list list -> (list list)
@@ -892,6 +895,7 @@
     "procedure:{any ... -> any} list ... -> list
      apply \"f\" with each ordered combination of elements from all lists, the cartesian product, and return the results in a list.
      for example (produce f (1 2) (4 5) (6)) is equivalent to ((f 1 4 6) (f 1 5 6) (f 2 4 6) (f 2 5 6))"
+    ; example of a less featureful implementation: (define (produce f a b) (map (l (a) (map (l (b) (f a b)) b)) a))
     ; algorithm: append each entry of each list once to arguments and apply f.
     ; loop results are nested map results except when at the last list
     (let loop ((a a) (arguments null))
