@@ -1,6 +1,6 @@
-(define-test-module (test module sph one)
+(define-test-module (test module sph uniform-vector)
   (import
-    (sph one)
+    (sph uniform-vector)
     (sph number)
     (rnrs bytevectors))
 
