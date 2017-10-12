@@ -1,5 +1,7 @@
 (library (sph uniform-vector)
   (export
+    bytevector-append
+    bytevector-contains?
     f32vector-copy
     f32vector-copy*
     f32vector-copy-empty
@@ -12,13 +14,15 @@
     f32vector-map*
     f32vector-range-map
     f32vector-range-map!
+    integer->bytevector
     sph-uniform-vector-description)
   (import
     (guile)
     (rnrs base)
+    (rnrs bytevectors)
     (sph)
-    (srfi srfi-4)
-    (only (rnrs bytevectors) bytevector-copy! bytevector=?))
+    (sph number)
+    (srfi srfi-4))
 
   (define sph-uniform-vector-description "helpers for srfi-4 and compatible vectors")
 
@@ -84,4 +88,35 @@
     "procedure:{any:variable any:element ... -> any} any:variable f32vector -> f32vector
      like f32vector-map but passes the given variable as an additional first argument on each call to f.
      example call: (f32vector-map* * 2 a)"
-    (apply f32vector-map (l a (apply f variable a)) a)))
+    (apply f32vector-map (l a (apply f variable a)) a))
+
+  (define (integer->bytevector a)
+    "integer:signed-integer -> bytevector
+     create a bytevector of minimum size storing the given signed integer"
+    (let*
+      ( (size (bit->byte-length (+ 1 (number-container-length (abs a) 2))))
+        (r (make-bytevector size)))
+      size (bytevector-sint-set! r 0 a (native-endianness) size) r))
+
+  (define (bytevector-append . a) "bytevector ... -> bytevector"
+    (let (r (make-bytevector (fold (l (e prev) (+ prev (bytevector-length e))) 0 a)))
+      (fold
+        (l (e index)
+          (let (len (bytevector-length e)) (bytevector-copy! e 0 r index len) (+ index len)))
+        0 a)
+      r))
+
+  (define (bytevector-contains? a search-bv)
+    "bytevector bytevector -> boolean
+     true if bytevector \"a\" contains bytevector \"search-bv\""
+    (let ((a-length (bytevector-length a)) (search-bv-length (bytevector-length search-bv)))
+      (if (> search-bv-length a-length) #f
+        (let
+          ( (search (list->vector (bytevector->u8-list search-bv)))
+            (last-match-index (- search-bv-length 1)))
+          (let loop ((index 0) (match-index 0))
+            (if (< index a-length)
+              (if (= (bytevector-u8-ref a index) (vector-ref search match-index))
+                (if (= last-match-index match-index) #t (loop (+ 1 index) (+ 1 match-index)))
+                (loop (+ 1 index) 0))
+              #f)))))))

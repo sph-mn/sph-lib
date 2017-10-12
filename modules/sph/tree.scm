@@ -45,9 +45,9 @@
     tree-each-leaf
     tree-extract
     tree-filter
+    tree-filter-flat
     tree-filter-leafs
     tree-filter-lists
-    tree-filter-flat
     tree-find
     tree-finder
     tree-fold
@@ -96,7 +96,21 @@
       fold-right
       last))
 
-  (define sph-tree-description "processing tree-like list structures")
+  (define sph-tree-description
+    "processing tree-like list structures.
+     denoted
+       a representation using pairs where the first element denotes the nesting level and the second element is content
+       (a b (c (d e)) f)-> ((0 . a) (1 . b) (2 . c) (3 . d) (3 . e) (0 . 4))
+     prefix-tree
+       first elements of lists interpreted as parent of tail elements. similar to scheme code for procedure application
+       (a b (c (d e)) f)
+       example with nesting marked by indent
+         a
+           b
+           c
+             d
+               e
+           f")
 
   (define (tree-mapper map f a)
     "procedure:{procedure list ... -> list} procedure:{element -> new-element} list -> list
@@ -126,7 +140,7 @@
   (define (tree-any f a)
     "procedure list -> false/any
      call f with each tree list and leaf from top to bottom and return the first true result of f.
-     can be used to extract single elements from tree. aliased as tree-extract"
+     can be used to extract single elements from tree. aliased as tree-any and tree-extract"
     (tree-finder any f a))
 
   (define tree-extract tree-any)
@@ -162,7 +176,7 @@
          (q (1 2 3 (4 5 (6 7) (8 9 10)))))
        ->
        (q (1 2 3 (4 5 (6 7) (8 9 10))))
-     example 1
+     example 2
        (tree-fold-right
          (l (a r) (if (list? a) a (if (even? a) (pair a r) r)))
          (list) (q (1 2 3 (4 5 (6 7) (8 9 10)))))

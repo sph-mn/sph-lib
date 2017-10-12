@@ -13,8 +13,6 @@
 (library (sph one)
   (export
     begin-first
-    bytevector-append
-    bytevector-contains?
     call-at-approximated-interval
     call-at-interval
     call-at-interval-w-state
@@ -23,7 +21,6 @@
     each-integer
     guile-exception->key
     ignore
-    integer->bytevector
     pass
     procedure->cached-procedure
     procedure->temporarily-cached-procedure
@@ -46,7 +43,6 @@
     (ice-9 pretty-print)
     (ice-9 rdelim)
     (ice-9 regex)
-    (rnrs bytevectors)
     (rnrs exceptions)
     (rnrs io ports)
     (rnrs sorting)
@@ -151,21 +147,7 @@
             (tail change+state))))
       min-interval state))
 
-  (define (integer->bytevector a)
-    "integer:signed-integer -> bytevector
-     create a bytevector of minimum size storing the given signed integer"
-    (let*
-      ( (size (bit->byte-length (+ 1 (number-container-length (abs a) 2))))
-        (r (make-bytevector size)))
-      size (bytevector-sint-set! r 0 a (native-endianness) size) r))
 
-  (define (bytevector-append . a) "bytevector ... -> bytevector"
-    (let (r (make-bytevector (fold (l (e prev) (+ prev (bytevector-length e))) 0 a)))
-      (fold
-        (l (e index)
-          (let (len (bytevector-length e)) (bytevector-copy! e 0 r index len) (+ index len)))
-        0 a)
-      r))
 
   (define (procedure->cached-procedure proc)
     "procedure -> procedure procedure
@@ -228,20 +210,7 @@
      like procedure-append but does not collect results and returns unspecified"
     (l a (each (l (b) (apply b a)) proc)))
 
-  (define (bytevector-contains? a search-bv)
-    "bytevector bytevector -> boolean
-     true if bytevector \"a\" contains bytevector \"search-bv\""
-    (let ((a-length (bytevector-length a)) (search-bv-length (bytevector-length search-bv)))
-      (if (> search-bv-length a-length) #f
-        (let
-          ( (search (list->vector (bytevector->u8-list search-bv)))
-            (last-match-index (- search-bv-length 1)))
-          (let loop ((index 0) (match-index 0))
-            (if (< index a-length)
-              (if (= (bytevector-u8-ref a index) (vector-ref search match-index))
-                (if (= last-match-index match-index) #t (loop (+ 1 index) (+ 1 match-index)))
-                (loop (+ 1 index) 0))
-              #f))))))
+
 
   (define* (cli-option name #:optional value)
     "creates a string for one generic command-line option in the gnu format -{single-character} or --{word} or --{word}=.
