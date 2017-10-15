@@ -1,6 +1,7 @@
 (library (sph stream)
   (export
     define-stream
+    file->stream
     list->stream
     port->buffered-octet-stream
     port->delimited-stream
@@ -57,6 +58,8 @@
     (except (srfi srfi-41) port->stream)
     (only (guile)
       eof-object?
+      open
+      O_RDONLY
       current-module
       resolve-interface)
     (only (sph conditional) identity-if))
@@ -109,10 +112,6 @@
       (stream-let next ((e (read port)))
         (if (eof-object? e) stream-null (stream-cons e (next (read port)))))))
 
-  (define (port->stream port reader)
-    (stream-let next ((e (reader port)))
-      (if (eof-object? e) stream-null (stream-cons e (next (reader port))))))
-
   (define (port->line-stream port)
     "port -> stream -> string ...
      create a stream that produces lines as strings read from port"
@@ -125,8 +124,10 @@
   (define* (port->stream port read #:optional close)
     "any procedure:{any -> any/eof-object} [procedure] -> stream
      create a stream that calls (read port) until the result is the end-of-file object and then close port.
-     works with any type as long as read eventually returns an eof-object.
+     works with any type for port as long as read eventually returns an eof-object.
      port->stream from srfi-41 does not support a custom reader"
     (stream-let loop ((b (read port)))
       (if (eof-object? b) (begin (and close (close port)) stream-null)
-        (stream-cons b (loop (read port)))))))
+        (stream-cons b (loop (read port))))))
+
+  (define* (file->stream path read #:optional close) (port->stream (open path O_RDONLY) read close)))

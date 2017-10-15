@@ -20,8 +20,10 @@
 
   (define* (iq-file path #:optional (env (current-module)))
     "string -> list
-     read all scheme expressions from file and evaluate them as if they
-     were elements of a quasiquoted list like (quasiquote (expression ...)).
+     \"implicitly quasiquoted\".
+     read all scheme expressions from file like elements of a quasiquoted
+     list (quasiquote (file-content-expression ...)).
+     unquote can be used and will be evaluated.
      example use case: configuration files"
     (eval (list (q quasiquote) (file->datums path)) env))
 
@@ -35,7 +37,8 @@
 
   (define (iq-file-hashtable path)
     "string -> list
-     read file like iq-file and then convert the resulting list to an association list by interpreting elements as key and value alternatingly"
+     read file like iq-file and then convert the resulting list to an association list
+     by interpreting elements as key and value alternatingly"
     (tree-map-lists-self (compose ht-from-alist list->alist) (iq-file path)))
 
   (define* (string->datum a #:optional (reader read))
