@@ -32,7 +32,7 @@
 
   (define (round-even a)
     "number -> integer
-         floor to the nearest even integer"
+     floor to the nearest even integer"
     (let (a (inexact->exact (round a))) (+ a (modulo a 2))))
 
   (define (add-multiple-leading-parenthesis-spacing config lines) "( (content ..."
@@ -138,7 +138,7 @@
 
   (define (consecutive-parentheses-indentation a indent-string)
     "string string -> string
-         offsets leading parentheses on one line by the level of idendation. example: ( ("
+     offsets leading parentheses on one line by the level of idendation. example: ( ("
     (let (index (string-skip a #\())
       (if (and index (> index 1))
         (string-append
@@ -149,7 +149,7 @@
 
   (define (format-application a config current-indent)
     "list hashtable integer -> string
-         format the standard list application form. example (append a b)"
+     format the standard list application form. example (append a b)"
     (let*
       ((indent (create-indent config current-indent)) (line-spacing (string-append "\n" indent)))
       (apply
@@ -167,10 +167,10 @@
 
   (define (format-docstring a offset-doublequote indent-string current-indent)
     "string hashtable integer -> string
-         parses a string and removes outside string indent from using newlines in a continuous string that is indented.
-         adds current indent to all lines except the first.
-         since old-indent is not available here, old-indent is guessed from the second line.
-         if the second line is indented relative to the first line, this indent will unfortunately be removed for all lines"
+     parses a string and removes outside string indent from using newlines in a continuous string that is indented.
+     adds current indent to all lines except the first.
+     since old-indent is not available here, old-indent is guessed from the second line.
+     if the second line is indented relative to the first line, this indent will unfortunately be removed for all lines"
     (if (string-null? indent-string) (raise (pair (q invalid-indent-string) indent-string))
       (let*
         ( (indent (string-multiply indent-string current-indent))

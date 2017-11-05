@@ -1,10 +1,11 @@
 (library (sph lang scm-format)
   (export
-    ascend-prefix->format-proc
+    ascend-prefix->format-f
     default-format-ascend
-    descend-prefix->format-proc
+    descend-prefix->format-f
     scm-format
     scm-format-default-config
+    scm-format-list->string
     scm-format-port
     sph-lang-scm-format-description)
   (import
@@ -46,7 +47,7 @@
     (ht-create-symbol sort-export #t
       sort-import #t sort-definitions #f separate-unexported-definitions #f))
 
-  (define-as descend-prefix->format-proc ht-create-symbol
+  (define-as descend-prefix->format-f ht-create-symbol
     semicolon-comment format-semicolon-comment
     scsh-block-comment format-scsh-block-comment
     hash-bang format-hash-bang
@@ -65,7 +66,7 @@
     define-syntax-case format-lambda
     define* format-lambda library format-library define-test-module format-test-module)
 
-  (define ascend-prefix->format-proc (ht-create))
+  (define ascend-prefix->format-f (ht-create))
 
   (define (config-add-defaults c) "r6rs-hashtable -> r6rs-hashtable"
     (let
@@ -93,20 +94,23 @@
       ((pair? a) (any->string-write* a)) (else (any->string-write* a))))
 
   (define (scm-format-list->string a nesting-depth config)
-    (let (config-format (ht-ref config (q format)))
+    (let
+      ( (config-format (ht-ref config (q format)))
+        (descend-prefix->format-f
+          (or (ht-ref config (q descend-prefix->format-f)) descend-prefix->format-f)))
       (tree-transform* a
         (l (expr recurse current-indent)
-          (let (format-proc (ht-ref descend-prefix->format-proc (first expr)))
-            (if format-proc
+          (let (format-f (ht-ref descend-prefix->format-f (first expr)))
+            (if format-f
               (apply
                 (l (r continue?)
                   (list r continue? (if continue? (+ 1 current-indent) current-indent)))
-                (format-proc expr recurse config-format (+ 1 current-indent)))
+                (format-f expr recurse config-format (+ 1 current-indent)))
               (list #f #t (+ 1 current-indent)))))
         (l (expr current-indent)
           (list
-            ( (ht-ref ascend-prefix->format-proc (first expr) default-format-ascend) expr
-              config-format current-indent)
+            ( (ht-ref ascend-prefix->format-f (first expr) default-format-ascend) expr config-format
+              current-indent)
             (- current-indent 1)))
         (l (expr current-indent)
           (list (format-non-list expr current-indent config config-format) current-indent))
