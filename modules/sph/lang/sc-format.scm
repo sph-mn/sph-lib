@@ -49,6 +49,7 @@
     descend-prefix->format-f
     (ht-create-symbol
       ; (sc-f 1 1 0) is the default
+      begin (sc-f 1 1 1)
       case (sc-f 3 1 1)
       case* (sc-f 3 1 1)
       define format-define
