@@ -27,7 +27,7 @@
   (define (random-weighted-boolean percentage)
     "integer -> boolean
     percentage is proportional to the amount of false values"
-    ;random generates values from 0-99. 99 will always be smaller than a percentage value of 100.
+    ; random generates values from 0-99. 99 will always be smaller than a percentage value of 100.
     (< (random 100) percentage))
 
   (define* (random max-value #:optional (min-value 0) (state random-state))

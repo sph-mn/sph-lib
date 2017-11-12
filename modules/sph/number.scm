@@ -10,11 +10,12 @@
     container-length->number-max
     decrement-one
     float-sum
+    fraction
     golden-ratio
     in-between?
     in-range?
     increment-one
-    integer-and-fraction&
+    integer-and-fraction
     log-base
     number-container-length
     number-format-float
@@ -91,14 +92,21 @@
   (define (percent value base) "how many percent is value from base"
     (if (zero? base) 0 (/ (* value 100) base)))
 
-  (define (integer-and-fraction& a c)
+  (define (integer-and-fraction a c)
     "number procedure:{integer real -> any:result} -> any:result
      splits a number into its integer and fractional part. example: 1.74 -> 1 0.74"
-    ;this implementation is slow, but it works with real numbers without rounding errors
+    ; algorithm: convert to string, remove integer part, convert to number.
+    ; slow, but it works for real numbers without rounding errors
     (apply
       (l (integer fraction)
         (c (string->number integer) (string->number (string-append "0." fraction))))
       (string-split (number->string a) #\.)))
+
+  (define (fraction a)
+    (let*
+      ( (a (string-split (number->string (exact->inexact a)) #\.))
+        (fraction-string (if (= 2 (length a)) (second a) "0")))
+      (string->number (string-append "0." fraction-string))))
 
   (define (log-base a base)
     "number number -> number

@@ -10,10 +10,30 @@
     f32vector-each-index
     f32vector-map
     f32vector-map!
-    f32vector-map!*
-    f32vector-map*
+    f32vector-map-with
+    f32vector-map-with!
     f32vector-range-map
     f32vector-range-map!
+    f32vector-range-map-with
+    f32vector-range-map-with!
+    f32vector-range-set
+    f32vector-range-set!
+    f64vector-copy
+    f64vector-copy*
+    f64vector-copy-empty
+    f64vector-copy-empty*
+    f64vector-create
+    f64vector-each-index
+    f64vector-map
+    f64vector-map!
+    f64vector-map-with
+    f64vector-map-with!
+    f64vector-range-map
+    f64vector-range-map!
+    f64vector-range-map-with
+    f64vector-range-map-with!
+    f64vector-range-set
+    f64vector-range-set!
     integer->bytevector
     sph-uniform-vector-description)
   (import
@@ -26,69 +46,135 @@
 
   (define sph-uniform-vector-description "helpers for srfi-4 and compatible vectors")
 
-  (define (f32vector-copy a) "f32vector -> f32vector"
-    ; simple bytevector-copy did not work. bugreport: http://lists.gnu.org/archive/html/bug-guile/2014-10/msg00024.html
-    (let (result (make-f32vector (f32vector-length a)))
-      (bytevector-copy! a 0 result 0 (* 4 (f32vector-length a))) result))
+  (define-syntax-rule (define-uv-copy id make-vector vector-length)
+    (define (id a) "xvector -> xvector"
+      ; simple bytevector-copy did not work. bugreport: http://lists.gnu.org/archive/html/bug-guile/2014-10/msg00024.html
+      (let (result (make-vector (vector-length a)))
+        (bytevector-copy! a 0 result 0 (* 4 (vector-length a))) result)))
 
-  (define (f32vector-copy-empty a) (make-f32vector (f32vector-length a)))
-  (define (f32vector-copy* a c) (let (result (f32vector-copy a)) (c result) result))
-  (define (f32vector-copy-empty* a c) (let (result (f32vector-copy-empty a)) (c result) result))
+  (define-syntax-rule (define-uv-copy-empty id make-vector vector-length)
+    (define (id a) (make-vector (vector-length a))))
 
-  (define (f32vector-each-index f a)
-    "procedure:{integer integer:a-length -> unspecified} f32vector -> unspecified
-     call f for each element in \"a\" with the index of the current element in \"a\" and the size of \"a\""
-    (let (length (f32vector-length a))
-      (let loop ((index 0)) (if (< index length) (begin (f index length) (loop (+ 1 index)))))))
+  (define-syntax-rule (define-uv-copy* id vector-copy)
+    (define (id a c) (let (result (vector-copy a)) (c result) result)))
 
-  (define (f32vector-range-map! f start end result a . b)
-    "procedure:{any ... -> any} integer integer f32vector f32vector:source ... -> unspecified
-     set result to the map results of calling f for each element of one or multiple f32vectors.
-     f is called (f a-element b-element ...).
-     all vectors must be of sufficient size"
-    (let loop ((index start))
-      (if (<= index end)
-        (begin
-          (f32vector-set! result index
-            (apply f (f32vector-ref a index) (map (l (a) (f32vector-ref a index)) b)))
-          (loop (+ 1 index))))))
+  (define-syntax-rule (define-uv-copy-empty* id vector-copy-empty)
+    (define (id a c) (let (result (vector-copy-empty a)) (c result) result)))
 
-  (define (f32vector-map! f a . b)
-    "procedure:{any:element ... -> any} f32vector ... -> unspecified
-     like f32vector-map but modifies \"a\""
-    (apply f32vector-range-map! f 0 (- (f32vector-length a) 1) a a b))
+  (define-syntax-rule (define-uv-each-index id vector-length)
+    (define (id f a)
+      "procedure:{integer integer:a-length -> unspecified} xvector -> unspecified
+       call f for each element in \"a\" with the index of the current element in \"a\" and the size of \"a\""
+      (let (length (vector-length a))
+        (let loop ((index 0)) (if (< index length) (begin (f index length) (loop (+ 1 index))))))))
 
-  (define (f32vector-map!* f variable . a)
-    "procedure:{any:variable any:element ... -> any} any:variable f32vector -> unspecified
-     like f32vector-map but passes the given variable as an additional first argument on each call to f.
-     example call: (f32vector-map* * 2 a)"
-    (apply f32vector-map! (l a (apply f variable a)) a))
+  (define-syntax-rule (define-uv-range-map! id vector-set! vector-ref)
+    (define (id result f start end a . b)
+      "procedure:{any ... -> any} integer integer xvector xvector:source ... -> unspecified
+       set result to the map results of calling f for each element between start and end of one or multiple xvectors.
+       f is called (f a-element b-element ...).
+       all vectors must be of sufficient size"
+      (let loop ((index start))
+        (if (<= index end)
+          (begin
+            (vector-set! result index
+              (apply f (vector-ref a index) (map (l (a) (vector-ref a index)) b)))
+            (loop (+ 1 index)))))))
 
-  (define (f32vector-range-map f start end a . b)
-    "procedure:{any ... -> any} integer integer f32vector ... -> f32vector
-     like f32vector-range-map but does not modify input"
-    (f32vector-copy-empty* a (l (result) (apply f32vector-range-map! f start end result a b))))
+  (define-syntax-rule (define-uv-range-set! id vector-set!)
+    (define (id a f start end)
+      (let loop ((index start))
+        (if (<= index end) (begin (vector-set! a index (f index)) (loop (+ 1 index)))))))
 
-  (define (f32vector-map f a . b)
-    "procedure:{any:element ... -> any} f32vector ... -> f32vector
-     call f for each element of each vector. (f a-element b-element ...)
-     can easily build processors like f32vector-sum: (f32vector-map + a b c)"
-    (f32vector-copy-empty* a
-      (l (result) (apply f32vector-range-map! f 0 (- (f32vector-length a) 1) result a b))))
+  (define-syntax-rule (define-uv-range-set id vector-copy* vector-range-set!)
+    (define (id a f start end) (vector-copy* a (l (result) (vector-range-set! result f start end)))))
 
-  (define (f32vector-create length f)
-    "integer {index -> float} -> f32vector
-     make and initialise an f32vector with the results of calling f as (f index)"
-    (let (result (make-f32vector length))
-      (let loop ((index 0))
-        (if (< index length) (begin (f32vector-set! result index (f index)) (loop (+ 1 index)))
-          result))))
+  (define-syntax-rule (define-uv-map! id vector-length vector-range-map!)
+    (define (id f a . b)
+      "procedure:{any:element ... -> any} xvector ... -> unspecified
+       like uv-map but modifies \"a\""
+      (apply vector-range-map! a f 0 (- (vector-length a) 1) a b)))
 
-  (define (f32vector-map* f variable . a)
-    "procedure:{any:variable any:element ... -> any} any:variable f32vector -> f32vector
-     like f32vector-map but passes the given variable as an additional first argument on each call to f.
-     example call: (f32vector-map* * 2 a)"
-    (apply f32vector-map (l a (apply f variable a)) a))
+  (define-syntax-rule (define-uv-map-with! id vector-map!)
+    (define (id f variable . a)
+      "procedure:{any:variable any:element ... -> any} any:variable xvector -> unspecified
+       like xvector-map but passes the given variable as an additional first argument on each call to f.
+       example call: (vector-map-with! * 2 a)"
+      (apply vector-map! (l a (apply f variable a)) a)))
+
+  (define-syntax-rule (define-uv-range-map-with! id vector-range-map!)
+    (define (id result f variable start end a . b)
+      (apply vector-range-map! result (l a (apply f variable a)) start end a b)))
+
+  (define-syntax-rule (define-uv-range-map id vector-copy-empty* vector-range-map!)
+    (define (id f start end a . b)
+      "procedure:{any ... -> any} integer integer xvector ... -> xvector
+       like xvector-range-map but does not modify input"
+      (vector-copy-empty* a (l (result) (apply vector-range-map! result f start end a b)))))
+
+  (define-syntax-rule (define-uv-map id vector-copy-empty* vector-range-map! vector-length)
+    (define (id f a . b)
+      "procedure:{any:element ... -> any} xvector ... -> xvector
+       call f for each element of each vector. (f a-element b-element ...)
+       can easily build processors like xvector-sum: (xvector-map + a b c)"
+      (vector-copy-empty* a
+        (l (result) (apply vector-range-map! result f 0 (- (vector-length a) 1) a b)))))
+
+  (define-syntax-rule (define-uv-create id make-vector vector-set!)
+    (define (id length f)
+      "integer {index -> float} -> xvector
+       make and initialise an xvector with the results of calling f as (f index)"
+      (let (result (make-vector length))
+        (let loop ((index 0))
+          (if (< index length) (begin (vector-set! result index (f index)) (loop (+ 1 index)))
+            result)))))
+
+  (define-syntax-rule (define-uv-map-with id vector-map)
+    (define (id f variable . a)
+      "procedure:{any:variable any:element ... -> any} any:variable xvector -> xvector
+       like xvector-map but passes the given variable as an additional first argument to each call of f.
+       example call: (xvector-map-with * 2 a)"
+      (apply vector-map (l a (apply f variable a)) a)))
+
+  (define-syntax-rule (define-uv-range-map-with id vector-range-map)
+    (define (id f variable start end a . b)
+      (apply vector-range-map (l a (apply f variable a)) start end a b)))
+
+  ; f64
+  (define-uv-copy f64vector-copy make-f64vector f64vector-length)
+  (define-uv-copy-empty f64vector-copy-empty make-f64vector f64vector-length)
+  (define-uv-copy* f64vector-copy* f64vector-copy)
+  (define-uv-copy-empty* f64vector-copy-empty* f64vector-copy-empty)
+  (define-uv-each-index f64vector-each-index f64vector-length)
+  (define-uv-range-map! f64vector-range-map! f64vector-set! f64vector-ref)
+  (define-uv-map! f64vector-map! f64vector-length f64vector-range-map!)
+  (define-uv-map-with! f64vector-map-with! f64vector-map!)
+  (define-uv-range-map f64vector-range-map f64vector-copy-empty* f64vector-range-map!)
+  (define-uv-map f64vector-map f64vector-copy-empty* f64vector-range-map! f64vector-length)
+  (define-uv-create f64vector-create make-f64vector f64vector-set!)
+  (define-uv-map-with f64vector-map-with f64vector-map)
+  (define-uv-range-map-with f64vector-range-map-with f64vector-range-map)
+  (define-uv-range-map-with! f64vector-range-map-with! f64vector-range-map!)
+  (define-uv-range-set! f64vector-range-set! f64vector-set!)
+  (define-uv-range-set f64vector-range-set f64vector-copy* f64vector-range-set!)
+  ;
+  ; f32
+  (define-uv-copy f32vector-copy make-f32vector f32vector-length)
+  (define-uv-copy-empty f32vector-copy-empty make-f32vector f32vector-length)
+  (define-uv-copy* f32vector-copy* f32vector-copy)
+  (define-uv-copy-empty* f32vector-copy-empty* f32vector-copy-empty)
+  (define-uv-each-index f32vector-each-index f32vector-length)
+  (define-uv-range-map! f32vector-range-map! f32vector-set! f32vector-ref)
+  (define-uv-map! f32vector-map! f32vector-length f32vector-range-map!)
+  (define-uv-map-with! f32vector-map-with! f32vector-map!)
+  (define-uv-range-map f32vector-range-map f32vector-copy-empty* f32vector-range-map!)
+  (define-uv-map f32vector-map f32vector-copy-empty* f32vector-range-map! f32vector-length)
+  (define-uv-create f32vector-create make-f32vector f32vector-set!)
+  (define-uv-map-with f32vector-map-with f32vector-map)
+  (define-uv-range-map-with f32vector-range-map-with f32vector-range-map)
+  (define-uv-range-map-with! f32vector-range-map-with! f32vector-range-map!)
+  (define-uv-range-set! f32vector-range-set! f32vector-set!)
+  (define-uv-range-set f32vector-range-set f32vector-copy* f32vector-range-set!)
 
   (define (integer->bytevector a)
     "integer:signed-integer -> bytevector
