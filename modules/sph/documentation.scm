@@ -81,7 +81,7 @@
       (c #f #f)))
 
   (define (lines->docstring a indent) "list (string ...) -> string"
-    (let (a (remove string-null? a))
+    (let (a (remove string-null? (if a (any->list a) null)))
       (if (null? a) ""
         (string-append indent "description"
           (string-join a (string-append "\n" indent indent) (q prefix)) "\n"))))

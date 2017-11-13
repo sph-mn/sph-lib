@@ -7,8 +7,7 @@
     (sph)
     (sph alist)
     (sph binding-info)
-    (sph documentation)
-    (only (srfi srfi-1) remove))
+    (sph documentation))
 
   (define sph-documentation-display-format-plist
     "display format for (sph documentation).

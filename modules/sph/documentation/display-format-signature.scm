@@ -23,7 +23,7 @@
                     (if (and signature (not (string-contains signature "\n"))) signature
                       (if formatted-arguments formatted-arguments "")))
                   ""))
-              (docstring (string-join (remove string-null? text-lines) "\n  " (q prefix))))
+              (docstring (string-join (remove string-null? (if text-lines (any->list text-lines) null)) "\n  " (q prefix))))
             (string-append (symbol->string (bi-name bi))
               (if (contains? (list-q procedure syntax) (bi-type bi))
                 (string-append " :: " arguments-string) "")
