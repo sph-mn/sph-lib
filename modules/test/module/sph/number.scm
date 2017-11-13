@@ -19,6 +19,6 @@
     (percent (3 200) 3/2 (200 200) 100 (0 200) 0)
     (round-to-decimal-places (3.7324 2) 3.73 (3.7355 2) 3.74)
     (truncate-to-decimal-places (3.7324 2) 3.73 (3.7355 2) 3.73 (3.735523402883043 2) 3.73)
-    (integer-and-fraction& (3.732 (unquote list)) (3 0.732)) (average (1 2 3 4) 5/2)
+    (integer-and-fraction (3.732 (unquote list)) (3 0.732)) (average (1 2 3 4) 5/2)
     (absolute-difference (1 3) 2 (3 1) 2 (-1 -3) 2 (-3 -1) 2 (3 -1) 4 (-1 3) 4)
     (in-between? (3 4 5) #f (4 3 5) #t (4 2 7) #t (0 0 1) #f (2 4 1) #f)))
