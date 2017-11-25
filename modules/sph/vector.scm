@@ -16,6 +16,7 @@
   (export
     alist-values->vector
     sph-vector-description
+    vector-accessor
     vector-append
     vector-copy*
     vector-delete-duplicates
@@ -26,6 +27,7 @@
     vector-first
     vector-index-value
     vector-map-with-index
+    vector-object
     vector-range
     vector-second
     vector-select
@@ -50,6 +52,16 @@
 
   (define (alist-values->vector alist) "create a vector of alist values"
     (list->vector (alist-values alist)))
+
+  (define (vector-accessor index)
+    "integer -> procedure:{vector -> any}
+     returns a procedure that when called with a vector returns the value at index"
+    (l (a) (vector-ref a index)))
+
+  (define (vector-object a)
+    "vector -> procedure:{integer -> any}
+     returns a procedure that when called with an index returns the value at index"
+    (l (index) (vector-ref a index)))
 
   (define (vector-first a) (vector-ref a 0))
   (define (vector-second a) (vector-ref a 1))

@@ -81,6 +81,7 @@
     list-distribute-sorted
     list-index-value
     list-indices
+    list-let
     list-page
     list-prefix?
     list-q
@@ -156,26 +157,30 @@
       negate)
     (only (rnrs sorting) list-sort))
 
-  ;this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
+  ; this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
   (define sph-list-description "helpers for working with lists")
 
   (define-syntax-rule (identity-if test else ...)
-    ;copied from (sph conditional)
+    ; copied from (sph conditional)
     ((lambda (r) (if r r (begin else ...))) test))
 
   (define-syntax-rule (list-q a ...) (q (a ...)))
   (define-syntax-rule (list-qq a ...) (qq (a ...)))
 
   (define-syntax-rule (list-bind a lambda-formals body ...)
-    ;bind elements of list "a" to "lambda-formals"
+    ; bind elements of list "a" to "lambda-formals"
+    (apply (lambda lambda-formals body ...) a))
+
+  (define-syntax-rule (list-let a lambda-formals body ...)
+    ; bind elements of list "a" to "lambda-formals"
     (apply (lambda lambda-formals body ...) a))
 
   (define-syntax-rule (any->list-s a)
-    ;"like \"any->list\" but as syntax"
+    ; "like \"any->list\" but as syntax"
     (if (list? a) a (list a)))
 
   (define-syntax-rule (true->list-s a)
-    ;"like \"any->list-s\" but results in \"a\" if \"a\" is not true"
+    ; "like \"any->list-s\" but results in \"a\" if \"a\" is not true"
     (if a (any->list-s a) a))
 
   (define-syntax-rule (define-list name a ...) (define name (list a ...)))

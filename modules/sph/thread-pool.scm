@@ -43,7 +43,7 @@
             (size (or (and (integer? size) size) (current-processor-count))))
           (letrec*
             ( (wait
-                (nullary "considers handles so-called spurious wakeups"
+                (nullary "considers so-called spurious wakeups"
                   (if (q-empty? queue)
                     (begin (wait-condition-variable queue-not-empty queue-mutex) (wait)) (deq! queue))))
               (get-task (nullary (with-mutex queue-mutex (wait))))
