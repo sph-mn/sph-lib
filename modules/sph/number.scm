@@ -11,7 +11,6 @@
     decrement-one
     float-sum
     fraction
-    golden-ratio
     in-between?
     in-range?
     increment-one
@@ -34,8 +33,6 @@
       inexact->exact
       exact->inexact)
     (only (sph string) string-multiply))
-
-  (define golden-ratio 1.6180339887)
 
   (define (float-sum . a)
     "return the sum of the given numbers calculated with rounding error compensation.

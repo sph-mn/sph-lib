@@ -810,33 +810,32 @@
      map over each overlapping segment of length len"
     (fold-segments (l (result . a) (append result (list (apply f a)))) len (list) a))
 
-  (define (map-slice slice-length proc a)
+  (define (map-slice slice-length f a)
     "integer procedure:{any ... -> any} list -> list
-     call \"proc\" with each \"slice-length\" number of consecutive elements of \"a\""
+     call \"f\" with each \"slice-length\" number of consecutive elements of \"a\""
     (let loop ((rest a) (slice (list)) (slice-ele-length 0) (r (list)))
-      (if (null? rest) (reverse (if (null? slice) r (pair (apply proc (reverse slice)) r)))
+      (if (null? rest) (reverse (if (null? slice) r (pair (apply f (reverse slice)) r)))
         (if (= slice-length slice-ele-length)
-          (loop (tail rest) (list (first rest)) 1 (pair (apply proc (reverse slice)) r))
+          (loop (tail rest) (list (first rest)) 1 (pair (apply f (reverse slice)) r))
           (loop (tail rest) (pair (first rest) slice) (+ 1 slice-ele-length) r)))))
 
-  (define (fold-slice slice-length proc init a)
+  (define (fold-slice slice-length f init a)
     "integer procedure:{any:state any:element ... -> any} any list -> any:state
-     call proc with each slice-length number of consecutive elements of a"
-    (let loop ((rest a) (slice (list)) (slice-ele-length 0) (r init))
-      (if (null? rest) (reverse (if (null? slice) r (apply proc r (reverse slice))))
-        (if (= slice-length slice-ele-length)
-          (loop (tail rest) (list (first rest)) 1 (apply proc r (reverse slice)))
-          (loop (tail rest) (pair (first rest) slice) (+ 1 slice-ele-length) r)))))
+     call f with each slice-length number of consecutive elements of a"
+    (let loop ((rest a) (slice (list)) (slice-buffer-length 0) (r init))
+      (if (null? rest) (reverse (if (null? slice) r (apply f r (reverse slice))))
+        (if (= slice-length slice-buffer-length)
+          (loop (tail rest) (list (first rest)) 1 (apply f r (reverse slice)))
+          (loop (tail rest) (pair (first rest) slice) (+ 1 slice-buffer-length) r)))))
 
-  (define (map-consecutive filter-proc proc a)
+  (define (map-consecutive filter-f f a)
     "{any -> boolean} {any any ... -> any} list -> list
-     \"proc\" is called for and with every list of elements that consecutively matched \"filter-proc\". at least two elements at a time"
-    (fold-span filter-proc
-      (l (e r) (if (length-greater-one? e) (pair (apply proc e) r) (append e r))) a))
+     \"f\" is called for and with every list of elements that consecutively matched \"filter-f\". at least two elements at a time"
+    (fold-span filter-f (l (e r) (if (length-greater-one? e) (pair (apply f e) r) (append e r))) a))
 
   (define (map-span filter-proc proc a)
     "procedure:{any -> any/false} procedure:{any any ... -> any} list -> list
-     apply \"proc\" to each list of elements that consecutively matched \"filter-proc\". may be only one element at a time"
+     apply \"proc\" to each list of elements that consecutively matched \"filter-proc\""
     (fold-span filter-proc (l (e r) (pair (apply proc e) r)) a))
 
   (define (map-unless proc stop? default . a)
