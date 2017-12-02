@@ -39,7 +39,7 @@
 
   (define (float-sum . a)
     "return the sum of the given numbers calculated with rounding error compensation.
-     uses kahan summation with the neumaier modification"
+     uses kahan summation with neumaier modification"
     (let loop ((rest (tail a)) (result (first a)) (correction 0.0))
       (if (null? rest) (+ correction result)
         (let* ((a (first rest)) (b (+ a result)))

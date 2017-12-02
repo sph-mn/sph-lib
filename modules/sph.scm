@@ -145,6 +145,8 @@
     odd?
     or
     pair
+    pair-fold
+    pair-fold-right
     pair?
     pairs
     positive?
