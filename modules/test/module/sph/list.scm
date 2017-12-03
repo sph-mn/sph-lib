@@ -132,13 +132,13 @@
       ((unquote even?) (unquote (l args (map 1+ args))) (2 2 3 4 4 6 5 6 6))
       ((3 3) 3 (5 5 7) 5 (7 7)))
     (map-segments
-      ((unquote list) 3 (1 2 3 4 5))
+      (3 (unquote list) (1 2 3 4 5))
       ((1 2 3) (2 3 4) (3 4 5))
-      ((unquote list) 3 (1 2))
+      (3 (unquote list) (1 2))
       ((1 2))
-      ((unquote list) 1 (1 2))
+      (1 (unquote list) (1 2))
       ((1) (2))
-      ((unquote list) 3 ())
+      (3 (unquote list) ())
       ())
     (produce
       ((unquote +) (1 2 3) (3 4))
