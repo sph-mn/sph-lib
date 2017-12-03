@@ -4,13 +4,16 @@
     bezier-curve-cubic
     catmull-rom-spline
     circle
+    ellipse
     golden-ratio
     hermite-interpolation
     line-path
     linear-interpolation
     pi)
   (import
-    (sph))
+    (sph)
+    (only (sph list) consecutive)
+    (only (sph vector) vector-first))
 
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
@@ -91,8 +94,18 @@
     (vector-map (l (d1 d2) (+ (* d2 n) (* d1 (- 1 n)))) p1 p2))
 
   (define (circle n radius)
-    "return a point on a circle with given radius at fractional offset (on the circumference) n"
-    (let (n (* n (* 2 sp-pi))) (vector (* radius (cos n)) (* radius (sin n)))))
+    "return a point on a circle with given radius at fractional offset n (on the circumference)"
+    (let (n (* n 2 pi)) (vector (* radius (cos n)) (* radius (sin n)))))
+
+  (define (ellipse n radius-x radius-y rotation)
+    "number:0..1 number number number:0..2pi
+     return a point on an ellipse at fractional offset n (on the circumference)"
+    ; make n be a fraction of one period
+    (let (n (* n 2 pi))
+      (vector
+        ; multiplied by rotation matrix (((cos angle) (- (sin angle))) ((sin angle) (cos angle)))
+        (- (* radius-x (cos n) (cos rotation)) (* radius-y (sin n) (sin rotation)))
+        (+ (* radius-x (cos n) (sin rotation)) (* radius-y (sin n) (cos rotation))))))
 
   (define (line-path n . points)
     "number:0..1 vector ... -> vector

@@ -805,7 +805,7 @@
           (if (predicate e) (append (reverse (pair (proc e) r)) (tail rest))
             (loop (tail rest) (pair e r)))))))
 
-  (define (map-segments f len a)
+  (define (map-segments len f a)
     "procedure:{any ... -> any} integer list -> list
      map over each overlapping segment of length len"
     (fold-segments (l (result . a) (append result (list (apply f a)))) len (list) a))
