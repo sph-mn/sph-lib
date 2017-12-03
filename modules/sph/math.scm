@@ -1,19 +1,23 @@
 (library (sph math)
   (export
+    angle-between
     bezier-curve
     bezier-curve-cubic
     catmull-rom-spline
     circle
     ellipse
+    elliptical-arc
     golden-ratio
     hermite-interpolation
     line-path
     linear-interpolation
-    pi)
+    pi
+    point-distance)
   (import
     (sph)
-    (only (sph list) consecutive)
-    (only (sph vector) vector-first))
+    (sph vector)
+    (only (sph alist) alist-q)
+    (only (sph list) consecutive))
 
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
@@ -107,6 +111,25 @@
         (- (* radius-x (cos n) (cos rotation)) (* radius-y (sin n) (sin rotation)))
         (+ (* radius-x (cos n) (sin rotation)) (* radius-y (sin n) (cos rotation))))))
 
+  (define (point-distance p1 p2)
+    (sqrt
+      (+ (expt (- (vector-first p2) (vector-first p1)) 2)
+        (expt (- (vector-second p2) (vector-second p1)) 2))))
+
+  (define (angle-between p1 p2)
+    (let*
+      ( (p (+ (* (vector-first p1) (vector-first p2)) (* (vector-second p1) (vector-second p2))))
+        (n
+          (sqrt
+            (* (+ (expt (vector-first p1) 2) (expt (vector-second p1) 2))
+              (+ (expt (vector-first p2) 2) (expt (vector-second p2) 2)))))
+        (sign
+          (if
+            (<
+              (- (* (vector-first p1) (vector-second p2)) (* (vector-second p1) (vector-first p2))) 0)
+            -1 1)))
+      (* sign (acos (/ p n)))))
+
   (define (line-path n . points)
     "number:0..1 vector ... -> vector
      return a point at fractional offset n on a path constructed from given points connected by straight lines.
@@ -121,4 +144,79 @@
           (let*
             ( (p2 (first (tail sub)))
               (sub-n (/ (- x (vector-first p1)) (- (vector-first p2) (vector-first p1)))))
-            (linear-interpolation sub-n p1 p2)))))))
+            (linear-interpolation sub-n p1 p2))))))
+
+  (define* (elliptical-arc n p1 p2 rx ry #:optional (rotation 0) large-arc sweep)
+    "number:0..1 vector vector number number number:radians boolean boolean -> (vector . calculated-values)
+     calculated-values: ((symbol:start-angle/end-angle/angle/center/radius-x/radius-y number) ...)
+     return a point on an elliptical arc at fractional offset n.
+     modeled after the svg path arc command.
+     code translated from https://github.com/MadLittleMods/svg-curve-lib"
+    ; there seems to be a bug with the sweep-angle
+    (cond ((equal? p1 p2) p1) ((or (= 0 rx) (= 0 ry)) (linear-interpolation n p1 p2))
+      (else
+        (let*
+          ( (rx (abs rx)) (ry (abs ry))
+            ; following "conversion from endpoint to center parameterization" at
+            ; http://www.w3.org/TR/SVG/implnote.html#ArcConversionEndpointToCenter
+            ; step 1: compute transformed point
+            (dx (/ (- (vector-first p1) (vector-first p2)) 2))
+            (dy (/ (- (vector-second p1) (vector-second p2)) 2))
+            (transformed-point-x (+ (* dx (cos rotation)) (* dy (sin rotation))))
+            (transformed-point-y (- (* dy (cos rotation)) (* dx (sin rotation))))
+            ; ensure radii are large enough
+            (radii-check
+              (+ (/ (expt transformed-point-x 2) (expt rx 2))
+                (/ (expt transformed-point-y 2) (expt ry 2))))
+            (rx (if (> radii-check 1) (* rx (sqrt radii-check)) rx))
+            (ry (if (> radii-check 1) (* ry (sqrt radii-check)) ry))
+            ; step 2: compute transformed center
+            (c-square-numerator
+              (- (* (expt rx 2) (expt ry 2)) (* (expt rx 2) (expt transformed-point-y 2))
+                (* (expt ry 2) (expt transformed-point-x 2))))
+            (c-square-root-denom
+              (+ (* (expt rx 2) (expt transformed-point-y 2))
+                (* (expt ry 2) (expt transformed-point-x 2))))
+            (c-radicand (/ c-square-numerator c-square-root-denom))
+            (c-radicand (if (< c-radicand 0) 0 c-radicand))
+            (c-coef (* (sqrt c-radicand) (if (equal? large-arc sweep) -1 1)))
+            (transformed-center-x (/ (* c-coef rx transformed-point-y) ry))
+            (transformed-center-y (/ (* c-coef (- (* ry transformed-point-x))) rx))
+            ; step 3: compute center
+            (center
+              (vector
+                (+
+                  (- (* (cos rotation) transformed-center-x)
+                    (* (sin rotation) transformed-center-y))
+                  (/ (+ (vector-first p1) (vector-first p2)) 2))
+                (+ (* (sin rotation) transformed-center-x) (* (cos rotation) transformed-center-y)
+                  (/ (+ (vector-second p1) (vector-second p2)) 2))))
+            ; step 4: compute start/sweep angles
+            ; start angle of the elliptical arc prior to the stretch and rotate operations.
+            ; difference between the start and end angles
+            (start-vector
+              (vector (/ (- transformed-point-x transformed-center-x) rx)
+                (/ (- transformed-point-y transformed-center-y) ry)))
+            (start-angle (angle-between (vector 1 0) start-vector))
+            (end-vector
+              (vector (/ (- (- transformed-point-x) transformed-center-x) rx)
+                (/ (- (- transformed-point-y) transformed-center-y) ry)))
+            (sweep-angle (angle-between start-vector end-vector))
+            (sweep-angle
+              (if (and (not sweep) (> sweep-angle 0)) (- sweep-angle (* 2 pi))
+                (if (and sweep (< sweep-angle 0)) (+ sweep-angle (* 2 pi)) sweep-angle)))
+            (sweep-angle (mod sweep-angle (* 2 pi)))
+            ; from http://www.w3.org/TR/SVG/implnote.html#ArcParameterizationAlternatives
+            (angle (+ start-angle (* n sweep-angle))) (ellipse-component-x (* rx (cos angle)))
+            (ellipse-component-y (* ry (sin angle)))
+            (point
+              (vector
+                (+
+                  (- (* ellipse-component-x (cos rotation)) (* ellipse-component-y (sin rotation)))
+                  (vector-first center))
+                (+ (* ellipse-component-x (sin rotation)) (* ellipse-component-y (cos rotation))
+                  (vector-second center)))))
+          (pair point
+            ; include some extra information in the result which might be useful
+            (alist-q start-angle start-angle
+              end-angle (+ start-angle sweep-angle) angle angle center center radius-x rx radius-y ry)))))))
