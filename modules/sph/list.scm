@@ -217,29 +217,29 @@
      replace sublists with their content, resulting in a list that does not contain lists"
     (fold-right (l (e r) (if (list? e) (append (flatten e) r) (pair e r))) (list) a))
 
-  (define (append-map-unless proc stop? default . a)
+  (define (append-map-unless f stop? default . a)
     "procedure:{any:list-element ... -> any} procedure:{any -> boolean} any list ... -> list/false
      map unless \"stop?\" is true for a map result. result in \"default\" if \"stop?\" is true"
     (if (any null? a) (list)
-      (let loop ((rest (map tail a)) (e (apply proc (map first a))) (init (list)))
+      (let loop ((rest (map tail a)) (e (apply f (map first a))) (init (list)))
         (if (stop? e) default
           (if (any null? rest) (append init e)
-            (loop (map tail rest) (apply proc (map first rest)) (append init e)))))))
+            (loop (map tail rest) (apply f (map first rest)) (append init e)))))))
 
   (define (non-empty-list? a)
     "any -> boolean
      true if argument is a list with at least one element"
     (and (list? a) (not (null? a))))
 
-  (define (every-or-index proc . a)
+  (define (every-or-index f . a)
     "procedure:{any ... -> boolean} list ... -> true/integer
-     true if \"proc\" is true for all elements, otherwise the index of the element for which \"proc\" failed"
-    (let (r (apply list-index (negate (l e (apply proc e))) a)) (if (boolean? r) (not r) r)))
+     true if \"f\" is true for all elements, otherwise the index of the element for which \"f\" failed"
+    (let (r (apply list-index (negate (l e (apply f e))) a)) (if (boolean? r) (not r) r)))
 
-  (define (fold-every proc init . a)
+  (define (fold-every f init . a)
     "{any any -> any} any list ... -> any
      like fold, but every result must be a \"true\" value, otherwise the result is false"
-    (if init (if (null? a) init (fold-every proc (proc (map first a) init) (map tail a))) init))
+    (if init (if (null? a) init (fold-every f (f (map first a) init) (map tail a))) init))
 
   (define (any->list a)
     "any -> list
@@ -251,16 +251,16 @@
      wraps a true non-list argument in a list"
     (true->list-s a))
 
-  (define (map-first proc a)
+  (define (map-first f a)
     "procedure list -> list
-     call \"proc\" for the first element of list and replace the first element in the list with the result of \"proc\".
+     call \"f\" for the first element of list and replace the first element in the list with the result of \"f\".
      replace-first"
-    (pair (proc (first a)) (tail a)))
+    (pair (f (first a)) (tail a)))
 
-  (define (replace-at-once match? proc a)
+  (define (replace-at-once match? f a)
     "procedure:{any -> boolean} procedure:{list:matched-elements -> list:replacements} list:source -> list
-     all elements matching \"match?\" are collected in a list and passed to \"proc\".
-     the result of \"proc\" is then used to replace the matched elements in source in order"
+     all elements matching \"match?\" are collected in a list and passed to \"f\".
+     the result of \"f\" is then used to replace the matched elements in source in order"
     (reverse
       (first
         (let (a-extended (map (l (e) (pair (match? e) e)) a))
@@ -268,7 +268,7 @@
             (l (e r replacements)
               (if (first e) (list (pair (first replacements) r) (tail replacements))
                 (list (pair (tail e) r) replacements)))
-            a-extended (list) (proc (filter-map (l (e) (if (first e) (tail e) #f)) a-extended)))))))
+            a-extended (list) (f (filter-map (l (e) (if (first e) (tail e) #f)) a-extended)))))))
 
   (define (contains-all? a values)
     "list ... -> boolean
@@ -341,69 +341,68 @@
 
   (define (union . a) (delete-duplicates (apply append a)))
 
-  (define* (delete-duplicates-sorted a #:optional (equal-proc equal?) (preserve-order #t))
+  (define* (delete-duplicates-sorted a #:optional (equal-f equal?) (preserve-order #t))
     "list [procedure:{any any -> boolean} boolean] -> list
      delete duplicates from a sorted list using a more efficient algorithm than for unsorted lists"
     (if (or (null? a) (null? (tail a))) a
       ( (if preserve-order reverse (l (i) i))
         (let loop ((e-1 (first a)) (rest (tail a)) (r (list (first a))))
           (if (null? rest) r
-            (let ((e-2 (first rest)))
-              (loop e-2 (tail rest) (if (equal-proc e-1 e-2) r (pair e-2 r)))))))))
+            (let ((e-2 (first rest))) (loop e-2 (tail rest) (if (equal-f e-1 e-2) r (pair e-2 r)))))))))
 
-  (define (each-slice proc slice-length a)
+  (define (each-slice f slice-length a)
     "procedure:{list ->} integer list ->
-     apply proc to each slice of slice-length elements from list."
+     apply f to each slice of slice-length elements from list."
     (let loop ((rest a) (cur-slice (list)) (cur-length 0))
-      (if (null? rest) (if (not (null? cur-slice)) (proc cur-slice))
+      (if (null? rest) (if (not (null? cur-slice)) (f cur-slice))
         (if (= slice-length cur-length)
-          (begin (proc cur-slice) (loop (tail rest) (list (first rest)) 1))
+          (begin (f cur-slice) (loop (tail rest) (list (first rest)) 1))
           (loop (tail rest) (pair (first rest) cur-slice) (+ 1 cur-length))))))
 
-  (define (each-with-index proc . a)
+  (define (each-with-index f . a)
     "procedure:{index element ... ->} list ... ->
-     apply proc to each element and its index in list a"
+     apply f to each element and its index in list a"
     (let loop ((rest a) (index 0))
       (if (not (any null? rest))
-        (begin (apply proc index (map first rest)) (loop (map tail rest) (+ index 1))))))
+        (begin (apply f index (map first rest)) (loop (map tail rest) (+ index 1))))))
 
-  (define (each-in-index-range proc start end . a)
+  (define (each-in-index-range f start end . a)
     "procedure integer integer list ... ->
      untested.
-     call proc only for elements in index range between \"start\" and \"end\" inclusively"
+     call f only for elements in index range between \"start\" and \"end\" inclusively"
     (let loop ((rest a) (index (if (< end 0) (+ end (length (first a))) 0)))
       (if (<= index end)
-        (begin (if (>= index start) (apply proc (map first rest))) (loop (map tail rest))))))
+        (begin (if (>= index start) (apply f (map first rest))) (loop (map tail rest))))))
 
-  (define (each-first-middle-last first-proc middle-proc last-proc . a)
+  (define (each-first-middle-last first-f middle-f last-f . a)
     "procedure procedure procedure list ... ->
      untested.
-     call \"first-proc\" for the first element,
-     call \"last-proc\" for the last element,
-     call \"middle-proc\" for a list of all elements inbetween"
-    (apply first-proc (map first a))
+     call \"first-f\" for the first element,
+     call \"last-f\" for the last element,
+     call \"middle-f\" for a list of all elements inbetween"
+    (apply first-f (map first a))
     (let loop ((rest (map tail a)) (count (- (length (first a)) 1)))
-      (if (= 0 count) (apply last-proc (map first rest))
-        (begin (middle-proc (map first rest)) (loop (map tail rest) (- count 1))))))
+      (if (= 0 count) (apply last-f (map first rest))
+        (begin (middle-f (map first rest)) (loop (map tail rest) (- count 1))))))
 
-  (define (every-map proc . a)
+  (define (every-map f . a)
     "procedure:{any -> any} list ... -> list/false
-     like map but results in false if any result of proc is not a true value"
-    (apply map-unless proc not #f a))
+     like map but results in false if any result of f is not a true value"
+    (apply map-unless f not #f a))
 
   (define (compact a)
     "list -> list
      keep only true elements in list. removes all boolean false values"
     (filter identity a))
 
-  (define (filter-append-map proc . lists) "apply filter-map and then apply append on the result"
-    (apply append (apply filter-map proc lists)))
+  (define (filter-append-map f . lists) "apply filter-map and then apply append on the result"
+    (apply append (apply filter-map f lists)))
 
-  (define (difference-p equal-proc . lists)
+  (define (difference-p equal-f . lists)
     "{any any -> boolean} list ... -> list
      like"
     difference " but the predicate for comparing list elements can be specified"
-    (let (every* (l (a b) (every (l (e-2) (any (l (e-3) (equal-proc a e-3)) e-2)) b)))
+    (let (every* (l (a b) (every (l (e-2) (any (l (e-3) (equal-f a e-3)) e-2)) b)))
       (iterate-three
         (l (head e rest . r)
           (append (filter (l (e) (not (and (every* e rest) (every* e head)))) e) r))
@@ -414,10 +413,10 @@
      result in a list of elements not included in all given lists"
     (apply difference-p equal? lists))
 
-  (define (difference+intersection-p equal-proc . lists)
+  (define (difference+intersection-p equal-f . lists)
     "{any any -> boolean} list ... -> (list:difference list:intersection)
      like difference+intersection but the predicate for comparing list elements can be specified"
-    (let (every* (l (a b) (every (l (e-2) (any (l (e-3) (equal-proc a e-3)) e-2)) b)))
+    (let (every* (l (a b) (every (l (e-2) (any (l (e-3) (equal-f a e-3)) e-2)) b)))
       (iterate-three
         (l (head e rest d i)
           (fold-multiple
@@ -433,11 +432,11 @@
      it does both calculations in one step saving resources compared to making them in separate steps."
     (apply difference+intersection-p equal? lists))
 
-  (define (intersection-p equal-proc . rest)
+  (define (intersection-p equal-f . rest)
     "procedure:{any any -> boolean} list ... -> list
      like \"intersection\" but the predicate for comparing the list elements can be specified"
     (if (any null? rest) (list)
-      (filter (l (e) (every (l (e-2) (any (l (e-3) (equal-proc e e-3)) e-2)) (tail rest)))
+      (filter (l (e) (every (l (e-2) (any (l (e-3) (equal-f e e-3)) e-2)) (tail rest)))
         (first rest))))
 
   (define (intersection . lists)
@@ -445,30 +444,30 @@
      result in a list of all elements which are contained in all given lists"
     (apply intersection-p equal? lists))
 
-  (define (filter-not proc a)
+  (define (filter-not f a)
     "{any -> boolean} list -> list
-     like filter but keeps only values where the result of proc is false.
-     same as (filter (compose not proc) list)"
-    (filter (l (e) (not (proc e))) a))
+     like filter but keeps only values where the result of f is false.
+     same as (filter (compose not f) list)"
+    (filter (l (e) (not (f e))) a))
 
-  (define (filter-produce proc . a)
+  (define (filter-produce f . a)
     "procedure list ...
-     apply \"proc\" to each ordered combination of elements from lists, cartesian product, and return true results in a list.
-     can handle multiple lists and non-list arguments.
+     apply \"f\" to each ordered combination of elements from lists, cartesian product, and return true results in a list.
+     supports multiple lists and treats non-list arguments as the single element of a list.
      example:
-     (produce proc (1 2) (4 5) (6))
+       (produce f (1 2) (4 5) 6)
      is equivalent to
-     (list (proc 1 4 6) (proc 1 5 6) (proc 2 4 6) (proc 2 5 6))"
+       (list (f 1 4 6) (f 1 5 6) (f 2 4 6) (f 2 5 6))"
     (let loop ((rest (map any->list a)) (args (list)))
-      (if (null? rest) (apply proc args)
+      (if (null? rest) (apply f args)
         (let (tail-rest (tail rest))
           ( (if (null? tail-rest) filter-map filter-append-map)
             (l e (loop tail-rest (append args e))) (first rest))))))
 
-  (define (first-intersection-p equal-proc a b)
+  (define (first-intersection-p equal-f a b)
     "{any any -> boolean} list list -> any
      like first-intersection but the procedure for comparing elements can be specified"
-    (find (l (b) (any (l (a) (equal-proc a b)) a)) b))
+    (find (l (b) (any (l (a) (equal-f a b)) a)) b))
 
   (define (first-intersection a b)
     "list list -> any
@@ -496,71 +495,70 @@
      true if the list does not contain a list"
     (if (null? a) #t (if (list? (first a)) #f (flat? (tail a)))))
 
-  (define (fold-span filter-proc proc a)
+  (define (fold-span filter-f f a)
     "procedure:{any -> any/false} procedure:{list -> any} list -> any
-     fold over each list of elements that consecutively matched filter-proc (utilising the \"span\" procedure)"
+     fold over each list of elements that consecutively matched filter-f (utilising the \"span\" procedure)"
     (let loop ((rest a) (r (list)))
       (if (null? rest) (reverse r)
-        (let-values (((consecutive rest) (span filter-proc rest)))
+        (let-values (((consecutive rest) (span filter-f rest)))
           (if (null? consecutive) (loop (tail rest) (pair (first rest) r))
-            (loop rest (proc consecutive r)))))))
+            (loop rest (f consecutive r)))))))
 
-  (define (fold-multiple proc a . custom-state-values)
+  (define (fold-multiple f a . custom-state-values)
     "procedure:{any:list-element any:state-value ... -> (any:state-value)} list any:state-value ... -> list:state-values
-     like fold but with multiple state values. the state values are updated by returning a list from a call to \"proc\".
-     apply \"proc\" to each element of \"a\" and the state-value elements that were given to
-     fold-multiple or subsequently the updated state-values from the previous call to \"proc\""
+     like fold but with multiple state values. the state values are updated by returning a list from a call to \"f\".
+     apply \"f\" to each element of \"a\" and the state-value elements that were given to
+     fold-multiple or subsequently the updated state-values from the previous call to \"f\""
     (if (null? a) custom-state-values
-      (apply fold-multiple proc (tail a) (apply proc (first a) custom-state-values))))
+      (apply fold-multiple f (tail a) (apply f (first a) custom-state-values))))
 
-  (define (fold-multiple-with-continue proc a . custom-state-values)
+  (define (fold-multiple-with-continue f a . custom-state-values)
     "procedure:{any:element procedure:continue:{list:next-pair any:state-value ...} any:state-value ... -> any} list any:state-value ... -> list"
     (if (null? a) custom-state-values
-      (apply proc (first a)
-        (l custom-state-values
-          (apply fold-multiple-with-continue proc (tail a) custom-state-values))
+      (apply f (first a)
+        (l custom-state-values (apply fold-multiple-with-continue f (tail a) custom-state-values))
         custom-state-values)))
 
-  (define (fold-multiple-right proc a . r)
+  (define (fold-multiple-right f a . r)
     "procedure list any ... -> any
      like fold-multiple but works through the list elements from last to first"
-    (if (null? a) r (apply proc (first a) (apply fold-multiple-right proc (tail a) r))))
+    (if (null? a) r (apply f (first a) (apply fold-multiple-right f (tail a) r))))
 
-  (define (fold-segments proc size init a)
+  (define (fold-segments f size init a)
     "{any:state element ... -> any:state} integer any:state list -> any
      fold over each overlapping segment with length \"size\".
      example:
-     (fold-segments proc 2 #t (list 4 5 6 7))
+     (fold-segments f 2 #t (list 4 5 6 7))
      is equivalent to
-     (proc 4 5) (proc 5 6) (proc 6 7)"
+     (f 4 5) (f 5 6) (f 6 7)"
     (let loop ((rest a) (buf (list)) (r init) (count size))
-      (if (null? rest) (if (null? buf) r (apply proc r buf))
+      (if (null? rest) (if (null? buf) r (apply f r buf))
         (if (< count 1)
-          (loop (tail rest) (append (tail buf) (list (first rest))) (apply proc r buf) 0)
+          (loop (tail rest) (append (tail buf) (list (first rest))) (apply f r buf) 0)
           (loop (tail rest) (append buf (list (first rest))) r (- count 1))))))
 
-  (define (fold-unless proc stop? default init . a)
+  (define (fold-unless f stop? default init . a)
     "{any ... -> any} {any -> boolean/any} any any list ... -> any
      like fold, but returns \"default\" if \"stop?\" is true"
     (if (any null? a) init
-      (apply fold-unless-check-init proc
-        stop? default (apply proc (append (map first a) (list init))) (map tail a))))
+      (apply fold-unless-check-init f
+        stop? default (apply f (append (map first a) (list init))) (map tail a))))
 
-  (define (fold-unless-check-init proc stop? default init . a)
+  (define (fold-unless-check-init f stop? default init . a)
     (if (stop? init) default
       (if (any null? a) init
-        (apply fold-unless-check-init proc
-          stop? default (apply proc (append (map first a) (list init))) (map tail a)))))
+        (apply fold-unless-check-init f
+          stop? default (apply f (append (map first a) (list init))) (map tail a)))))
 
-  (define (fold-until proc init stop? a)
+  (define (fold-until f init stop? a)
     "procedure any procedure:{any -> boolean} list -> any
      end folding if \"stop?\" is true"
-    (if (or (null? a) (stop? init)) init (fold-until proc (proc (first a) init) stop? (tail a))))
+    (if (or (null? a) (stop? init)) init (fold-until f (f (first a) init) stop? (tail a))))
 
-  (define (group-consecutive filter-proc a)
+  (define (group-consecutive filter-f a)
     "{any -> boolean} list -> list
-     wrap multiple elements that consecutively match \"filter-proc\" in a list"
-    (map-consecutive filter-proc (l a a) a))
+     wrap multiple elements that consecutively match \"filter-f\" in a list"
+    (map-consecutive filter-f (l a a) a))
 
   (define (improper-list-split-at-last a)
     "pair:improper-list -> (list any:non-pair)
@@ -595,16 +593,16 @@
   (define iterate-three-with-stop+end
     (letrec
       ( (loop
-          (l (stop? end map-proc r current next . states)
+          (l (stop? end map-f r current next . states)
             (if (or (null? next) (and stop? (apply stop? r current next states)))
-              (apply (or end map-proc) r current next states)
+              (apply (or end map-f) r current next states)
               (apply loop stop?
-                end map-proc
-                (pair current r) (first next) (tail next) (apply map-proc r current next states))))))
-      (l (stop? end map-proc a . states)
+                end map-f
+                (pair current r) (first next) (tail next) (apply map-f r current next states))))))
+      (l (stop? end map-f a . states)
         "{list any list any ... -> boolean} {list any list any ... -> list:state-values}:after-stop? {list any list any ... -> list:state-values} list any ... -> any
-        like \"iterate-three\" but takes two additional procedures - one for stopping the iteration after a \"map-proc\" result, and one that is called for the last element or when \"stop?\" is true"
-        (loop stop? end map-proc (list) (first a) (tail a)))))
+        like \"iterate-three\" but takes two additional procedures - one for stopping the iteration after a \"map-f\" result, and one that is called for the last element or when \"stop?\" is true"
+        (loop stop? end map-f (list) (first a) (tail a)))))
 
   (define (list-distribute-sorted a indices default)
     "like list-distribute but faster. works only correctly for indices lists that are sorted ascending"
@@ -633,14 +631,14 @@
      has-multiple-elements?"
     (if (null? a) #f (not (null? (tail a)))))
 
-  (define* (list-index-value a value #:optional (equal-proc equal?))
-    "get the index of value in list" (list-index (l (a) (equal-proc a value)) a))
+  (define* (list-index-value a value #:optional (equal-f equal?)) "get the index of value in list"
+    (list-index (l (a) (equal-f a value)) a))
 
-  (define (list-indices proc a)
+  (define (list-indices f a)
     "procedure:{any -> boolean} list -> (integer ...)
-     create a list of all indices for which proc results in true"
+     create a list of all indices for which f results in true"
     (let loop ((rest a) (index 0) (r (list)))
-      (if (null? rest) r (loop (tail rest) (+ 1 index) (if (proc (first rest)) (pair index r) r)))))
+      (if (null? rest) r (loop (tail rest) (+ 1 index) (if (f (first rest)) (pair index r) r)))))
 
   (define (list-prefix? a . prefix)
     "list any ... -> boolean
@@ -760,13 +758,13 @@
      sort list by calling accessor for each argument before comparison. only the order of elements changes, the individual elements are not changed"
     (list-sort (l (a b) (less? (accessor a) (accessor b))) a))
 
-  (define (map-selected select? proc . a)
+  (define (map-selected select? f . a)
     "procedure procedure list ... -> list
-     apply proc only to elements for which \"select?\" is true. non-matched items are included in the result list.
+     apply f only to elements for which \"select?\" is true. non-matched items are included in the result list.
      if multiple lists are given, it works like \"map\" except that the elements from the multiple lists for one call that are not selected are saved as a list.
      map-some/map-only"
     ; as a possible enhancement, a second procedure for non-matches could be specified
-    (apply map (l e (if (apply select? e) (apply proc e) (if (null? (tail e)) (first e) e))) a))
+    (apply map (l e (if (apply select? e) (apply f e) (if (null? (tail e)) (first e) e))) a))
 
   (define (map-apply f . a)
     "procedure:{any ... -> any} (list ...) ... -> list
@@ -795,14 +793,14 @@
       (if (zero? len) (list)
         (apply f (l (result) (pair result (loop (map tail rest) (- len 1)))) (map first rest)))))
 
-  (define (map-one predicate proc a)
+  (define (map-one predicate f a)
     "{any -> any}:predicate {any:element -> any} list -> list
-     apply proc only to the first element that matches predicate.
+     apply f only to the first element that matches predicate.
      all elements that do not match are mapped with the \"identity\" function"
     (let loop ((rest a) (r (list)))
       (if (null? rest) r
         (let (e (first rest))
-          (if (predicate e) (append (reverse (pair (proc e) r)) (tail rest))
+          (if (predicate e) (append (reverse (pair (f e) r)) (tail rest))
             (loop (tail rest) (pair e r)))))))
 
   (define (map-segments len f a)
@@ -833,26 +831,26 @@
      \"f\" is called for and with every list of elements that consecutively matched \"filter-f\". at least two elements at a time"
     (fold-span filter-f (l (e r) (if (length-greater-one? e) (pair (apply f e) r) (append e r))) a))
 
-  (define (map-span filter-proc proc a)
+  (define (map-span filter-f f a)
     "procedure:{any -> any/false} procedure:{any any ... -> any} list -> list
-     apply \"proc\" to each list of elements that consecutively matched \"filter-proc\""
-    (fold-span filter-proc (l (e r) (pair (apply proc e) r)) a))
+     apply \"f\" to each list of elements that consecutively matched \"filter-f\""
+    (fold-span filter-f (l (e r) (pair (apply f e) r)) a))
 
-  (define (map-unless proc stop? default . a)
+  (define (map-unless f stop? default . a)
     "procedure stop? list -> list/boolean:false
      {any -> any} {any -> boolean} list -> list/boolean
      map unless \"stop?\" is true for a mapping-result. return an empty list or \"default\" if \"stop?\" was true"
     (if (any null? a) (list)
-      (let loop ((rest (map tail a)) (e (apply proc (map first a))) (init (list)))
+      (let loop ((rest (map tail a)) (e (apply f (map first a))) (init (list)))
         (if (stop? e) default
           (if (any null? rest) (reverse (pair e init))
-            (loop (map tail rest) (apply proc (map first rest)) (pair e init)))))))
+            (loop (map tail rest) (apply f (map first rest)) (pair e init)))))))
 
-  (define (map-with-index proc . a)
+  (define (map-with-index f . a)
     "procedure:{integer:index any:element ... -> any} list ... -> list"
     (let loop ((rest a) (index 0))
       (if (any null? rest) (list)
-        (pair (apply proc index (map first rest)) (loop (map tail rest) (+ 1 index))))))
+        (pair (apply f index (map first rest)) (loop (map tail rest) (+ 1 index))))))
 
   (define (map-fold f a . init)
     "procedure list any ... -> list any ...
@@ -865,20 +863,20 @@
     (apply fold-multiple (l (b result-list . state) (pair (apply f b state) result-list))
       a (list) init))
 
-  (define (map-integers count proc)
+  (define (map-integers count f)
     "integer {integer -> any} -> list
      map over integers from 0 to count - 1"
-    (reverse (let loop ((n 0) (r (list))) (if (< n count) (loop (+ 1 n) (pair (proc n) r)) r))))
+    (reverse (let loop ((n 0) (r (list))) (if (< n count) (loop (+ 1 n) (pair (f n) r)) r))))
 
-  (define (fold-integers count init proc)
+  (define (fold-integers count init f)
     "integer {integer -> any} -> list
      fold over integers from 0 to count - 1"
-    (let loop ((n 0) (r init)) (if (< n count) (loop (+ 1 n) (proc n r)) r)))
+    (let loop ((n 0) (r init)) (if (< n count) (loop (+ 1 n) (f n r)) r)))
 
-  (define (pair-fold-multiple proc a . init)
+  (define (pair-fold-multiple f a . init)
     "{pair any -> any} list any ... -> any
-     like fold-multiple but applying proc to the pairs of list"
-    (if (null? a) init (apply pair-fold-multiple proc (tail a) (apply proc a init))))
+     like fold-multiple but applying f to the pairs of list"
+    (if (null? a) init (apply pair-fold-multiple f (tail a) (apply f a init))))
 
   (define (pair-map f a)
     "procedure list -> list
@@ -897,7 +895,8 @@
 
   (define (produce f . a)
     "procedure:{any ... -> any} list ... -> list
-     apply \"f\" with each ordered combination of elements from all lists, the cartesian product, and return the results in a list.
+     apply \"f\" with each ordered combination of elements from all lists, the cartesian product,
+     and return the results in a list.
      for example (produce f (1 2) (4 5) (6)) is equivalent to ((f 1 4 6) (f 1 5 6) (f 2 4 6) (f 2 5 6))"
     ; example of a less featureful implementation: (define (produce f a b) (map (l (a) (map (l (b) (f a b)) b)) a))
     ; algorithm: append each entry of each list once to arguments and apply f.
@@ -907,19 +906,20 @@
         (let (rest (tail a))
           ((if (null? rest) map append-map) (l a (loop rest (append arguments a))) (first a))))))
 
-  (define (produce-controlled proc mappers . lists)
+  (define (produce-controlled f mappers . lists)
     "{any ... -> any} (procedure:{procedure:{any -> any} list -> list} ...) any/list ... -> list
      experimental.
-     apply \"proc\" to each ordered combination of elements from one or multiple lists, the cartesian product, and return the results in a list.
-     the combinations passed to \"proc\" are obtained by nested application of the procedures in the second argument list.
+     apply \"f\" to each ordered combination of elements from one or multiple lists, the cartesian product,
+     and return the results in a list.
+     the combinations passed to \"f\" are obtained by nested application of the procedures in the second argument list.
      there should be as many lists as mappers.
      accepts multiple lists, multiple mappers and non-list arguments.
      example:
-     (produce-controlled proc (proc-1 proc-2 proc-3) (1 2) (4 5) (6 7))
+       (produce-controlled f (f-1 f-2 f-3) (1 2) (4 5) (6 7))
      is equivalent to
-     (proc-1 (lambda (e-1) (proc-2 (lambda (e-2) (proc-3 (lambda (e-3) (proc e-1 e-2 e-3)) (6 7))) (4 5))) (1 2))"
+       (f-1 (lambda (e-1) (f-2 (lambda (e-2) (f-3 (lambda (e-3) (f e-1 e-2 e-3)) (6 7))) (4 5))) (1 2))"
     (let loop ((rest-mappers mappers) (rest-lists (map any->list lists)) (a (list)))
-      (if (null? rest-mappers) (apply proc a)
+      (if (null? rest-mappers) (apply f a)
         ( (first rest-mappers)
           (let ((tail-mappers (tail rest-mappers)) (tail-lists (tail rest-lists)))
             (l e (loop tail-mappers tail-lists (append a e))))
@@ -930,9 +930,9 @@
      produce two lists unless \"stop?\" is true for a production-result. if stop? is true, result in false"
     (append-map-unless (l (a) (map-unless (l (b) (f a b)) stop? #f b)) not default a))
 
-  (define* (replace-value a search-value replacement #:optional (equal-proc equal?))
+  (define* (replace-value a search-value replacement #:optional (equal-f equal?))
     "list any any [procedure:{any any -> boolean}] -> list"
-    (replace a (l (b) (equal-proc b search-value)) replacement))
+    (replace a (l (b) (equal-f b search-value)) replacement))
 
   (define* (replace a select? replacement) "list procedure any -> list"
     (map (l (b) (if (select? b) replacement b)) a))
@@ -1033,12 +1033,12 @@
               (+ count 1) count)))
         a 0)))
 
-  (define* (consecutive proc a #:optional (c list))
+  (define* (consecutive f a #:optional (c list))
     "procedure:{any -> any/boolean} list [procedure] -> (list:matches list:rest)
      splits the list into two lists, the first being a list of all beginning elements of \"a\" that consecutively matched
-     \"proc\", the second being the rest.
+     \"f\", the second being the rest.
      like srfi-1 span but the result is a list and not multiple return values"
-    (call-with-values (nullary (span proc a)) c))
+    (call-with-values (nullary (span f a)) c))
 
   (define (group-split-at-matches start-group? a)
     "procedure:{any -> boolean} list -> (list ...)

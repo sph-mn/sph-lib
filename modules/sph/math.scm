@@ -23,7 +23,7 @@
   (define pi (* 4 (atan 1)))
 
   (define (bezier-curve n . points)
-    "number:0..1 (#(number ...) ...) ... -> #(number ...)
+    "number:0..1 #(number ...) ... -> #(number ...)
      get a point for a bezier curve at fractional offset n.
      no limit on the number of control points.
      no limit on the dimension of point vectors.
@@ -147,12 +147,12 @@
             (linear-interpolation sub-n p1 p2))))))
 
   (define* (elliptical-arc n p1 p2 rx ry #:optional (rotation 0) large-arc sweep)
-    "number:0..1 vector vector number number number:radians boolean boolean -> (vector . calculated-values)
-     calculated-values: ((symbol:start-angle/end-angle/angle/center/radius-x/radius-y number) ...)
+    "number:0..1 vector vector number number number:radians boolean boolean -> (vector . extra-calculated-values)
+     extra-calculated-values: ((symbol:start-angle/end-angle/angle/center/radius-x/radius-y number) ...)
      return a point on an elliptical arc at fractional offset n.
      modeled after the svg path arc command.
      code translated from https://github.com/MadLittleMods/svg-curve-lib"
-    ; there seems to be a bug with the sweep-angle
+    ; there seems to be a bug in this version with the sweep-angle
     (cond ((equal? p1 p2) p1) ((or (= 0 rx) (= 0 ry)) (linear-interpolation n p1 p2))
       (else
         (let*
