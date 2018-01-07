@@ -29,7 +29,7 @@
       (list) a))
 
   (define* (group a #:optional (accessor identity))
-    "procedure list -> ((any:group-key any:group-value ...):group ...)
+    "list [procedure:{any -> any}] -> ((any:group-key any:group-value ...):group ...)
      groups entries by unique result values of accessor.
      by default accessor is identity and groups equal elements.
      returns an association list with one entry for each group with the value as key and related values as value"

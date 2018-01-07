@@ -33,6 +33,7 @@
       (let ((left n) (right (- 1 n)))
         ; length of points is reduced by one for each recursive call
         (apply bezier-curve n
+          ; use of pair-fold to check for a next element
           (pair-fold-right
             (l (a result)
               ; ignore last point

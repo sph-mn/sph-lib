@@ -895,7 +895,7 @@
 
   (define (produce f . a)
     "procedure:{any ... -> any} list ... -> list
-     apply \"f\" with each ordered combination of elements from all lists, the cartesian product,
+     apply \"f\" to each ordered combination of elements from all lists, the cartesian product,
      and return the results in a list.
      for example (produce f (1 2) (4 5) (6)) is equivalent to ((f 1 4 6) (f 1 5 6) (f 2 4 6) (f 2 5 6))"
     ; example of a less featureful implementation: (define (produce f a b) (map (l (a) (map (l (b) (f a b)) b)) a))

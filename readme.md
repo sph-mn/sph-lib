@@ -15,6 +15,8 @@ see more options using
 ./exe/install --help
 ```
 
+all that is necessary is to put the paths under modules/ into a directory that is listed in $GUILE_LOAD_PATH
+
 ## extended
 if you intend to use (sph process create) also call the following before install:
 ```
