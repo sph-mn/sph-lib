@@ -18,7 +18,7 @@
       current-error-port
       string-drop-right
       string-drop)
-    (only (sph list) list-set-match-contains?)
+    (only (sph list) list-logical-contains?)
     (only (sph string)
       any->string-write
       any->string
@@ -53,6 +53,6 @@
         (l (log-route)
           (if
             (or (eq? (q all) (vector-first log-route))
-              (list-set-match-contains? categories (vector-first log-route)))
+              (list-logical-contains? categories (vector-first log-route)))
             (apply-log-route log-route categories arguments)))
         log-routes))))

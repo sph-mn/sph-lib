@@ -1,4 +1,4 @@
-; Copyright (C) 2010-2017 sph <sph@posteo.eu>
+; Copyright (C) 2010-2018 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -82,6 +82,9 @@
     list-index-value
     list-indices
     list-let
+    list-logical-condition?
+    list-logical-contains?
+    list-logical-match
     list-page
     list-prefix?
     list-q
@@ -91,9 +94,6 @@
     list-select
     list-set-equal?
     list-set-eqv?
-    list-set-match-condition?
-    list-set-match-contains?
-    list-set-match-iterate
     list-sort-by-list
     list-sort-with-accessor
     list-suffix?
@@ -701,42 +701,39 @@
      like \"list-set-equal?\" but uses \"eqv?\" for element equality comparison"
     (apply lset= eqv? a))
 
-  (define (list-set-eqv? . a)
+  (define (list-set-eq? . a)
     "list ... -> boolean
      like \"list-set-equal?\" but uses \"eq?\" for element equality comparison"
     (apply lset= eq? a))
 
-  (define (list-set-match-contains? a condition)
+  (define (list-logical-contains? a condition)
     "list list -> boolean
-     test for value inclusion in list by a possibly nested condition list like ([or/and/not] value/match-condition-tree ...).
+     test for value inclusion with a condition list like ([or/and/not] value/condition ...).
      example:
-     (list-set-match-contains? (list 1 2 3) (quote (and 2 3 (or 4 1 5) (not 8)))) -> #t"
-    (list-set-match-iterate (l (b) (contains? a b)) condition))
+     (list-logical-contains? (list 1 2 3) (quote (and 2 3 (or 4 1 5) (not 8)))) -> #t"
+    (list-logical-match (l (b) (contains? a b)) condition))
 
-  (define (list-set-match-iterate match-one? condition)
+  (define (list-logical-match match-one? condition)
     "procedure:{any -> boolean} list -> false/any:last-sub-condition-result
-     evaluate a possibly nested condition list like for \"list-set-match-contains?\".
-     checking if \"match-one?\" is true for condition values in their relative condition relationships (for example or, and or not).
-     if any call to match-one? in a required context (for example \"and\") is false, false is returned.
-     \"match-one?\" is called for each individual element of the \"condition\" list that is not a condition name prefix symbol,
-     and its boolean results are automatically used for the condition.
-     condition: ([or/and/not] value/condition ...)"
+     match a logical condition that is a possibly nested list with and/or/not symbol prefixes.
+     match-one? is called for each element in condition that is not a condition prefix.
+     returns false early if a required part of the condition does not match.
+     condition: ([symbol:and/or/not] any/condition ...)
+     example
+       (list-logical-match (l (b) (contains? somelist b)) (q (and 1 2 (or (and 3 4) (and 5 6)))))"
     (letrec
-      ( (list-set-match-iterate-internal
-          (let
-            (match-one?
-              (l (a)
-                ((if (list-set-match-condition? a) list-set-match-iterate-internal match-one?) a)))
+      ( (match
+          (let (match-one? (l (a) ((if (list-logical-condition? a) match match-one?) a)))
             (l (a)
               (if (null? a) #f
                 (case (first a) ((or) (any match-one? (tail a)))
                   ((and) (every match-one? (tail a))) ((not) (not (any match-one? (tail a))))
                   (else (any match-one? (list a)))))))))
-      (list-set-match-iterate-internal condition)))
+      (match condition)))
 
-  (define (list-set-match-condition? a)
+  (define (list-logical-condition? a)
     "any -> boolean
-     true if \"a\" is a list-set-match condition"
+     true if \"a\" is a list-logical condition"
     (if (list? a) (if (null? a) #f (case (first a) ((or and not) #t) (else #f))) #f))
 
   (define* (list-sort-by-list order a #:optional (accessor identity))

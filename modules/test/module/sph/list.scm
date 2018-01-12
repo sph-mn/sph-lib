@@ -108,7 +108,7 @@
     (list-select
       ((1 2 3 4 5) (1 3 4))
       (2 4 5))
-    (list-set-match-contains?
+    (list-logical-contains?
       ((1 2 3) (or 5 4 3 6)) #t
       ((1 2 3) (or 5 4 6)) #f
       ((1 2 3) (and 2 3 4)) #f
@@ -116,7 +116,7 @@
       ((1 2 3) (or (and 2 4) (and 2 3))) #t
       ((1 2 3) (or (and 2 4) (and 2 5))) #f
       ((a b) (and b c)) #f)
-    (list-set-match-condition?
+    (list-logical-condition?
       ((and 3 4)) #t
       ((andx 3 4)) #f)
     (list-index-value
