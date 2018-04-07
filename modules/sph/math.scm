@@ -33,7 +33,7 @@
       (let ((left n) (right (- 1 n)))
         ; length of points is reduced by one for each recursive call
         (apply bezier-curve n
-          ; use of pair-fold to check for a next element
+          ; use of pair-fold to check for following elements
           (pair-fold-right
             (l (a result)
               ; ignore last point
@@ -153,7 +153,7 @@
      return a point on an elliptical arc at fractional offset n.
      modeled after the svg path arc command.
      code translated from https://github.com/MadLittleMods/svg-curve-lib"
-    ; there seems to be a bug in this version with the sweep-angle
+    ; there seems to be a bug in the scheme version with the sweep-angle
     (cond ((equal? p1 p2) p1) ((or (= 0 rx) (= 0 ry)) (linear-interpolation n p1 p2))
       (else
         (let*
