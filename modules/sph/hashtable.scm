@@ -143,7 +143,7 @@
   (define-syntax-rules ht-create-eq
     ; like hashtable, but create a hashtable that uses eq? as a comparison function
     (() (ht-make-eq))
-    ((associations ...) (ht-from-list (quote-odd associations ...) eq? ht-hash-symbol)))
+    ((associations ...) (ht-from-list (quote-odd associations ...) eq? ht-hash-equal)))
 
   (define-syntax-rules ht-create-eqv (() (ht-make-eqv))
     ; not the best hash function

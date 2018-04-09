@@ -866,7 +866,7 @@
     (reverse (let loop ((n 0) (r (list))) (if (< n count) (loop (+ 1 n) (pair (f n) r)) r))))
 
   (define (fold-integers count init f)
-    "integer {integer -> any} -> list
+    "integer {integer memo -> any} -> memo
      fold over integers from 0 to count - 1"
     (let loop ((n 0) (r init)) (if (< n count) (loop (+ 1 n) (f n r)) r)))
 
