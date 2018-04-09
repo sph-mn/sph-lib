@@ -36,12 +36,14 @@
 
   (define config-env (environment (q (sph))))
 
-  (define* (config-read port #:optional (eval-environment config-env))
-    (tree-map-lists-self
-      (l (a)
-        (if (null? a) (ht-make-eq 0)
-          (if (eq? (q ..) (first a)) (tail a) (ht-from-list a eq? ht-hash-symbol))))
-      (eval (list (q quasiquote) (port->datums port)) eval-environment)))
+  (define* (config-read port #:key no-nesting (eval-environment config-env))
+    (let (data (eval (list (q quasiquote) (port->datums port)) eval-environment))
+      (if no-nesting (ht-from-list data eq? ht-hash-symbol)
+        (tree-map-lists-self
+          (l (a)
+            (if (null? a) (ht-make-eq 0)
+              (if (eq? (q ..) (first a)) (tail a) (ht-from-list a eq? ht-hash-symbol))))
+          data))))
 
   (define (config-write a port) "experimental"
     (each (l (a) (write a port) (newline)) (ht-alist a (inf))))

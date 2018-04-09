@@ -177,8 +177,7 @@
           (raise (q not-a-sql-where-condition))))))
 
   (define (sql-insert-values? a) "any -> boolean"
-    (if (or (string? a) (every (l (a) (or (and (pair? a) (not (list? a))) (string? a))) a))
-      #t #f))
+    (if (or (string? a) (every (l (a) (or (and (pair? a) (not (list? a))) (string? a))) a)) #t #f))
 
   (define (sql-where-condition-column? expr) "any -> boolean"
     (and (list? expr) (in-between? (length expr) 1 5)
@@ -317,7 +316,10 @@
         columns)
       (if add (string-append "," add) "") ")"))
 
-  (define (sql-create-index name table-name . columns) "string string string ... -> string"
-    (string-append "create index " name " on " table-name " (" (string-join columns ",") ")"))
+  (define* (sql-create-index name table-name columns #:optional (replace #t))
+    "string string string ... -> string"
+    (string-append "create index" (if replace "" " if not exists ")
+      name " on " table-name " (" (string-join columns ",") ")"))
 
-  (define (sql-delete-table table-name) "string -> string" (string-append "drop table " table-name)))
+  (define (sql-delete-table table-name) "string -> string"
+    (string-append "drop table if exists " table-name)))

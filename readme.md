@@ -1,5 +1,6 @@
 # sph-lib
 see also [sph.mn](http://sph.mn/c/view/2u)
+
 # dependencies
 * [gnu guile](https://www.gnu.org/software/guile/) >= 2
 * for the installation executable: shell
@@ -37,7 +38,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph install) - program and library installer
 * (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
-* (sph lang itpn) - helpers for working with parsed itpn
 * (sph lang parser type-signature) - a parser and writer for the sph type signature notation
 * (sph lang plcss) - s-expression language that compiles to css
 * (sph lang scm-format) - format scheme code
@@ -90,6 +90,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph lang config) - a scheme syntax configuration file format for associative data structures
 * (sph lang ecmascript expressions) - create ecmascript syntax strings
 * (sph lang indent-syntax) - converting to and from strings with indented lines
+* (sph lang itpn) - helpers for working with parsed itpn
 * (sph lang itml eval) - evaluate itml inline code expressions and possibly translate to a new format
 * (sph lang itml eval env plaintext)
 * (sph lang itml eval env shtml)
@@ -133,3 +134,8 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph web html)
 * (sph web http)
 * (sph web shtml) - helpers to create html as sxml
+
+# documentation
+* most procedures and modules have docstrings. extracted documentation can be browsed on [sph.mn](http://sph.mn/c/view/2u)
+* modules export the description as a string variable named like the module name and "description" joined with minus. for example (sph vector) exports sph-vector-description
+* "other/highlights" is a newline separated list of module names to include under "highlights" when creating a module listing with "exe/list-modules"

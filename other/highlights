@@ -5,7 +5,6 @@
 (sph filesystem versioning)
 (sph install)
 (sph lang itml)
-(sph lang itpn)
 (sph lang parser type-signature)
 (sph lang plcss)
 (sph lang scm-format)

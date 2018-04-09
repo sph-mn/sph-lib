@@ -912,9 +912,9 @@
      there should be as many lists as mappers.
      accepts multiple lists, multiple mappers and non-list arguments.
      example:
-       (produce-controlled f (f-1 f-2 f-3) (1 2) (4 5) (6 7))
+       (produce-controlled f (f1 f2 f3) (1 2) (4 5) (6 7))
      is equivalent to
-       (f-1 (lambda (e-1) (f-2 (lambda (e-2) (f-3 (lambda (e-3) (f e-1 e-2 e-3)) (6 7))) (4 5))) (1 2))"
+       (f1 (lambda (a) (f2 (lambda (b) (f3 (lambda (c) (f a b c)) (6 7))) (4 5))) (1 2))"
     (let loop ((rest-mappers mappers) (rest-lists (map any->list lists)) (a (list)))
       (if (null? rest-mappers) (apply f a)
         ( (first rest-mappers)
