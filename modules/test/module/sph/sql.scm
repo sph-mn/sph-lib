@@ -6,24 +6,6 @@
       "a" "'a'"
       "\"'mystring'\"\""
       "'\"''mystring''\"\"'")
-    (sql-where-expr
-      ;pair
-      ((("a" 1)))
-      "a=1"
-      ;implicit alternating operator
-      ((("a" (1 2 (3 (4 5) 6)))))
-      "(a=1 or a=2 or (a=3 and a in(4,5) and a=6))"
-      ;not
-      ((not ("a" 1)))
-      "not a=1"
-      ;nested row-expr
-      ((every (any (not ("a" 1)) (not (greater "b" 2))) (any (not ("a" 1)) (not (less "b" 2)))))
-      "(not a=1 or not b>2) and (not a=1 or not b<2)"
-      ;null
-      ((("a" null)))
-      "a=NULL"
-      (((("a" "b") null)))
-      "(a=NULL or b=NULL)")
     (sql-create-table
       ("t" "c")
       "create table t(c)")
@@ -43,4 +25,22 @@
       "insert into t(a,b)values(1,'2')")
     (sql-update
       ("t" "c")
-      "update t set c")))
+      "update t set c")
+    (sql-where-condition
+      ((and (or (not ("a" 1)) (not (greater "b" 2))) (or (not ("a" 1)) (not (less "b" 2)))))
+      "(not a=1 or not b>2) and (not a=1 or not b<2)"
+      ;pair
+      ((("a" 1)))
+      "a=1"
+      ;implicit alternating operator
+      ((("a" (1 2 (3 (4 5) 6)))))
+      "(a=1 or a=2 or (a=3 and a in(4,5) and a=6))"
+      ;not
+      ((not ("a" 1)))
+      "not a=1"
+      ;nested row-expr
+      ;null
+      ((("a" null)))
+      "a=NULL"
+      (((("a" "b") null)))
+      "(a=NULL or b=NULL)")))
