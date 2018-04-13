@@ -336,7 +336,7 @@
 
   (define (tree-filter-flat predicate a)
     "procedure:{any -> boolean/any} list -> list
-     results in a possibly flat list of all list and non-lists elements of tree
+     results in a flat list of all list and non-lists elements of tree
      for which predicate returned true"
     (let loop ((rest a) (r (list)))
       (if (null? rest) r

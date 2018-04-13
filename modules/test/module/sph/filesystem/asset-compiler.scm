@@ -1,6 +1,6 @@
 (define-test-module (test module sph filesystem asset-compiler)
   (import
-    (sph base)
+    (sph common)
     (sph record)
     (sph filesystem asset-compiler))
 

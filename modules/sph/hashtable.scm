@@ -35,6 +35,7 @@
     ht-fold-right
     ht-from-alist
     ht-from-list
+    ht-from-tree
     ht-hash-equal
     ht-hash-function
     ht-hash-string
@@ -250,8 +251,16 @@
      example
      (ht-ref (ht-from-list (list 'a 1 'b 2)) 'b #f)
      -> 2"
-    (let ((ht (ht-make hash-proc equal-proc)))
-      (fold (l (e r) (if r (begin (ht-set! ht r e) #f) e)) #f a) ht))
+    (let (result (ht-make hash-proc equal-proc))
+      ; select key and value alternatingly
+      (fold (l (value key) (if key (begin (ht-set! result key value) #f) value)) #f a) result))
+
+  (define* (ht-from-tree a #:optional (equal-proc equal?) (hash-proc ht-hash-equal))
+    "list [procedure:{a b -> boolean} procedure] -> rnrs-hashtable
+     like ht-from-list but also converts nested lists to nested hashtables"
+    (let (result (ht-make hash-proc equal-proc))
+      ; select key and value alternatingly
+      (fold (l (value key) (if key (begin (ht-set! result key value) #f) value)) #f a) result))
 
   (define (ht-select a keys) (map (l (b) (ht-ref a b)) keys))
 

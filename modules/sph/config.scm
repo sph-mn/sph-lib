@@ -13,7 +13,7 @@
     sph-config-object)
   (import
     (guile)
-    (sph base)
+    (sph common)
     (sph tree)
     (only (rnrs base) set!))
 

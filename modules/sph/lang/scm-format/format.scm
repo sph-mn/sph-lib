@@ -24,7 +24,7 @@
   (import
     (guile)
     (ice-9 match)
-    (sph base)
+    (sph common)
     (sph lang scm-format base)
     (sph tree))
 

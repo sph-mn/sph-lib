@@ -40,6 +40,7 @@
     each-slice
     each-with-index
     every-map
+    every-fold
     every-or-index
     false-if-null
     filter-append-map
@@ -221,10 +222,10 @@
     "procedure:{any:list-element ... -> any} procedure:{any -> boolean} any list ... -> list/false
      map unless \"stop?\" is true for a map result. result in \"default\" if \"stop?\" is true"
     (if (any null? a) (list)
-      (let loop ((rest (map tail a)) (e (apply f (map first a))) (init (list)))
-        (if (stop? e) default
-          (if (any null? rest) (append init e)
-            (loop (map tail rest) (apply f (map first rest)) (append init e)))))))
+      (let loop ((rest (map tail a)) (b (apply f (map first a))) (init (list)))
+        (if (stop? b) default
+          (if (any null? rest) (append init b)
+            (loop (map tail rest) (apply f (map first rest)) (append init b)))))))
 
   (define (non-empty-list? a)
     "any -> boolean
@@ -389,6 +390,11 @@
     "procedure:{any -> any} list ... -> list/false
      like map but results in false if any result of f is not a true value"
     (apply map-unless f not #f a))
+
+  (define (every-fold f state . a)
+    "procedure:{any:state any:element ... -> any:next-state} list:elements ... -> any:state/false
+     like fold but results in false if any result of f is not a true value"
+    (apply fold-unless f not #f state a))
 
   (define (compact a)
     "list -> list

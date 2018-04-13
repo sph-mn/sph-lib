@@ -1,4 +1,4 @@
-; Copyright (C) 2010-2017 sph <sph@posteo.eu>
+; Copyright (C) 2010-2018 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -205,8 +205,7 @@
 
   (define (alist-update a b)
     "list list -> list
-     update existing entries of a with cWARNING: (sph base): `alist-delete' imported from both (srfi srfi-1) and (sph alist)
-orresponding entries of b"
+     update existing entries of a with corresponding entries of b"
     (map
       (l (pair-1)
         ((l (value) (if value (pair (first pair-1) value) pair-1)) (alist-ref b (first pair-1))))

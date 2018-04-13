@@ -22,7 +22,7 @@
     sph-filesystem-asset-compiler-description)
   (import
     (guile)
-    (sph base)
+    (sph common)
     (sph record))
 
   (define sph-filesystem-asset-compiler-description

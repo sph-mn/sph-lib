@@ -230,7 +230,7 @@
      limit: string/(integer:offset integer:limit)
      offset: string/integer"
     (alist-bind options (order limit offset begin end)
-      (pair (if begin (string-append begin " ") "")
+      (pair (if begin (string-append " " begin) "")
         (string-append
           (if offset
             (string-append " offset " (if (integer? offset) (number->string offset) offset)) "")

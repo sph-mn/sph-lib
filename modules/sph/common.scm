@@ -1,6 +1,6 @@
 (import (sph module))
 
-(module-compose (sph base) (except (srfi srfi-1) map)
+(module-compose (sph common) (except (srfi srfi-1) map)
   (rnrs sorting) (rnrs exceptions)
   (sph alist)
   (sph filesystem) (sph hashtable)
