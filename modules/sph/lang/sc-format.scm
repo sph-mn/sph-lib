@@ -36,8 +36,7 @@
       ((_ name/type ...) ((sc-f 1 2 2) a recurse config indent))))
 
   (define (format-pre-define a recurse config indent)
-    (match a ((_ (name ...) body) ((sc-f 2 1 0) a recurse config indent))
-      ((_ (name ...) body ...) ((sc-f 2 1 1) a recurse config indent))
+    (match a ((_ name) ((sc-f 2 1 0) a recurse config indent))
       ((_ name value) ((sc-f 3 1 0) a recurse config indent))
       ((_ name/type ...) ((sc-f 1 2 2) a recurse config indent))))
 
