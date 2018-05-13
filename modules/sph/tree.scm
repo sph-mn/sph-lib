@@ -139,7 +139,7 @@
 
   (define (tree-any f a)
     "procedure list -> false/any
-     call f with each tree list and leaf from top to bottom and return the first true result of f.
+     call f with each tree element list or leaf from top to bottom and return the first true result of f.
      can be used to extract single elements from tree. aliased as tree-any and tree-extract"
     (tree-finder any f a))
 

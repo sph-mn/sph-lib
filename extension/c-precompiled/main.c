@@ -1,9 +1,24 @@
 
+/* code for creating a guile extension as a shared library.
+  for features that can not adequately be written in guile scheme, for example
+  child process creation */
+/* set gnu source to include functions that arent part of the c standard (dirfd)
+ */
 #define _GNU_SOURCE 1
-#define debug_log(format, ...)                                                 \
-  fprintf(stderr, "%s:%d " format "\n", __func__, __LINE__, __VA_ARGS__)
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <libguile.h>
+#include <linux/limits.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#ifndef OPEN_MAX
+#define OPEN_MAX 1024
+#endif
 #define imht_set_key_t int
 #define imht_set_can_contain_zero_p 0
+/* include imht-set to use for tracking file descriptors to keep after fork */
 #ifndef sc_included_stdlib_h
 #include <stdlib.h>
 #define sc_included_stdlib_h
@@ -72,8 +87,8 @@ void imht_set_destroy(imht_set_t *a) {
 #endif
 /** returns the address of the element in the set, 0 if it was not found.
   caveat: if imht-set-can-contain-zero? is defined, which is the default,
-  dereferencing a returned address for the found value 0 will return 1 instead
-*/
+  pointer-geterencing a returned address for the found value 0 will return 1
+  instead */
 imht_set_key_t *imht_set_find(imht_set_t *a, imht_set_key_t value) {
   imht_set_key_t *h = ((*a).content + imht_set_hash(value, (*a)));
   if ((*h)) {
@@ -179,17 +194,67 @@ imht_set_key_t *imht_set_add(imht_set_t *a, imht_set_key_t value) {
     return (h);
   };
 };
-#include <dirent.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <libguile.h>
-#include <linux/limits.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#ifndef OPEN_MAX
-#define OPEN_MAX 1024
-#endif
+#define debug_log(format, ...)                                                 \
+  fprintf(stderr, "%s:%d " format "\n", __func__, __LINE__, __VA_ARGS__)
+#define move_fd(a)                                                             \
+  do {                                                                         \
+    a = dup(a);                                                                \
+  } while ((errno == EINTR))
+#define dup2_fd(old, new)                                                      \
+  do {                                                                         \
+    dup2(old, new);                                                            \
+  } while ((errno == EINTR));                                                  \
+  close(old)
+#define close_fd(scm, a)                                                       \
+  if ((scm == SCM_BOOL_F)) {                                                   \
+    close(a);                                                                  \
+  }
+/** variable integer null/path ->
+    if "a" is -1, set it to a newly opened filed descriptor for path or
+   /dev/null */
+#define ensure_fd(a, open_flags, path)                                         \
+  if ((-1 == a)) {                                                             \
+    a = open((path ? path : "/dev/null"), open_flags);                         \
+  }
+/** SCM int-variable char*-variable ->
+    set fd to a file descriptor from an SCM argument or -1.
+    if "a" is a path string, set "path" */
+#define port_argument_set_fd(a, fd, path)                                      \
+  if (scm_is_true(scm_port_p(a))) {                                            \
+    fd = scm_to_int(scm_fileno(a));                                            \
+  } else {                                                                     \
+    if (scm_is_integer(a)) {                                                   \
+      fd = scm_to_int(a);                                                      \
+    } else {                                                                   \
+      fd = -1;                                                                 \
+      if (scm_is_string(a)) {                                                  \
+        path = scm_to_locale_string(a);                                        \
+      };                                                                       \
+    };                                                                         \
+  }
+;
+/** integer integer integer ->
+    to be called in a new process */
+#define set_standard_streams(input, output, error)                             \
+  if ((input > 0)) {                                                           \
+    if ((0 == output)) {                                                       \
+      move_fd(output);                                                         \
+    };                                                                         \
+    if ((0 == error)) {                                                        \
+      move_fd(error);                                                          \
+    };                                                                         \
+    dup2_fd(input, 0);                                                         \
+  };                                                                           \
+  if ((output > 1)) {                                                          \
+    if ((1 == error)) {                                                        \
+      move_fd(error);                                                          \
+    };                                                                         \
+    dup2_fd(output, 1);                                                        \
+  };                                                                           \
+  if ((error > 2)) {                                                           \
+    dup2_fd(error, 2);                                                         \
+  }
+;
 /** integer imht-set ->
   try to close all used file descriptors greater than or equal to start-fd.
   tries to use one of /proc/{process-id}/fd, sysconf and getdtablesize.
@@ -235,27 +300,6 @@ void close_file_descriptors_from(int start_fd, imht_set_t *keep) {
     };
   };
 };
-#define move_fd(a)                                                             \
-  do {                                                                         \
-    a = dup(a);                                                                \
-  } while ((errno == EINTR))
-#define dup2_fd(old, new)                                                      \
-  do {                                                                         \
-    dup2(old, new);                                                            \
-  } while ((errno == EINTR));                                                  \
-  close(old)
-#define close_fd(scm, a)                                                       \
-  if ((scm == SCM_BOOL_F)) {                                                   \
-    close(a);                                                                  \
-  }
-/** variable integer null/path ->
-  if "a" is -1, set it to a newly opened filed descriptor for path or /dev/null
-*/
-#define ensure_fd(a, open_flags, path)                                         \
-  if ((-1 == a)) {                                                             \
-    a = open((path ? path : "/dev/null"), open_flags);                         \
-  }
-;
 /** free a null pointer terminated char** */
 void free_env(char **a) {
   char **a_temp = a;
@@ -296,45 +340,6 @@ char **scm_string_list_to_string_pointer_array(SCM scm_a) {
   };
   return (result);
 };
-/** SCM int-variable char*-variable ->
-  set fd to a file descriptor from an SCM argument or -1.
-  if "a" is a path string, set "path" */
-#define port_argument_set_fd(a, fd, path)                                      \
-  if (scm_is_true(scm_port_p(a))) {                                            \
-    fd = scm_to_int(scm_fileno(a));                                            \
-  } else {                                                                     \
-    if (scm_is_integer(a)) {                                                   \
-      fd = scm_to_int(a);                                                      \
-    } else {                                                                   \
-      fd = -1;                                                                 \
-      if (scm_is_string(a)) {                                                  \
-        path = scm_to_locale_string(a);                                        \
-      };                                                                       \
-    };                                                                         \
-  }
-;
-/** integer integer integer ->
-  to be called in a new process */
-#define set_standard_streams(input, output, error)                             \
-  if ((input > 0)) {                                                           \
-    if ((0 == output)) {                                                       \
-      move_fd(output);                                                         \
-    };                                                                         \
-    if ((0 == error)) {                                                        \
-      move_fd(error);                                                          \
-    };                                                                         \
-    dup2_fd(input, 0);                                                         \
-  };                                                                           \
-  if ((output > 1)) {                                                          \
-    if ((1 == error)) {                                                        \
-      move_fd(error);                                                          \
-    };                                                                         \
-    dup2_fd(output, 1);                                                        \
-  };                                                                           \
-  if ((error > 2)) {                                                           \
-    dup2_fd(error, 2);                                                         \
-  }
-;
 /** see init-sph-lib for documentation */
 SCM scm_primitive_process_create(SCM scm_executable, SCM scm_arguments,
                                  SCM scm_input_port, SCM scm_output_port,
