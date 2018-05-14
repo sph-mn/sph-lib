@@ -275,7 +275,7 @@
      resolves the directory references \".\" and \"..\" as well as symlinks and removes unnecessary slashes.
      named realpath* because it does not use the posix realpath because guile currently does not include it.
      the foreign function interface could be an alternative"
-    ;/.. = /
+    ; /.. = /
     (and-let* ((path (path->full-path path)) (path-list (path->list path)))
       (let loop ((rest (tail path-list)) (result (list "")))
         (if (null? rest) (list->path (reverse result))

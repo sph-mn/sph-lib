@@ -10,7 +10,7 @@
     (sph string)
     (only (guile) inf))
 
-  ; formatter for sc (sph-sc) source code
+  ; formatter for sc (sph-sc) source code. also serves as an example of how custom formatters can be defined
   (define-syntax-rule (map-recurse recurse a indent) (map (l (a) (first (recurse a indent))) a))
   (define (inf-if-zero a) (if (zero? a) (inf) a))
 
@@ -51,13 +51,14 @@
       begin (sc-f 1 1 1)
       case (sc-f 3 1 1)
       case* (sc-f 3 1 1)
+      declare (sc-f 1 2 2)
       define format-define
-      define-type (sc-f 2 1 0)
       do-while (sc-f 2 1 1)
       if (sc-f 2 1 0)
       if* (sc-f 2 1 0)
       label (sc-f 2 1 1)
       pre-define format-pre-define
+      pre-define-if-not-defined format-pre-define
       pre-include-once (sc-f 1 2 2)
       pre-let format-let
       range-comment format-range-comment
@@ -65,7 +66,10 @@
       scsh-block-comment format-scsh-block-comment
       semicolon-comment format-semicolon-comment
       set format-set
-      struct (sc-f 1 1 1) struct-pointer-set (sc-f 2 2 0) struct-set (sc-f 2 2 0) while (sc-f 2 1 1))
+      struct (sc-f 1 1 1)
+      struct-pointer-set (sc-f 2 2 0)
+      struct-set (sc-f 2 2 0)
+      while (sc-f 2 1 1))
     format
     (ht-create-symbol indent-string (string-multiply " " 2)
       max-chars-per-line 100
