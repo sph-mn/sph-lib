@@ -8,6 +8,7 @@
     format-library
     format-list
     format-list-assoc
+    format-list-f
     format-quasiquote
     format-quasisyntax
     format-quote
@@ -314,6 +315,22 @@
             (q max-exprs-per-line-start) start
             (q max-exprs-per-line-middle) middle (q max-exprs-per-line-end) end)))
       current-indent))
+
+  (define (inf-if-zero a) (if (zero? a) (inf) a))
+
+  (define (format-list-f start mid end)
+    "integer integer integer -> procedure:{any:expression recurse config indent -> (result false)}
+     return a function for descend-prefix->format-f that formats a list with the given start/mid/end expression distribution"
+    (let ((start (inf-if-zero start)) (mid (inf-if-zero mid)) (end (inf-if-zero end)))
+      (l (a recurse config indent)
+        (list
+          (format-application (map-recurse recurse a indent)
+            (ht-copy* config
+              (l (a)
+                (ht-set-multiple! a (q max-exprs-per-line-start)
+                  start (q max-exprs-per-line-middle) mid (q max-exprs-per-line-end) end)))
+            indent)
+          #f))))
 
   (define (format-list-assoc a recurse config current-indent)
     (list

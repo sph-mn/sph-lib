@@ -48,23 +48,25 @@
       sort-import #t sort-definitions #f separate-unexported-definitions #f))
 
   (define-as descend-prefix->format-f ht-create-symbol
-    semicolon-comment format-semicolon-comment
-    scsh-block-comment format-scsh-block-comment
+    case (format-list-f 2 1 1)
+    cond (format-list-f 1 1 1)
+    define format-lambda
+    define* format-lambda
+    define-syntax-case format-lambda
+    define-syntax-rule format-lambda
+    define-test-module format-test-module
     hash-bang format-hash-bang
-    range-comment format-range-comment
     lambda format-lambda
-    quote format-quote
-    unquote format-unquote
-    syntax format-syntax
-    unsyntax format-unsyntax
-    quasiquote format-quasiquote
-    quasisyntax format-quasisyntax
     let format-let
     let-macro format-list-assoc
-    define format-lambda
-    define-syntax-rule format-lambda
-    define-syntax-case format-lambda
-    define* format-lambda library format-library define-test-module format-test-module)
+    library format-library
+    quasiquote format-quasiquote
+    quasisyntax format-quasisyntax
+    quote format-quote
+    range-comment format-range-comment
+    scsh-block-comment format-scsh-block-comment
+    semicolon-comment format-semicolon-comment
+    syntax format-syntax unquote format-unquote unsyntax format-unsyntax)
 
   (define ascend-prefix->format-f (ht-create))
 
