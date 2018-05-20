@@ -34,13 +34,14 @@
     (ht-create-symbol
       ; (sc-f 1 1 0) is the default
       begin (sc-f 1 1 1)
+      for (sc-f 2 1 1)
       case (sc-f 3 1 1)
       case* (sc-f 3 1 1)
       declare format-set
       define format-define
       do-while (sc-f 2 1 1)
-      if (sc-f 2 1 0)
-      if* (sc-f 2 1 0)
+      if (sc-f 2 1 1)
+      if* (sc-f 2 1 1)
       label (sc-f 2 1 1)
       pre-define format-set
       pre-define-if-not-defined format-set
