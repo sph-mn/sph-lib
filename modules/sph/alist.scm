@@ -231,7 +231,7 @@
   (define-syntax-rule (alist-select-q-apply a (key ...) proc)
     (alist-select-apply a (quote (key ...)) proc))
 
-  (define-syntax-rule (alist-select-q a (key ...)) (alist-select a (quote (key ...))))
+  (define-syntax-rule (alist-select-q a key ...) (alist-select a (quote (key ...))))
   (define (alist-keys-map proc a) (map (l (a) (pair (proc (first a)) (tail a))) a))
 
   (define (alist-set a key value)

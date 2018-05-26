@@ -40,8 +40,8 @@
       declare format-set
       define format-define
       do-while (sc-f 2 1 1)
-      if (sc-f 2 1 1)
-      if* (sc-f 2 1 1)
+      if (sc-f 3 1 1)
+      if* (sc-f 3 1 1)
       label (sc-f 2 1 1)
       pre-define format-set
       pre-define-if-not-defined format-set
@@ -52,7 +52,7 @@
       scsh-block-comment format-scsh-block-comment
       semicolon-comment format-semicolon-comment
       set format-set
-      struct (sc-f 1 1 1) struct-pointer-set (sc-f 2 2 0) struct-set (sc-f 2 2 0) while (sc-f 2 1 1))
+      struct (sc-f 1 1 1) struct-pointer-set (sc-f 2 2 2) struct-set (sc-f 2 2 2) while (sc-f 2 1 1))
     format
     (ht-create-symbol indent-string (string-multiply " " 2)
       max-chars-per-line 100

@@ -43,6 +43,7 @@
     tree-contains?
     tree-each
     tree-each-leaf
+    tree-every
     tree-extract
     tree-filter
     tree-filter-flat
@@ -82,6 +83,7 @@
       1+
       compose
       identity
+      negate
       string-join)
     (only (sph alist) alist-ref)
     (only (sph list)
@@ -143,6 +145,7 @@
      can be used to extract single elements from tree. aliased as tree-any and tree-extract"
     (tree-finder any f a))
 
+  (define (tree-every f a) (not (tree-any (negate f) a)))
   (define tree-extract tree-any)
 
   (define (tree-each f a)
