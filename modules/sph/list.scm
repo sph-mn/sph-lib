@@ -39,8 +39,8 @@
     each-in-index-range
     each-slice
     each-with-index
-    every-map
     every-fold
+    every-map
     every-or-index
     false-if-null
     filter-append-map
@@ -732,15 +732,22 @@
           (let (match-one? (l (a) ((if (list-logical-condition? a) match match-one?) a)))
             (l (a)
               (if (null? a) #f
-                (case (first a) ((or) (any match-one? (tail a)))
-                  ((and) (every match-one? (tail a))) ((not) (not (any match-one? (tail a))))
+                (case (first a)
+                  ((or) (any match-one? (tail a)))
+                  ((and) (every match-one? (tail a)))
+                  ((not) (not (any match-one? (tail a))))
                   (else (any match-one? (list a)))))))))
       (match condition)))
 
   (define (list-logical-condition? a)
     "any -> boolean
      true if \"a\" is a list-logical condition"
-    (if (list? a) (if (null? a) #f (case (first a) ((or and not) #t) (else #f))) #f))
+    (if (list? a)
+      (if (null? a) #f
+        (case (first a)
+          ((or and not) #t)
+          (else #f)))
+      #f))
 
   (define* (list-sort-by-list order a #:optional (accessor identity))
     "list list -> list
@@ -945,7 +952,8 @@
      list with one element -> element
      list with two non-pair elements -> pair"
     (if (list? a)
-      (case (length a) ((1) (simplify (first a)))
+      (case (length a)
+        ((1) (simplify (first a)))
         ( (2)
           (let ((first-ele (first a)) (second-ele (tail a)))
             (if (or (pair? first-ele) (pair? second-ele)) a (pair (first a) (first (tail a))))))
@@ -996,8 +1004,9 @@
   (define (split-by-pattern-loop pattern expr prev-name prev-value r)
     "-> (matches result)
      the first pattern has already been matched and is passed with prev-name"
-    (if (null? pattern) (list (reverse (pair (pair prev-name prev-value) r)) expr)
-      (if (equal? (q ...) (first pattern))
+    (cond
+      ((null? pattern) (list (reverse (pair (pair prev-name prev-value) r)) expr))
+      ( (equal? (q ...) (first pattern))
         (split-by-pattern-match-ellipsis (tail pattern) expr
           (l (match rest-expr rest-pattern)
             (if match
@@ -1006,20 +1015,23 @@
                 (split-by-pattern-loop (tail rest-pattern) (tail rest-expr)
                   (first rest-pattern) (first rest-expr)
                   (pair (pair prev-name (pair prev-value match)) r)))
-              (list #f #f))))
-        (if (null? expr)
-          (if (and (= 2 (length pattern)) (equal? (q ...) (second pattern)))
-            (split-by-pattern-loop (list) expr prev-name prev-value r) (list #f #f))
-          (split-by-pattern-loop (tail pattern) (tail expr)
-            (first pattern) (first expr) (pair (pair prev-name prev-value) r))))))
+              (list #f #f)))))
+      ( (null? expr)
+        (if (and (= 2 (length pattern)) (equal? (q ...) (second pattern)))
+          (split-by-pattern-loop (list) expr prev-name prev-value r) (list #f #f)))
+      (else
+        (split-by-pattern-loop (tail pattern) (tail expr)
+          (first pattern) (first expr) (pair (pair prev-name prev-value) r)))))
 
   (define (split-by-pattern pattern a)
-    "(symbol symbol/ellipsis:... ...) list -> (list:matches list:rest)
-     basic, fast pattern matcher that only supports variables and possibly multiple ellipses.
-     binds values of list \"a\" to variables in pattern if pattern matches.
+    "(symbol symbol/ellipsis:... ...) list -> (list:((key . values) ...):matches list:rest)
+     basic matcher that only supports matching single or repeated elements with multiple ellipses.
+     creates alist elements for variables in pattern that match elements in list \"a\".
      the result is a list with two values: one for the match and one for the unmatched rest.
-     if pattern did not match, then both values are false.
-     unlike other pattern matchers, \"pattern\" is a list and not syntax and so can be passed as a variable"
+     if pattern did not match, then both values are false. if pattern is null, matches is null and rest is the input list.
+     unlike other pattern matchers, \"pattern\" is a list and not syntax and so can be passed as a variable
+     example
+       (split-by-pattern (quote (a b ... c)) (list 1 2 3 4)) -> (((a . 1) (b 2 3) (c . 4)) ())"
     (if (null? pattern) (list (list) a)
       (if (null? a) (list #f #f)
         (split-by-pattern-loop (tail pattern) (tail a) (first pattern) (first a) (list)))))
@@ -1027,7 +1039,12 @@
   (define (pattern-match-min-length a)
     "list -> integer
      takes a flat list with symbols and ellipses and counts the required parts of a pattern with
-     symbols interpreted as matching any element and ellipses to match zero or many occurences of the previous element"
+     symbols interpreted as matching any element and ellipses to match zero or many occurences of the previous element.
+     examples
+       ((a ...)) -> 0
+       ((a a ...)) -> 1
+       ((a ... b ...)) -> 0
+       ((a ... b ... c d)) -> 2"
     (first
       (iterate-three
         (l (p e n count)
@@ -1045,9 +1062,9 @@
 
   (define (group-split-at-matches start-group? a)
     "procedure:{any -> boolean} list -> (list ...)
-     wrap consecutive elements in lists with \"start-group?\" starting new lists.
+     wrap consecutive elements in lists. elements for which \"start-group?\" is true become the first element of a new list.
      example
-     (group-inline-prefixed integer? (list \"a\" \"b\" 1 \"c\" \"d\" 2 \"e\"))
+     (group-split-at-matches integer? (list \"a\" \"b\" 1 \"c\" \"d\" 2 \"e\"))
      ->
      ((\"a\" \"b\") (1 \"c\" \"d\") (2 \"e\"))"
     (let (not-start-group? (negate start-group?))

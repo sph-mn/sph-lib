@@ -1,4 +1,3 @@
-
 /* code for creating a guile extension as a shared library.
   for features that can not adequately be written in guile scheme, for example
   child process creation */
@@ -19,14 +18,8 @@
 #define imht_set_key_t int
 #define imht_set_can_contain_zero_p 0
 /* include imht-set to use for tracking file descriptors to keep after fork */
-#ifndef sc_included_stdlib_h
-#include <stdlib.h>
-#define sc_included_stdlib_h
-#endif
-#ifndef sc_included_inttypes_h
 #include <inttypes.h>
-#define sc_included_inttypes_h
-#endif
+#include <stdlib.h>
 #ifndef imht_set_key_t
 #define imht_set_key_t uint64_t
 #endif
@@ -69,13 +62,13 @@ uint8_t imht_set_create(size_t min_size, imht_set_t **result) {
     return (0);
   };
   min_size = imht_set_calculate_hash_table_size(min_size);
-  (*(*result)).content = calloc(min_size, sizeof(imht_set_key_t));
-  (*(*result)).size = min_size;
-  return (((*(*result)).content ? 1 : 0));
+  (*((*result))).content = calloc(min_size, sizeof(imht_set_key_t));
+  (*((*result))).size = min_size;
+  return (((*result)->content ? 1 : 0));
 };
 void imht_set_destroy(imht_set_t *a) {
   if (a) {
-    free((*a).content);
+    free(a->content);
     free(a);
   };
 };
@@ -90,7 +83,7 @@ void imht_set_destroy(imht_set_t *a) {
   pointer-geterencing a returned address for the found value 0 will return 1
   instead */
 imht_set_key_t *imht_set_find(imht_set_t *a, imht_set_key_t value) {
-  imht_set_key_t *h = ((*a).content + imht_set_hash(value, (*a)));
+  imht_set_key_t *h = (a->content + imht_set_hash(value, (*a)));
   if ((*h)) {
 #if imht_set_can_contain_zero_p
     if (((((*h) == value)) || ((0 == value)))) {
@@ -101,7 +94,7 @@ imht_set_key_t *imht_set_find(imht_set_t *a, imht_set_key_t value) {
       return (h);
     };
 #endif
-    imht_set_key_t *content_end = ((*a).content + ((*a).size - 1));
+    imht_set_key_t *content_end = (a->content + (a->size - 1));
     imht_set_key_t *h2 = (1 + h);
     while ((h2 < content_end)) {
       if (!(*h2)) {
@@ -120,7 +113,7 @@ imht_set_key_t *imht_set_find(imht_set_t *a, imht_set_key_t value) {
         return (h2);
       };
     };
-    h2 = (*a).content;
+    h2 = a->content;
     while ((h2 < h)) {
       if (!(*h2)) {
         return (0);
@@ -148,7 +141,7 @@ uint8_t imht_set_remove(imht_set_t *a, imht_set_key_t value) {
 /** returns the address of the added or already included element, 0 if there is
  * no space left in the set */
 imht_set_key_t *imht_set_add(imht_set_t *a, imht_set_key_t value) {
-  imht_set_key_t *h = ((*a).content + imht_set_hash(value, (*a)));
+  imht_set_key_t *h = (a->content + imht_set_hash(value, (*a)));
   if ((*h)) {
 #if imht_set_can_contain_zero_p
     if ((((value == (*h))) || ((0 == value)))) {
@@ -159,13 +152,13 @@ imht_set_key_t *imht_set_add(imht_set_t *a, imht_set_key_t value) {
       return (h);
     };
 #endif
-    imht_set_key_t *content_end = ((*a).content + ((*a).size - 1));
+    imht_set_key_t *content_end = (a->content + (a->size - 1));
     imht_set_key_t *h2 = (1 + h);
     while ((((h2 <= content_end)) && (*h2))) {
       h2 = (1 + h2);
     };
     if ((h2 > content_end)) {
-      h2 = (*a).content;
+      h2 = a->content;
       while (((h2 < h) && (*h2))) {
         h2 = (1 + h2);
       };
@@ -273,9 +266,9 @@ void close_file_descriptors_from(int start_fd, imht_set_t *keep) {
   if (((path_length > 0) &&
        ((((size_t)(path_length)) <= sizeof(path_proc_fd))) &&
        (directory = opendir(path_proc_fd)))) {
-    while (!(0 == (entry = readdir(directory)))) {
-      fd = strtol((*entry).d_name, &first_invalid, 10);
-      if (((!((*entry).d_name == first_invalid)) && (((*first_invalid) == 0)) &&
+    while (!(0 == entry = readdir(directory))) {
+      fd = strtol(entry->d_name, &first_invalid, 10);
+      if (((!(entry->d_name == first_invalid)) && ((*first_invalid == 0)) &&
            ((fd >= 0)) && (fd < INT_MAX) && ((fd >= start_fd)) &&
            (!(fd == dirfd(directory))) && !imht_set_contains_p(keep, fd))) {
         ((void)(close(((int)(fd)))));
@@ -314,8 +307,8 @@ int scm_list_to_imht_set(SCM scm_a, imht_set_t **result) {
     return (1);
   };
   while (!scm_is_null(scm_a)) {
-    if (!imht_set_add((*result), scm_to_int(SCM_CAR(scm_a)))) {
-      imht_set_destroy((*result));
+    if (!imht_set_add(*result, scm_to_int(SCM_CAR(scm_a)))) {
+      imht_set_destroy(*result);
       return (2);
     };
     scm_a = SCM_CDR(scm_a);
@@ -326,15 +319,15 @@ int scm_list_to_imht_set(SCM scm_a, imht_set_t **result) {
 char **scm_string_list_to_string_pointer_array(SCM scm_a) {
   int a_length = scm_to_int(scm_length(scm_a));
   char **result = malloc((sizeof(char *) * (1 + a_length)));
-  (*(result + a_length)) = 0;
+  result[a_length] = 0;
   char **result_pointer = result;
   while (!scm_is_null(scm_a)) {
     char *b;
     size_t b_length;
     b = scm_to_locale_stringn(SCM_CAR(scm_a), &b_length);
-    (*result_pointer) = malloc(((1 + b_length) * sizeof(char)));
-    memcpy((*result_pointer), b, b_length);
-    (*((*result_pointer) + b_length)) = 0;
+    *result_pointer = malloc(((1 + b_length) * sizeof(char)));
+    memcpy(*result_pointer, b, b_length);
+    (*result_pointer)[b_length] = 0;
     result_pointer = (1 + result_pointer);
     scm_a = SCM_CDR(scm_a);
   };

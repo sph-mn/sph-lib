@@ -18,9 +18,9 @@
 (sc-comment "include imht-set to use for tracking file descriptors to keep after fork")
 (sc-include "foreign/imht-set")
 
-(pre-define (debug-log format ...)
-  (fprintf stderr (pre-string-concat "%s:%d " format "\n") __func__ __LINE__ __VA_ARGS__)
-  (move-fd a)
+(pre-define
+  (debug-log format ...)
+  (fprintf stderr (pre-string-concat "%s:%d " format "\n") __func__ __LINE__ __VA_ARGS__) (move-fd a)
   (do-while (= errno EINTR)
     (set a (dup a)))
   (dup2-fd old new)
@@ -28,23 +28,25 @@
     (do-while (= errno EINTR)
       (dup2 old new))
     (close old))
-  (close-fd scm a)
-  (if (= scm SCM-BOOL-F) (close a))
+  (close-fd scm a) (if (= scm SCM-BOOL-F) (close a))
   (ensure-fd a open-flags path)
   (begin
     "variable integer null/path ->
     if \"a\" is -1, set it to a newly opened filed descriptor for path or /dev/null"
-    (if (= -1 a) (set a (open (if* path path "/dev/null") open-flags)))))
+    (if (= -1 a)
+      (set a
+        (open
+          (if* path path
+            "/dev/null")
+          open-flags)))))
 
 (pre-define (port-argument-set-fd a fd path)
   (begin
     "SCM int-variable char*-variable ->
     set fd to a file descriptor from an SCM argument or -1.
     if \"a\" is a path string, set \"path\""
-    (if (scm-is-true (scm-port? a))
-      (set fd (scm->int (scm-fileno a)))
-      (if (scm-is-integer a)
-        (set fd (scm->int a))
+    (if (scm-is-true (scm-port? a)) (set fd (scm->int (scm-fileno a)))
+      (if (scm-is-integer a) (set fd (scm->int a))
         (begin
           (set fd -1)
           (if (scm-is-string a) (set path (scm->locale-string a))))))))
@@ -70,11 +72,10 @@
   tries to use one of /proc/{process-id}/fd, sysconf and getdtablesize.
   if none of those is available, closes file descriptors from sart-fd
   to 1024 or OPEN_MAX if that as defined at compile time"
-  (define
+  (declare
     fd long
-    maxfd long)
-  (define-array path-proc-fd char (PATH_MAX))
-  (define
+    maxfd long
+    path-proc-fd (array char (PATH_MAX))
     directory DIR*
     path-length int
     entry
@@ -90,11 +91,11 @@
       (set directory (opendir path-proc-fd)))
     (begin
       (while (not (= 0 (set entry (readdir directory))))
-        (set fd (strtol (struct-pointer-get entry d-name) (address-of first-invalid) 10))
+        (set fd (strtol entry:d-name &first-invalid 10))
         (if
           (and
-            (not (= (struct-pointer-get entry d-name) first-invalid))
-            (= (pointer-get first-invalid) 0)
+            (not (= entry:d-name first-invalid))
+            (= *first-invalid 0)
             (>= fd 0)
             (< fd INT_MAX)
             (>= fd start-fd) (not (= fd (dirfd directory))) (not (imht-set-contains? keep fd)))
@@ -120,9 +121,9 @@
   (define a-length int (scm->uint32 (scm-length scm-a)))
   (if (not (imht-set-create (+ 3 a-length) result)) (return 1))
   (while (not (scm-is-null scm-a))
-    (if (not (imht-set-add (pointer-get result) (scm->int (SCM-CAR scm-a))))
+    (if (not (imht-set-add *result (scm->int (SCM-CAR scm-a))))
       (begin
-        (imht-set-destroy (pointer-get result))
+        (imht-set-destroy *result)
         (return 2)))
     (set scm-a (SCM-CDR scm-a)))
   (return 0))
@@ -131,18 +132,18 @@
   "returns a null pointer terminated char**"
   (define a-length int (scm->int (scm-length scm-a)))
   (define result char** (malloc (* (sizeof char*) (+ 1 a-length))))
-  (set (pointer-get result a-length) 0)
+  (set (array-get result a-length) 0)
   (define result-pointer char** result)
   (while (not (scm-is-null scm-a))
-    (define
+    (declare
       b char*
       b-length size-t)
     (set
-      b (scm->locale-stringn (SCM-CAR scm-a) (address-of b-length))
-      (pointer-get result-pointer) (malloc (* (+ 1 b-length) (sizeof char))))
-    (memcpy (pointer-get result-pointer) b b-length)
+      b (scm->locale-stringn (SCM-CAR scm-a) &b-length)
+      *result-pointer (malloc (* (+ 1 b-length) (sizeof char))))
+    (memcpy *result-pointer b b-length)
     (set
-      (pointer-get (pointer-get result-pointer) b-length) 0
+      (array-get *result-pointer b-length) 0
       result-pointer (+ 1 result-pointer)
       scm-a (SCM-CDR scm-a)))
   (return result))
@@ -155,13 +156,15 @@
   (SCM SCM SCM SCM SCM SCM SCM SCM SCM)
   "see init-sph-lib for documentation"
   (define path-open-flags int
-    (if* (scm-is-true scm-path-open-flags) (scm->int scm-path-open-flags) 0))
+    (if* (scm-is-true scm-path-open-flags) (scm->int scm-path-open-flags)
+      0))
   (define arguments char** (scm-string-list->string-pointer-array scm-arguments))
   (define env char**
-    (if* (= SCM-BOOL-F scm-env) environ (scm-string-list->string-pointer-array scm-env)))
+    (if* (= SCM-BOOL-F scm-env) environ
+      (scm-string-list->string-pointer-array scm-env)))
   (define executable char* (scm->locale-string scm-executable))
-  (define keep imht-set-t*)
-  (define
+  (declare
+    keep imht-set-t*
     input int
     output int
     error int)
@@ -171,7 +174,7 @@
   (port-argument-set-fd scm-input-port input input-path)
   (port-argument-set-fd scm-output-port output output-path)
   (port-argument-set-fd scm-error-port error error-path)
-  (if (scm-list->imht-set scm-keep-descriptors (address-of keep)) (return SCM-BOOL-F))
+  (if (scm-list->imht-set scm-keep-descriptors &keep) (return SCM-BOOL-F))
   (define process-id int (fork))
   (if (not (= 0 process-id))
     (begin
