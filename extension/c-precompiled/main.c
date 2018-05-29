@@ -86,7 +86,7 @@ imht_set_key_t *imht_set_find(imht_set_t *a, imht_set_key_t value) {
   imht_set_key_t *h = (a->content + imht_set_hash(value, (*a)));
   if ((*h)) {
 #if imht_set_can_contain_zero_p
-    if (((((*h) == value)) || ((0 == value)))) {
+    if ((((*h) == value) || (0 == value))) {
       return (h);
     };
 #else
@@ -144,7 +144,7 @@ imht_set_key_t *imht_set_add(imht_set_t *a, imht_set_key_t value) {
   imht_set_key_t *h = (a->content + imht_set_hash(value, (*a)));
   if ((*h)) {
 #if imht_set_can_contain_zero_p
-    if ((((value == (*h))) || ((0 == value)))) {
+    if (((value == (*h)) || (0 == value))) {
       return (h);
     };
 #else
@@ -154,7 +154,7 @@ imht_set_key_t *imht_set_add(imht_set_t *a, imht_set_key_t value) {
 #endif
     imht_set_key_t *content_end = (a->content + (a->size - 1));
     imht_set_key_t *h2 = (1 + h);
-    while ((((h2 <= content_end)) && (*h2))) {
+    while (((h2 <= content_end) && (*h2))) {
       h2 = (1 + h2);
     };
     if ((h2 > content_end)) {
@@ -263,14 +263,13 @@ void close_file_descriptors_from(int start_fd, imht_set_t *keep) {
   char *first_invalid;
   path_length = snprintf(path_proc_fd, sizeof(path_proc_fd), "/proc/%ld/fd",
                          ((long)(getpid())));
-  if (((path_length > 0) &&
-       ((((size_t)(path_length)) <= sizeof(path_proc_fd))) &&
+  if (((path_length > 0) && (((size_t)(path_length)) <= sizeof(path_proc_fd)) &&
        (directory = opendir(path_proc_fd)))) {
-    while (!(0 == entry = readdir(directory))) {
+    while (!(0 == (entry = readdir(directory)))) {
       fd = strtol(entry->d_name, &first_invalid, 10);
-      if (((!(entry->d_name == first_invalid)) && ((*first_invalid == 0)) &&
-           ((fd >= 0)) && (fd < INT_MAX) && ((fd >= start_fd)) &&
-           (!(fd == dirfd(directory))) && !imht_set_contains_p(keep, fd))) {
+      if ((!(entry->d_name == first_invalid) && (*first_invalid == 0) &&
+           (fd >= 0) && (fd < INT_MAX) && (fd >= start_fd) &&
+           !(fd == dirfd(directory)) && !imht_set_contains_p(keep, fd))) {
         ((void)(close(((int)(fd)))));
       };
     };
