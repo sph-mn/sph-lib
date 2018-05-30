@@ -20,6 +20,7 @@
     list->string-columns
     list-string-append-each
     parenthesise
+    parenthesised?
     regexp-match-replace
     regexp-replace
     sph-string-description
@@ -116,8 +117,16 @@
 
   (define (parenthesise a)
     "string -> string
-     surround string with an open and a closing parenthesis"
+     surround string with an open and a closing round bracket"
     (string-append "(" a ")"))
+
+  (define (parenthesised? a)
+    "string -> boolean
+     checks if the string is enclosed by round brackets.
+     also checks if every opening bracket is paired with a closing one after it"
+    (let (a-len (string-length a))
+      (and (<= 2 a-len) (eqv? #\( (string-ref a 0))
+        (eqv? #\) (string-ref a (- a-len 1))) (string-brackets-closed? a #\( #\)))))
 
   (define (regexp-match-replace a replacements)
     "string ((regexp . string:replacement)/(regexp string:search-string . string:replacement) ...) -> string
