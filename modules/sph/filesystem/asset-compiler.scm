@@ -84,7 +84,10 @@
        #t: use the id as a filename extension separated with a dot
        else: no filename extension"
     (vector id
-      (cond ((and (boolean? suffix) suffix) (id->extension id)) ((string? suffix) suffix) (else ""))
+      (cond
+        ((and (boolean? suffix) suffix) (id->extension id))
+        ((string? suffix) suffix)
+        (else ""))
       processor))
 
   (define (ac-config-input-p id matcher processor)
@@ -137,7 +140,7 @@
             (let (get-and-argument (sources->get-and-argument sources config-input))
               (l (out-port) (each (l (a) ((first a) (tail a) out-port options)) get-and-argument))))))
       (l* (config output-format sources port #:optional processor-options)
-        "hashtable symbol list port [any] ->
+        "hashtable symbol list port [any] -> false/unspecified
         \"processor-options\" is an optional value passed to input and output processors as the last argument"
         (and-let* ((config-format (ht-ref config output-format)))
           ( (or (ac-output-processor (first config-format)) ac-output-copy)
@@ -183,8 +186,8 @@
           (ac-destination dest-directory output-format
             sources-flat dest-name (ac-output-suffix config-output))))
       (if
-        (or (eq? (q always) when)
-          (not (every string? sources-flat)) (not (file-exists? path-destination))
+        (or (eq? (q always) when) (not (every string? sources-flat))
+          (not (file-exists? path-destination))
           (ac-source-files-updated? path-destination sources-flat))
         (and (ensure-directory-structure (dirname path-destination))
           (call-with-output-file path-destination
