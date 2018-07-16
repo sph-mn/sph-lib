@@ -147,8 +147,6 @@
             (tail change+state))))
       min-interval state))
 
-
-
   (define (procedure->cached-procedure proc)
     "procedure -> procedure procedure
      returns a new procedure with the same signature that calculates each result only once.
@@ -210,8 +208,6 @@
      like procedure-append but does not collect results and returns unspecified"
     (l a (each (l (b) (apply b a)) proc)))
 
-
-
   (define* (cli-option name #:optional value)
     "creates a string for one generic command-line option in the gnu format -{single-character} or --{word} or --{word}=.
      optionally with values.
@@ -253,15 +249,19 @@
   (define socket-bind bind)
 
   (define-syntax-rule (procedure-cond a (predicate handler) ... else)
-    ;"passes the result to predicate, and if it evaluates to true then it passes the result to handler and the result
-    ;is the result of handler. if predicate evaluates to false, the next predicate is checked.
-    ;if no predicate matches, the result of procedure-cond is the result of the last expression.
-    ;similar to \"cond\" but with procedures for predicate and handler"
-    (let (b a) (cond ((predicate b) (handler b)) ... else)))
+    ; "passes the result to predicate, and if it evaluates to true then it passes the result to handler and the result
+    ; is the result of handler. if predicate evaluates to false, the next predicate is checked.
+    ; if no predicate matches, the result of procedure-cond is the result of the last expression.
+    ; similar to \"cond\" but with procedures for predicate and handler"
+    (let (b a)
+      (cond
+        ((predicate b) (handler b))
+        ...
+        else)))
 
   (define-syntax-rule (begin-first result expression ...)
-    ;like begin but returns the result of the first expression instead of the last one.
-    ((l (r) (begin expression ...) r) result))
+    ; like begin but returns the result of the first expression instead of the last one.
+    ((l (a) expression ... a) result))
 
   (define (each-integer count proc)
     "integer procedure:{integer ->} ->
