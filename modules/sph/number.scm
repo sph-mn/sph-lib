@@ -110,10 +110,10 @@
      result in the logarithm with \"base\" of \"a\""
     (/ (log a) (log base)))
 
-  (define (call-with-product-then-divide proc a factor)
+  (define (call-with-product-then-divide f a factor)
     "procedure:{number -> number} number number -> number
-     call proc with \"a\" multiplied by factor and afterwards divide by factor"
-    (/ (proc (* a factor)) factor))
+     call f with \"a\" multiplied by factor and afterwards divide by factor"
+    (/ (f (* a factor)) factor))
 
   (define (round-to-decimal-places a decimal-places) "number number -> number"
     (call-with-product-then-divide round a (expt 10 decimal-places)))
