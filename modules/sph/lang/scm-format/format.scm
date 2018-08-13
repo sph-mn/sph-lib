@@ -54,28 +54,30 @@
   (define-syntax-rule (create-vertical-spacing* spacing)
     (if (string? spacing) spacing (create-vertical-spacing spacing)))
 
-  (define (format-application-expr-proc config current-indent) "hashtable integer -> list"
+  (define (format-application-expr-proc config current-indent)
+    "hashtable integer -> list
+     cache config values and return a procedure to be called for each pair of a list
+     returned by format-application-prepare-exprs"
     (ht-bind config
       (indent-string max-chars-per-line max-exprs-per-line-start
         max-exprs-per-line-middle max-exprs-per-line-end)
       (let (indent-length (* current-indent (string-length indent-string)))
         (l (rest r line line-expr-length line-expr-count)
-          (let* ((e (first rest)) (expr-string (tail e)))
-            ;e := (current-line-expr-length . expression-string)
+          (let* ((a (first rest)) (expr-length (first a)) (expr-string (tail a)))
             (if (string-contains expr-string "\n")
               (handle-newline-subexpression rest expr-string line r)
               (if
-                (line-full? e indent-length
+                (line-full? expr-length indent-length
                   line-expr-count line-expr-length
                   rest max-chars-per-line
                   max-exprs-per-line-end max-exprs-per-line-middle max-exprs-per-line-start r)
                 (list (if (null? line) r (pair (string-join (reverse line) " ") r))
-                  (list expr-string) (first e) 1)
+                  (list expr-string) expr-length 1)
                 (list r (pair expr-string line)
-                  (+ line-expr-length (first e)) (+ 1 line-expr-count)))))))))
+                  (+ line-expr-length expr-length) (+ 1 line-expr-count)))))))))
 
-  (define (format-application-prepare-exprs a)
-    (map (l (e) ((l (e-string) (pair (string-length e-string) e-string)) (any->string e))) a))
+  (define (format-application-prepare-exprs a) "(any ...) -> ((integer:string-length string) ...)"
+    (map (l (a) ((l (a-string) (pair (string-length a-string) a-string)) (any->string a))) a))
 
   (define (format-import a recurse config current-indent)
     (format-list (format-import-spec a recurse config (+ 1 current-indent)) config
@@ -116,7 +118,7 @@
       (list) 0 0))
 
   (define-syntax-rule
-    (line-full? e indent-length line-expr-count line-expr-length rest max-chars-per-line
+    (line-full? expr-length indent-length line-expr-count line-expr-length rest max-chars-per-line
       max-exprs-per-line-end
       max-exprs-per-line-middle
       max-exprs-per-line-start
@@ -124,12 +126,12 @@
     (let (line-length (+ (+ line-expr-length (- line-expr-count 1)) indent-length))
       (and
         (or
-          ;(+ line remaining-exprs) does not fit on one line
+          ; (+ line remaining-exprs) does not fit on one line
           (> (+ line-length (apply + (map first rest)) (- (length rest) 1)) max-chars-per-line)
           (>= (length rest) max-exprs-per-line-end))
         (or (= (if (null? r) max-exprs-per-line-start max-exprs-per-line-middle) line-expr-count)
-          ;(+ line current-element) does not fit on one line
-          (> (+ line-length (first e)) max-chars-per-line)))))
+          ; (+ line current-element) does not fit on one line
+          (> (+ line-length expr-length) max-chars-per-line)))))
 
   (define-syntax-rule (map-recurse recurse a current-indent)
     (map (l (e) (first (recurse e current-indent))) a))
@@ -158,12 +160,12 @@
           (parenthesise-indented-list indent
             (string-join
               (add-multiple-leading-parenthesis-spacing config
-                ;add the last line
+                ; add the last line
                 (reverse (if (null? line) r (pair (string-join (reverse line) " ") r))))
               line-spacing)))
         (pair-fold-multiple (format-application-expr-proc config current-indent)
           (format-application-prepare-exprs a)
-          ;the following 1 is the initial line-length including the beginning parenthesis
+          ; arguments: result lines, expressions on line, line string length and line expression count
           (list) (list) 1 0))))
 
   (define (format-docstring a offset-doublequote indent-string current-indent)
@@ -311,7 +313,7 @@
       (ht-copy* config
         (l (a)
           (ht-set-multiple! a
-            ;the line-char-length limitation has always precedence
+            ; the line-char-length limitation has always precedence
             (q max-exprs-per-line-start) start
             (q max-exprs-per-line-middle) middle (q max-exprs-per-line-end) end)))
       current-indent))
