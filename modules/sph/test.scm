@@ -89,8 +89,9 @@
       module-before ignore module-after ignore modules-before ignore modules-after ignore)
     ; symbol:rnrs/guile
     exception->key? #f
-    ; false/procedure:{test-proc -> proc}
-    procedure-wrap #f random-order? #f parallel? #f exclude #f only #f until #f)
+    procedure-wrap
+    ; false/procedure:{test-proc test-name -> proc}
+    #f random-order? #f parallel? #f exclude #f only #f until #f)
 
   (define-syntax-rule (test-settings-default-custom key/value ...)
     (test-settings-default-custom-by-list (quote-odd key/value ...)))
@@ -340,9 +341,9 @@
             (test-any->result r title 0))))
       (hook-data-after settings index 0 r) (report-data-after settings index 0 r) r))
 
-  (define (test-procedure-wrap settings test-proc)
+  (define (test-procedure-wrap settings test-proc test-name)
     (let (wrap (alist-ref settings (q procedure-wrap)))
-      (if (procedure? wrap) (wrap test-proc) test-proc)))
+      (if (procedure? wrap) (wrap test-proc test-name) test-proc)))
 
   (define (test-exception->key settings test-proc) test-proc
     #;(let (a (alist-ref settings (q exception->key)))
@@ -357,7 +358,7 @@
         hook-data-after report-before report-after report-data-before report-data-after)
       (let
         ( (title (symbol->string name))
-          (test-proc (test-exception->key settings (test-procedure-wrap settings test-proc))))
+          (test-proc (test-exception->key settings (test-procedure-wrap settings test-proc name))))
         (report-before settings index name)
         (let*
           ( (settings (call-settings-update-hook hook-before settings index name))
