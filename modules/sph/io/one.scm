@@ -40,7 +40,6 @@
     (sph)
     (sph list)
     (only (sph filesystem) ensure-trailing-slash ensure-directory-structure)
-    (only (sph module) module-re-export-modules)
     (only (sph one) begin-first)
     (only (srfi srfi-1) drop))
 

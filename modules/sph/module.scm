@@ -16,7 +16,7 @@
     module-match-guile-definition
     module-match-rnrs-definition
     module-name->load-path-and-path
-    module-re-export-modules
+    module-re-export-module
     path->load-path
     sph-module-description
     symbol-list->path)
@@ -34,8 +34,10 @@
     "guile module system and rnrs library related procedures
      # syntax
      module-compose :: dest source ...
-     define a new module dest with all exported bindings of the specified sources.
-     example: (module-compose (my-module) (rnrs base) (rnrs sorting))")
+       define a new module dest with all exported bindings of the specified sources.
+       example: (module-compose (my-module) (rnrs base) (rnrs sorting))
+     import-unexported :: unquoted-module-name unquoted-binding-name
+       imports and defines the binding locally at place")
 
   (define* (file->datums path #:optional (get-datum read))
     "string procedure:reader -> list
@@ -69,15 +71,18 @@
   ;-- creation and modification
 
   (define-syntax-rule (module-compose dest-name r6rs-import-spec ...)
-    (begin (define-module dest-name) (module-re-export-modules r6rs-import-spec ...)))
-
-  (define-syntax-rule (module-re-export-modules r6rs-import-spec ...)
-    (begin (import r6rs-import-spec) ...
+    (begin (define-module dest-name) (import r6rs-import-spec)
+      ...
       (let (m (current-module)) (module-re-export! m (append-map module-exports (module-uses m))))))
 
+  (define-syntax-rule (module-re-export-module module-name ...)
+    ; modules must have already been imported
+    (begin
+      (module-re-export! (current-module)
+        (module-map (l (name variable) name) (resolve-interface (quote module-name))))
+      ...))
+
   (define-syntax-rule (import-unexported module-name binding-name)
-    ; imports and defines the binding locally at place.
-    ; unquoted-module-name unquoted-binding-name ->
     (define binding-name (@@ module-name binding-name)))
 
   (define (environment* . name)
