@@ -35,6 +35,54 @@
     f64vector-range-set
     f64vector-range-set!
     integer->bytevector
+    s16vector-copy
+    s16vector-copy*
+    s16vector-copy-empty
+    s16vector-copy-empty*
+    s16vector-create
+    s16vector-each-index
+    s16vector-map
+    s16vector-map!
+    s16vector-map-with
+    s16vector-map-with!
+    s16vector-range-map
+    s16vector-range-map!
+    s16vector-range-map-with
+    s16vector-range-map-with!
+    s16vector-range-set
+    s16vector-range-set!
+    s32vector-copy
+    s32vector-copy*
+    s32vector-copy-empty
+    s32vector-copy-empty*
+    s32vector-create
+    s32vector-each-index
+    s32vector-map
+    s32vector-map!
+    s32vector-map-with
+    s32vector-map-with!
+    s32vector-range-map
+    s32vector-range-map!
+    s32vector-range-map-with
+    s32vector-range-map-with!
+    s32vector-range-set
+    s32vector-range-set!
+    s8vector-copy
+    s8vector-copy*
+    s8vector-copy-empty
+    s8vector-copy-empty*
+    s8vector-create
+    s8vector-each-index
+    s8vector-map
+    s8vector-map!
+    s8vector-map-with
+    s8vector-map-with!
+    s8vector-range-map
+    s8vector-range-map!
+    s8vector-range-map-with
+    s8vector-range-map-with!
+    s8vector-range-set
+    s8vector-range-set!
     sph-uniform-vector-description)
   (import
     (guile)
@@ -175,6 +223,60 @@
   (define-uv-range-map-with! f32vector-range-map-with! f32vector-range-map!)
   (define-uv-range-set! f32vector-range-set! f32vector-set!)
   (define-uv-range-set f32vector-range-set f32vector-copy* f32vector-range-set!)
+  ;
+  ; s32
+  (define-uv-copy s32vector-copy make-s32vector s32vector-length)
+  (define-uv-copy-empty s32vector-copy-empty make-s32vector s32vector-length)
+  (define-uv-copy* s32vector-copy* s32vector-copy)
+  (define-uv-copy-empty* s32vector-copy-empty* s32vector-copy-empty)
+  (define-uv-each-index s32vector-each-index s32vector-length)
+  (define-uv-range-map! s32vector-range-map! s32vector-set! s32vector-ref)
+  (define-uv-map! s32vector-map! s32vector-length s32vector-range-map!)
+  (define-uv-map-with! s32vector-map-with! s32vector-map!)
+  (define-uv-range-map s32vector-range-map s32vector-copy-empty* s32vector-range-map!)
+  (define-uv-map s32vector-map s32vector-copy-empty* s32vector-range-map! s32vector-length)
+  (define-uv-create s32vector-create make-s32vector s32vector-set!)
+  (define-uv-map-with s32vector-map-with s32vector-map)
+  (define-uv-range-map-with s32vector-range-map-with s32vector-range-map)
+  (define-uv-range-map-with! s32vector-range-map-with! s32vector-range-map!)
+  (define-uv-range-set! s32vector-range-set! s32vector-set!)
+  (define-uv-range-set s32vector-range-set s32vector-copy* s32vector-range-set!)
+  ;
+  ; s16
+  (define-uv-copy s16vector-copy make-s16vector s16vector-length)
+  (define-uv-copy-empty s16vector-copy-empty make-s16vector s16vector-length)
+  (define-uv-copy* s16vector-copy* s16vector-copy)
+  (define-uv-copy-empty* s16vector-copy-empty* s16vector-copy-empty)
+  (define-uv-each-index s16vector-each-index s16vector-length)
+  (define-uv-range-map! s16vector-range-map! s16vector-set! s16vector-ref)
+  (define-uv-map! s16vector-map! s16vector-length s16vector-range-map!)
+  (define-uv-map-with! s16vector-map-with! s16vector-map!)
+  (define-uv-range-map s16vector-range-map s16vector-copy-empty* s16vector-range-map!)
+  (define-uv-map s16vector-map s16vector-copy-empty* s16vector-range-map! s16vector-length)
+  (define-uv-create s16vector-create make-s16vector s16vector-set!)
+  (define-uv-map-with s16vector-map-with s16vector-map)
+  (define-uv-range-map-with s16vector-range-map-with s16vector-range-map)
+  (define-uv-range-map-with! s16vector-range-map-with! s16vector-range-map!)
+  (define-uv-range-set! s16vector-range-set! s16vector-set!)
+  (define-uv-range-set s16vector-range-set s16vector-copy* s16vector-range-set!)
+  ;
+  ; s8
+  (define-uv-copy s8vector-copy make-s8vector s8vector-length)
+  (define-uv-copy-empty s8vector-copy-empty make-s8vector s8vector-length)
+  (define-uv-copy* s8vector-copy* s8vector-copy)
+  (define-uv-copy-empty* s8vector-copy-empty* s8vector-copy-empty)
+  (define-uv-each-index s8vector-each-index s8vector-length)
+  (define-uv-range-map! s8vector-range-map! s8vector-set! s8vector-ref)
+  (define-uv-map! s8vector-map! s8vector-length s8vector-range-map!)
+  (define-uv-map-with! s8vector-map-with! s8vector-map!)
+  (define-uv-range-map s8vector-range-map s8vector-copy-empty* s8vector-range-map!)
+  (define-uv-map s8vector-map s8vector-copy-empty* s8vector-range-map! s8vector-length)
+  (define-uv-create s8vector-create make-s8vector s8vector-set!)
+  (define-uv-map-with s8vector-map-with s8vector-map)
+  (define-uv-range-map-with s8vector-range-map-with s8vector-range-map)
+  (define-uv-range-map-with! s8vector-range-map-with! s8vector-range-map!)
+  (define-uv-range-set! s8vector-range-set! s8vector-set!)
+  (define-uv-range-set s8vector-range-set s8vector-copy* s8vector-range-set!)
 
   (define (integer->bytevector a)
     "integer:signed-integer -> bytevector
