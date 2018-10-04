@@ -38,7 +38,7 @@
 
   (define chars-decode
     (let (r (make-eqv-hashtable 91))
-      (vector-each-with-index (l (e index) (hashtable-set! r e index)) chars-encode) r))
+      (vector-each-with-index (l (index a) (hashtable-set! r a index)) chars-encode) r))
 
   (define (base91-decode a) "string -> bytevector"
     (u8-list->bytevector

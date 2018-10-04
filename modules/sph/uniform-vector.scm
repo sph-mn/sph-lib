@@ -4,8 +4,8 @@
     bytevector-contains?
     f32vector-copy
     f32vector-copy*
-    f32vector-copy-empty
-    f32vector-copy-empty*
+    f32vector-copy-zero
+    f32vector-copy-zero*
     f32vector-create
     f32vector-each-index
     f32vector-map
@@ -20,8 +20,8 @@
     f32vector-range-set!
     f64vector-copy
     f64vector-copy*
-    f64vector-copy-empty
-    f64vector-copy-empty*
+    f64vector-copy-zero
+    f64vector-copy-zero*
     f64vector-create
     f64vector-each-index
     f64vector-map
@@ -37,8 +37,8 @@
     integer->bytevector
     s16vector-copy
     s16vector-copy*
-    s16vector-copy-empty
-    s16vector-copy-empty*
+    s16vector-copy-zero
+    s16vector-copy-zero*
     s16vector-create
     s16vector-each-index
     s16vector-map
@@ -53,8 +53,8 @@
     s16vector-range-set!
     s32vector-copy
     s32vector-copy*
-    s32vector-copy-empty
-    s32vector-copy-empty*
+    s32vector-copy-zero
+    s32vector-copy-zero*
     s32vector-create
     s32vector-each-index
     s32vector-map
@@ -69,8 +69,8 @@
     s32vector-range-set!
     s8vector-copy
     s8vector-copy*
-    s8vector-copy-empty
-    s8vector-copy-empty*
+    s8vector-copy-zero
+    s8vector-copy-zero*
     s8vector-create
     s8vector-each-index
     s8vector-map
@@ -100,14 +100,14 @@
       (let (result (make-vector (vector-length a)))
         (bytevector-copy! a 0 result 0 (* 4 (vector-length a))) result)))
 
-  (define-syntax-rule (define-uv-copy-empty id make-vector vector-length)
+  (define-syntax-rule (define-uv-copy-zero id make-vector vector-length)
     (define (id a) (make-vector (vector-length a))))
 
   (define-syntax-rule (define-uv-copy* id vector-copy)
     (define (id a c) (let (result (vector-copy a)) (c result) result)))
 
-  (define-syntax-rule (define-uv-copy-empty* id vector-copy-empty)
-    (define (id a c) (let (result (vector-copy-empty a)) (c result) result)))
+  (define-syntax-rule (define-uv-copy-zero* id vector-copy-zero)
+    (define (id a c) (let (result (vector-copy-zero a)) (c result) result)))
 
   (define-syntax-rule (define-uv-each-index id vector-length)
     (define (id f a)
@@ -154,18 +154,18 @@
     (define (id result f variable start end a . b)
       (apply vector-range-map! result (l a (apply f variable a)) start end a b)))
 
-  (define-syntax-rule (define-uv-range-map id vector-copy-empty* vector-range-map!)
+  (define-syntax-rule (define-uv-range-map id vector-copy-zero* vector-range-map!)
     (define (id f start end a . b)
       "procedure:{any ... -> any} integer integer xvector ... -> xvector
        like xvector-range-map but does not modify input"
-      (vector-copy-empty* a (l (result) (apply vector-range-map! result f start end a b)))))
+      (vector-copy-zero* a (l (result) (apply vector-range-map! result f start end a b)))))
 
-  (define-syntax-rule (define-uv-map id vector-copy-empty* vector-range-map! vector-length)
+  (define-syntax-rule (define-uv-map id vector-copy-zero* vector-range-map! vector-length)
     (define (id f a . b)
       "procedure:{any:element ... -> any} xvector ... -> xvector
        call f for each element of each vector. (f a-element b-element ...)
        can easily build processors like xvector-sum: (xvector-map + a b c)"
-      (vector-copy-empty* a
+      (vector-copy-zero* a
         (l (result) (apply vector-range-map! result f 0 (- (vector-length a) 1) a b)))))
 
   (define-syntax-rule (define-uv-create id make-vector vector-set!)
@@ -190,15 +190,15 @@
 
   ; f64
   (define-uv-copy f64vector-copy make-f64vector f64vector-length)
-  (define-uv-copy-empty f64vector-copy-empty make-f64vector f64vector-length)
+  (define-uv-copy-zero f64vector-copy-zero make-f64vector f64vector-length)
   (define-uv-copy* f64vector-copy* f64vector-copy)
-  (define-uv-copy-empty* f64vector-copy-empty* f64vector-copy-empty)
+  (define-uv-copy-zero* f64vector-copy-zero* f64vector-copy-zero)
   (define-uv-each-index f64vector-each-index f64vector-length)
   (define-uv-range-map! f64vector-range-map! f64vector-set! f64vector-ref)
   (define-uv-map! f64vector-map! f64vector-length f64vector-range-map!)
   (define-uv-map-with! f64vector-map-with! f64vector-map!)
-  (define-uv-range-map f64vector-range-map f64vector-copy-empty* f64vector-range-map!)
-  (define-uv-map f64vector-map f64vector-copy-empty* f64vector-range-map! f64vector-length)
+  (define-uv-range-map f64vector-range-map f64vector-copy-zero* f64vector-range-map!)
+  (define-uv-map f64vector-map f64vector-copy-zero* f64vector-range-map! f64vector-length)
   (define-uv-create f64vector-create make-f64vector f64vector-set!)
   (define-uv-map-with f64vector-map-with f64vector-map)
   (define-uv-range-map-with f64vector-range-map-with f64vector-range-map)
@@ -208,15 +208,15 @@
   ;
   ; f32
   (define-uv-copy f32vector-copy make-f32vector f32vector-length)
-  (define-uv-copy-empty f32vector-copy-empty make-f32vector f32vector-length)
+  (define-uv-copy-zero f32vector-copy-zero make-f32vector f32vector-length)
   (define-uv-copy* f32vector-copy* f32vector-copy)
-  (define-uv-copy-empty* f32vector-copy-empty* f32vector-copy-empty)
+  (define-uv-copy-zero* f32vector-copy-zero* f32vector-copy-zero)
   (define-uv-each-index f32vector-each-index f32vector-length)
   (define-uv-range-map! f32vector-range-map! f32vector-set! f32vector-ref)
   (define-uv-map! f32vector-map! f32vector-length f32vector-range-map!)
   (define-uv-map-with! f32vector-map-with! f32vector-map!)
-  (define-uv-range-map f32vector-range-map f32vector-copy-empty* f32vector-range-map!)
-  (define-uv-map f32vector-map f32vector-copy-empty* f32vector-range-map! f32vector-length)
+  (define-uv-range-map f32vector-range-map f32vector-copy-zero* f32vector-range-map!)
+  (define-uv-map f32vector-map f32vector-copy-zero* f32vector-range-map! f32vector-length)
   (define-uv-create f32vector-create make-f32vector f32vector-set!)
   (define-uv-map-with f32vector-map-with f32vector-map)
   (define-uv-range-map-with f32vector-range-map-with f32vector-range-map)
@@ -226,15 +226,15 @@
   ;
   ; s32
   (define-uv-copy s32vector-copy make-s32vector s32vector-length)
-  (define-uv-copy-empty s32vector-copy-empty make-s32vector s32vector-length)
+  (define-uv-copy-zero s32vector-copy-zero make-s32vector s32vector-length)
   (define-uv-copy* s32vector-copy* s32vector-copy)
-  (define-uv-copy-empty* s32vector-copy-empty* s32vector-copy-empty)
+  (define-uv-copy-zero* s32vector-copy-zero* s32vector-copy-zero)
   (define-uv-each-index s32vector-each-index s32vector-length)
   (define-uv-range-map! s32vector-range-map! s32vector-set! s32vector-ref)
   (define-uv-map! s32vector-map! s32vector-length s32vector-range-map!)
   (define-uv-map-with! s32vector-map-with! s32vector-map!)
-  (define-uv-range-map s32vector-range-map s32vector-copy-empty* s32vector-range-map!)
-  (define-uv-map s32vector-map s32vector-copy-empty* s32vector-range-map! s32vector-length)
+  (define-uv-range-map s32vector-range-map s32vector-copy-zero* s32vector-range-map!)
+  (define-uv-map s32vector-map s32vector-copy-zero* s32vector-range-map! s32vector-length)
   (define-uv-create s32vector-create make-s32vector s32vector-set!)
   (define-uv-map-with s32vector-map-with s32vector-map)
   (define-uv-range-map-with s32vector-range-map-with s32vector-range-map)
@@ -244,15 +244,15 @@
   ;
   ; s16
   (define-uv-copy s16vector-copy make-s16vector s16vector-length)
-  (define-uv-copy-empty s16vector-copy-empty make-s16vector s16vector-length)
+  (define-uv-copy-zero s16vector-copy-zero make-s16vector s16vector-length)
   (define-uv-copy* s16vector-copy* s16vector-copy)
-  (define-uv-copy-empty* s16vector-copy-empty* s16vector-copy-empty)
+  (define-uv-copy-zero* s16vector-copy-zero* s16vector-copy-zero)
   (define-uv-each-index s16vector-each-index s16vector-length)
   (define-uv-range-map! s16vector-range-map! s16vector-set! s16vector-ref)
   (define-uv-map! s16vector-map! s16vector-length s16vector-range-map!)
   (define-uv-map-with! s16vector-map-with! s16vector-map!)
-  (define-uv-range-map s16vector-range-map s16vector-copy-empty* s16vector-range-map!)
-  (define-uv-map s16vector-map s16vector-copy-empty* s16vector-range-map! s16vector-length)
+  (define-uv-range-map s16vector-range-map s16vector-copy-zero* s16vector-range-map!)
+  (define-uv-map s16vector-map s16vector-copy-zero* s16vector-range-map! s16vector-length)
   (define-uv-create s16vector-create make-s16vector s16vector-set!)
   (define-uv-map-with s16vector-map-with s16vector-map)
   (define-uv-range-map-with s16vector-range-map-with s16vector-range-map)
@@ -262,15 +262,15 @@
   ;
   ; s8
   (define-uv-copy s8vector-copy make-s8vector s8vector-length)
-  (define-uv-copy-empty s8vector-copy-empty make-s8vector s8vector-length)
+  (define-uv-copy-zero s8vector-copy-zero make-s8vector s8vector-length)
   (define-uv-copy* s8vector-copy* s8vector-copy)
-  (define-uv-copy-empty* s8vector-copy-empty* s8vector-copy-empty)
+  (define-uv-copy-zero* s8vector-copy-zero* s8vector-copy-zero)
   (define-uv-each-index s8vector-each-index s8vector-length)
   (define-uv-range-map! s8vector-range-map! s8vector-set! s8vector-ref)
   (define-uv-map! s8vector-map! s8vector-length s8vector-range-map!)
   (define-uv-map-with! s8vector-map-with! s8vector-map!)
-  (define-uv-range-map s8vector-range-map s8vector-copy-empty* s8vector-range-map!)
-  (define-uv-map s8vector-map s8vector-copy-empty* s8vector-range-map! s8vector-length)
+  (define-uv-range-map s8vector-range-map s8vector-copy-zero* s8vector-range-map!)
+  (define-uv-map s8vector-map s8vector-copy-zero* s8vector-range-map! s8vector-length)
   (define-uv-create s8vector-create make-s8vector s8vector-set!)
   (define-uv-map-with s8vector-map-with s8vector-map)
   (define-uv-range-map-with s8vector-range-map-with s8vector-range-map)

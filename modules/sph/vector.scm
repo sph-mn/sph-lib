@@ -15,6 +15,7 @@
 (library (sph vector)
   (export
     alist-values->vector
+    any->vector
     sph-vector-description
     vector-accessor
     vector-append
@@ -51,12 +52,16 @@
     (rename (srfi srfi-43) (vector-map srfi43-vector-map) (vector-for-each srfi43-vector-for-each)))
 
   (define sph-vector-description "vector processing")
-  ; export bindings of srfi43
 
   (module-re-export! (current-module)
+    ; export most bindings of srfi43
     (delete (q vector-for-each)
       (delete (q vector-map)
         (module-map (l (name variable) name) (resolve-interface (q (srfi srfi-43)))))))
+
+  (define vector-each vector-for-each)
+  (define vector-each-with-index srfi43-vector-for-each)
+  (define (any->vector a) (if (vector? a) a (vector a)))
 
   (define (each-integer n f)
     ; redefine "each-integer" from (sph one) to avoid circular dependency (one -> vector, vector -> one)
@@ -92,8 +97,8 @@
      #(1 2) #(3 4) -> #(1 2 3 4)
      create a new bigger vector and copy all elements of \"a\" and \"b\" to it"
     (let* ((a-length (vector-length a)) (r (make-vector (+ a-length (vector-length b)))))
-      (vector-each-with-index (l (e index) (vector-set! r index e)) a)
-      (vector-each-with-index (l (e index) (vector-set! r (+ a-length index) e)) b) r))
+      (vector-each-with-index (l (index c) (vector-set! r index c)) a)
+      (vector-each-with-index (l (index c) (vector-set! r (+ a-length index) c)) b) r))
 
   (define (vector-copy* a f) "call f with a copy of vector and after f finishes return it"
     (let (r (vector-copy a)) (f r) r))
@@ -115,21 +120,13 @@
             (begin (vector-set! r index (vector-ref a index)) (loop (+ 1 index) omit-index indices)))
           r))))
 
-  (define* (vector-each-with-index f a #:optional (index-offset 0))
-    "procedure vector [integer] -> unspecified
-     f is called as (f element index).
-     index-offset is added to the actual index that is passed to f"
-    (let ((a-length (vector-length a)))
-      (let loop ((index index-offset))
-        (if (< index a-length) (begin (f (vector-ref a index) index) (loop (+ 1 index)))))))
-
   (define (vector-extend a add-size)
     "vector integer -> vector
      increase size of vector.
      new slots are appended to vector"
     (let*
       ( (old-size (vector-length a)) (r (make-vector (+ old-size add-size)))
-        (set (l (a index) (vector-set! r index a))))
+        (set (l (index a) (vector-set! r index a))))
       (vector-each-with-index set r) r))
 
   (define* (vector-index-value a value #:optional (equal-f equal?))

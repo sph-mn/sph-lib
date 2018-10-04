@@ -147,7 +147,7 @@
     (call-with-values (nullary (ht-entries record-layout))
       (l (keys values)
         (let ((r (make-vector (vector-length keys))))
-          (vector-each-with-index (l (e index) (vector-set! r (vector-ref values index) e)) keys) r))))
+          (vector-each-with-index (l (index a) (vector-set! r (vector-ref values index) a)) keys) r))))
 
   (define record-field-names-unordered ht-keys)
 

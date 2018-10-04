@@ -180,7 +180,7 @@
     "procedure:{key value ->} hashtable ->
      call proc for each key and value association in hashtable"
     (let-values (((keys values) (ht-entries ht)))
-      (vector-each-with-index (l (a index) (proc a (vector-ref values index))) keys)))
+      (vector-each-with-index (l (index a) (proc a (vector-ref values index))) keys)))
 
   (define (ht-values a) "hashtable -> vector"
     (call-with-values (nullary (ht-entries a)) (l (keys values) values)))
@@ -206,7 +206,7 @@
     (each
       (l (b)
         (let-values (((keys values) (ht-entries b)))
-          (vector-each-with-index (l (key index) (ht-set! a key (vector-ref values index))) keys)))
+          (vector-each-with-index (l (index key) (ht-set! a key (vector-ref values index))) keys)))
       b))
 
   (define (ht-tree-merge! a . b)
@@ -217,7 +217,7 @@
         (apply-values
           (l (keys values)
             (vector-each-with-index
-              (l (key index)
+              (l (index key)
                 (let ((a-value (ht-ref a key)) (b-value (vector-ref values index)))
                   (ht-set! a key
                     (if (and (ht? a-value) (ht? b-value))
