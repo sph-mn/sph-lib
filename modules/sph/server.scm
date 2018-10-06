@@ -55,7 +55,9 @@
      the server is stopped when it receives the signal SIGINT or SIGTERM.
      currently all exceptions are catched, printed and the server continues listening"
     (listen socket server-listen-queue-length)
-    (with-thread-pool (max 1 (- (or parallelism (current-processor-count)) 1))
+    (with-thread-pool
+      (if parallelism
+        (if (boolean? parallelism) (max 1 (- (current-processor-count) 1)) parallelism) 1)
       (l (enqueue)
         (with-signal-handling socket
           (nullary

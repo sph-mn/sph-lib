@@ -119,6 +119,8 @@
     list
     list->string
     list->vector
+    list-q
+    list-qq
     list-ref
     list-tail
     list?
@@ -279,7 +281,12 @@
        often used for thunks
      let
        typical scheme let and named-let extended with a simplified syntax for binding just one variable
-       example: (let (a 3) a)")
+       example: (let (a 3) a)
+     list-q list-qq
+       list-q :: any ...
+       list-qq :: any ...
+       same as (quote (a ...)) or (quasiquote (a ...))
+       example: (list-q a b c)")
 
   (define-syntax syntax-rule
     ; like syntax-rules but only for one syntax-rule and without keyword support
@@ -328,6 +335,8 @@
   (define-syntax-rule (l* a ...) (lambda* a ...))
   (define-syntax-rule (q a) (quote a))
   (define-syntax-rule (qq a) (quasiquote a))
+  (define-syntax-rule (list-q a ...) (q (a ...)))
+  (define-syntax-rule (list-qq a ...) (qq (a ...)))
   (define-syntax-rule (apply-values proc producer) (call-with-values (lambda () producer) proc))
 
   (define-syntax-rules let
