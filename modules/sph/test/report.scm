@@ -127,7 +127,7 @@
 
   (define test-report-null ignore)
 
-  (define-as test-reporters-default ht-create-symbol
+  (define-as test-reporters-default ht-create-symbol-q
     ; name -> (report-result . hooks)
     compact (pair test-report-compact test-report-hooks-compact)
     null (pair test-report-null test-report-hooks-null)

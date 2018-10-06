@@ -132,7 +132,7 @@
   (define (string->datums a) "string -> list" (string->datum (parenthesise a) read))
   (define (split-at& a index c) (call-with-values (nullary (split-at a index)) c))
 
-  (define-as prefix->handler-ht ht-create-symbol
+  (define-as prefix->handler-ht ht-create-symbol-q
     inline-scm-expr (l (a) (pair (q inline-scm-expr) (simplify-list (read-scm-expr a))))
     line-scm-expr (l (a) (pair (q line-scm-expr) (read-scm-expr a)))
     indent-scm-expr (l (a) (pair (q indent-scm-expr) (read-scm-expr a)))

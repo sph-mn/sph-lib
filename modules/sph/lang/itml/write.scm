@@ -71,7 +71,7 @@
 
   (define (list-string-char-escape a) "list -> list" (map-selected string? string-char-escape a))
 
-  (define-as ascend-ht ht-create-symbol
+  (define-as ascend-ht ht-create-symbol-q
     line (l (a . b) (apply string-append a))
     inline-expr (l (a . b) (string-append prefix-expr (any->string-display a)))
     line-expr
@@ -80,7 +80,7 @@
     (l (a . b) (pair (string-append prefix-expr (first a)) (list-string-char-escape (tail a))))
     association (l (a . b) (apply string-append (first a) ": " (tail a))))
 
-  (define-as descend-ht ht-create-symbol
+  (define-as descend-ht ht-create-symbol-q
     inline-scm-expr (l (a . b) (string-append prefix-expr-scm (any->string a)))
     line-scm-expr (l (a . b) (itml-create-line-scm-expr a))
     indent-scm-expr (l (a . b) (itml-create-indent-scm-expr (pair (first a) (tail a)) 80))

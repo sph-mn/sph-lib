@@ -48,13 +48,13 @@
     (if (not (unspecified? a))
       (begin (display a) (if (not (and (string? a) (string-suffix? "\n" a))) (newline)))))
 
-  (define-as interface-format-writers ht-create-symbol
+  (define-as interface-format-writers ht-create-symbol-q
     text
-    (ht-create-symbol error interface-format-text-write-error
+    (ht-create-symbol-q error interface-format-text-write-error
       message interface-format-text-write-message
       lines interface-format-text-write-lines data interface-format-text-write-data)
     scm
-    (ht-create-symbol error interface-format-scm-write-error
+    (ht-create-symbol-q error interface-format-scm-write-error
       message interface-format-scm-write-message
       lines interface-format-scm-write-lines data interface-format-scm-write-data))
 

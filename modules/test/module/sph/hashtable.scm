@@ -4,8 +4,8 @@
     (sph list)
     (sph hashtable))
 
-  (define data-1 (ht-create-symbol a 1 b (ht-create-symbol c 2)))
-  (define data-2 (ht-create-symbol d 3 b (ht-create-symbol c 4 e 5) f 6))
+  (define data-1 (ht-create-symbol-q a 1 b (ht-create-symbol-q c 2)))
+  (define data-2 (ht-create-symbol-q d 3 b (ht-create-symbol-q c 4 e 5) f 6))
 
   (define-test (ht-copy*)
     (let* ((data (ht-copy data-1 #t)) (r (ht-copy* data (l (a) (ht-set! a (q a) 2)))))

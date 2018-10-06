@@ -54,8 +54,8 @@
       (config-save-default-get-path (alist-ref options (q path)) (ht-ref config (q name)))
       (l (port) (write (ht-alist config 32) port))))
 
-  (define-as config-loaders ht-create-symbol default config-load-default)
-  (define-as config-savers ht-create-symbol default config-save-default)
+  (define-as config-loaders ht-create-symbol-q default config-load-default)
+  (define-as config-savers ht-create-symbol-q default config-save-default)
 
   (define* (config-load #:optional name/config (loader-key (q default)) loader-options)
     "symbol/hashtable:name/config [alist] -> config-object
@@ -66,8 +66,7 @@
      if name/config is false, look for an environment variable sph-config-name and try to read a file $sph-config-name/default.scm"
     (if (ht? name/config) (ht-tree-merge! sph-config-object name/config)
       (let (name (or name/config (getenv "sph-config-name") "default"))
-        (ht-tree-merge! sph-config-object
-          ((ht-ref config-loaders loader-key) name loader-options))
+        (ht-tree-merge! sph-config-object ((ht-ref config-loaders loader-key) name loader-options))
         (ht-set! sph-config-object (q config-name) name)))
     sph-config-object)
 
@@ -80,8 +79,7 @@
   (define-syntax-rule (primitive-config-set! symbol ... value)
     (ht-tree-set! sph-config-object symbol ... value))
 
-  (define-syntax-rule (primitive-config-ref symbol ...)
-    (ht-tree-ref sph-config-object symbol ...))
+  (define-syntax-rule (primitive-config-ref symbol ...) (ht-tree-ref sph-config-object symbol ...))
 
   (define-syntax-rule (config-set! unquoted-symbol ... value)
     (primitive-config-set! (q unquoted-symbol) ... value))

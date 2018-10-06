@@ -22,7 +22,7 @@
      size limit option to exclude big files from creating multiple versions
      version identifiers are monotonically increasing integers in hexadecimal")
 
-  (define-as versioning-default-config ht-create-symbol
+  (define-as versioning-default-config ht-create-symbol-q
     max-count 3 max-size (inf) path-versions "versions/" path-temp "temp/")
 
   (define (get-existing-version-ids path-versions) "string -> (integer ...)"

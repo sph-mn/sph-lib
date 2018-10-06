@@ -18,7 +18,7 @@
   (define sph-lang-itml-eval-plaintext-description "evaluate inline code expressions")
   (define itml-plaintext-false "_")
 
-  (define-as ascend-ht ht-create-symbol
+  (define-as ascend-ht ht-create-symbol-q
     line (l (a . b) (string-join a ""))
     inline-expr itml-eval-asc-inline-expr
     line-expr itml-eval-asc-line-expr
@@ -34,7 +34,7 @@
      mark the place of a failed expression in the output text. nested scm expressions are not affected"
     (l a (or (apply proc a) itml-plaintext-false)))
 
-  (define-as descend-ht ht-create-symbol
+  (define-as descend-ht ht-create-symbol-q
     inline-scm-expr (string-if-false itml-eval-desc-inline-scm-expr)
     line-scm-expr (string-if-false itml-eval-desc-line-scm-expr)
     indent-scm-expr (string-if-false itml-eval-desc-indent-scm-expr)

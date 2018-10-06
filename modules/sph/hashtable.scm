@@ -26,6 +26,7 @@
     ht-create-eqv
     ht-create-string
     ht-create-symbol
+    ht-create-symbol-q
     ht-delete!
     ht-each
     ht-each-key
@@ -129,6 +130,11 @@
   (define-syntax-rules ht-create-symbol
     ; like hashtable, but create a hashtable optimised for symbol keys
     (() (ht-make ht-hash-symbol eq?))
+    ((associations ...) (ht-from-list (list associations ...) eq? ht-hash-symbol)))
+
+  (define-syntax-rules ht-create-symbol-q
+    ; like hashtable, but create a hashtable optimised for symbol keys
+    (() (ht-make ht-hash-symbol eq?))
     ((associations ...) (ht-from-list (quote-odd associations ...) eq? ht-hash-symbol)))
 
   (define-syntax-rules ht-create-binding
@@ -139,7 +145,7 @@
   (define-syntax-rules ht-create-string
     ; like hashtable, but create a hashtable designated and optimised for string keys
     (() (ht-make ht-hash-string string-equal?))
-    ((associations ...) (ht-from-list (quote-odd associations ...) string-equal? ht-hash-string)))
+    ((associations ...) (ht-from-list (list associations ...) string-equal? ht-hash-string)))
 
   (define-syntax-rules ht-create-eq
     ; like hashtable, but create a hashtable that uses eq? as a comparison function

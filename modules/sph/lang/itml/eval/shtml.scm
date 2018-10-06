@@ -28,7 +28,7 @@
         (append (if (string? keyword) (list keyword) (map re-descend* keyword))
           (pair ": " (map re-descend* (tail a)))))))
 
-  (define-as ascend-ht ht-create-symbol
+  (define-as ascend-ht ht-create-symbol-q
     line (l (a . b) (if (null? a) a (list (q p) a)))
     inline-expr itml-eval-asc-inline-expr
     line-expr itml-eval-asc-line-expr indent-expr itml-eval-asc-indent-expr)
@@ -38,7 +38,7 @@
      mark the place of a failed expression in the output text. nested scm expressions are not affected"
     (l a (or (apply proc a) itml-shtml-false)))
 
-  (define-as descend-ht ht-create-symbol
+  (define-as descend-ht ht-create-symbol-q
     inline-scm-expr (string-if-false itml-eval-desc-inline-scm-expr)
     line-scm-expr (string-if-false itml-eval-desc-line-scm-expr)
     indent-scm-expr (string-if-false itml-eval-desc-indent-scm-expr)

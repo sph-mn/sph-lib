@@ -45,7 +45,7 @@
   (define (itml-state-data a) (list-ref a 2))
   (define (itml-state-depth a) (list-ref a 1))
 
-  (define* (itml-state-create #:optional (depth 0) env exceptions (data (ht-create-symbol)))
+  (define* (itml-state-create #:optional (depth 0) env exceptions (data (ht-create-symbol-q)))
     "integer environment hashtable ... -> list
      data, if passed, will be modified"
     ; is a list because the first to values get updated

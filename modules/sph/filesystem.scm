@@ -159,7 +159,7 @@
     (unfold (l (e) (or (string-equal? "/" e) (string-equal? "." e))) identity dirname a))
 
   (define stat-field-name->stat-accessor-ht
-    (ht-create-symbol mtime stat:mtime
+    (ht-create-symbol-q mtime stat:mtime
       atime stat:atime
       size stat:size mode stat:mode uid stat:uid gid stat:gid nlink stat:nlink ctime stat:ctime))
 

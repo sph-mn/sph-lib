@@ -32,9 +32,9 @@
   (define sph-lang-scm-format-description "format scheme code")
   (define default-format-ascend format-application)
 
-  (define-as scm-format-default-config ht-create-symbol
+  (define-as scm-format-default-config ht-create-symbol-q
     format
-    (ht-create-symbol indent-string (string-multiply " " 2)
+    (ht-create-symbol-q indent-string (string-multiply " " 2)
       max-chars-per-line 100
       max-exprs-per-line-start 3
       max-exprs-per-line-middle 2
@@ -44,10 +44,10 @@
       multiple-leading-parenthesis-spacing #t
       toplevel-vertical-spacing 1 toplevel-vertical-spacing-oneline 0)
     transform
-    (ht-create-symbol sort-export #t
+    (ht-create-symbol-q sort-export #t
       sort-import #t sort-definitions #f separate-unexported-definitions #f))
 
-  (define-as descend-prefix->format-f ht-create-symbol
+  (define-as descend-prefix->format-f ht-create-symbol-q
     case (format-list-f 2 1 1)
     cond (format-list-f 1 1 1)
     define format-lambda
@@ -75,7 +75,7 @@
       ( (config-format (ht-ref-q c format)) (config-transform (ht-ref-q c transform))
         (default-config-transform (ht-ref-q scm-format-default-config transform))
         (default-config-format (ht-ref-q scm-format-default-config format)))
-      (ht-create-symbol format
+      (ht-create-symbol-q format
         (if config-format (ht-copy* default-config-format (l (a) (ht-merge! a config-format)))
           default-config-format)
         transform

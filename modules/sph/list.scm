@@ -139,7 +139,8 @@
     union
     (rename (lset-adjoin list-set-add)
       (list-tail list-tail-ref)
-      (lset-difference complement-p)
+      (lset-union list-set-union)
+      (lset-difference list-set-difference)
       (lset<= list-set-subset?)))
   (import
     (ice-9 match)
