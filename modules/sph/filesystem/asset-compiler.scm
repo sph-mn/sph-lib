@@ -28,6 +28,11 @@
   (define sph-filesystem-asset-compiler-description
     "configuration format and helpers to process and concatenate files from multiple sources.
      for example to compile from many files in different preprocessor formats into one target format file.
+     features
+       configuration for all processors
+       process file always, only if source file is newer or only if destination file doesnt exist
+       match files by suffix or custom procedure
+       option to automatically create destination filenames
      data structures
        config: hashtable:{symbol:output-format -> (config-output config-input ...)}
        config-output: #(symbol:id string:suffix false/procedure:processor-output)
@@ -109,7 +114,7 @@
   (define (ac-input-copy source port options)
     "a default processor-input that interprets source as a file name if it is a string.
      copies all contents of the source file to port with a newline at the end.
-     false and does nothing otherwise"
+     if source is not a string it does nothing and returns false"
     (and (string? source) (begin (file->port source port) (newline port))))
 
   (define (ac-output-copy get-input port options)

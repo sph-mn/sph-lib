@@ -42,18 +42,20 @@
         (l (enqueue . threads) (exception-always (thread-pool-finish enqueue threads) (c enqueue)))
         (thread-pool-create size))))
 
-  (define (with-accept-error-handling thunk) "continue unless socket has been closed"
+  (define (with-accept-error-handling thunk) "return if accept is interrupted"
     (catch (q system-error) thunk
       (l a
-        (let (errno (system-error-errno a))
-          (if (and (= EBADF errno) (string-equal? "accept" (first (tail a)))) #t (thunk))))))
+        (if (and (= EBADF (system-error-errno a)) (string-equal? "accept" (first (tail a)))) #t
+          (thunk)))))
 
   (define* (server-listen handle-request socket #:key parallelism (exception-key #t))
     "procedure:{port:client -> unspecified} port:socket [#:key parallelism integer/false] -> unspecified
      listen for new connections on socket and call handle-request with a input/output port for the client.
      handle-request is called in the next free thread in a thread-pool.
      the server is stopped when it receives the signal SIGINT or SIGTERM.
-     currently all exceptions are catched, printed and the server continues listening"
+     by default all exceptions are catched, printed and the server continues listening.
+     this can be changed with giving a different exception-key, which is passed to catch,
+     for example one that will never be matched"
     (listen socket server-listen-queue-length)
     (with-thread-pool
       (if parallelism

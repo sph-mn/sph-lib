@@ -32,7 +32,8 @@
         (l (a)
           (let ((key (first a)) (content (tail a)))
             (if (null? content) #f
-              (case key ((type) (symbol->string (first content)))
+              (case key
+                ((type) (symbol->string (first content)))
                 (else
                   (let (content (string-join content "\n"))
                     (shtml-section (+ 1 nesting-depth) key

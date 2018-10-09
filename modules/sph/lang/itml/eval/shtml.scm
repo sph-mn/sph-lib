@@ -30,8 +30,8 @@
 
   (define-as ascend-ht ht-create-symbol-q
     line (l (a . b) (if (null? a) a (list (q p) a)))
-    inline-expr itml-eval-asc-inline-expr
-    line-expr itml-eval-asc-line-expr indent-expr itml-eval-asc-indent-expr)
+    inline-text-expression itml-eval-asc-inline-expr
+    line-text-expression itml-eval-asc-line-expr indent-text-expression itml-eval-asc-indent-expr)
 
   (define (string-if-false proc)
     "when an itml expression evaluates to false, return a string instead, to
@@ -39,10 +39,10 @@
     (l a (or (apply proc a) itml-shtml-false)))
 
   (define-as descend-ht ht-create-symbol-q
-    inline-scm-expr (string-if-false itml-eval-desc-inline-scm-expr)
-    line-scm-expr (string-if-false itml-eval-desc-line-scm-expr)
-    indent-scm-expr (string-if-false itml-eval-desc-indent-scm-expr)
-    indent-descend-expr (string-if-false itml-eval-desc-indent-expr)
+    inline-scm-expression (string-if-false itml-eval-desc-inline-scm-expr)
+    line-scm-expression (string-if-false itml-eval-desc-line-scm-expr)
+    indent-scm-expression (string-if-false itml-eval-desc-indent-scm-expr)
+    indent-descend-expression (string-if-false itml-eval-desc-indent-expr)
     association descend-handle-association
     escaped-association-infix (l a ":") double-backslash (l a "\\"))
 

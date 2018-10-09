@@ -11,16 +11,16 @@
   (define test-env-list-2 (q (a b ("c" d))))
 
   (test-execute-procedures-lambda
-    (itml-create-indent-scm-expr ((unquote test-env-list-2)) "\\.a\n  b\n  \"c\"\n    d")
-    (itml-create-indent-scm-expr ((unquote test-env-list-1)) "\\.a\n  b\n    \"c\"\n      d")
-    (itml-create-inline-scm-expr ((unquote test-env-list-1)) "\\.(a (b (\"c\" d)))")
-    (itml-create-line-scm-expr ((unquote test-env-list-1)) "\\.a: (b (\"c\" d))")
+    (itml-create-indent-scm-expression ((unquote test-env-list-2)) "#a\n  b\n  \"c\"\n    d")
+    (itml-create-indent-scm-expression ((unquote test-env-list-1)) "#a\n  b\n    \"c\"\n      d")
+    (itml-create-inline-scm-expression ((unquote test-env-list-1)) "#(a (b (\"c\" d)))")
+    (itml-create-line-scm-expression ((unquote test-env-list-1)) "#a: (b (\"c\" d))")
     (itml-parsed->itml
       ; indent-scm
-      "\\.scm\n  (+ 1 2)\n  (+ 3 4)" #t
+      "#scm\n  (+ 1 2)\n  (+ 3 4)" #t
       ; inline-scm
-      "\\.(scm (+ 1 2) (+ 3 4))" #t
+      "#(scm (+ 1 2) (+ 3 4))" #t
       ; line-scm
-      "\\.scm: (+ 1 2) (+ 3 4)" #t
+      "#scm: (+ 1 2) (+ 3 4)" #t
       ; association
       "aa bb: cc dd" #t)))

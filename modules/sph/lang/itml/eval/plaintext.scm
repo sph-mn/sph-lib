@@ -20,9 +20,9 @@
 
   (define-as ascend-ht ht-create-symbol-q
     line (l (a . b) (string-join a ""))
-    inline-expr itml-eval-asc-inline-expr
-    line-expr itml-eval-asc-line-expr
-    indent-expr itml-eval-asc-indent-expr
+    inline-text-expression itml-eval-asc-inline-expr
+    line-text-expression itml-eval-asc-line-expr
+    indent-text-expression itml-eval-asc-indent-expr
     association
     (l (a . b)
       (let (keyword (first a))
@@ -35,10 +35,11 @@
     (l a (or (apply proc a) itml-plaintext-false)))
 
   (define-as descend-ht ht-create-symbol-q
-    inline-scm-expr (string-if-false itml-eval-desc-inline-scm-expr)
-    line-scm-expr (string-if-false itml-eval-desc-line-scm-expr)
-    indent-scm-expr (string-if-false itml-eval-desc-indent-scm-expr)
-    indent-descend-expr (string-if-false itml-eval-desc-indent-expr) double-backslash (l a "\\"))
+    inline-scm-expression (string-if-false itml-eval-desc-inline-scm-expr)
+    line-scm-expression (string-if-false itml-eval-desc-line-scm-expr)
+    indent-scm-expression (string-if-false itml-eval-desc-indent-scm-expr)
+    indent-descend-expression (string-if-false itml-eval-desc-indent-expr)
+    double-backslash (l a "\\"))
 
   (define itml-plaintext-eval
     (let (eval (itml-eval* descend-ht ascend-ht (l (a . b) (if (eq? (q line-empty) a) "" a))))

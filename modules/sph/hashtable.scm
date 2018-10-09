@@ -275,8 +275,8 @@
      creates a new empty hashtable with the same equivalence and hash function as the input hashtable."
     (ht-make (ht-hash-function a) (ht-equivalence-function a)))
 
-  (define (ht-copy* a proc) "call proc with a copy of hashtable and return it"
-    (let (r (ht-copy a #t)) (proc r) r))
+  (define (ht-copy* a f) "call f with a copy of hashtable and return it"
+    (let (r (ht-copy a #t)) (f r) r))
 
   (define (ht-tree-copy a)
     (ht-fold (l (k v r) (ht-set! r k (if (ht? v) (ht-tree-copy v) v)) r) (ht-copy-empty a) a))

@@ -1,12 +1,12 @@
 (library (sph lang itml write)
   (export
     itml-create-association
-    itml-create-indent-expr
-    itml-create-indent-scm-expr
-    itml-create-inline-expr
-    itml-create-inline-scm-expr
-    itml-create-line-expr
-    itml-create-line-scm-expr
+    itml-create-indent-scm-expression
+    itml-create-indent-text-expression
+    itml-create-inline-scm-expression
+    itml-create-inline-text-expression
+    itml-create-line-text-expression
+    itml-create-line-scm-expression
     itml-parsed->itml
     sph-lang-itml-write-description)
   (import
@@ -22,17 +22,18 @@
     (sph tree))
 
   (define sph-lang-itml-write-description "create itml strings from parsed itml")
-  (define prefix-expr-scm "\\.")
-  (define prefix-expr "\\")
+  (define prefix-expression-scm "#")
+  (define prefix-expression "##")
 
-  (define (itml-create-line-scm-expr a)
+  (define (itml-create-line-scm-expression a)
     (let (a (map any->string-write a))
-      (string-append prefix-expr-scm (first a) ": " (string-join (tail a) " "))))
+      (string-append prefix-expression-scm (first a) ": " (string-join (tail a) " "))))
 
-  (define (itml-create-inline-scm-expr a) (string-append prefix-expr-scm (any->string-write a)))
+  (define (itml-create-inline-scm-expression a)
+    (string-append prefix-expression-scm (any->string-write a)))
 
-  (define* (itml-create-indent-scm-expr a #:optional line-width)
-    (string-append prefix-expr-scm
+  (define* (itml-create-indent-scm-expression a #:optional line-width)
+    (string-append prefix-expression-scm
       (prefix-tree->indent-tree
         (list
           (tree-map
@@ -45,15 +46,16 @@
                 (any->string-write a)))
             a)))))
 
-  (define (itml-create-inline-expr a) (string-append prefix-expr (any->string-display a)))
+  (define (itml-create-inline-text-expression a)
+    (string-append prefix-expression (any->string-display a)))
 
-  (define (itml-create-indent-expr a)
+  (define (itml-create-indent-text-expression a)
     (let (a (tree-map-leafs any->string-display a))
-      (string-append prefix-expr (prefix-tree->indent-tree (list a)))))
+      (string-append prefix-expression (prefix-tree->indent-tree (list a)))))
 
-  (define (itml-create-line-expr a)
+  (define (itml-create-line-text-expression a)
     (let (a (map any->string-display a))
-      (string-append prefix-expr (first a) ": " (string-join (tail a) " "))))
+      (string-append prefix-expression (first a) ": " (string-join (tail a) " "))))
 
   (define (itml-create-association a . b) (apply string-append a ": " b))
 
@@ -73,18 +75,21 @@
 
   (define-as ascend-ht ht-create-symbol-q
     line (l (a . b) (apply string-append a))
-    inline-expr (l (a . b) (string-append prefix-expr (any->string-display a)))
-    line-expr
-    (l (a . b) (apply string-append prefix-expr (first a) ": " (list-string-char-escape (tail a))))
-    indent-expr
-    (l (a . b) (pair (string-append prefix-expr (first a)) (list-string-char-escape (tail a))))
+    inline-text-expression (l (a . b) (string-append prefix-expression (any->string-display a)))
+    line-text-expression
+    (l (a . b)
+      (apply string-append prefix-expression (first a) ": " (list-string-char-escape (tail a))))
+    indent-text-expression
+    (l (a . b)
+      (pair (string-append prefix-expression (first a)) (list-string-char-escape (tail a))))
     association (l (a . b) (apply string-append (first a) ": " (tail a))))
 
   (define-as descend-ht ht-create-symbol-q
-    inline-scm-expr (l (a . b) (string-append prefix-expr-scm (any->string a)))
-    line-scm-expr (l (a . b) (itml-create-line-scm-expr a))
-    indent-scm-expr (l (a . b) (itml-create-indent-scm-expr (pair (first a) (tail a)) 80))
-    indent-descend-expr (l (a . b) (pair (string-append "\\#" (first a)) (tail a)))
+    inline-scm-expression (l (a . b) (string-append prefix-expression-scm (any->string a)))
+    line-scm-expression (l (a . b) (itml-create-line-scm-expression a))
+    indent-scm-expression
+    (l (a . b) (itml-create-indent-scm-expression (pair (first a) (tail a)) 80))
+    indent-descend-expression (l (a . b) (pair (string-append "###" (first a)) (tail a)))
     double-backslash (l (a . b) "\\\\"))
 
   (define itml-parsed->itml
