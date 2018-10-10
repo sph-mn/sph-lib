@@ -81,21 +81,25 @@
 
   (define itml-shtml-eval
     (let
-      (eval
+      (evaluate
         (itml-eval* descend-ht ascend-ht
-          ; terminal
-          (l (a . b) (if (eq? (q line-empty) a) (q (br)) a)) #f
-          ; ascend-alt
+          #:terminal (l (a . b) (if (eq? (q line-empty) a) (q (br)) a))
+          #:descend-alt #f
+          #:ascend-alt
           (let (section? (l (a) (and (< 1 (length a)) (not (eq? (q section) (first a))))))
             (l (a sources depth . b)
               "list any integer any ... -> sxml
               on ascend, lists that are not <sections> become sections, with the list prefix being the header,
               and the tail being the section content"
               (if (section? a) (shtml-section depth (first a) (itml-shtml-lines (tail a))) a)))))
-      (l (a itml-state) "list list -> sxml" (itml-shtml-lines (eval a itml-state)))))
+      (l (a itml-state) "list list -> sxml" (itml-shtml-lines (evaluate a itml-state)))))
 
   (define (itml-shtml-eval-port a . b) (apply itml-shtml-eval (port->itml-parsed a) b))
-  (define (itml-shtml-eval-string a . b) (apply itml-shtml-eval (string->itml-parsed a) b))
+
+  (define (itml-shtml-eval-string a . b)
+    "string itml-shtml-arguments ... -> sxml
+     parse, evaluate expressions and return sxml"
+    (apply itml-shtml-eval (string->itml-parsed a) b))
 
   (define (itml-shtml-eval-file a . b)
     (call-with-input-file a (l (a) (apply itml-shtml-eval-port a b)))))

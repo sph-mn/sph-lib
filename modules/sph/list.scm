@@ -839,7 +839,9 @@
 
   (define (map-span filter-f f a)
     "procedure:{any -> any/false} procedure:{any any ... -> any} list -> list
-     apply \"f\" to each list of elements that consecutively matched \"filter-f\""
+     apply \"f\" to each list of elements that consecutively matched \"filter-f\".
+    an unpredictable number of arguments might be passed to f. with (lambda a body ...) a single list can still be accessed.
+    this allows for things like (map-span string? string-append a)"
     (fold-span filter-f (l (e r) (pair (apply f e) r)) a))
 
   (define (map-unless f stop? default . a)
