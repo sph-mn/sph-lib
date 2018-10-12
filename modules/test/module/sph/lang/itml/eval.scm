@@ -11,10 +11,10 @@
   (define env-plaintext (apply environment (list-q (sph lang itml eval env plaintext) (sph))))
 
   (define-test (itml-shtml-eval arguments)
-    (itml-shtml-eval-string (first arguments) (itml-state-create 0 env-shtml)))
+    (itml-shtml-eval-string (first arguments) (itml-state-create #:module env-shtml #:recursion #t)))
 
   (define-test (itml-plaintext-eval arguments)
-    (itml-plaintext-eval-string (first arguments) (itml-state-create 0 env-plaintext)))
+    (itml-plaintext-eval-string (first arguments) (itml-state-create #:module env-plaintext #:recursion #t)))
 
   (test-execute-procedures-lambda
     (itml-shtml-eval

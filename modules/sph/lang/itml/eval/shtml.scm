@@ -22,8 +22,8 @@
 
   (define itml-shtml-false "_")
 
-  (define (descend-handle-association a re-descend sources depth data)
-    (let ((keyword (first a)) (re-descend* (l (a) (re-descend a sources depth data))))
+  (define (descend-handle-association a re-descend stack depth module data)
+    (let ((keyword (first a)) (re-descend* (l (a) (re-descend a stack depth module data))))
       (list
         (append (if (string? keyword) (list keyword) (map re-descend* keyword))
           (pair ": " (map re-descend* (tail a)))))))
@@ -87,7 +87,7 @@
           #:descend-alt #f
           #:ascend-alt
           (let (section? (l (a) (and (< 1 (length a)) (not (eq? (q section) (first a))))))
-            (l (a sources depth . b)
+            (l (a stack depth . b)
               "list any integer any ... -> sxml
               on ascend, lists that are not <sections> become sections, with the list prefix being the header,
               and the tail being the section content"

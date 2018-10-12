@@ -554,7 +554,7 @@
 
   (define (fold-until f init stop? a)
     "procedure any procedure:{any -> boolean} list -> any
-     end folding if \"stop?\" is true"
+     end folding if \"stop?\" is true for a result and return the result"
     (if (or (null? a) (stop? init)) init (fold-until f (f (first a) init) stop? (tail a))))
 
   (define (group-consecutive filter-f a)

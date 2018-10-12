@@ -52,20 +52,37 @@
   (define itml-state-data-bindings (vector-accessor 0))
   (define itml-state-data-exceptions (vector-accessor 1))
   (define itml-state-data-recursion (vector-accessor 2))
-  (define itml-state-data-user (vector-accessor 3))
+  (define itml-state-data-unsafe-eval (vector-accessor 3))
+  (define itml-state-data-user (vector-accessor 4))
 
   (define*
-    (itml-state-create #:key (bindings all-pure-bindings) depth exceptions recursion user-data)
+    (itml-state-create #:key (bindings all-pure-bindings) module depth exceptions recursion
+      unsafe-eval
+      user-data)
     "integer sandbox-module-bindings boolean any ... -> list
-     env must be a bindings list for make-sandbox-module from (ice-9 sandbox).
-     all exceptions from evaluated expressions are catched and a placeholder string is returned unless exceptions is true.
-     if recursion is true all itml expression bindings called receive a copy of the itml-state as the first argument and any circular inclusion is prevented
-     as long as the itml-state is used for recursive itml eval calls.
-     user-data should be serialisable with scheme write or it is excluded when
-     using the state object inside an itml-scm-expression to call a nested itml-scm-expression"
-    ; is a list because the first to values get updated
+     #:bindings
+       must be a bindings list for make-sandbox-module from (ice-9 sandbox)
+       should be unset or false when using #:unsafe-eval
+       #:module has preference
+     #:exceptions
+       if true, all exceptions from evaluated expressions are catched and a placeholder string is returned.
+       default is false
+     #:recursion
+       if true, all itml environment bindings called receive a copy of
+       the itml-state as the first argument and circular inclusion is prevented
+       when using itml-eval with the state
+     #:user-data
+       custom user data variable of any type
+       should be serialisable with scheme write when unsafe-eval is false and recursion is true
+     #:unsafe-eval
+       instead of using #:bindings a module should be passed via #:module. the module can be created with (rnrs eval) \"environment\".
+       if only bindings is set, a module is created with make-sandbox-module, which has not been tested to work with unsafe-eval
+     #:depth
+       current call nesting depth. in case itml expression evaluators need it"
+    ; datatype list because the first two values get updated
     (list (list) (or depth 0)
-      (make-sandbox-module bindings) (vector bindings exceptions recursion user-data)))
+      (or module (make-sandbox-module bindings))
+      (vector bindings exceptions recursion unsafe-eval user-data)))
 
   (define (itml-state-copy a) "user-data is not deep-copied"
     (list (itml-state-stack a) (itml-state-depth a)
@@ -144,15 +161,18 @@
     ; debugging tip: log expression literal passed to eval
     (let
       (thunk
-        (nullary
-          (eval-in-sandbox
-            (debug-log
+        (if (itml-state-data-unsafe-eval data)
+          (nullary "pass the the full itml-state"
+            ( (eval (qq (lambda (s) ((unquote (first a)) s (unquote-splicing (tail a))))) env)
+              (list stack depth env data)))
+          (nullary "can only pass a reduced, serialised itml-state"
+            (eval-in-sandbox
               (if (itml-state-data-recursion data)
                 (qq
                   ( (lambda (s) ((unquote (first a)) s (unquote-splicing (tail a))))
                     (quote (unquote (list stack depth #f data)))))
-                a))
-            #:time-limit 120 #:allocation-limit 1000000000 #:module env #:sever-module? #f)))
+                a)
+              #:time-limit 120 #:allocation-limit 1000000000 #:module env #:sever-module? #f))))
       (if (itml-state-data-exceptions data) (thunk) (false-if-exception (thunk)))))
 
   (define (itml-eval-descend a re-descend stack depth env data)

@@ -5,8 +5,8 @@
     itml-create-indent-text-expression
     itml-create-inline-scm-expression
     itml-create-inline-text-expression
-    itml-create-line-text-expression
     itml-create-line-scm-expression
+    itml-create-line-text-expression
     itml-parsed->itml
     sph-lang-itml-write-description)
   (import
@@ -96,5 +96,6 @@
     (let
       (eval
         (itml-eval* descend-ht ascend-ht
+          #:terminal
           (l (a . b) (if (string? a) (string-char-escape a) (if (eqv? (q line-empty) a) "" a)))))
       (l (a) "list list -> sxml" (prefix-tree->indent-tree (eval a (itml-state-create)) 0)))))

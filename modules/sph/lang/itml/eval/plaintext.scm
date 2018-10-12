@@ -42,7 +42,7 @@
     double-backslash (l a "\\"))
 
   (define itml-plaintext-eval
-    (let (eval (itml-eval* descend-ht ascend-ht (l (a . b) (if (eq? (q line-empty) a) "" a))))
+    (let (eval (itml-eval* descend-ht ascend-ht #:terminal (l (a . b) (if (eq? (q line-empty) a) "" a))))
       (l (a itml-state) "list list -> sxml"
         (list-bind itml-state (sources depth . b)
           (prefix-tree->indent-tree (eval a itml-state) depth)))))
