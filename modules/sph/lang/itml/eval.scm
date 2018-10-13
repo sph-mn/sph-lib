@@ -21,7 +21,13 @@
     itml-state-copy
     itml-state-create
     itml-state-data
+    itml-state-data-bindings
+    itml-state-data-exceptions
+    itml-state-data-recursion
+    itml-state-data-unsafe-eval
+    itml-state-data-user
     itml-state-depth
+    itml-state-stack
     sph-lang-itml-eval-description)
   (import
     (guile)
@@ -47,7 +53,7 @@
 
   (define (itml-state-stack a) (list-ref a 0))
   (define (itml-state-depth a) (list-ref a 1))
-  (define (itml-state-env a) (list-ref a 2))
+  (define (itml-state-module a) (list-ref a 2))
   (define (itml-state-data a) (list-ref a 3))
   (define itml-state-data-bindings (vector-accessor 0))
   (define itml-state-data-exceptions (vector-accessor 1))
@@ -75,6 +81,8 @@
        custom user data variable of any type
        should be serialisable with scheme write when unsafe-eval is false and recursion is true
      #:unsafe-eval
+       use eval instead of eval-in-sandbox to evaluate expressions and if recursion is true, pass a state object that can contain
+       references to the dynamic environment and is not serialised.
        instead of using #:bindings a module should be passed via #:module. the module can be created with (rnrs eval) \"environment\".
        if only bindings is set, a module is created with make-sandbox-module, which has not been tested to work with unsafe-eval
      #:depth
@@ -82,11 +90,11 @@
     ; datatype list because the first two values get updated
     (list (list) (or depth 0)
       (or module (make-sandbox-module bindings))
-      (vector bindings exceptions recursion unsafe-eval user-data)))
+      (vector (and (not module) bindings) exceptions recursion unsafe-eval user-data)))
 
   (define (itml-state-copy a) "user-data is not deep-copied"
     (list (itml-state-stack a) (itml-state-depth a)
-      (itml-state-env a) (vector-copy (itml-state-data a))))
+      (itml-state-module a) (vector-copy (itml-state-data a))))
 
   (define (itml-eval-call input itml-state proc)
     "any procedure:{any:input list:itml-state} -> any
@@ -102,19 +110,20 @@
     (let
       ( (descend-f
           (l (proc)
-            (l (a re-descend stack depth env data)
+            (l (a re-descend stack depth module data)
               "list procedure any integer any -> (result continue stack depth data)
               receive elements that are lists while mapping and eventually recursing sub-lists"
-              (let (b (proc a (compose first re-descend) stack depth env data))
-                (if b (list b #f stack depth env data) (list #f #t stack (+ 1 depth) env data))))))
+              (let (b (proc a (compose first re-descend) stack depth module data))
+                (if b (list b #f stack depth module data)
+                  (list #f #t stack (+ 1 depth) module data))))))
         (ascend-f
           (l (proc)
-            (l (a stack depth env data)
+            (l (a stack depth module data)
               (list
                 (proc a stack
                   ; depth 0 and 1 are equivalent
-                  (max 0 (- depth 1)) env data)
-                stack (- depth 1) env data))))
+                  (max 0 (- depth 1)) module data)
+                stack (- depth 1) module data))))
         (terminal-f (l (proc) (l (a . b) (pair (apply proc a b) b)))))
       (l (a itml-state descend ascend terminal)
         "list:parsed-itml list procedure procedure procedure -> any"
@@ -149,7 +158,7 @@
             (dispatch ascend-prefix-ht (or ascend-alt (l (a . b) a)))
             (or terminal default-ascend-alt))))))
 
-  (define (itml-eval-list a stack depth env data)
+  (define (itml-eval-list a stack depth module data)
     "(symbol any ...) sandbox-module boolean list -> any
      creates the syntax for a lambda that contains the code from the itml expression,
      and evaluates it using eval-in-sandbox.
@@ -163,8 +172,8 @@
       (thunk
         (if (itml-state-data-unsafe-eval data)
           (nullary "pass the the full itml-state"
-            ( (eval (qq (lambda (s) ((unquote (first a)) s (unquote-splicing (tail a))))) env)
-              (list stack depth env data)))
+            ( (eval (qq (lambda (s) ((unquote (first a)) s (unquote-splicing (tail a))))) module)
+              (list stack depth module data)))
           (nullary "can only pass a reduced, serialised itml-state"
             (eval-in-sandbox
               (if (itml-state-data-recursion data)
@@ -172,14 +181,14 @@
                   ( (lambda (s) ((unquote (first a)) s (unquote-splicing (tail a))))
                     (quote (unquote (list stack depth #f data)))))
                 a)
-              #:time-limit 120 #:allocation-limit 1000000000 #:module env #:sever-module? #f))))
+              #:time-limit 120 #:allocation-limit 1000000000 #:module module #:sever-module? #f))))
       (if (itml-state-data-exceptions data) (thunk) (false-if-exception (thunk)))))
 
-  (define (itml-eval-descend a re-descend stack depth env data)
-    "evaluate an inline code expression" (itml-eval-list a stack depth env data))
+  (define (itml-eval-descend a re-descend stack depth module data)
+    "evaluate an inline code expression" (itml-eval-list a stack depth module data))
 
   (define (itml-eval-descend-string a . b)
-    "list procedure integer list environment -> any
+    "list procedure integer list module -> any
      evaluate an inline code expression when all elements are strings or string lists.
      converts the prefix to a symbol and prepares lists to evaluate to lists"
     (let (a (pair (string->symbol (first a)) (tail a))) (apply itml-eval-descend a b)))
