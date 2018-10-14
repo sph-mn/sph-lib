@@ -16,6 +16,7 @@
     ensure-directory-structure-and-new-mode
     ensure-trailing-slash
     filename-extension
+    filesystem-glob
     fold-directory-tree
     last
     list->path
@@ -39,6 +40,7 @@
   (import
     (guile)
     (ice-9 ftw)
+    (ice-9 regex)
     (ice-9 threads)
     (rnrs bytevectors)
     (rnrs io ports)
@@ -50,21 +52,102 @@
     (sph string)
     (except (srfi srfi-1) map))
 
+  (define filesystem-glob
+    (let*
+      ( (double-asterisk (make-regexp "^\\*\\*([0-9]+)?$"))
+        (parse-skip
+          (l (a) "string -> number"
+            (and-let* ((a (regexp-exec double-asterisk a)))
+              (let (depth (match:substring a 1)) (if depth (string->number depth) (inf))))))
+        (parse-match
+          (l (a) "string -> regexp"
+            (make-regexp
+              (string-append "^"
+                (string-replace-strings
+                  (regexp-quote (string-replace-strings a (q (("*" . "/1/") ("?" . "/2/")))))
+                  (q (("/1/" . ".*") ("/2/ " . "."))))
+                "$"))))
+        (scandir* (l (a) (scandir a (l (a) (not (string-prefix? "." a)))))))
+      (l (root pattern)
+        "string string -> (string ...)
+        find files under directory \"root\" matching \"pattern\".
+        pattern is a file system path with optional wildcard characters.
+        * matches zero or more of any character in a file name.
+        ? matches one of any character in a file name.
+        ** skips any sub directories to match the rest of the path. at the end of a path it is the same as **/.* including .*
+        **n where n is an integer. like ** but skips directories at most n subdirectories deep.
+        example patterns
+          a/b/*
+          *.txt
+          a/**/*.txt
+          a/**
+          **/*.txt
+          a/**2/*"
+        (let*
+          ( (parsed
+              (let
+                (pattern (if (string-suffix? "**" pattern) (string-append pattern "/*") pattern))
+                (map (l (a) (or (parse-skip a) (parse-match a))) (string-split pattern #\/))))
+            (root
+              (if (string-null? root) root
+                (let (a (string-trim-right root #\/)) (if (string-null? a) "/" a))))
+            (make-relative-path
+              (l (a) (if (string-null? root) a (string-drop a (+ 1 (string-length root)))))))
+          (let loop
+            ( (path root) (files (scandir* root)) (result null)
+              (directories null) (parsed parsed) (skip 0))
+            (cond
+              ((null? parsed) (reverse result))
+              ( (null? files)
+                (append (reverse result)
+                  (let (parsed (if (< 0 skip) parsed (tail parsed)))
+                    (apply append
+                      (map
+                        (l (path) "directory paths are full paths"
+                          (loop path (scandir* path) null null parsed (- skip 1)))
+                        directories)))))
+              (else
+                (let (pattern (first parsed))
+                  (cond
+                    ( (number? pattern)
+                      (loop path files result directories (tail parsed) (+ pattern skip)))
+                    ( (regexp? pattern)
+                      (let*
+                        ( (file (first files))
+                          (file-path (if (string-null? path) file (string-append path "/" file)))
+                          (relative-path (make-relative-path file-path)))
+                        (if (regexp-exec pattern file)
+                          (if (directory? file-path)
+                            (loop path (tail files)
+                              ; include directories
+                              (if (null? (tail parsed)) (pair relative-path result) result)
+                              (pair file-path directories) parsed skip)
+                            (loop path (tail files)
+                              (pair relative-path result) directories parsed skip))
+                          (loop path (tail files)
+                            result
+                            (if (directory? file-path) (pair file-path directories) directories)
+                            parsed skip)))))))))))))
+
   (define*
     (copy-file-recursive source destination #:key stop-on-error display-errors
       (copy-file copy-file)
       (ensure-directory ensure-directory-structure))
-    "copy source to become destination.
-     if source is a directory, copy the whole directory structure to destination"
+    "string:path string:path keyword-options ... -> unspecified
+     copy source to destination. copies the whole directory structure if source is a directory.
+     #:stop-on-error boolean
+     #:display-errors boolean
+     #:copy-file procedure"
     (if (directory? source)
       (let*
         ( (destination
-            (if (eq? #\/ (string-ref source 0)) destination (ensure-trailing-slash destination)))
+            (if (eqv? #\/ (string-ref source 0)) destination (ensure-trailing-slash destination)))
           (prefix (let (a (dirname source)) (if (string-equal? "." a) "" a)))
           (dest (l (name) (string-append destination (string-drop-prefix prefix name)))))
         (ftw source
           (l (name stat-info flag)
-            (case flag ((directory) (ensure-directory (dest name)) #t)
+            (case flag
+              ((directory) (ensure-directory (dest name)) #t)
               ((regular) (copy-file name (dest name)) #t)
               (else
                 (and display-errors
@@ -76,15 +159,11 @@
     (eq? (q directory) (stat:type (stat path))))
 
   (define (directory-fold path proc init)
+    "string procedure:{string any -> any} any -> any
+     fold over entries in directory"
     (let (d (if (string? path) (opendir path) path))
       (let loop ((e (readdir d)) (result init))
         (if (eof-object? e) (begin (closedir d) result) (loop (readdir d) (proc e result))))))
-
-  (define (directory-reference? file-path)
-    "string -> boolean
-     test if given string designates a directory reference, either \".\" or \"..\"
-     can be used as a filter to directory-listing procedures."
-    (let ((name (basename file-path))) (if (or (string= name ".") (string= name "..")) #t #f)))
 
   (define (call-with-directory path proc) "string procedure:{directory-port -> any} -> any"
     (let (d (opendir path)) (begin-first (proc d) (closedir d))))
@@ -92,7 +171,8 @@
   (define directory-list scandir)
 
   (define* (directory-list-full path #:optional (select? identity))
-    "string procedure ... -> (string ...)"
+    "string procedure ... -> (string ...)
+     get a list of full paths to directory entries"
     (let (path (ensure-trailing-slash path))
       (map (l (a) (path->full-path (string-append path a))) (directory-list path select?))))
 
@@ -116,7 +196,8 @@
       null path stat))
 
   (define* (directory-tree-leaf-directories start #:key (select? (const #t)) enter? (stat stat))
-    "string:path -> (string ...)"
+    "string:path -> (string ...)
+     return a list of all directories under start that dont have any directory in their entries"
     (directory-tree start #:enter?
       enter? #:select?
       (l (a stat-info)
@@ -132,13 +213,14 @@
 
   (define (dotfile? name)
     "string -> boolean
-     checks if name is non-empty and begins with a dot"
+     checks if name is non-empty and begins with a dot.
+     useful for matching hidden files or the directory references . and .."
     (and (not (string-null? name)) (eqv? (string-ref name 0) #\.)))
 
   (define (ensure-directory-structure path)
     "string -> boolean:exists
      try to create any directories of path that do not exist.
-     true if the path exists either because it has been created or otherwise
+     true if the path exists either because it has been created or otherwise.
      every path part is considered a directory"
     (or (file-exists? path) (begin-first (ensure-directory-structure (dirname path)) (mkdir path))))
 
@@ -156,7 +238,7 @@
   (define (path-directories a)
     "string -> (string:parent-path ...)
      creates a list of the full paths of all directories above the given path"
-    (unfold (l (e) (or (string-equal? "/" e) (string-equal? "." e))) identity dirname a))
+    (unfold (l (a) (or (string-equal? "/" a) (string-equal? "." a))) identity dirname a))
 
   (define stat-field-name->stat-accessor-ht
     (ht-create-symbol-q mtime stat:mtime
@@ -178,29 +260,6 @@
   (define (stat-accessor->stat-field-name a)
     "utility for functions working with file change events and stat-records"
     (ht-ref stat-accessor->stat-field-name-ht a))
-
-  (define* (fold-directory-tree proc init path #:optional (max-depth (inf)))
-    "::
-     procedure:{string:current-path guile-stat-object:stat-info any:previous-result -> any} any string [integer] {string/path -> boolean} ...
-     ->
-     any:last-procedure-result
-
-     fold over directory-tree under path, possibly limited by max-depth.
-     the directory-references \".\" and \"..\" are ignored.
-     call to proc is (proc full-path stat-info previous-result/init)"
-    (let (path (ensure-trailing-slash path))
-      (fold
-        (l (e r)
-          (let* ((full-path (string-append path e)) (stat-info (stat full-path)))
-            (if (and (eq? (q directory) (stat:type stat-info)) (< 1 max-depth))
-              (fold-directory-tree proc (proc full-path stat-info r)
-                (string-append full-path "/") (- max-depth 1))
-              (proc full-path stat-info r))))
-        init (directory-list path (negate directory-reference?)))))
-
-  (define* (directory-tree-each proc path #:optional (max-depth (inf)))
-    "procedure:{string stat-object -> unspecified} string [integer] -> unspecified"
-    (fold-directory-tree (l (path stat-info r) (proc path stat-info)) #f path max-depth))
 
   (define (filename-extension a)
     "string -> string
@@ -228,33 +287,35 @@
      at least one file has changed if the number is not zero"
     (apply - (par-map (compose stat:mtime stat) paths)))
 
-  (define (remove-trailing-slash a) "remove trailing slashes if existant, otherwise result in a"
+  (define (remove-trailing-slash a)
+    "string -> string
+     remove any trailing slashes"
     (string-trim-right a #\/))
 
-  (define-syntax-rule (path-append-internal tail-map-proc first-arg args)
-    (if (null? args) first-arg
-      (string-join (pair (string-trim-right first-arg #\/) (map tail-map-proc args)) "/")))
-
-  (define (path-append first-arg . args)
+  (define (path-append first-a . a)
     "string ... -> string
-     combine string representations of filesystem paths.
-     the arguments don't need to have leading or trailing slashes.
-     use this if redundant slashes in the middle of parts are irrelevant or
-     don't occur, otherwise use path-append*.
-     the complexity of joining strings to paths is easily underestimated."
-    (path-append-internal (l (e) (string-trim-both e #\/)) first-arg args))
+     combine string representations of filesystem paths regardless of leading or trailing slashes of the parts"
+    (if (null? a) first-a
+      (string-join (pair (string-trim-right first-a #\/) (map (l (a) (string-trim-both a #\/)) a))
+        "/")))
 
-  (define (path-append* first-arg . args)
-    "like path-append, but also removes redundant slashes in the middle of the parts to append."
-    (path-append-internal
-      (l (e) (string-join (delete! "" (string-split (string-trim-both e #\/) #\/)) "/")) first-arg
-      args))
+  (define (path-append* first-a . a)
+    "string ... -> string
+     like path-append but also removes redundant slashes in the middle of the given parts"
+    (if (null? a) first-a
+      (string-join
+        (pair (string-trim-right first-a #\/)
+          (map (l (a) (string-join (delete "" (string-split (string-trim-both a #\/) #\/)) "/")) a))
+        "/")))
 
   (define (path->list path)
     "string -> list
      parse a string representation of a filesystem path to a list of its parts.
      an empty string as the first element in the list stands for the root directory.
-     removes unnecessary slashes"
+     removes unnecessary slashes.
+     example input/output
+       \"/b\" -> (\"\" \"b\")
+       \"b\" -> (\"b\")"
     (if (string-null? path) (list)
       (let (result (remove string-null? (string-split path #\/)))
         (if (eqv? (string-ref path 0) #\/) (pair "" result) result))))
@@ -272,7 +333,7 @@
 
   (define (realpath* path)
     "string -> false/string
-     resolves the directory references \".\" and \"..\" as well as symlinks and removes unnecessary slashes.
+     resolves the directory references \".\" and \"..\" as well as symlinks in the given path and removes unnecessary slashes.
      named realpath* because it does not use the posix realpath because guile currently does not include it.
      the foreign function interface could be an alternative"
     ; /.. = /
@@ -280,7 +341,8 @@
       (let loop ((rest (tail path-list)) (result (list "")))
         (if (null? rest) (list->path (reverse result))
           (let (a (first rest))
-            (cond ((string-equal? "." a) (loop (tail rest) result))
+            (cond
+              ((string-equal? "." a) (loop (tail rest) result))
               ((string-equal? ".." a) (loop (tail rest) (tail result)))
               (else
                 (let*
@@ -298,7 +360,7 @@
     "string -> string
      uses \"getcwd\" to complete relative paths.
      with \"getcwd\" the basename can be a symlink but all other parts have symlinks resolved.
-     the environment variable PWD is not used because it is not automatically updated when the process changes directory"
+     the environment variable PWD is not used because it is not usually updated when the process changes directory"
     (if (string-prefix? "/" path) path (string-append (getcwd) "/" path)))
 
   (define remove-filename-extension
@@ -326,20 +388,20 @@
         (let (full-path (string-append base-path path)) (if (file-exists? full-path) full-path #f)))
       load-paths))
 
-  (define (stat-diff->accessors stat-info-1 stat-info-2 accessors)
-    "-> (stat-accessor ...)
-     find the difference between two stat-records.
-     filter accessors (stat:mtime for example) for fields which do not differ between two stat-records."
-    (filter (l (e) (not (equal? (e stat-info-1) (e stat-info-2)))) accessors))
+  (define (stat-diff->accessors stat-info-a stat-info-b accessors)
+    "stat stat (procedure ...) -> (stat-accessor ...)
+     find the difference between two guile stat objects.
+     filter accessors, stat:mtime for example, for fields which do not differ between two stat objects"
+    (filter (l (a) (not (equal? (a stat-info-a) (a stat-info-b)))) accessors))
 
-  (define (stat-diff stat-info-1 stat-info-2 accessors)
-    "-> ((vector accessor field-value-1 field-value-2)/#f ...)
-     find the difference between two stat-records.
-     map accessors (stat:mtime for example) to vectors for fields which differ between two stat-records."
+  (define (stat-diff stat-info-a stat-info-b accessors)
+    "stat stat (procedure ...) -> (#(accessor field-value-a field-value-b)/#f ...)
+     find the difference between two guile stat objects.
+     map accessors, stat:mtime for example, to vectors for fields which differ between two stat objects"
     (filter-map
-      (l (e)
-        (let ((value-1 (e stat-info-1)) (value-2 (e stat-info-2)))
-          (if (equal? value-1 value-2) #f (vector e value-1 value-2))))
+      (l (a)
+        (let ((value-a (a stat-info-a)) (value-b (a stat-info-b)))
+          (if (equal? value-a value-b) #f (vector a value-a value-b))))
       accessors))
 
   (define* (symbol-path->string symbol-path #:optional base-path) "symbol/(symbol ...) -> string"
@@ -354,12 +416,12 @@
   (define* (symbol-path->path a) (string-join (map symbol->string a) "/"))
 
   (define* (poll-watch paths events proc min-interval #:optional (max-interval min-interval))
-    "(string ...) (symbol ...) {diff file-descriptors stat-info ->} milliseconds [milliseconds] ->
-     observe stat information of multiple files (which may be directories)
-     by checking for events of change (which are the name of stat-record accessors, for example stat:mtime, without the stat: prefix)
+    "(string ...) (symbol ...) {diff file-descriptors stat-info -> unspecified} milliseconds [milliseconds] -> unspecified
+     observe stat information of multiple files (which can be directories)
+     by checking for events of change (which are specified as names of stat object accessors, for example stat:mtime, without the stat: prefix)
      and call proc if any of those changes have occurred. the diff passed to proc is a result of stat-diff.
      the files are checked in intervals with sizes between min-interval and max-interval,
-     automatically adjusting the interval size to match need."
+     automatically adjusting the interval size to match change frequency"
     (let ((accessors (map stat-field-name->stat-accessor events)))
       (let
         ( (fdes (map (l (e) (open e O_RDONLY)) (any->list paths)))
@@ -370,4 +432,36 @@
             (let* ((stat-info (map stat fdes)) (diff (map stat-diff* prev-stat-info stat-info)))
               (if (every null? diff) (list -1 stat-info)
                 (begin (proc diff fdes stat-info) (list 1 stat-info)))))
-          min-interval max-interval 1.1 0.2 (map stat fdes))))))
+          min-interval max-interval 1.1 0.2 (map stat fdes)))))
+
+  ;-- deprecated --;
+
+  (define (directory-reference? file-path)
+    "string -> boolean
+     test if given string designates a directory reference, either \".\" or \"..\"
+     can be used as a filter to directory-listing procedures."
+    (let ((name (basename file-path))) (if (or (string= name ".") (string= name "..")) #t #f)))
+
+  (define* (fold-directory-tree proc init path #:optional (max-depth (inf)))
+    "::
+     procedure:{string:current-path guile-stat-object:stat-info any:previous-result -> any} any string [integer] {string/path -> boolean} ...
+     ->
+     any:last-procedure-result
+
+     *deprecated* in favor of (ice-9 ftw) filesystem-fold.
+     fold over directory-tree under path, possibly limited by max-depth.
+     the directory-references \".\" and \"..\" are ignored.
+     call to proc is (proc full-path stat-info previous-result/init)"
+    (let (path (ensure-trailing-slash path))
+      (fold
+        (l (e r)
+          (let* ((full-path (string-append path e)) (stat-info (stat full-path)))
+            (if (and (eq? (q directory) (stat:type stat-info)) (< 1 max-depth))
+              (fold-directory-tree proc (proc full-path stat-info r)
+                (string-append full-path "/") (- max-depth 1))
+              (proc full-path stat-info r))))
+        init (directory-list path (negate directory-reference?)))))
+
+  (define* (directory-tree-each proc path #:optional (max-depth (inf)))
+    "procedure:{string stat-object -> unspecified} string [integer] -> unspecified"
+    (fold-directory-tree (l (path stat-info r) (proc path stat-info)) #f path max-depth)))

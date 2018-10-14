@@ -59,6 +59,7 @@
     string-replace-char
     string-replace-chars
     string-replace-string
+    string-replace-strings
     string-skip-string
     string-slice-at-words
     string-split-regexp
@@ -356,18 +357,18 @@
     "string string string -> string
      replace all occurences of string \"replace\" inside string \"a\" with string \"replacement\".
      tests with guile 2.06 have shown it to be 22x faster than regexp-substitute/global"
-    ;; this procedure is quite nice to debug - comment out one or all string-copy! applications,
+    ;; this procedure is quite nice to debug - comment out one or all string-copy! calls,
     ;; and the result string will be a partial result.
-    ;get match positions
+    ; get match positions
     (let (indices (string-indices a replace))
       (if (null? indices) a
         (let
           ( (replace-length (string-length replace))
             (replacement-length (string-length replacement)) (a-length (string-length a)))
-          ;calculate result string size and create result string
+          ; calculate result string size and create result string
           (let ((r-length (+ a-length (* (length indices) (- replacement-length replace-length)))))
             (let (r (make-string r-length))
-              ;each match index, copy characters before match-end to the result string
+              ; each match index, copy characters before match-end to the result string
               (let loop
                 ((r-index 0) (prev-index 0) (cur-index (first indices)) (rest (tail indices)))
                 (string-copy! r r-index a prev-index cur-index)
@@ -381,6 +382,11 @@
                       r)
                     (loop (+ r-index replacement-length) (+ cur-index replace-length)
                       (first rest) (tail rest)))))))))))
+
+  (define (string-replace-strings a strings-and-replacements)
+    "string ((string:search . string:replacement) ...) -> string"
+    (fold (l (b result) (string-replace-string result (first b) (tail b))) a
+      strings-and-replacements))
 
   (define (string-skip-string a skip)
     "string string -> integer
