@@ -85,7 +85,7 @@
               (map-consecutive string? (l a (string-join a "/")) parsed)))))
       (l (path)
         "string -> (string ...)
-         find files under directory matching a file system path with optional wildcard characters.
+         find files matching a file system path with optional wildcard characters.
          * matches zero or more of any character in a file name.
          ? matches one of any character in a file name.
          ** skips any sub directories to match the rest of the path. at the end of a path it is the same as **/.* including .*
