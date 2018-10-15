@@ -44,29 +44,32 @@
       (each (l (a) (ensure-directory-structure (string-append glob-temp-path "/" a))) directories)
       (each (l (a) (close (open (string-append glob-temp-path "/" a) O_CREAT))) files) #t))
 
-  (define-test (filesystem-glob a)
-    (map (l (a) (string-drop a (+ 1 (string-length glob-temp-path))))
-      (filesystem-glob (string-append glob-temp-path "/" (first a)))))
+  (define-test (filesystem-glob a expected)
+    (let*
+      ( (results
+          (map (l (a) (string-drop a (+ 1 (string-length glob-temp-path))))
+            (filesystem-glob (string-append glob-temp-path "/" (first a)))))
+        (results-relative
+          (let*
+            ( (previous (getcwd))
+              (result (begin (chdir glob-temp-path) (filesystem-glob (first a)))))
+            (chdir previous) result)))
+      (if (equal? results results-relative expected) expected
+        (list (q full) results (q relative) results-relative)
 
-  (define-test (filesystem-glob-relative a)
-    (let* ((previous (getcwd)) (result (begin (chdir glob-temp-path) (filesystem-glob (first a)))))
-      (chdir previous) result))
+        )
+      ))
 
   (test-execute-procedures-lambda set-up-filesystem-glob
-    (filesystem-glob
-      "c/d/*/f/testcdef.txt" ("c/d/e/f/testcdef.txt")
+    (filesystem-glob "c/d/*/f/testcdef.txt" ("c/d/e/f/testcdef.txt")
       "*.txt" ("test1.txt" "test2.txt")
       "a/b/*" ("a/b/testab1.txt" "a/b/testab2.txt")
       "a/**" ("a/b" "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
       "a/**/*.txt" ("a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
-      "**/*.txt" ("test1.txt" "test2.txt" "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
-      "**1/*" ("a" "test1.txt" "test2.txt" "a/b" "a/testa.txt"))
-    (filesystem-glob-relative "a/**" ("a/b" "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
-      "*.txt" ("test1.txt" "test2.txt")
-      "a/b/*" ("a/b/testab1.txt" "a/b/testab2.txt")
-      "a/**/*.txt" ("a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
-      "**/*.txt" ("test1.txt" "test2.txt" "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
-      "**1/*" ("a" "test1.txt" "test2.txt" "a/b" "a/testa.txt"))
+      "**/*.txt"
+      ("test1.txt" "test2.txt" "c/d/e/f/testcdef.txt"
+        "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
+      "**1/*" ("a" "c" "test1.txt" "test2.txt" "c/d" "a/b" "a/testa.txt"))
     directory-tree directory-tree-leaf-directories
     directory-prefix-tree
     (path->full-path "/a/b/c" "/a/b/c" "a/b/c" (unquote (string-append cwd "/a/b/c")))
