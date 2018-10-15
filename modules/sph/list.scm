@@ -840,8 +840,8 @@
   (define (map-span filter-f f a)
     "procedure:{any -> any/false} procedure:{any any ... -> any} list -> list
      apply \"f\" to each list of elements that consecutively matched \"filter-f\".
-    an unpredictable number of arguments might be passed to f. with (lambda a body ...) a single list can still be accessed.
-    this allows for things like (map-span string? string-append a)"
+     an unpredictable number of arguments might be passed to f. with (lambda a body ...) a single list can still be accessed.
+     this allows for things like (map-span string? string-append a)"
     (fold-span filter-f (l (e r) (pair (apply f e) r)) a))
 
   (define (map-unless f stop? default . a)
@@ -1056,7 +1056,9 @@
      splits the list into two lists, the first being a list of all beginning elements of \"a\" that consecutively matched
      \"f\", the second being the rest.
      like srfi-1 span but the result is a list and not multiple return values"
-    (call-with-values (nullary (span f a)) c))
+    (let loop ((a a) (result null))
+      (if (and (not (null? a)) (f (first a))) (loop (tail a) (pair (first a) result))
+        (c (reverse result) a))))
 
   (define (group-split-at-matches start-group? a)
     "procedure:{any -> boolean} list -> (list ...)

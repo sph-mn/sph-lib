@@ -60,22 +60,29 @@
             (and-let* ((a (regexp-exec double-asterisk a)))
               (let (depth (match:substring a 1)) (if depth (string->number depth) (inf))))))
         (parse-match
-          (l (a) "string -> regexp"
-            (make-regexp
-              (string-append "^"
-                (string-replace-strings
-                  (regexp-quote (string-replace-strings a (q (("*" . "/1/") ("?" . "/2/")))))
-                  (q (("/1/" . ".*") ("/2/ " . "."))))
-                "$"))))
-        (scandir* (l (a) (scandir a (l (a) (not (string-prefix? "." a)))))))
-      (l (root pattern)
-        "string string -> (string ...)
-        find files under directory \"root\" matching \"pattern\".
-        pattern is a file system path with optional wildcard characters.
+          (l (a) "string -> regexp/string"
+            (if (string-index a (l (a) (or (eqv? a #\*) (eqv? a #\?))))
+              (make-regexp
+                (string-append "^"
+                  (string-replace-strings
+                    (regexp-quote (string-replace-strings a (q (("*" . "/1/") ("?" . "/2/")))))
+                    (q (("/1/" . ".*") ("/2/ " . "."))))
+                  "$"))
+              a)))
+        (scandir* (l (a) (scandir a (l (a) (not (string-prefix? "." a))))))
+        (get-directory-paths
+          (l (path)
+            (filter-map (l (a) (let (a (string-append path "/" a)) (and (directory? a) a)))
+              (scandir* path)))))
+      (l (path)
+        "string -> (string ...)
+        find files under directory \"root\" matching \"path\".
+        path is a file system path with optional wildcard characters.
         * matches zero or more of any character in a file name.
         ? matches one of any character in a file name.
         ** skips any sub directories to match the rest of the path. at the end of a path it is the same as **/.* including .*
         **n where n is an integer. like ** but skips directories at most n subdirectories deep.
+        root can be the empty string.
         example patterns
           a/b/*
           *.txt
@@ -83,51 +90,63 @@
           a/**
           **/*.txt
           a/**2/*"
-        (let*
+        ; split path into literal and wildcard portions. check literal parts with file-exists?.
+        ; check wildcard parts by reading and matching directory entries.
+        ; to consider: result order, result full/relative path
+        (let
           ( (parsed
-              (let
-                (pattern (if (string-suffix? "**" pattern) (string-append pattern "/*") pattern))
-                (map (l (a) (or (parse-skip a) (parse-match a))) (string-split pattern #\/))))
-            (root
-              (if (string-null? root) root
-                (let (a (string-trim-right root #\/)) (if (string-null? a) "/" a))))
-            (make-relative-path
-              (l (a) (if (string-null? root) a (string-drop a (+ 1 (string-length root)))))))
-          (let loop
-            ( (path root) (files (scandir* root)) (result null)
-              (directories null) (parsed parsed) (skip 0))
-            (cond
-              ((null? parsed) (reverse result))
-              ( (null? files)
-                (append (reverse result)
-                  (let (parsed (if (< 0 skip) parsed (tail parsed)))
-                    (apply append
-                      (map
-                        (l (path) "directory paths are full paths"
-                          (loop path (scandir* path) null null parsed (- skip 1)))
-                        directories)))))
-              (else
-                (let (pattern (first parsed))
-                  (cond
-                    ( (number? pattern)
-                      (loop path files result directories (tail parsed) (+ pattern skip)))
-                    ( (regexp? pattern)
-                      (let*
-                        ( (file (first files))
-                          (file-path (if (string-null? path) file (string-append path "/" file)))
-                          (relative-path (make-relative-path file-path)))
-                        (if (regexp-exec pattern file)
-                          (if (directory? file-path)
-                            (loop path (tail files)
-                              ; include directories
-                              (if (null? (tail parsed)) (pair relative-path result) result)
-                              (pair file-path directories) parsed skip)
-                            (loop path (tail files)
-                              (pair relative-path result) directories parsed skip))
-                          (loop path (tail files)
-                            result
-                            (if (directory? file-path) (pair file-path directories) directories)
-                            parsed skip)))))))))))))
+              (let*
+                ( (path (if (string-suffix? "**" path) (string-append path "/*") path))
+                  (parsed (map (l (a) (or (parse-skip a) (parse-match a))) (string-split path #\/))))
+                (map-consecutive string? (l a (string-join a "/")) parsed))))
+          (let loop ((parsed parsed) (path "") (result null) (skip 0))
+            (if (null? parsed) (reverse result)
+              (let (pattern (first parsed))
+                (cond
+                  ((number? pattern) (loop (tail parsed) path result (+ pattern skip)))
+                  ( (string? pattern)
+                    (let (pattern-path (string-append path pattern))
+                      (if (file-exists? pattern-path)
+                        (if (null? (tail parsed)) (pair pattern-path result)
+                          (loop (tail parsed) (string-append pattern-path "/") result skip))
+                        (if (< 0 skip)
+                          (fold
+                            ; try to match the same pattern in any next lower directory
+                            (l (path result)
+                              (loop parsed (string-append path "/") result (- skip 1)))
+                            result (get-directory-paths path))
+                          result))))
+                  ( (regexp? pattern)
+                    ; read files of directory, collect matches and directories
+                    (let loop2
+                      ( (files (scandir* path)) (directories null) (skip-directories null)
+                        (path path) (result result) (skip skip))
+                      (if (null? files)
+                        ; directory has been read, matches and directories collected.
+                        ; if skip, try to match same pattern next level, then proceed with next pattern
+                        (fold
+                          (l (path result)
+                            (loop (tail parsed) (string-append path "/") result skip))
+                          (if (< 0 skip)
+                            (fold
+                              (l (path result) "directory paths are full paths"
+                                (loop2 (scandir* path) null
+                                  null (string-append path "/") result (- skip 1)))
+                              result skip-directories)
+                            result)
+                          directories)
+                        (let* ((file (first files)) (file-path (string-append path file)))
+                          (if (regexp-exec pattern file)
+                            (if (null? (tail parsed))
+                              (loop2 (tail files) (if (directory? file-path) (pair file-path directories) directories)
+                                (if (directory? file-path) (pair file-path skip-directories) skip-directories) path (pair file-path result) skip)
+                              (loop2 (tail files)
+                                (if (directory? file-path) (pair file-path directories) directories)
+                                skip-directories path result skip))
+                            (loop2 (tail files) directories
+                              (if (directory? file-path) (pair file-path skip-directories)
+                                skip-directories)
+                              path result skip))))))))))))))
 
   (define*
     (copy-file-recursive source destination #:key stop-on-error display-errors

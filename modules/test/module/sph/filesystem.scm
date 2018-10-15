@@ -37,15 +37,31 @@
 
   (define-test (set-up-filesystem-glob)
     (let
-      ( (directories (list "a" "a/b"))
-        (files (list "test1.txt" "test2.txt" "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")))
+      ( (directories (list "a" "a/b" "c/d/e/f"))
+        (files
+          (list "test1.txt" "test2.txt"
+            "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt" "c/d/e/f/testcdef.txt")))
       (each (l (a) (ensure-directory-structure (string-append glob-temp-path "/" a))) directories)
       (each (l (a) (close (open (string-append glob-temp-path "/" a) O_CREAT))) files) #t))
 
-  (define-test (filesystem-glob a) (filesystem-glob glob-temp-path (first a)))
+  (define-test (filesystem-glob a)
+    (map (l (a) (string-drop a (+ 1 (string-length glob-temp-path))))
+      (filesystem-glob (string-append glob-temp-path "/" (first a)))))
+
+  (define-test (filesystem-glob-relative a)
+    (let* ((previous (getcwd)) (result (begin (chdir glob-temp-path) (filesystem-glob (first a)))))
+      (chdir previous) result))
 
   (test-execute-procedures-lambda set-up-filesystem-glob
-    (filesystem-glob "a/**" ("a/b" "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
+    (filesystem-glob
+      "c/d/*/f/testcdef.txt" ("c/d/e/f/testcdef.txt")
+      "*.txt" ("test1.txt" "test2.txt")
+      "a/b/*" ("a/b/testab1.txt" "a/b/testab2.txt")
+      "a/**" ("a/b" "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
+      "a/**/*.txt" ("a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
+      "**/*.txt" ("test1.txt" "test2.txt" "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
+      "**1/*" ("a" "test1.txt" "test2.txt" "a/b" "a/testa.txt"))
+    (filesystem-glob-relative "a/**" ("a/b" "a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
       "*.txt" ("test1.txt" "test2.txt")
       "a/b/*" ("a/b/testab1.txt" "a/b/testab2.txt")
       "a/**/*.txt" ("a/testa.txt" "a/b/testab1.txt" "a/b/testab2.txt")
