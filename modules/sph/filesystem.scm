@@ -70,16 +70,18 @@
                   "$"))
               a)))
         (scandir*
-          (l (a) (scandir (if (string-null? a) "." a) (l (a) (not (string-prefix? "." a))))))
+          (l (a) "string -> (string:file-name ...)/false"
+            (scandir (if (string-null? a) "." a) (l (a) (not (string-prefix? "." a))))))
         (get-directory-paths
-          (l (path)
+          (l (path) "string -> (string:full-path ...)"
             (filter-map (l (a) (let (a (string-append path "/" a)) (and (directory? a) a)))
               (scandir* path))))
         (parse-path
-          (l (path)
+          (l (path) "string -> (number/string/regexp ...)"
             (let*
-              ( (path (if (string-suffix? "**" path) (string-append path "/*") path))
-                (parsed (map (l (a) (or (parse-skip a) (parse-match a))) (string-split path #\/))))
+              ( (path (string-split path #\/))
+                (path (if (regexp-exec double-asterisk (last path)) (append path (list "*")) path))
+                (parsed (map (l (a) (or (parse-skip a) (parse-match a))) path)))
               (map-consecutive string? (l a (string-join a "/")) parsed)))))
       (l (path)
         "string -> (string ...)
@@ -97,9 +99,9 @@
           a/**
           **/*.txt
           a/**2/*"
-        ; split path into literal and wildcard portions. check literal parts with file-exists?.
+        ; split path into literal and wildcard portions. check literal parts with file-exists?,
         ; check wildcard parts by reading and matching directory entries.
-        ; to consider: result order, result full/relative path
+        ; to consider: result order, full/relative path
         (reverse
           (let loop ((parsed (parse-path path)) (path "") (result null) (skip 0))
             (if (null? parsed) result
