@@ -85,20 +85,18 @@
               (map-consecutive string? (l a (string-join a "/")) parsed)))))
       (l (path)
         "string -> (string ...)
-        find files under directory \"root\" matching \"path\".
-        path is a file system path with optional wildcard characters.
-        * matches zero or more of any character in a file name.
-        ? matches one of any character in a file name.
-        ** skips any sub directories to match the rest of the path. at the end of a path it is the same as **/.* including .*
-        **n where n is an integer. like ** but skips directories at most n subdirectories deep.
-        root can be the empty string.
-        example patterns
-          a/b/*
-          *.txt
-          a/**/*.txt
-          a/**
-          **/*.txt
-          a/**2/*"
+         find files under directory matching a file system path with optional wildcard characters.
+         * matches zero or more of any character in a file name.
+         ? matches one of any character in a file name.
+         ** skips any sub directories to match the rest of the path. at the end of a path it is the same as **/.* including .*
+         **n where n is an integer. like ** but skips directories at most n subdirectories deep.
+         example patterns
+           a/b/*
+           *.txt
+           a/**/c/*.txt
+           a/**
+           **/*.txt
+           a/**2/*"
         ; split path into literal and wildcard portions. check literal parts with file-exists?,
         ; check wildcard parts by reading and matching directory entries.
         ; to consider: result order, full/relative path
