@@ -2,7 +2,7 @@
   (import
     (rnrs exceptions)
     (ice-9 threads)
-    (sph one)
+    (sph other)
     (sph thread-pool))
 
   (define-test (thread-pool-create)

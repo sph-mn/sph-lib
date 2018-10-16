@@ -12,7 +12,6 @@
     (ice-9 peg)
     (sph)
     (only (sph alist) alist-ref alist-q)
-    (only (sph conditional) if-pass)
     (only (sph string) string-fill-left string-equal?)
     (only (sph time)
       nanoseconds->seconds
@@ -28,6 +27,13 @@
      rfc3339 is a subset of iso8601 and is used for example in the atom syndication format.
      this is a comprehensive implementation that uses a parsing expression grammar.
      ns: nanoseconds")
+
+  (define-syntax-rules if-pass
+    ;"any procedure:{any -> any} -> any
+    ;call proc with "a" if "a" is a true value, otherwise return false or evaluate else.
+    ;also known as \"and=>\""
+    ((a consequent alternative) (let (b a) (if b (consequent b) alternative)))
+    ((a consequent) (let (b a) (if b (consequent b) b))))
 
   (define-peg-pattern digit body (range #\0 #\9))
   (define-peg-pattern year all (and digit digit digit digit))

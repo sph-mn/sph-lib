@@ -25,7 +25,10 @@
   (import
     (guile)
     (ice-9 match)
-    (sph common)
+    (sph hashtable)
+    (sph)
+    (sph string)
+    (sph list)
     (sph lang scm-format base)
     (sph tree))
 

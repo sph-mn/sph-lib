@@ -5,7 +5,7 @@
     (guile)
     (sph)
     (sph alist)
-    (sph binding-info)
+    (sph module binding-info)
     (sph documentation)
     (sph list)
     (only (srfi srfi-1) remove))

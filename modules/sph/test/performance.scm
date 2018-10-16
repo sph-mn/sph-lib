@@ -19,8 +19,7 @@
       exact->inexact
       inexact->exact
       string-join)
-    (only (sph one) each-integer pass)
-    (only (sph two) number->integer-string))
+    (only (sph other) each-integer pass))
 
   (define sph-test-performance-description
     "adaptive performance testing with formatted result display.
@@ -62,7 +61,6 @@
                     ( (l (res) (if (string-prefix? "test-" res) (string-drop res 5) res))
                       (symbol->string (first test)))
                     (inexact->exact (floor (/ result 100)))
-                    ;(number->integer-string (round (exact->inexact (- result-average result))))
                     (format #f "~,1fx" (exact->inexact (- (/ result-max result) 1)))))
                 results tests))))
         (display-line

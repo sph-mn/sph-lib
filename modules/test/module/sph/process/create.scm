@@ -4,7 +4,7 @@
     (sph process create)
     (sph io)
     (sph list)
-    (sph one))
+    (sph other))
 
   (define-test (process-create)
     (call-with-pipes 1

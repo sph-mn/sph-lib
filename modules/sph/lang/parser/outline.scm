@@ -10,7 +10,9 @@
     (sph)
     (sph list))
 
-  (define sph-lang-parser-outline-description "parse text with nested headings")
+  (define sph-lang-parser-outline-description
+    "parse a document with possible nesting of sections where headings are prefixed by one or multiple characters.
+     for example markdown heading structure")
 
   (define (parse-heading-repeated-char-proc char) "char -> procedure"
     (l (line) "string -> (integer:nesting-depth/false string:heading/false)"
@@ -39,8 +41,8 @@
 
   (define (read-outline port parse-heading)
     "port char/procedure:{string:line -> (integer:nesting-depth/false string:heading/false)} -> list
-    for parsing structured text where repetitions of a character at the beginning of a line designate
-    the section nesting depth of following lines that are not of equal or lower nesting depth"
+     for parsing structured text where repetitions of a character at the beginning of a line designate
+     the section nesting depth of following lines that are not of equal or lower nesting depth"
     (let
       (parse-heading
         (if (procedure? parse-heading) parse-heading

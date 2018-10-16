@@ -9,10 +9,10 @@
     html-uri-encode)
   (import
     (ice-9 pretty-print)
+    (ice-9 rdelim)
     (rnrs bytevectors)
     (rnrs exceptions)
     (sph)
-    (sph conditional)
     (only (guile)
       identity
       string-null?
@@ -38,9 +38,20 @@
     (only (ice-9 regex) match:substring regexp-substitute/global)
     (only (sph alist) alist-ref alist-keys-map)
     (only (sph string) string-equal?)
-    (only (sph two) read-line-crlf read-line-crlf-trim)
     (only (sph web http) http-read-header http-read-header-value)
     (only (srfi srfi-1) find))
+
+  (define (read-line-crlf-trim port)
+    "try to read a line that is known to be cr-lf terminated and remove the cr-lf or return eof-object"
+    (let (line+delim (%read-line port))
+      (let ((line (first line+delim)) (delim (tail line+delim)))
+        (if (and (string? line) (char? delim)) (substring line 0 (- (string-length line) 1)) line))))
+
+  (define (read-line-crlf port)
+    "try to read a line that is known to be cr-lf terminated or return eof-object"
+    (let (line+delim (%read-line port))
+      (let ((line (first line+delim)) (delim (tail line+delim)))
+        (if (and (string? line) (char? delim)) (string-append line (string delim)) line))))
 
   (define (html-uri-decode str) "string -> string"
     (regexp-substitute/global #f "\\+|%([0-9A-Fa-f][0-9A-Fa-f])"
@@ -74,8 +85,8 @@
 
   (define* (html-multipart-form-data? headers #:optional (header-key "content_type"))
     "(string ...) [string] -> boolean"
-    (if-pass (assoc-ref headers header-key)
-      (l (content-type) (string-prefix? "multipart/form-data" content-type))))
+    (let (content-type (assoc-ref headers header-key))
+      (and content-type (string-prefix? "multipart/form-data" content-type))))
 
   (define (get-boundary-from-headers headers) "(string ...) -> string/boolean-false"
     (let (content-type (assoc-ref headers "content_type"))
@@ -87,8 +98,8 @@
         (if (string-null? boundary) (raise (pair (q boundary-not-found) boundary)) boundary))))
 
   (define-syntax-rule (header-multipart-mixed? a)
-    (if-pass (or (alist-ref a "content-type") (alist-ref a "Content-Type"))
-      (l (content-type) (alist-ref content-type "multipart/mixed"))))
+    (let (content-type (or (alist-ref a "content-type") (alist-ref a "Content-Type")))
+      (and content-type (alist-ref content-type "multipart/mixed"))))
 
   (define* (html-fold-multipart-form-data proc-part proc-multipart result port #:optional boundary)
     "::

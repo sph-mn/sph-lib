@@ -159,10 +159,7 @@
 
   ; this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
   (define sph-list-description "helpers for working with lists")
-
-  (define-syntax-rule (identity-if test else ...)
-    ; copied from (sph conditional)
-    ((lambda (r) (if r r (begin else ...))) test))
+  (define-syntax-rule (identity-if test else ...) ((lambda (r) (if r r (begin else ...))) test))
 
   (define-syntax-rule (list-bind a lambda-formals body ...)
     ; bind elements of list "a" to "lambda-formals"

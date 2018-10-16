@@ -1,4 +1,4 @@
-; Copyright (C) 2010-2017 sph <sph@posteo.eu>
+; Copyright (C) 2010-2018 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -10,18 +10,32 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-(library (sph one)
+(library (sph other)
   (export
     begin-first
+    boolean-true?
+    boolean->integer
     call-at-approximated-interval
     call-at-interval
     call-at-interval-w-state
+    char-set->vector
     cli-option
     cli-option-join
     each-integer
+    false-if
+    false-if-not
     guile-exception->key
+    identity-if
+    if-pass
+    if-pass-apply
+    if-predicate-and
+    if-predicate-or
     ignore
     pass
+    pass-predicate-and-if
+    pass-predicate-or-if
+    predicate-and
+    predicate-or
     procedure->cached-procedure
     procedure->temporarily-cached-procedure
     procedure-append
@@ -36,7 +50,7 @@
     search-env-path
     search-env-path-one
     socket-bind
-    sph-one-description
+    sph-other-description
     values->list)
   (import
     (guile)
@@ -54,13 +68,69 @@
     (only (rnrs base) set!)
     (only (srfi srfi-1) unfold-right unfold))
 
-  (define sph-one-description "various")
+  (define sph-other-description "miscellaneous")
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
+
+  (define-syntax-rule (procedure-cond a (predicate handler) ... else)
+    ; "passes the result to predicate, and if it evaluates to true then it passes the result to handler and the result
+    ; is the result of handler. if predicate evaluates to false, the next predicate is checked.
+    ; if no predicate matches, the result of procedure-cond is the result of the last expression.
+    ; similar to \"cond\" but with procedures for predicate and handler"
+    (let (b a)
+      (cond
+        ((predicate b) (handler b))
+        ...
+        else)))
+
+  (define-syntax-rule (begin-first result expression ...)
+    ; like begin but returns the result of the first expression instead of the last one.
+    ((l (a) expression ... a) result))
+
+  (define-syntax-rule (any->list a) (if (list? a) a (list a)))
+
+  (define-syntax-rule (identity-if result-if-true else ...)
+    ;result in "test" if "test" is true, otherwise execute "else"
+    ((lambda (r) (if r r (begin else ...))) result-if-true))
+
+  (define-syntax-rule (false-if test consequent)
+    ;result in false if "test" is true, otherwise execute consequent
+    (if test #f consequent))
+
+  (define-syntax-rule (false-if-not test consequent)
+    ;execute consequent if "test" is true, otherwise result in false
+    (if test consequent #f))
 
   (define (ignore . a)
     "any ... -> unspecified
      ignores all arguments and returns unspecified"
     (if #f #t))
+
+  (define-syntax-rules if-predicate-and
+    ( ( (predicate ...) subject consequent alternative)
+      (let (b subject) (if (and (predicate b) ...) consequent alternative)))
+    ( (predicate subject consequent alternative)
+      (if-predicate-and (predicate) subject consequent alternative)))
+
+  (define-syntax-rules if-predicate-or
+    ( ( (predicate ...) subject consequent alternative)
+      (let (b subject) (if (or (predicate b) ...) consequent alternative)))
+    ( (predicate subject consequent alternative)
+      (if-predicate-or (predicate) subject consequent alternative)))
+
+  (define-syntax-rules if-pass
+    ;"any procedure:{any -> any} -> any
+    ;call proc with "a" if "a" is a true value, otherwise return false or evaluate else.
+    ;also known as \"and=>\""
+    ((a consequent alternative) (let (b a) (if b (consequent b) alternative)))
+    ((a consequent) (let (b a) (if b (consequent b) b))))
+
+  (define-syntax-rules if-pass-apply
+    ;"list procedure:{any ... -> any} -> any
+    ;like if-pass but uses apply to use the contents of \"a\", which should be a list in the true case, as arguments to proc"
+    ((a consequent alternative) (let (b a) (if b (apply consequent b) alternative)))
+    ((a consequent) (let (b a) (if b (apply consequent b) b))))
+
+  (define-syntax-rules boolean-true? ((a ...) (and (equal? #t a) ...)))
 
   (define (rnrs-exception->object proc)
     "procedure -> procedure
@@ -248,21 +318,6 @@
 
   (define socket-bind bind)
 
-  (define-syntax-rule (procedure-cond a (predicate handler) ... else)
-    ; "passes the result to predicate, and if it evaluates to true then it passes the result to handler and the result
-    ; is the result of handler. if predicate evaluates to false, the next predicate is checked.
-    ; if no predicate matches, the result of procedure-cond is the result of the last expression.
-    ; similar to \"cond\" but with procedures for predicate and handler"
-    (let (b a)
-      (cond
-        ((predicate b) (handler b))
-        ...
-        else)))
-
-  (define-syntax-rule (begin-first result expression ...)
-    ; like begin but returns the result of the first expression instead of the last one.
-    ((l (a) expression ... a) result))
-
   (define (each-integer count proc)
     "integer procedure:{integer ->} ->
      call proc \"count\" times"
@@ -275,4 +330,27 @@
      (+ 2 (pass write (+ 1 3)))
      writes 4 to standard output
      results in 6"
-    (proc obj) obj))
+    (proc obj) obj)
+
+  (define (char-set->vector a) (list->vector (char-set->list a)))
+
+  (define (pass-predicate-and-if predicates subject consequent alternative)
+    "(procedure ...) any procedure:{any:subject -> any} procedure:{any:subject -> any}"
+    (if (every (l (a) (a subject)) (any->list predicates)) (consequent subject)
+      (alternative subject)))
+
+  (define (pass-predicate-or-if predicates subject consequent alternative)
+    "any/(procedure:{any:subject -> any} ...) any procedure:{any:subject -> any} procedure:{any:subject -> any}"
+    (if (any (l (a) (a subject)) (any->list predicates)) (consequent subject) (consequent subject)))
+
+  (define (predicate-and predicates . subjects)
+    "any/(procedure:{any:subject -> any} ...) any ... -> boolean
+     true if every predicate gives true for every subject, false otherwise"
+    (every (l (a) (every (l (b) (a b)) subjects)) (any->list predicates)))
+
+  (define (predicate-or predicates . subjects)
+    "any/(procedure:{any:subject -> any} ...) any ... -> boolean
+     true if every predicate gives true for every subject, false otherwise"
+    (any (l (a) (any (l (b) (a b)) subjects)) (any->list predicates)))
+    (define (boolean->integer a) (if a 1 0))
+)

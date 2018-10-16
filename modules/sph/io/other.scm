@@ -1,4 +1,4 @@
-(library (sph io one)
+(library (sph io other)
   (export
     bytevector->file
     call-with-input-files
@@ -40,10 +40,10 @@
     (sph)
     (sph list)
     (only (sph filesystem) ensure-trailing-slash ensure-directory-structure)
-    (only (sph one) begin-first)
+    (only (sph other) begin-first)
     (only (srfi srfi-1) drop))
 
-  (define sph-io-one-description
+  (define sph-io-other-description
     "port and file input/output.
      part of (sph io), which additionally exports (rnrs io ports) and (rnrs io simple)")
 

@@ -21,7 +21,7 @@
       compact
       first-or-false
       pair-reverse)
-    (only (sph one) search-env-path-one begin-first))
+    (only (sph other) search-env-path-one begin-first))
 
   (define sph-process-create-description "create child processes and process chains")
   (load-extension "libguile-sph-lib" "init_sph_lib")

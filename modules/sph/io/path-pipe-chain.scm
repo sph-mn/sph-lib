@@ -7,7 +7,7 @@
     (ice-9 threads)
     (sph)
     (sph io)
-    (sph one)
+    (sph other)
     (sph vector))
 
   (define sph-io-path-pipe-chain-description

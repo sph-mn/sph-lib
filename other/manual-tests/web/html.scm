@@ -1,4 +1,4 @@
-(import (sph common) (sph web html) (sph test) (sph lang scm-format))
+(import (sph) (sph alist) (sph web html) (sph test) (sph lang scm-format))
 
 (define (get-data name)
   (open-input-string

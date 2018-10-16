@@ -15,10 +15,13 @@
     (rnrs io ports)
     (rnrs io simple)
     (sph)
-    (only (sph module) import-unexported)
-    (only (sph two) begin-first-values))
+    (only (sph module) import-unexported))
 
   (define sph-exception-description "rnrs exception helpers. experimental")
+
+  (define-syntax-rule (begin-first-values a b ...)
+    ; like begin but returns the multiple values created by the first expression
+    (apply-values (l result b ... (apply values result)) a))
 
   (define-syntax-rule (exception-intercept on-exception expression)
     ; evaluate "on-exception" if an exception occurred in expression

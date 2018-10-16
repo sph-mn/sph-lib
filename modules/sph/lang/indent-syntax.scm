@@ -21,7 +21,6 @@
     (sph stream)
     (sph tree)
     (srfi srfi-41)
-    (only (sph conditional) if-pass)
     (only (sph io) port->lines)
     (only (sph string) string-multiply)
     (only (srfi srfi-1) drop-while))
@@ -36,15 +35,15 @@
       a))
 
   (define (string->indent-depth a indent-width) "string integer -> integer"
-    (if-pass (string-skip a #\space)
-      (l (prefix-count) (char-count->indent-depth prefix-count indent-width))))
+    (and-let* ((prefix-count (string-skip a #\space)))
+      (char-count->indent-depth prefix-count indent-width)))
 
   (define (line->indent-and-content a indent-width) "string integer -> (integer string)"
-    (if-pass (string-skip a #\space)
-      (l (prefix-count)
+    (let (prefix-count (string-skip a #\space))
+      (if prefix-count
         (pair (char-count->indent-depth prefix-count indent-width)
-          (string-trim-right (string-drop a prefix-count) #\space)))
-      (list 0 a)))
+          (string-trim-right (string-drop a prefix-count) #\space))
+        (list 0 a))))
 
   (define* (prefix-tree->indent-tree a #:optional (base-depth 0) (indent-string "  "))
     "list:(string/list ...) -> string

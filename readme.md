@@ -24,7 +24,7 @@ if you intend to use (sph process create) also call the following before install
 ./exe/compile-c
 ```
 
-this is unfortunately necessary because guile does not come with a generic process creation procedure and it can not be adequately implemented in scheme.
+this is unfortunately necessary because guile does not come with a generic process creation procedure and it apparently can not be adequately implemented in scheme.
 
 ## install destinations
 * /usr/share/guile/site/sph/
@@ -34,18 +34,17 @@ this is unfortunately necessary because guile does not come with a generic proce
 ## highlights
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
-* (sph filesystem asset-compiler) - configuration format and helpers to concatenate/preprocess code from multiple sources
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph install) - program and library installer
 * (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
 * (sph lang parser type-signature) - a parser and writer for the sph type signature notation
 * (sph lang plcss) - s-expression language that compiles to css
 * (sph lang scm-format) - format scheme code
-* (sph lang template) - s-expression quasiquote template processor
+* (sph lang template)
 * (sph libmagic) - binding to the libmagic library from the "file" utility that guesses file types
 * (sph process) - execute programs and evaluate shell or scheme code
 * (sph process create) - create child processes and process chains
-* (sph random-data) - generate random data. strings, booleans, lists, bytevectors, characters, ...
+* (sph random-data) - generate random data. strings, booleans, lists, and more
 * (sph record) - vectors as records
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
 * (sph scrypt) - use the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt
@@ -62,75 +61,47 @@ this is unfortunately necessary because guile does not come with a generic proce
 ## other
 * (sph alist) - association list processing
 * (sph base64) - encoder/decoder
-* (sph binding-info) - get information about bindings in modules
-* (sph char-set-vector) - redefines guiles preset char-sets that are special objects as vectors. experimental
-* (sph conditional) - branching
-* (sph config) - program configuration file management. deprecated
-* (sph debug) - debugging helpers. experimental
-* (sph deprecation) - display a deprecation warning when specific procedures are used. experimental
 * (sph documentation) - extract and display guile scheme code documentation
 * (sph documentation display-format-itpn)
 * (sph documentation display-format-plist)
 * (sph documentation display-format-signature)
 * (sph documentation itpn)
 * (sph documentation shtml)
-* (sph error) - an error object type
 * (sph exception) - rnrs exception helpers. experimental
 * (sph filesystem)
-* (sph filesystem stream) - bindings that create or use srfi-41 streams for reading from directories
-* (sph filesystem watch) - for acting on file-system changes. has not been updated in a while
-* (sph git)
 * (sph hashtable) - rnrs-hashtable processing
-* (sph hashtable one) - more hashtable procedures
-* (sph ice-9-stream)
-* (sph interface-format) - for programs that offer textual input/output in multiple formats. experimental
-* (sph io one) - port and file input/output
-* (sph io read-write) - port io with specifying a read and write procedure
+* (sph io other) - port and file input/output
 * (sph json) - a basic but fast json writer
 * (sph lang config) - a scheme syntax configuration file format for associative data structures
-* (sph lang ecmascript expressions) - create ecmascript syntax strings
 * (sph lang indent-syntax) - converting to and from strings with indented lines
 * (sph lang itpn) - helpers for working with parsed itpn
-* (sph lang itml eval) - evaluate itml inline code expressions and possibly translate to a new format
-* (sph lang itml eval env plaintext)
-* (sph lang itml eval env shtml)
-* (sph lang itml eval plaintext) - evaluate inline code expressions
-* (sph lang itml eval shtml) - evaluate inline code expressions and translate itml to shtml
-* (sph lang itml read) - parse itml
-* (sph lang itml write) - create itml strings from parsed itml
-* (sph lang parser key-values-table) - replacement tables like (pattern replacement ...) from strings read from files or ports
-* (sph lang parser outline) - parse text with nested headings
+* (sph lang parser outline) - parse a document with possible nesting of sections where headings are prefixed by one or multiple characters
+* (sph lang scheme)
 * (sph lang scm-format base)
 * (sph lang scm-format format) - formatters for individual expressions
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
-* (sph linux) - linux specific features
 * (sph list) - helpers for working with lists
-* (sph list one) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
+* (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
+* (sph math)
 * (sph module) - guile module system and rnrs library related procedures
+* (sph module binding-info) - get information about bindings in modules
 * (sph number)
-* (sph one) - various
+* (sph other) - miscellaneous
 * (sph server base)
 * (sph server fibers) - a generic socket data processing server that uses fibers for parallel request processing and non-blocking port input/output
-* (sph set) - hashtables as sets
 * (sph sql) - create sql-statements from scheme data
 * (sph stream) - srfi-41 stream helpers
 * (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph system reader) - a scheme reader that can include comments
 * (sph test base)
-* (sph test cli)
 * (sph test report)
-* (sph threads) - re-exports and renames some parallel processing bindings from (ice-9 threads). experimental
 * (sph time stream) - create an srfi-41 stream of (sph time) date vectors between two dates
 * (sph time string) - time string conversions
 * (sph time utc) - utc related time calculations
 * (sph tree) - processing tree-like list structures
-* (sph tree two)
-* (sph two) - various bindings deemed less useful than the ones in (sph one)
-* (sph uniform-vector) - helpers for srfi-4 and compatible vectors
-* (sph user-cli) - text based user interaction. for example choices or confirmations
+* (sph uniform-vector) - helpers for srfi-4 and compatible vectors. for example f32vector
 * (sph vector) - vector processing
-* (sph vhash)
 * (sph web html)
 * (sph web http)
 * (sph web shtml) - helpers to create html as sxml

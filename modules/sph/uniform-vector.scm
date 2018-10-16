@@ -92,7 +92,7 @@
     (sph number)
     (srfi srfi-4))
 
-  (define sph-uniform-vector-description "helpers for srfi-4 and compatible vectors")
+  (define sph-uniform-vector-description "helpers for srfi-4 and compatible vectors. for example f32vector")
 
   (define-syntax-rule (define-uv-copy id make-vector vector-length)
     (define (id a) "xvector -> xvector"

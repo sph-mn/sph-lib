@@ -53,8 +53,8 @@
     (ice-9 rdelim)
     (rnrs io ports)
     (sph)
+    (sph hashtable)
     (sph module)
-    (sph set)
     (except (srfi srfi-41) port->stream)
     (only (guile)
       eof-object?
@@ -62,7 +62,7 @@
       O_RDONLY
       current-module
       resolve-interface)
-    (only (sph conditional) identity-if))
+    (only (sph other) identity-if))
 
   (define sph-stream-description
     "srfi-41 stream helpers.
@@ -95,6 +95,14 @@
 
   (define (stream-first-or-null a) "stream -> any/list"
     (if (stream-null? a) (list) (stream-first a)))
+
+  (define-syntax-rule (primitive-set-create set entries)
+    (let (r set) (each (l (a) (ht-set! r a #t)) entries) r))
+
+  (define (set-create-empty initial-size) (ht-make ht-hash-equal equal? initial-size))
+  (define (set-create . entries) (primitive-set-create (set-create-empty (length entries)) entries))
+  (define (set-contains? a value) (ht-contains? a value))
+  (define (set-add! a value) (ht-set! a value #t))
 
   (define* (stream-deduplicate a #:optional (set-create set-create))
     "stream [procedure] ->

@@ -14,8 +14,7 @@
     (sph hashtable)
     (sph string)
     (sph test base)
-    (only (sph one) ignore each-integer)
-    (only (sph two) boolean->integer)
+    (only (sph other) ignore each-integer boolean->integer)
     (only (srfi srfi-1) filter-map))
 
   (define (create-indent depth) (string-multiply "  " depth))

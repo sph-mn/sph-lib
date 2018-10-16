@@ -64,7 +64,7 @@
   (define (any->vector a) (if (vector? a) a (vector a)))
 
   (define (each-integer n f)
-    ; redefine "each-integer" from (sph one) to avoid circular dependency (one -> vector, vector -> one)
+    ; redefine "each-integer" from (sph other) to avoid circular dependency (one -> vector, vector -> one)
     "evaluate a procedure a number of times, passing the current number to f. starts from 0"
     (let loop ((e-n 0) (prev #f)) (if (<= e-n n) (loop (+ 1 e-n) (f n)) prev)))
 

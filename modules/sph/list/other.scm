@@ -1,11 +1,12 @@
-(library (sph list one)
+(library (sph list other)
   (export
     group
     group-recursively
     list-ref-random
     list-ref-randomise-cycle
     list-replace-from-hashtable
-    randomise)
+    randomise
+    sph-list-other-description)
   (import
     (rnrs sorting)
     (sph)
@@ -16,7 +17,7 @@
     (only (guile) compose)
     (only (rnrs base) set!))
 
-  (define sph-list-one-description
+  (define sph-list-other-description
     "additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies")
 
   (define (list-replace-from-hashtable a ht)

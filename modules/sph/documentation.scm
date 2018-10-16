@@ -33,7 +33,7 @@
     (rnrs base)
     (sph)
     (sph alist)
-    (sph binding-info)
+    (sph module binding-info)
     (sph lang indent-syntax)
     (sph lang parser type-signature)
     (sph lang scm-format format)
@@ -147,7 +147,7 @@
     "((symbol ...) ...)/(symbol ...) symbol ->
      output documentation for a list of module-names. format-handler-name can currently either be
      default, itpn.
-     for just retrieving module documentation you might want to consider (sph binding-info)"
+     for just retrieving module documentation you might want to consider (sph module binding-info)"
     (let
       ( (format-handler
           (or (assoc-ref documentation-display-formats format-handler-name)

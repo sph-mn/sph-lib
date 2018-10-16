@@ -1,4 +1,4 @@
-; Copyright (C) 2015-2017 sph <sph@posteo.eu>
+; Copyright (C) 2015-2018 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -23,7 +23,6 @@
     (sph)
     (sph alist)
     (sph cli)
-    (sph conditional)
     (sph filesystem)
     (sph list)
     (sph process)
@@ -210,9 +209,9 @@
               (append (list #:symlink? symlink #:dry-run? dry-run)
                 (optional-keyword-argument #:path-destination-prefix prefix)
                 (optional-keyword-argument #:mode-directory
-                  (if-pass mode-directory octal-integer->decimal))
+                  (and mode-directory (octal-integer->decimal mode-directory)))
                 (optional-keyword-argument #:mode-regular
-                  (if-pass mode-regular octal-integer->decimal)))
+                  (and mode-regular (octal-integer->decimal mode-regular))))
               (install-specs-translate-guile-placeholders install-specs
                 (or path-lib-scheme default-path-lib-scheme))))))))
 

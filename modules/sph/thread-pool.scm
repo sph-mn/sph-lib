@@ -12,7 +12,7 @@
     (sph)
     (only (rnrs base) set!)
     (only (sph list) map-integers)
-    (only (sph one) each-integer))
+    (only (sph other) each-integer))
 
   (define sph-thread-pool-description
     "thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type")

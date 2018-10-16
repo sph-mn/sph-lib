@@ -25,7 +25,6 @@
     (rnrs sorting)
     (sph)
     (sph alist)
-    (sph conditional)
     (srfi srfi-37)
     (only (sph list)
       contains?
@@ -50,9 +49,12 @@
   (define sph-cli-description "create command-line interfaces")
 
   (define (typecheck+conversion type a)
-    (cond ((eqv? (q string) type) a) ((eqv? (q number) type) (string->number a))
-      ((eqv? (q integer) type) (pass-predicate-and-if integer? (string->number a) identity not))
-      ((list? type) (any (l (type) (typecheck+conversion type a)) type)) (else a)))
+    (cond
+      ((eqv? (q string) type) a)
+      ((eqv? (q number) type) (string->number a))
+      ((eqv? (q integer) type) (let (a (string->number a)) (and (integer? a) a)))
+      ((list? type) (any (l (type) (typecheck+conversion type a)) type))
+      (else a)))
 
   (define (processor opt name a r) (pair a r))
   (define (unnamed-processor a r) (pair a r))
@@ -144,7 +146,7 @@
 
   (define (config->option-spec a)
     (apply
-      (l (named . unnamed) (if-pass (alist-ref-q named options) (l (a) (append a unnamed)) unnamed))
+      (l (named . unnamed) (let (a (alist-ref-q named options)) (if a (append a unnamed) unnamed)))
       (keyword-list->alist+keyless a)))
 
   (define (commands->help-text-lines a) "list:commands-spec -> string"
@@ -195,8 +197,8 @@
     (l (opt name a r)
       (display
         (string-append
-          (identity-if (alist-ref config (q help-parameters))
-            (config->parameters-text config options))
+          (let (a (alist-ref config (q help-parameters)))
+            (or a (config->parameters-text config options)))
           (if (and text (not (string-null? text)))
             (string-append "\ndescription" (format-help-description text indent)) "")
           ;"options" can not be empty since it at least includes the "--help" option leading to this message
@@ -261,12 +263,12 @@
     "alist:config -> (procedure:{options -> list:extended-options/false})"
     (list
       (l (options)
-        (if-pass (alist-ref-q a version)
-          (l (version-spec)
+        (let (version-spec (alist-ref-q a version))
+          (and version-spec
             (pair (q (version #:names #\v #:processor (display-version-proc version-spec))) options))))
       (l (options)
-        (if-pass (alist-ref-q a about)
-          (l (text)
+        (let (text (alist-ref-q a about))
+          (and text
             (pair (qq (about #:names #\a #:processor (unquote (display-about-proc text a))))
               options))))
       (l (options)
@@ -408,8 +410,8 @@
     (let*
       ( (config+keyless (keyword-list->alist+keyless config)) (config (first config+keyless))
         (options-config
-          (if-pass (alist-ref config (q options)) (l (a) (append a (tail config+keyless)))
-            (tail config+keyless)))
+          (let (a (alist-ref config (q options)))
+            (if a (append a (tail config+keyless)) (tail config+keyless))))
         (command-options (alist-ref config (q command-options) (list)))
         (commands (config->commands config))
         (option-specs (config->options config options-config commands command-options)))

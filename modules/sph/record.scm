@@ -1,5 +1,5 @@
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2017 sph <sph@posteo.eu>
+; Copyright (C) 2010-2018 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -52,12 +52,13 @@
     (except (guile) record? record-accessor))
 
   (define sph-record-description
-    "vectors as records
-     the main goal this library tries to archieve is to offer a dictionary data-structure where field values can be accessed by field name, but where the access happens indexed as for vectors and not using a hash function for example.
-     records use less memory and have shorter access times.
-     this library is supposed to be simpler in definition and usage than existing record libraries (rnrs, srfi) and more flexible by being based on the less restricted interoperability with vectors (for records) and hashtables (for layouts).
+    "vectors as records.
+     access vector elements with field names.
+     this library is supposed to be simpler in definition and usage than previously existing record libraries (rnrs, srfi) and
+     more powerful by being based on vectors (records) and hashtables (layouts) and their less restricted interoperability.
      any vector can be accessed as a record and records can be accessed as vectors.
-     if type information is desired then it has to be added manually by storing a type name in the first record field for example.
+     if type information is desired then for example a symbol type name can be used as the first element of the vector.
+     vector records have the typical literal vector representation for read/write.
      usage:
      (define-record my-record a b c)
      (define-record my-other-record (a accessor-name setter-name) b (c my-other-c))
@@ -71,11 +72,26 @@
          example: (record-update layout instance name name-2)
          same as (record-update layout instance (q name) name (q name-2) name ...)")
 
+  (define-syntax-rule (record-update-q record-layout a field-name/value ...)
+    (apply record-update record-layout a (quote-odd field-name/value ...)))
+
+  (define-syntax-rule (record-update-b record-layout a field-name ...)
+    (apply record-update record-layout a (quote-duplicate field-name ...)))
+
+  (define-syntax-rule (define-record-accessors record-layout (identifier field-name) ...)
+    (begin (define identifier (record-accessor record-layout field-name)) ...))
+
+  (define-syntax-rule (define-record-setters record-layout (identifier field-name) ...)
+    (begin (define identifier (record-setter record-layout field-name)) ...))
+
   (define (any->symbol a)
     "any -> symbol/false
      converts strings, numbers and symbols to symbol, or false for everything else"
-    (cond ((string? a) (string->symbol a)) ((number? a) (string->symbol (number->string a)))
-      ((symbol? a) a) (else #f)))
+    (cond
+      ((string? a) (string->symbol a))
+      ((number? a) (string->symbol (number->string a)))
+      ((symbol? a) a)
+      (else #f)))
 
   (define (record-update record-layout a . field-name/value)
     "vector [integer any] ... -> vector
@@ -87,24 +103,12 @@
         (map-slice 2 (l (field value) (vector-set! a (ht-ref record-layout field #f) value))
           field-name/value))))
 
-  (define-syntax-rule (record-update-q record-layout a field-name/value ...)
-    (apply record-update record-layout a (quote-odd field-name/value ...)))
-
-  (define-syntax-rule (record-update-b record-layout a field-name ...)
-    (apply record-update record-layout a (quote-duplicate field-name ...)))
-
   (define* (alist->record a record-layout)
     "alist record-layout -> record
      extract record data from alist using record-layout and result in one record.
      currently, string keys are also recognized"
     (vector-map (l (name) (or (assoc-ref a name) (assoc-ref a (symbol->string name))))
       (record-field-names record-layout)))
-
-  (define-syntax-rule (define-record-accessors record-layout (identifier field-name) ...)
-    (begin (define identifier (record-accessor record-layout field-name)) ...))
-
-  (define-syntax-rule (define-record-setters record-layout (identifier field-name) ...)
-    (begin (define identifier (record-setter record-layout field-name)) ...))
 
   (define (make-record record-layout) "record-layout -> record"
     ;if calling ht-size is too slow, it could be cached in the layout under a non-symbol key.
@@ -139,8 +143,6 @@
      returns all accessors for the given record-layout in a list"
     (map-integers (ht-size record-layout) (l (index) (l (record) (vector-ref record index)))))
 
-  (define record-append vector-append)
-
   (define (record-field-names record-layout)
     "hashtable:record-layout -> vector:#(symbol ...)
      result in the field-names of record in the same order as they were specified."
@@ -149,8 +151,6 @@
         (let ((r (make-vector (vector-length keys))))
           (vector-each-with-index (l (index a) (vector-set! r (vector-ref values index) a)) keys) r))))
 
-  (define record-field-names-unordered ht-keys)
-
   (define (record-layout-extend! layout-1 layout-2)
     (let (layout-1-size (ht-size layout-1))
       (ht-each
@@ -158,11 +158,6 @@
           (if (ht-ref layout-1 key #f) (raise (q fail-record-layout-field-not-existant))
             (ht-set! layout-1 key (+ value layout-1-size))))
         layout-2)))
-
-  (define record-layout-length ht-size)
-  (define record-layout-merge! ht-merge!)
-  (define record-layout? ht?)
-  (define record-length vector-length)
 
   (define* (record-layout->predicate a #:optional type-prefix)
     "record-layout [symbol:type-name] -> procedure:{vector -> boolean}
@@ -196,8 +191,6 @@
     (map-integers (ht-size record-layout)
       (l (index) (l (record value) (vector-set! record index value)))))
 
-  (define record? vector?)
-
   (define (vector->record record-layout a)
     "this adjusts the length of the given vector to match the length of the layout.
      extra fields in are left out if the layout is smaller"
@@ -205,8 +198,6 @@
       (if (eqv? record-layout-size vec-size) a
         (if (< vec-size record-layout-size) (vector-extend a (- record-layout-size vec-size))
           (vector-shrink a (- vec-size record-layout-size))))))
-
-  (define record-take vector->record)
 
   (define (define-record-prepare-field-spec record-name a)
     "(symbol/(symbol [symbol symbol]) ...) -> ((symbol symbol symbol) ...)"
@@ -260,4 +251,13 @@
      filter record list entries by values retrieved by match-accessor that match the given value,
      and return a list of values retrieved by retrieve-accessor"
     ; this does actually not depend on (sph record) - could be vector-list-filter-value
-    (filter-map (l (a) (and (equal? value (match-accessor a)) (retrieve-accessor a))) record-list)))
+    (filter-map (l (a) (and (equal? value (match-accessor a)) (retrieve-accessor a))) record-list))
+
+  (define record-append vector-append)
+  (define record-field-names-unordered ht-keys)
+  (define record-layout-length ht-size)
+  (define record-layout-merge! ht-merge!)
+  (define record-layout? ht?)
+  (define record-length vector-length)
+  (define record-take vector->record)
+  (define record? vector?))

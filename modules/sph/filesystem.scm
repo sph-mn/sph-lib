@@ -47,8 +47,8 @@
     (sph)
     (sph hashtable)
     (sph list)
-    (sph list one)
-    (sph one)
+    (sph list other)
+    (sph other)
     (sph string)
     (except (srfi srfi-1) map))
 

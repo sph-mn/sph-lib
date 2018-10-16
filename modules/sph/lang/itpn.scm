@@ -17,7 +17,6 @@
     (sph list)
     (sph string)
     (sph tree)
-    (sph two)
     (only (srfi srfi-1) partition))
 
   (define sph-lang-itpn-description

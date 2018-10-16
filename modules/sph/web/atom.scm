@@ -19,7 +19,7 @@
     (sph)
     (sph time rfc3339)
     (only (guile) filter identity)
-    (only (sph one) remove-keyword-associations))
+    (only (sph other) remove-keyword-associations))
 
   (define sph-web-atom-description "create atom syndication feeds with sxml")
   ;for creating the sxml for atom syndication feeds

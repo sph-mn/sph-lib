@@ -1,6 +1,8 @@
 (define-test-module (test module sph lang scm-format)
   (import
-    (sph common)
+    (sph)
+    (sph string)
+    (sph list)
     (sph lang scm-format)
     (sph lang scm-format format)
     (sph lang scm-format transform))

@@ -16,7 +16,68 @@
       drop-right))
 
   (define sph-lang-parser-type-signature-description
-    "a parser and writer for the sph type signature notation")
+    "a parser and writer for the sph type signature notation.
+     input/output
+       expressions separated by: \"->\"
+       example: input -> output
+       example: input ->
+       output arguments are optional. if left-out the output is unspecified
+     multiple arguments
+       expressions separated by a space character: \" \"
+       example: a b c -> d
+     alternative data-types
+       expressions separated by a slash: \"/\"
+       example: a b/c/d -> e
+       example: a port/string/integer -> e
+     alternative names
+       expressions separated by a colon: \":\"
+       example: a b:c:d -> e
+       data-types always come first
+       data-type:helpful-alternative-name:another-alternative-name
+       example: a port:input-port:source -> e
+     optional arguments
+       enclosed with square brackets: []
+       example: a [b c] ->	d
+     repetition
+       none or many consecutive occurences of an expression
+       expression followed by a space character and three dots: \" ...\"
+       example: a b ... c ... -> d
+     function-name specification
+       identifier followed by a space character and two colons: \" ::\"
+       example: name :: a b -> c
+     procedures, dictionaries
+       a function signature enclosed with curly brackets: \"{\" \"}\"
+       unlimited nesting
+       example: {a ->}
+       example with data-type: procedure:{a ... -> list:b}
+       example: hashtable:{key -> value}
+     lists, vectors, pairs, and more
+       using scheme read syntax
+       example list: (a (b c))
+       example vector: #(a #(b c))
+       example using both: (integer #(char ...))
+     multiline signatures
+       two colons followed by a newline, optionally followed by one or multiple
+       input expressions per line separated by newlines, a line with only a \"->\",
+       optionally followed by output expression separated by newlines,
+       ending with end-of-string or two successive newline characters
+       example
+         ::
+         a
+         b
+         ->
+         c
+
+         line outside of signature
+     examples
+       list any [symbol:exclusive/inclusive] -> (list:left list:right)
+       procedure:{any -> boolean} procedure:{list:matched-elements -> list:replacements} list:source -> list
+     multiline example
+       ::
+       procedure:{alist:header procedure:fold-lines:{string:line any:result procedure:next:{any:result -> any} -> any} result -> any}
+       procedure:{header port result ->} any port [string]
+       ->
+       any")
 
   (define-peg-pattern ignored-space none " ")
   (define-peg-pattern ignored-ellipsis none "...")
@@ -87,7 +148,8 @@
             (let (a-last (last a))
               (if (and (list? a-last) (not (null? a-last)) (list? (first a-last)))
                 (append (drop-right a 1) a-last) a)))
-          ((no-arguments) (list (q arguments))) (else a)))
+          ((no-arguments) (list (q arguments)))
+          (else a)))
       a))
 
   (define (string->parsed-type-signature a) "string -> list/boolean"
@@ -101,7 +163,8 @@
         (first
           (tree-map-lists
             (l (a)
-              (case (first a) ((alternatives) (first (tail a)))
+              (case (first a)
+                ((alternatives) (first (tail a)))
                 ((arguments) (string-join (flatten (tail a)) " "))
                 ( (sig-line)
                   (let (a (tail a))

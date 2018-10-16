@@ -6,7 +6,7 @@
     (rnrs base)
     (sph)
     (sph alist)
-    (sph binding-info)
+    (sph module binding-info)
     (sph documentation))
 
   (define sph-documentation-display-format-plist

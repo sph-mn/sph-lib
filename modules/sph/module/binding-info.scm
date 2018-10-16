@@ -1,4 +1,4 @@
-(library (sph binding-info)
+(library (sph module binding-info)
   (export
     bi-arguments
     bi-documentation
@@ -20,7 +20,7 @@
     (sph record)
     (only (ice-9 session) procedure-arguments))
 
-  (define sph-binding-info-description "get information about bindings in modules")
+  (define sph-module-binding-info-description "get information about bindings in modules")
   ;specifies if the current values of the variables should be included in the documentation.
   ;might be interesting but can be a security issue for publicly accessible documentation
   (define bi-include-variable-values #f)

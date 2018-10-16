@@ -19,6 +19,7 @@
     (rename (write-date http-write-date)))
   (import
     (guile)
+    (ice-9 rdelim)
     (rnrs base)
     (rnrs io ports)
     (sph)
@@ -27,10 +28,15 @@
     (only (ice-9 regex) match:substring regexp-substitute/global)
     (only (sph list) map-slice)
     (only (sph module) import-unexported)
-    (only (sph string) any->string)
-    (only (sph two) read-line-crlf-trim))
+    (only (sph string) any->string))
 
-  ;;the html-uri-encoding procedures are copied from (sph web html) to avoid circular dependency
+  ;;some procedures are copied from (sph web html) to avoid circular dependency
+
+  (define (read-line-crlf-trim port)
+    "try to read a line that is known to be cr-lf terminated and remove the cr-lf or return eof-object"
+    (let (line+delim (%read-line port))
+      (let ((line (first line+delim)) (delim (tail line+delim)))
+        (if (and (string? line) (char? delim)) (substring line 0 (- (string-length line) 1)) line))))
 
   (define (html-uri-decode str) "string -> string"
     (regexp-substitute/global #f "\\+|%([0-9A-Fa-f][0-9A-Fa-f])"
@@ -68,7 +74,8 @@
     (string-join
       (fold
         (l (e r)
-          (case (first e) ((domain) (pair (string-append "Domain=" (tail e)) r))
+          (case (first e)
+            ((domain) (pair (string-append "Domain=" (tail e)) r))
             ((path) (pair (string-append "Path=" (tail e)) r))
             ((expires) (pair (string-append "Expires=" (tail e)) r))
             ((max-age) (pair (string-append "Max-Age=" (number->string (tail e))) r))

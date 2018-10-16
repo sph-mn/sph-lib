@@ -3,7 +3,7 @@
     (sph io)
     (rnrs io ports)
     (sph list)
-    (sph one)
+    (sph other)
     (ice-9 threads)
     (sph io path-pipe-chain))
 

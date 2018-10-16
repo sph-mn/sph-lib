@@ -7,7 +7,7 @@
     (ice-9 peg)
     (sph)
     (sph alist)
-    (sph binding-info)
+    (sph module binding-info)
     (sph documentation)
     (sph lang parser type-signature)
     (sph list)
