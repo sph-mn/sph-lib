@@ -111,8 +111,6 @@
     (let (set (set-create))
       (stream-filter (l (a) (if (set-contains? set a) #f (begin (set-add! set a) #t))) a)))
 
-  ;-- io
-
   (define (port->buffered-octet-stream port buffer-size)
     "port integer -> stream
      creates stream that produces bytevectors of length buffer-size filled with data/octets read from port"

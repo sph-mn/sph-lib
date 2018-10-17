@@ -19,7 +19,7 @@
     (sph web shtml)
     (only (srfi srfi-1) alist-delete))
 
-  (define shtml-lines
+(define shtml-lines
     (let*
       ( (inline-html-tags
           (ht-from-list

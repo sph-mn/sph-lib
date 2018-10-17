@@ -1,5 +1,5 @@
 (import (rnrs bytevectors) (srfi srfi-1)
-  (ice-9 regex) (sph) (sph string) (sph one) (sph test performance))
+  (ice-9 regex) (sph) (sph string) (sph other) (sph test performance))
 
 (define regular-string (string-multiply "12" 300))
 

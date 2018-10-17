@@ -1,5 +1,5 @@
 (import (sph string) (sph)
-  (sph one) (sph alist) (sph list) (srfi srfi-1) (sph hashtable) (sph lang scm-format) (sph test))
+  (sph other) (sph alist) (sph list) (srfi srfi-1) (sph hashtable) (sph lang scm-format) (sph test))
 
 (define c scm-format-default-config)
 (hashtables-set! c (q format) (q indent-string) "--")

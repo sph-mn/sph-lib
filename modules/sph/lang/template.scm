@@ -11,7 +11,6 @@
     (rnrs eval)
     (sph)
     (only (sph alist) alist-ref)
-    (only (sph io read-write) rw-file->list rw-port->list)
     (only (sph list) fold-multiple))
 
   (define sph-lang-template-description
@@ -25,6 +24,12 @@
      template-source: element/(element/(element ...) ...)
      template-source: single-elements/(concatenated-elements/(composed-elements ...) ...)
      element: string:path/procedure:template-procedure/port/any")
+
+  (define (rw-file->list read path)
+    (call-with-input-file path (l (port) (rw-port->list read port))))
+
+  (define (rw-port->list read port)
+    (let loop ((a (read port))) (if (eof-object? a) (list) (pair a (loop (read port))))))
 
   (define (template-datum->template-proc a env)
     "any:scheme-datum environment -> procedure:template-proc
