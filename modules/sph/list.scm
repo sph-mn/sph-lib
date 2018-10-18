@@ -35,6 +35,7 @@
     difference+intersection-p
     difference-p
     drop*
+    duplicates
     each-first-middle-last
     each-in-index-range
     each-slice
@@ -334,6 +335,9 @@
     (apply lset-difference equal? lists))
 
   (define (union . a) (delete-duplicates (apply append a)))
+
+  (define (duplicates a) "get a list of distinct values that occur more than once in the same list"
+    (delete-duplicates (filter-map (l (b) (and (< 1 (count-value b a)) b)) a)))
 
   (define* (delete-duplicates-sorted a #:optional (equal-f equal?) (preserve-order #t))
     "list [procedure:{any any -> boolean} boolean] -> list
