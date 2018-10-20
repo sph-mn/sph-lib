@@ -171,10 +171,20 @@
         (or (null? keys) (loop (ht-ref a (first keys)) (tail keys))))
       a keys))
 
-  (define* (ht-from-alist a #:optional (equal-proc equal?) (hash-proc ht-hash-equal))
-    "convert assoc-list/alist \"a\" to an r6rs hashtable"
-    (let ((ht (ht-make hash-proc equal-proc)))
-      (each (l (alist-part) (ht-set! ht (first alist-part) (tail alist-part))) a) ht))
+  (define* (ht-from-alist a #:key (equal-f equal?) (hash-f ht-hash-equal) (depth 0))
+    "list #:equal-f procedure #:hash-f procedure #:depth integer/infinite -> hashtable
+     convert alist \"a\" to an r6rs hashtable.
+     if depth is positive then also convert nested alists to hashtables at most depth nestings deep.
+     depth can be (inf)"
+    (let (ht (ht-make hash-f equal-f))
+      (each
+        (l (a)
+          (let (b (tail a))
+            (ht-set! ht (first a)
+              (if (or (= 0 depth) (not (and (list? b) (every pair? b)))) b
+                (ht-from-alist b #:equal-f equal-f #:hash-f hash-f #:depth (- depth 1))))))
+        a)
+      ht))
 
   (define (ht-create . associations)
     "{key value} ... -> hashtable

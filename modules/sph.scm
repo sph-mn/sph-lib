@@ -199,6 +199,7 @@
     tail
     take-while
     tan
+    third
     truncate
     unquote
     unquote-splicing

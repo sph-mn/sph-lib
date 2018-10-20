@@ -13,6 +13,7 @@
 (library (sph alist)
   (export
     alist
+    alist->list
     alist-bind
     alist-bind-and*
     alist-cond
@@ -247,4 +248,11 @@
     (let loop ((a a) (keys keys))
       (if (null? keys) a (and a (loop (alist-ref a (first keys)) (tail keys))))))
 
-  (define (alist-delete-multiple a . keys) (remove (l (a) (contains? keys (first a))) a)))
+  (define (alist-delete-multiple a . keys) (remove (l (a) (contains? keys (first a))) a))
+
+  (define (alist->list a)
+    "list -> list
+     convert an alist to a list that contains every alist key and value alternatingly.
+     the inverse of list->alist.
+     example: ((a . 1) (b . 2)) -> (a 1 b 2)"
+    (fold (l (a result) (pairs (first a) (tail a) result)) null a)))

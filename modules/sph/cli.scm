@@ -1,6 +1,6 @@
 ; (sph cli) - creating command-line interfaces
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2016 sph <sph@posteo.eu>
+; Copyright (C) 2010-2018 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -20,8 +20,6 @@
     sph-cli-description)
   (import
     (guile)
-    (ice-9 receive)
-    (rnrs base)
     (rnrs sorting)
     (sph)
     (sph alist)
@@ -37,7 +35,6 @@
       fold-multiple
       split-by-pattern)
     (only (sph string) string-multiply any->string-write)
-    (only (sph tree) prefix-tree-product)
     (only (srfi srfi-1)
       drop-right
       drop
@@ -47,6 +44,9 @@
       partition))
 
   (define sph-cli-description "create command-line interfaces")
+  (define help-text-line-description-delimiter "  ")
+  (define indent "  ")
+  (define options-parameter "options ...")
 
   (define (typecheck+conversion type a)
     (cond
@@ -71,8 +71,6 @@
 
   (define (unnamed-option? a) "list -> boolean"
     (or (list? (first a)) (and (not (null? (tail a))) (null? (first (tail a))))))
-
-  (define help-text-line-description-delimiter (string-multiply " " 2))
 
   (define (format-argument-name input-type required? name-prepend) "false/symbol boolean -> string"
     (let (name (if input-type (symbol->string input-type) "value"))
@@ -174,9 +172,6 @@
 
   (define (display-command-line-interface-proc config spec)
     (l arguments (write (options-remove-processors spec)) (exit 0)))
-
-  (define indent "  ")
-  (define options-parameter "options ...")
 
   (define (config->parameters-text a spec)
     (let
@@ -364,9 +359,9 @@
   (define (config->commands a) "list -> list"
     (false-if-exception
       (map
-        (l (e)
-          (if (string? e) (list (list e))
-            (if (string? (first e)) (pair (list (first e)) (tail e)) e)))
+        (l (a)
+          (if (string? a) (list (list a))
+            (if (string? (first a)) (pair (list (first a)) (tail a)) a)))
         (alist-ref a (q commands)))))
 
   (define (config->missing-arguments-handler a) "list -> procedure/false"
@@ -385,6 +380,7 @@
      #:help string
      #:help-parameters string/boolean
      #:arguments (string ...)
+     #:null-arguments (string ....)
      #:missing-arguments-handler procedure:{symbol any ...}
      #:unsupported-option-handler procedure:{symbol srfi-37-option option-name ...}
      #:command-handler procedure:{list:(symbol ...):command-name list:rest-arguments -> any}
@@ -396,6 +392,7 @@
      procedure:{(string ...) -> list:alist:((symbol . any) ...):parsed-arguments}
 
      # description
+     null-arguments: arguments to use when no arguments have been given to the cli, for example (list \"--help\")
      commands-options: options shared between commands
      commands: specify sub-commands that are recognised as leading keywords in the program arguments. with options or handler procedures
      command-handler: command-handler called for all commands (after individual command handlers)
@@ -414,18 +411,19 @@
             (if a (append a (tail config+keyless)) (tail config+keyless))))
         (command-options (alist-ref config (q command-options) (list)))
         (commands (config->commands config))
-        (option-specs (config->options config options-config commands command-options)))
-      (let
-        ( (missing-arguments-handler (config->missing-arguments-handler config))
-          (unsupported-option-handler (config->unsupported-option-handler config))
-          (unnamed-options (if options-config (filter unnamed-option? options-config) (list)))
-          (command-handler (alist-ref config (q command-handler)))
-          (af-options (map option-spec->args-fold-option option-specs)))
-        (l arguments
-          (let*
-            ( (arguments (if (null? arguments) (tail (program-arguments)) (first arguments)))
-              (no-command-cli
-                (let
+        (option-specs (config->options config options-config commands command-options))
+        (missing-arguments-handler (config->missing-arguments-handler config))
+        (unsupported-option-handler (config->unsupported-option-handler config))
+        (unnamed-options (if options-config (filter unnamed-option? options-config) (list)))
+        (command-handler (alist-ref config (q command-handler)))
+        (af-options (map option-spec->args-fold-option option-specs))
+        (null-arguments (alist-ref config (q null-arguments))))
+      (l arguments
+        (let*
+          ( (arguments (if (null? arguments) (tail (program-arguments)) (first arguments)))
+            (no-command-cli
+              (let*
+                ( (arguments (or (and (null? arguments) null-arguments) arguments))
                   (cli
                     (nullary
                       (check-required
@@ -435,10 +433,11 @@
                               unrecognized-processor unnamed-processor (list)))
                           unnamed-options)
                         option-specs)))
-                  (let
-                    (cli
-                      (if missing-arguments-handler
-                        (nullary (catch (q missing-arguments) cli missing-arguments-handler)) cli))
+                  (cli
+                    (if missing-arguments-handler
+                      (nullary (catch (q missing-arguments) cli missing-arguments-handler)) cli))
+                  (cli
                     (if unsupported-option-handler
-                      (nullary (catch (q unsupported-option) cli unsupported-option-handler)) cli)))))
-            (command-dispatch& command-handler arguments commands command-options no-command-cli)))))))
+                      (nullary (catch (q unsupported-option) cli unsupported-option-handler)) cli)))
+                cli)))
+          (command-dispatch& command-handler arguments commands command-options no-command-cli))))))

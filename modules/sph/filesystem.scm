@@ -230,6 +230,7 @@
 
   (define* (directory-prefix-tree start #:optional (directory-tree directory-tree))
     "-> (string/list ...)
+     get directory contents as a prefix list.
      example
      (directory-prefix-tree (list \"/usr/local/bin\" \"/usr/local/lib\"))
      -> (\"/usr\" (\"local\" (\"bin\" \"lib\")))"
