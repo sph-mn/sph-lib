@@ -1,5 +1,5 @@
 # sph-lib
-see also [sph.mn](http://sph.mn/c/view/2u)
+see also [sph.mn](http://sph.mn/computer/software/sph-lib.html)
 
 # dependencies
 * [gnu guile](https://www.gnu.org/software/guile/) >= 2
@@ -16,7 +16,7 @@ see more options using
 ./exe/install --help
 ```
 
-all that is necessary is to put the paths under modules/ into a directory that is listed in $GUILE_LOAD_PATH
+or copy or symlink all files modules/* into a directory in guiles load path
 
 ## extended
 if you intend to use (sph process create) also call the following before install:
