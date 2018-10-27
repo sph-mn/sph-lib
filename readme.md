@@ -24,7 +24,7 @@ if you intend to use (sph process create) also call the following before install
 ./exe/compile-c
 ```
 
-this is unfortunately necessary because guile does not come with a generic process creation procedure and it apparently can not be adequately implemented in scheme.
+this is unfortunately necessary because guile does not come with a generic process creation procedure and it apparently can not be adequately implemented in scheme
 
 ## install destinations
 * /usr/share/guile/site/sph/
@@ -34,27 +34,30 @@ this is unfortunately necessary because guile does not come with a generic proce
 ## highlights
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
-* (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
+* (sph filesystem)
 * (sph install) - program and library installer
 * (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
+* (sph lang indent-syntax) - converting to and from strings with indented lines
 * (sph lang parser type-signature) - a parser and writer for the sph type signature notation
 * (sph lang plcss) - s-expression language that compiles to css
 * (sph lang scm-format) - format scheme code
-* (sph lang template)
 * (sph libmagic) - binding to the libmagic library from the "file" utility that guesses file types
+* (sph list) - helpers for working with lists
+* (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph process) - execute programs and evaluate shell or scheme code
 * (sph process create) - create child processes and process chains
-* (sph random-data) - generate random data. strings, booleans, lists, and more
 * (sph record) - vectors as records
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
 * (sph scrypt) - use the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt
 * (sph server) - a generic socket data processing server that uses a thread-pool for parallel request processing
+* (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph test) - automated code testing with composable modules
 * (sph test performance) - adaptive performance testing with formatted result display
 * (sph thread-pool) - thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type
 * (sph time) - time as tai or utc nanoseconds since the unix epoch or gregorian calendar dates
 * (sph time gregorian) - gregorian calendar calculations
 * (sph time rfc3339) - parse and create strings in the rfc3339 time format
+* (sph tree) - processing tree-like list structures
 * (sph vector selection) - create and analyse selections from sets: permutations, combinations, n-tuples
 * (sph web atom) - create atom syndication feeds with sxml
 
@@ -68,38 +71,35 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph documentation itpn)
 * (sph documentation shtml)
 * (sph exception) - rnrs exception helpers. experimental
-* (sph filesystem)
+* (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph hashtable) - rnrs-hashtable processing
 * (sph io other) - port and file input/output
 * (sph json) - a basic but fast json writer
-* (sph lang config) - a scheme syntax configuration file format for associative data structures
-* (sph lang indent-syntax) - converting to and from strings with indented lines
+* (sph lang config) - a scheme syntax configuration file format that parses to a alist or hashtable, possibly nested
 * (sph lang itpn) - helpers for working with parsed itpn
 * (sph lang parser outline) - parse a document with possible nesting of sections where headings are prefixed by one or multiple characters
 * (sph lang scheme)
 * (sph lang scm-format base)
 * (sph lang scm-format format) - formatters for individual expressions
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
-* (sph list) - helpers for working with lists
-* (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
+* (sph lang template) - s-expression template processor
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
 * (sph math)
 * (sph module) - guile module system and rnrs library related procedures
 * (sph module binding-info) - get information about bindings in modules
 * (sph number)
 * (sph other) - miscellaneous
+* (sph random-data) - generate random data. strings, booleans, lists, and more
 * (sph server base)
 * (sph server fibers) - a generic socket data processing server that uses fibers for parallel request processing and non-blocking port input/output
 * (sph sql) - create sql-statements from scheme data
 * (sph stream) - srfi-41 stream helpers
-* (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph system reader) - a scheme reader that can include comments
 * (sph test base)
 * (sph test report)
 * (sph time stream) - create an srfi-41 stream of (sph time) date vectors between two dates
 * (sph time string) - time string conversions
 * (sph time utc) - utc related time calculations
-* (sph tree) - processing tree-like list structures
 * (sph uniform-vector) - helpers for srfi-4 and compatible vectors. for example f32vector
 * (sph vector) - vector processing
 * (sph web html)
@@ -107,6 +107,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph web shtml) - helpers to create html as sxml
 
 # documentation
-* most procedures and modules have docstrings. extracted documentation can be browsed on [sph.mn](http://sph.mn/c/view/2u)
-* modules export the description as a string variable named like the module name and "description" joined with minus. for example (sph vector) exports sph-vector-description
+* most procedures and modules have docstrings. extracted documentation can be browsed on [sph.mn](http://sph-info.localhost/computer/software/sph-lib.html)
+* modules export the description as a string variable named like the module and "description" joined with minus. for example (sph vector) exports sph-vector-description
 * "other/highlights" is a newline separated list of module names to include under "highlights" when creating a module listing with "exe/list-modules"
