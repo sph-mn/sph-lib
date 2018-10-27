@@ -107,6 +107,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph web shtml) - helpers to create html as sxml
 
 # documentation
-* most procedures and modules have docstrings. extracted documentation can be browsed on [sph.mn](http://sph-info.localhost/computer/software/sph-lib.html)
+* most procedures and modules have docstrings. extracted documentation can be browsed on [sph.mn](http://sph.mn/computer/software/sph-lib.html)
 * modules export the description as a string variable named like the module and "description" joined with minus. for example (sph vector) exports sph-vector-description
 * "other/highlights" is a newline separated list of module names to include under "highlights" when creating a module listing with "exe/list-modules"
