@@ -23,7 +23,36 @@
      template-procedure :: procedure:{symbol:key [default] -> variable-value} any:content -> any
      template-source: element/(element/(element ...) ...)
      template-source: single-elements/(concatenated-elements/(composed-elements ...) ...)
-     element: string:path/procedure:template-procedure/port/any")
+     element: string:path/procedure:template-procedure/port/any
+     # features
+     * templates can be procedures or read from external files
+     * templates content is interpreted as the content of a quasiquoted list
+     * using unquote, the results of arbitrary scheme expressions can be inserted
+     * configurable, language-specific code unquote execution environments
+     * template variables
+     * template composition using variables or a second \"content\" parameter
+     * the general result can be anything, for example a string from a sxml
+     * template-fold procedure that allows to specify template sources as ports/strings/procedures
+     and merging or wrapping/nesting depending on structure, (merge-all-on-this-level ...) or ((wrap-all-on-this-level ...) to-merge ...)
+     * templates are read with the default scheme reader to robustly support all scheme syntax. scheme comment syntax is supported
+     # examples
+     ```
+     (template-fold (l (a result) (display a port) result) source bindings env target)
+     ```
+     ## example bindings
+     ```
+     (quote ((myvariable . 2) (othervariable . 3)))
+     ```
+     ## example source
+     ```
+     \"testfile\"
+     (list \"append-this-file\" \"and-this-file\" \"and-this-one\")
+     (list \"append-this-file-with\" (list \"into-this-file\" \"insert-this-file\" \"insert-insert-this-file\") \"append-this\")
+     (list (list (list (quote div) \"sxml starts here\")))
+     (quote (((div \"sxml starts here\"))))
+     (list (list (lambda (ref content) sxml) \"testfile-for-content\"))
+     (list (lambda (ref content) (ref (quote myvariable))))
+     ```")
 
   (define (rw-file->list read path)
     (call-with-input-file path (l (port) (rw-port->list read port))))

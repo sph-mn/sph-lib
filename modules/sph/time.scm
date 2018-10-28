@@ -72,6 +72,14 @@
 
   (define sph-time-description
     "time as tai or utc nanoseconds since the unix epoch or gregorian calendar dates.
+     get, manipulate and convert dates and times in scheme.
+     uses a proleptic gregorian calendar with negative years and a year 0 equivalent to 1 BCE
+     and does not account for eventual historical errors in timekeeping should there be some.
+     iso8601 and the gnu date utility include a year zero as well, to which the output is compatible.
+     international atomic time is used because it does not use leap seconds. with utc it is
+     not predictable when future leap seconds will be inserted, which makes it impossible to calculate accurate future times with utc.
+     the implementation does not depend on other time libraries, only on a function that gives the current utc posixtime.
+     it might contain useful examples for calendar and time calculation implementors.
      objects
        utc: integer: utc seconds  since the unix epoch. utc uses leap seconds to conform to (= number-of-days (/ utc-seconds 86400))
        tai: integer: tai seconds since the unix epoch. as elapsed, no leap seconds
