@@ -142,27 +142,28 @@
           (if explicitly-not-required (string-append "[" a "]") a)))
       (filter unnamed-option? a)))
 
-  (define (config->option-spec a)
-    (apply
-      (l (named . unnamed) (let (a (alist-ref-q named options)) (if a (append a unnamed) unnamed)))
-      (keyword-list->alist+keyless a)))
-
   (define (commands->help-text-lines a) "list:commands-spec -> string"
     (list-sort string<?
       (map
-        (l (e)
-          (let ((command (string-join (first e) " ")) (command-arguments (tail e)))
-            (let
-              (option-spec
-                (if (null? command-arguments) (list)
+        (l (a)
+          (let*
+            ( (command (string-join (first a) " ")) (command-arguments (tail a))
+              (options
+                (if (null? command-arguments) null
                   (if (null? (tail command-arguments))
-                    (if (procedure? (first command-arguments)) (list)
-                      (config->option-spec command-arguments))
-                    (config->option-spec command-arguments))))
-              (string-append command
-                (if (null? option-spec) ""
-                  (let (unnamed (options-spec->unnamed-arguments-strings option-spec))
-                    (if (null? unnamed) "" (string-append " :: " (first unnamed)))))))))
+                    (if (procedure? (first command-arguments)) null
+                      (keyword-list->alist+keyless command-arguments))
+                    (keyword-list->alist+keyless command-arguments)))))
+            (string-append command
+              (if (null? options) ""
+                (apply
+                  (l (named . unnamed)
+                    (let
+                      ( (unnamed (options-spec->unnamed-arguments-strings unnamed))
+                        (description (alist-ref-q named description)))
+                      (string-append (if (null? unnamed) "" (string-append " :: " (first unnamed)))
+                        (if description (string-append " | " description) ""))))
+                  options)))))
         a)))
 
   (define (options-remove-processors a)

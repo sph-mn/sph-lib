@@ -12,7 +12,6 @@
 (sph list)
 (sph process create)
 (sph process)
-(sph record)
 (sph scgi)
 (sph scrypt)
 (sph server)

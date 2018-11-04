@@ -52,7 +52,8 @@
     (except (guile) record? record-accessor))
 
   (define sph-record-description
-    "vectors as records.
+    "*deprecated* vectors as records.
+     see vector-accessor from (sph vector) instead and create records like #(symbol:type-name value ...).
      access vector elements with field names.
      this library is supposed to be simpler in definition and usage than previously existing record libraries (rnrs, srfi) and
      more powerful by being based on vectors (records) and hashtables (layouts) and their less restricted interoperability.

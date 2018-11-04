@@ -9,6 +9,7 @@
     date-minute
     date-month
     date-nanosecond
+    date-new
     date-offset
     date-second
     date-week-count
@@ -61,14 +62,13 @@
     utc-start-week
     utc-start-year
     utc-year
-    utc-zone-offset
-    (rename (date date-record)))
+    utc-zone-offset)
   (import
     (guile)
     (sph)
-    (sph record)
     (sph time gregorian)
-    (sph time utc))
+    (sph time utc)
+    (only (sph vector) vector-accessor))
 
   (define sph-time-description
     "time as tai or utc nanoseconds since the unix epoch or gregorian calendar dates.
@@ -118,19 +118,29 @@
   (define (tai-add-seconds a seconds) "add seconds to tai or utc time"
     (+ (seconds->nanoseconds seconds) a))
 
-  (define-record date year month day hour minute second nanosecond offset)
+  (define* (date-new #:optional year month day hour minute second nanosecond offset)
+    (vector (q date) year month day hour minute second nanosecond offset))
+
+  (define date-year (vector-accessor 1))
+  (define date-month (vector-accessor 2))
+  (define date-day (vector-accessor 3))
+  (define date-hour (vector-accessor 4))
+  (define date-minute (vector-accessor 5))
+  (define date-second (vector-accessor 6))
+  (define date-nanosecond (vector-accessor 7))
+  (define date-offset (vector-accessor 8))
 
   (define*
     (date-create #:key (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0) (nanosecond 0)
       (offset 0))
-    "create a date object" (record date year month day hour minute second nanosecond offset))
+    "create a date object" (date-new year month day hour minute second nanosecond offset))
 
   (define*
     (date-create* #:optional (year 1) (month 1) (day 1) (hour 0) (minute 0) (second 0)
       (nanosecond 0)
       (offset 0))
     "like date-create but the arguments are not keyword arguments"
-    (record date year month day hour minute second nanosecond offset))
+    (date-new year month day hour minute second nanosecond offset))
 
   (define (date-week-count a) (if (greg-year-weeks-53? (date-year a)) 53 52))
 
@@ -142,7 +152,7 @@
       (let*
         ( (month (date-month a)) (day (date-day a))
           (day-count (vector-ref (greg-month-days-get (greg-year-leap-year? year)) (- month 1))))
-        (record date (if (and (= month 12) (= day day-count)) (+ 1 year) year)
+        (date-new (if (and (= month 12) (= day day-count)) (+ 1 year) year)
           (if (= day day-count) (+ 1 (modulo month 12)) month) (+ 1 (modulo day day-count))
           (date-hour a) (date-minute a) (date-second a) (date-nanosecond a) (date-offset a)))))
 
@@ -220,8 +230,7 @@
             (days-per-month (greg-month-days-get leap-year?)))
           (greg-year-days->month-and-day& days days-per-month
             (l (month month-day)
-              (nanoseconds->hms& day-rest
-                (l (h m s ns) (record date year month month-day h m s ns 0)))))))))
+              (nanoseconds->hms& day-rest (l (h m s ns) (date-new year month month-day h m s ns 0)))))))))
 
   (define (utc->week a) "integer -> integer"
     (let*

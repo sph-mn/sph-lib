@@ -46,7 +46,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph process) - execute programs and evaluate shell or scheme code
 * (sph process create) - create child processes and process chains
-* (sph record) - vectors as records
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
 * (sph scrypt) - use the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt
 * (sph server) - a generic socket data processing server that uses a thread-pool for parallel request processing
