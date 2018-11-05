@@ -16,7 +16,7 @@
     (only (sph time)
       nanoseconds->seconds
       utc-from-date
-      date-create
+      date-new
       seconds->nanoseconds)
     (only (sph time utc) utc-duration->hms)
     (only (sph tree) tree-splice)
@@ -118,7 +118,7 @@
           hours minutes seconds seconds-fraction offset-negative? offset-hours offset-minutes)
         (let (offset-factor (if offset-negative? -1 1))
           (utc-from-date
-            (date-create #:year year
+            (date-new #:year year
               #:month month
               #:day day
               #:hour hours

@@ -5,7 +5,7 @@
     (sph time string))
 
   (define-test (time->iso8601-datetime) (string? (time->ymd)))
-  (define 2016-6-17 (utc-from-date (date-create* 2016 6 17)))
+  (define 2016-6-17 (utc-from-date (date-new* 2016 6 17)))
   (define-test (utc-current-ymd-ks) (string? (utc-current-ymd-ks)))
 
   (test-execute-procedures-lambda (utc->ymd (unquote 2016-6-17) "2016-06-17")

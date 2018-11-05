@@ -36,7 +36,7 @@
     (let (a (military-time->hm a)) (+ (* 3600 (first a)) (* 60 (tail a)))))
 
   (define (utc-from-ymd a)
-    (utc-from-date (apply date-create* (map string->number (string-split a #\-)))))
+    (utc-from-date (apply date-new* (map string->number (string-split a #\-)))))
 
   (define (seconds-from-hms a)
     "string -> integer
