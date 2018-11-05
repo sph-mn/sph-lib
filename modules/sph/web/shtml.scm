@@ -1,5 +1,6 @@
 (library (sph web shtml)
   (export
+    shtml->html
     shtml-alist->options
     shtml-heading
     shtml-hyperlink
@@ -12,9 +13,14 @@
     shtml-section
     shtml-text->sxml)
   (import
+    (rnrs io ports)
     (sph)
     (sph list)
-    (only (guile) string-split make-list string-null?)
+    (sxml simple)
+    (only (guile)
+      string-split
+      make-list
+      string-null?)
     (only (sph string) any->string))
 
   (define sph-web-shtml-description "helpers to create html as sxml")
@@ -87,4 +93,8 @@
   (define (shtml-list->table a)
     "((sxml:cell ...) ...) -> sxml
      create the shtml for a <table> with content"
-    (pair (q table) (map (l (a) (pair (q tr) (map (l (a) (list (q td) a)) a))) a))))
+    (pair (q table) (map (l (a) (pair (q tr) (map (l (a) (list (q td) a)) a))) a)))
+
+  (define (shtml->html shtml port)
+    "write html from shtml to port, adding a <!doctype html> declaration at the beginning"
+    (put-string port "<!doctype html>") (sxml->xml shtml port)))

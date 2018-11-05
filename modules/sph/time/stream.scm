@@ -5,7 +5,6 @@
   (import
     (guile)
     (sph)
-    (sph record)
     (sph time)
     (sph time gregorian)
     (srfi srfi-41))
@@ -28,7 +27,9 @@
               (or (< month month-end) (and (= month month-end) (<= day day-end)))))
           (let
             (day-count (vector-ref (greg-month-days-get (greg-year-leap-year? year)) (- month 1)))
-            (stream-cons (record date-record year month day 0 0 0 0 0)
-              (loop (if (and (= month 12) (= day day-count)) (+ 1 year) year)
-                (if (= day day-count) (+ 1 (modulo month 12)) month) (+ 1 (modulo day day-count)))))
+            (stream-cons (date-new* year month day 0 0 0 0 0)
+              (loop
+                (if (and (= month 12) (= day day-count)) (+ 1 year) year)
+                (if (= day day-count) (+ 1 (modulo month 12)) month)
+                (+ 1 (modulo day day-count)))))
           stream-null)))))
