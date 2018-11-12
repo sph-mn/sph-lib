@@ -125,9 +125,7 @@
     "string -> boolean
      checks if the string is enclosed by round brackets.
      also checks if every opening bracket is paired with a closing one after it"
-    (let (a-len (string-length a))
-      (and (<= 2 a-len) (eqv? #\( (string-ref a 0))
-        (eqv? #\) (string-ref a (- a-len 1))) (string-brackets-closed? a #\( #\)))))
+    (string-brackets-enclosed? a #\( #\)))
 
   (define (regexp-match-replace a replacements)
     "string ((regexp . string:replacement)/(regexp string:search-string . string:replacement) ...) -> string
@@ -175,6 +173,24 @@
      this can be used to check if there are missing round brackets in a string.
      example: (string-brackets-closed? \"(ab (cd (e)) f)\" #\\( #\\))"
     (= 0 (string-brackets-unclosed-count a start-char end-char)))
+
+  (define (string-brackets-enclosed? a start-char end-char)
+    "string character character -> boolean
+     check if string has start-char as the first character and end-char as the last, and if
+     occurrences of start-char and end-char as opening and closing brackets are balanced"
+    (let (len (string-length a))
+      (and (< 1 len) (eq? start-char (string-ref a 0))
+        (eq? end-char (string-ref a (- len 1)))
+        (let loop ((index 1) (depth 1))
+          (cond
+            ((= depth 0) (= len index))
+            ( (< index len)
+              (loop (+ 1 index)
+                (cond
+                  ((eqv? start-char (string-ref a index)) (+ depth 1))
+                  ((eqv? end-char (string-ref a index)) (- depth 1))
+                  (else depth))))
+            (else #f))))))
 
   (define (string-camelcase->dash a)
     "string -> string
