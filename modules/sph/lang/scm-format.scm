@@ -130,7 +130,7 @@
           (scm-format-transform-tree a (ht-ref-q config transform)))
         (any is-library? a))))
 
-  (define* (scm-format a #:optional (current-indent 0) config) "any -> string"
+  (define* (scm-format a #:optional (current-indent 0) config) "any:scheme-data -> string"
     (primitive-scm-format (list a) 0
       (if config (config-add-defaults config) scm-format-default-config)))
 

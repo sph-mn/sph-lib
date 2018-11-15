@@ -35,8 +35,8 @@
       search-path?
       path-open-flags)
     "string:path/file-name [(string ...) port/string/integer/false ... #:key (env (environ)) (keep-descriptors (list)) search-path? (path-open-flags integer)] -> process-id
-     \"executable\" is the path or file name of a file to execute to become the new process.
-     if the given string for \"executable\" does not start with a slash and search-path? is true (default is false), it is searched in the directories in the PATH environment variable.
+     \"executable\" is the path or file name (if search-path? is true) of a file to execute to become the new process.
+     if the given string for \"executable\" does not start with a slash and search-path? is true (default is false for security), it is searched in the directories in the PATH environment variable.
      the optional parameters are to set the standard streams.
      with the key parameters the environment variables for the new process can be set in the format (environ) returns.
      no file descriptors from the parent process are transferred to the child except if listed in keep-descriptors or given using the input/output/error-port parameters.

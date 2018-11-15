@@ -18,6 +18,7 @@
     port->bytevector
     port->file
     port->lines
+    port->port
     port->string
     port-copy-all
     port-copy-some
@@ -227,6 +228,8 @@
 
   (define* (port-copy-all a b #:optional (buffer-size 4096))
     (if (not (eof-object? (port-copy-some a b buffer-size))) (port-copy-all a b buffer-size)))
+
+  (define port->port port-copy-all)
 
   (define-syntax-rule (table-match-or-update char table)
     ;"character (#(current-index max-index string) ...) -> string:match/list:updated-table"

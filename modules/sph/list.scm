@@ -77,13 +77,13 @@
     iterate-three-with-stop+end
     length-greater-one?
     length-one?
+    let*-list
     list-bind
     list-deselect
     list-distribute
     list-distribute-sorted
     list-index-value
     list-indices
-    list-let
     list-logical-condition?
     list-logical-contains?
     list-logical-match
@@ -151,24 +151,39 @@
       filter
       inf
       identity
+      acons
+      generate-temporaries
       map
       memv
       memq
       member
-      negate)
+      negate
+      syntax-case)
     (only (rnrs sorting) list-sort))
 
-  ; this library also contains bindings for non-list pairs. either create a new library or rename this one to (sph pair).
-  (define sph-list-description "helpers for working with lists")
+  ; this library currently also contains bindings for non-list pairs
+
+  (define sph-list-description
+    "helpers for working with lists.
+     # syntax
+     ## let*-list
+     like let*, but variable names enclosed in round brackets bind list elements.
+     binding is done like lambda and apply.
+     examples
+       (let*-list ((a 1) ((b c) (list 2 3))) (and (= 1 a) (= 2 b) (= 3 c)))
+       (let*-list (((a b . c) (list 1 2 3 4))) #t)")
+
   (define-syntax-rule (identity-if test else ...) ((lambda (r) (if r r (begin else ...))) test))
 
   (define-syntax-rule (list-bind a lambda-formals body ...)
     ; bind elements of list "a" to "lambda-formals"
     (apply (lambda lambda-formals body ...) a))
 
-  (define-syntax-rule (list-let a lambda-formals body ...)
-    ; bind elements of list "a" to "lambda-formals"
-    (apply (lambda lambda-formals body ...) a))
+  (define-syntax-rules let*-list
+    ( ( ( ( (name ...) a) rest ...) body ...)
+      (apply (lambda (name ...) (let*-list (rest ...) body ...)) a))
+    ((((name a) rest ...) body ...) ((lambda (name) (let*-list (rest ...) body ...)) a))
+    ((() body ...) (begin body ...)))
 
   (define-syntax-rule (any->list-s a)
     ; "like \"any->list\" but as syntax"
