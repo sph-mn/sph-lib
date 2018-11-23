@@ -9,6 +9,7 @@
     elliptical-arc
     golden-ratio
     hermite-interpolation
+    integer-summands
     line-path
     linear-interpolation
     pi
@@ -16,11 +17,34 @@
   (import
     (sph)
     (sph vector)
+    (only (guile) random random-state-from-platform)
     (only (sph alist) alist-q)
-    (only (sph list) consecutive))
+    (only (sph list) consecutive map-integers))
 
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
+
+  (define*
+    (integer-summands int count minimum #:optional (random-state (random-state-from-platform)))
+    "split an integer int into count numbers equal or greater than minimum whose sum is int.
+     # algorithm:
+     * get count random numbers of the range minimum to int
+     * scale numbers by int divided by sum-of-numbers so to preserve relative differences
+     * add either 1 or -1 to every number at random indices until the sum is int"
+    (if (> (* count minimum) int) null
+      (let*
+        ( (numbers (map-integers count (l (a) (+ minimum (random (- int minimum) random-state)))))
+          (numbers-sum (apply + numbers)) (scale (if (= 0 numbers-sum) 1 (/ int numbers-sum)))
+          (numbers (map (l (a) (round (max minimum (* scale a)))) numbers))
+          (deviation (- int (apply + numbers))))
+        (if (= 0 deviation) numbers
+          (let* ((adjust (if (> 0 deviation) -1 1)) (numbers (list->vector numbers)))
+            (let loop ((deviation (abs deviation)) (index (random count)))
+              (let (adjusted (+ adjust (vector-ref numbers index)))
+                (if (> minimum adjusted) (loop deviation (random count))
+                  (begin (vector-set! numbers index adjusted)
+                    (if (= 1 deviation) (vector->list numbers)
+                      (loop (- deviation 1) (random count))))))))))))
 
   (define (bezier-curve n . points)
     "number:0..1 #(number ...) ... -> #(number ...)
@@ -154,7 +178,9 @@
      modeled after the svg path arc command.
      code translated from https://github.com/MadLittleMods/svg-curve-lib"
     ; there seems to be a bug in the scheme version with the sweep-angle
-    (cond ((equal? p1 p2) p1) ((or (= 0 rx) (= 0 ry)) (linear-interpolation n p1 p2))
+    (cond
+      ((equal? p1 p2) p1)
+      ((or (= 0 rx) (= 0 ry)) (linear-interpolation n p1 p2))
       (else
         (let*
           ( (rx (abs rx)) (ry (abs ry))

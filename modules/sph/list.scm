@@ -604,8 +604,8 @@
                 (pair current prev) (first next) (tail next) (apply f prev current next states))))))
       (l (f a . states)
         "procedure:{list:prev any:current list:next any:state ... -> any:state ...} list any:state-init ... -> list:state
-        calls \"f\" for each list element, a list of unmodified previous list elements, a list of the following list elements
-        and an arbitrary count of custom values that are updated to the result of the call to \"f\""
+        calls \"f\" for each list element, previous list elements and following list elements.
+        multiple custom values can be updated each call with the result of \"f\" which must be a list"
         (apply loop f (list) (first a) (tail a) states))))
 
   (define iterate-three-with-stop+end
