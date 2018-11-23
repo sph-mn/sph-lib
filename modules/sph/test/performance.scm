@@ -23,7 +23,11 @@
 
   (define sph-test-performance-description
     "adaptive performance testing with formatted result display.
-     adapts the number of calls until a meaningful run time difference has been found")
+     adapts the number of calls until a meaningful run time difference has been found.
+     # example
+     (define (test-path-append n) (apply path-append path-parts))
+     (define (test-path-append* n) (apply path-append* path-parts))
+     (evaluate-performance 6 test-path-append test-path-append*)")
 
   (define (multiply-until proc base factor)
     (if (proc base factor) base (multiply-until proc (* base factor) factor)))

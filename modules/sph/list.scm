@@ -890,7 +890,7 @@
   (define (map-integers count f)
     "integer {integer -> any} -> list
      map over integers from 0 to count - 1"
-    (reverse (let loop ((n 0) (r (list))) (if (< n count) (loop (+ 1 n) (pair (f n) r)) r))))
+    (let loop ((n 0)) (if (= n count) null (pair (f n) (loop (+ 1 n))))))
 
   (define (fold-integers count init f)
     "integer {integer memo -> any} -> memo
