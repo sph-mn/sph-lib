@@ -13,8 +13,8 @@
 (library (sph other)
   (export
     begin-first
-    boolean-true?
     boolean->integer
+    boolean-true?
     call-at-approximated-interval
     call-at-interval
     call-at-interval-w-state
@@ -65,8 +65,7 @@
     (sph list)
     (sph number)
     (sph string)
-    (only (rnrs base) set!)
-    (only (srfi srfi-1) unfold-right unfold))
+    (only (rnrs base) set!))
 
   (define sph-other-description "miscellaneous")
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
@@ -352,5 +351,5 @@
     "any/(procedure:{any:subject -> any} ...) any ... -> boolean
      true if every predicate gives true for every subject, false otherwise"
     (any (l (a) (any (l (b) (a b)) subjects)) (any->list predicates)))
-    (define (boolean->integer a) (if a 1 0))
-)
+
+  (define (boolean->integer a) (if a 1 0)))

@@ -92,16 +92,17 @@
     (sph number)
     (srfi srfi-4))
 
-  (define sph-uniform-vector-description "helpers for srfi-4 and compatible vectors. for example f32vector")
+  (define sph-uniform-vector-description
+    "helpers for srfi-4 and compatible vectors. for example f32vector")
 
-  (define-syntax-rule (define-uv-copy id make-vector vector-length)
+  (define-syntax-rule (define-uv-copy id make-vector vector-length byte-size)
     (define (id a) "xvector -> xvector"
-      ; simple bytevector-copy did not work. bugreport: http://lists.gnu.org/archive/html/bug-guile/2014-10/msg00024.html
+      ; bytevector-copy did not work. http://lists.gnu.org/archive/html/bug-guile/2014-10/msg00024.html
       (let (result (make-vector (vector-length a)))
-        (bytevector-copy! a 0 result 0 (* 4 (vector-length a))) result)))
+        (bytevector-copy! a 0 result 0 (* byte-size (vector-length a))) result)))
 
   (define-syntax-rule (define-uv-copy-zero id make-vector vector-length)
-    (define (id a) (make-vector (vector-length a))))
+    (define (id a) (make-vector (vector-length a) 0)))
 
   (define-syntax-rule (define-uv-copy* id vector-copy)
     (define (id a c) (let (result (vector-copy a)) (c result) result)))
@@ -164,7 +165,7 @@
     (define (id f a . b)
       "procedure:{any:element ... -> any} xvector ... -> xvector
        call f for each element of each vector. (f a-element b-element ...)
-       can easily build processors like xvector-sum: (xvector-map + a b c)"
+       can be used to create processors like xvector-sum: (xvector-map + a b c)"
       (vector-copy-zero* a
         (l (result) (apply vector-range-map! result f 0 (- (vector-length a) 1) a b)))))
 
@@ -189,7 +190,7 @@
       (apply vector-range-map (l a (apply f variable a)) start end a b)))
 
   ; f64
-  (define-uv-copy f64vector-copy make-f64vector f64vector-length)
+  (define-uv-copy f64vector-copy make-f64vector f64vector-length 8)
   (define-uv-copy-zero f64vector-copy-zero make-f64vector f64vector-length)
   (define-uv-copy* f64vector-copy* f64vector-copy)
   (define-uv-copy-zero* f64vector-copy-zero* f64vector-copy-zero)
@@ -207,7 +208,7 @@
   (define-uv-range-set f64vector-range-set f64vector-copy* f64vector-range-set!)
   ;
   ; f32
-  (define-uv-copy f32vector-copy make-f32vector f32vector-length)
+  (define-uv-copy f32vector-copy make-f32vector f32vector-length 4)
   (define-uv-copy-zero f32vector-copy-zero make-f32vector f32vector-length)
   (define-uv-copy* f32vector-copy* f32vector-copy)
   (define-uv-copy-zero* f32vector-copy-zero* f32vector-copy-zero)
@@ -225,7 +226,7 @@
   (define-uv-range-set f32vector-range-set f32vector-copy* f32vector-range-set!)
   ;
   ; s32
-  (define-uv-copy s32vector-copy make-s32vector s32vector-length)
+  (define-uv-copy s32vector-copy make-s32vector s32vector-length 4)
   (define-uv-copy-zero s32vector-copy-zero make-s32vector s32vector-length)
   (define-uv-copy* s32vector-copy* s32vector-copy)
   (define-uv-copy-zero* s32vector-copy-zero* s32vector-copy-zero)
@@ -243,7 +244,7 @@
   (define-uv-range-set s32vector-range-set s32vector-copy* s32vector-range-set!)
   ;
   ; s16
-  (define-uv-copy s16vector-copy make-s16vector s16vector-length)
+  (define-uv-copy s16vector-copy make-s16vector s16vector-length 2)
   (define-uv-copy-zero s16vector-copy-zero make-s16vector s16vector-length)
   (define-uv-copy* s16vector-copy* s16vector-copy)
   (define-uv-copy-zero* s16vector-copy-zero* s16vector-copy-zero)
@@ -261,7 +262,7 @@
   (define-uv-range-set s16vector-range-set s16vector-copy* s16vector-range-set!)
   ;
   ; s8
-  (define-uv-copy s8vector-copy make-s8vector s8vector-length)
+  (define-uv-copy s8vector-copy make-s8vector s8vector-length 1)
   (define-uv-copy-zero s8vector-copy-zero make-s8vector s8vector-length)
   (define-uv-copy* s8vector-copy* s8vector-copy)
   (define-uv-copy-zero* s8vector-copy-zero* s8vector-copy-zero)
