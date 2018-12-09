@@ -45,6 +45,7 @@
     program-name
     program-path
     remove-keyword-associations
+    repeat
     rnrs-exception->key
     rnrs-exception->object
     search-env-path
@@ -352,4 +353,13 @@
      true if every predicate gives true for every subject, false otherwise"
     (any (l (a) (any (l (b) (a b)) subjects)) (any->list predicates)))
 
-  (define (boolean->integer a) (if a 1 0)))
+  (define (boolean->integer a) (if a 1 0))
+
+  (define (repeat f repeat-count state)
+    "procedure:{-> any} integer false/repeat-state:(any:last-result integer:count) -> (any:result integer:count)
+     f is called without arguments and generates new values that are returned again on subsequent calls for repeat-count times.
+     returned is a new repeat state which is a list with as the first element the value returned by f.
+     if state is false then a new state object will be created and returned"
+    (apply
+      (l (previous count) (if (< count repeat-count) (list previous (+ 1 count)) (list (f) 1)))
+      (or state (list (f) 0)))))

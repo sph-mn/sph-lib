@@ -893,7 +893,7 @@
     (let loop ((n 0)) (if (= n count) null (pair (f n) (loop (+ 1 n))))))
 
   (define (fold-integers count init f)
-    "integer {integer memo -> any} -> memo
+    "integer any {integer any -> any} -> any
      fold over integers from 0 to count - 1"
     (let loop ((n 0) (r init)) (if (< n count) (loop (+ 1 n) (f n r)) r)))
 
