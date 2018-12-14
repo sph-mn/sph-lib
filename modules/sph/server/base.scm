@@ -6,12 +6,10 @@
     server-socket)
   (import
     (guile)
-    (rnrs io simple)
     (sph)
     (sph exception)
-    (sph string)
-    (only (sph io) socket-create-bound)
-    (only (sph module) import-unexported))
+    (only (rnrs io simple) i/o-error?)
+    (only (sph io) socket-create-bound))
 
   (define server-listen-queue-length 1024)
   (define server-default-port 6500)
@@ -28,7 +26,8 @@
         (fcntl a F_SETFD FD_CLOEXEC) (and set-options (set-options a)))))
 
   (define (server-exception-handler key . a)
-    "ignore socket io errors (for example connections closed by peers)"
+    "ignore socket io errors (for example connections closed by peers).
+     exceptions can be raised by rnrs raise or guile throw"
     (case key
       ( (r6rs:exception)
         (if (i/o-error? (raise-object-wrapper-obj (first a))) #f
