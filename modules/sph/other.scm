@@ -44,6 +44,13 @@
     procedure-cond
     program-name
     program-path
+    random-ascii-string
+    random-between
+    random-boolean
+    random-bytevector
+    random-chars
+    random-discrete-f
+    random-string
     remove-keyword-associations
     repeat
     rnrs-exception->key
@@ -58,6 +65,7 @@
     (ice-9 pretty-print)
     (ice-9 rdelim)
     (ice-9 regex)
+    (rnrs bytevectors)
     (rnrs exceptions)
     (rnrs io ports)
     (rnrs sorting)
@@ -69,6 +77,13 @@
     (only (rnrs base) set!))
 
   (define sph-other-description "miscellaneous")
+
+  (define (cusum a . b)
+    ; copied from (sph math)
+    "calculate the cumulative sum for the given numbers.
+     (a b c ...) -> (a (+ a b) (+ a b c) ...)"
+    (pair a (if (null? b) null (apply cusum (+ a (first b)) (tail b)))))
+
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
 
   (define-syntax-rule (procedure-cond a (predicate handler) ... else)
@@ -362,4 +377,57 @@
      if state is false then a new state object will be created and returned"
     (apply
       (l (previous count) (if (< count repeat-count) (list previous (+ 1 count)) (list (f) 1)))
-      (or state (list (f) 0)))))
+      (or state (list (f) 0))))
+
+  (define* (random-discrete-f probabilities #:optional (state *random-state*))
+    "(real ...) [random-state] -> procedure:{-> real}
+     return a function that when called returns an index of a value in probabilities.
+     each index will be returned with a probability given by the value at the index.
+     each value is a fraction of the sum of probabilities.
+     for example, if the values sum to 100, each entry in probabilities is a percentage.
+     this allows for custom discrete random probability distributions.
+     example usage:
+     (define random* (random-discrete-f (list 10 70 20)))
+     (define samples (list (random*) (random*)))"
+    (let* ((cuprob (apply cusum probabilities)) (sum (last cuprob)))
+      (nullary
+        (let (deviate (random sum state))
+          (let loop ((a 0) (b cuprob))
+            (if (null? b) a (if (< deviate (first b)) a (loop (+ 1 a) (tail b)))))))))
+
+  (define (random-between min max) (+ min (random (- max min))))
+
+  (define* (random-boolean #:optional percentage)
+    "[integer] -> boolean
+     percentage gives the probability of true results"
+    (if percentage (> percentage (random 100)) (= (random 2) 0)))
+
+  (define (random-bytevector size) "integer -> bytevector"
+    (let (result (make-bytevector size))
+      (each-integer size (l (index) (bytevector-u8-set! result index (random 256)))) result))
+
+  (define (random-ascii-string len)
+    "integer -> string
+     results in a string of randomly chosen ascii characters excluding control characters"
+    (let loop ((n 0) (r (list)))
+      (if (< n len) (loop (+ 1 n) (cons (integer->char (+ 32 (random 94))) r)) (list->string r))))
+
+  (define char-set-vector:designated (list->vector (char-set->list char-set:designated)))
+
+  (define*
+    (random-chars list-length #:optional (char-set char-set-vector:designated)
+      (state *random-state*))
+    "integer string/vector random-state -> (character ...)
+     creates a list of random chars from a set of characters.
+     the default set of characters includes all the code points to which unicode has assigned a character or other meaning"
+    (let*
+      ( (a (if (string? char-set) (string->utf8 char-set) char-set))
+        (a-last-index (- (vector-length a) 1)))
+      (map-integers list-length (l (n) (vector-ref a (random a-last-index state))))))
+
+  (define*
+    (random-string #:optional (len (random 255)) (char-set char-set-vector:designated)
+      (state *random-state*))
+    "[integer string/vector] -> string
+     the default set of characters includes all the code points to which unicode has assigned a character or other meaning"
+    (list->string (random-chars len char-set state))))

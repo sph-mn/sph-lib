@@ -5,6 +5,7 @@
     bezier-curve-cubic
     catmull-rom-spline
     circle
+    cusum
     ellipse
     elliptical-arc
     golden-ratio
@@ -17,15 +18,19 @@
   (import
     (sph)
     (sph vector)
-    (only (guile) random random-state-from-platform)
+    (only (guile) *random-state* random)
     (only (sph alist) alist-q)
     (only (sph list) consecutive map-integers))
 
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
 
-  (define*
-    (integer-summands int count minimum #:optional (random-state (random-state-from-platform)))
+  (define (cusum a . b)
+    "calculate cumulative sums from the given numbers.
+     (a b c ...) -> (a (+ a b) (+ a b c) ...)"
+    (pair a (if (null? b) null (apply cusum (+ a (first b)) (tail b)))))
+
+  (define* (integer-summands int count minimum #:optional (random-state *random-state*))
     "split an integer int into count numbers equal or greater than minimum whose sum is int.
      # algorithm:
      * get count random numbers of the range minimum to int

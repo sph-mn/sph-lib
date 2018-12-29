@@ -13,7 +13,6 @@
     (sph alist)
     (sph hashtable)
     (sph list)
-    (sph random-data)
     (only (guile) compose)
     (only (rnrs base) set!))
 
@@ -52,27 +51,27 @@
           (if (null? rest) (first a) (pair (first a) (group-recursively rest)))))
       (group a accessor)))
 
-  (define (list-ref-random a)
+  (define* (list-ref-random a #:optional (random-state *random-state*))
     "list -> any
-     retrieve a random element of a list. uses the default random-state of (sph random-data) which changes with every interpreter start"
-    (list-ref a (random (length a))))
+     retrieve a random element of a list"
+    (list-ref a (random (length a) random-state)))
 
-  (define (list-ref-randomise-cycle a)
+  (define* (list-ref-randomise-cycle a #:optional (random-state *random-state*))
     "list -> procedure:{-> any}
      gives a procedure that when called gives the next element from a randomised version of \"a\"
      when the end of the list has been reached, the list is reset to a newly randomised version of \"a\""
-    (let ((a-length (length a)) (new (randomise a)) (old (list)))
+    (let ((a-length (length a)) (new (randomise a random-state)) (old (list)))
       (letrec
         ( (loop
             (l ()
-              (if (null? new) (begin (set! new (randomise old)) (set! old (list)) (loop))
+              (if (null? new) (begin (set! new (randomise old random-state)) (set! old (list)) (loop))
                 (let (r (first new)) (set! new (tail new)) (set! old (pair r old)) r)))))
         loop)))
 
-  (define (randomise a)
+  (define* (randomise a #:optional (random-state *random-state*))
     "list -> list
      return a new list with the elements of list in random order.
      algorithm: connect a random number to each element, re-sort list corresponding to the random numbers."
     (let (length-a (length a))
       (map tail
-        (list-sort (l (a b) (< (first a) (first b))) (map (l (e) (pair (random length-a) e)) a))))))
+        (list-sort (l (a b) (< (first a) (first b))) (map (l (c) (pair (random length-a random-state) c)) a))))))

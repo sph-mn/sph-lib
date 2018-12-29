@@ -546,9 +546,7 @@
     "{any:state element ... -> any:state} integer any:state list -> any
      fold over each overlapping segment with length \"size\".
      example:
-     (fold-segments f 2 #t (list 4 5 6 7))
-     is equivalent to
-     (f 4 5) (f 5 6) (f 6 7)"
+     (fold-segments f 2 #t (list 4 5 6 7))"
     (let loop ((rest a) (buf (list)) (r init) (count size))
       (if (null? rest) (if (null? buf) r (apply f r buf))
         (if (< count 1)
