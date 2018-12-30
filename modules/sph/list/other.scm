@@ -13,7 +13,10 @@
     (sph alist)
     (sph hashtable)
     (sph list)
-    (only (guile) compose)
+    (only (guile)
+      compose
+      *random-state*
+      random)
     (only (rnrs base) set!))
 
   (define sph-list-other-description
@@ -64,7 +67,8 @@
       (letrec
         ( (loop
             (l ()
-              (if (null? new) (begin (set! new (randomise old random-state)) (set! old (list)) (loop))
+              (if (null? new)
+                (begin (set! new (randomise old random-state)) (set! old (list)) (loop))
                 (let (r (first new)) (set! new (tail new)) (set! old (pair r old)) r)))))
         loop)))
 
@@ -74,4 +78,5 @@
      algorithm: connect a random number to each element, re-sort list corresponding to the random numbers."
     (let (length-a (length a))
       (map tail
-        (list-sort (l (a b) (< (first a) (first b))) (map (l (c) (pair (random length-a random-state) c)) a))))))
+        (list-sort (l (a b) (< (first a) (first b)))
+          (map (l (c) (pair (random length-a random-state) c)) a))))))
