@@ -40,7 +40,7 @@
     (let (a (inexact->exact (round a))) (+ a (modulo a 2))))
 
   (define (add-multiple-leading-parenthesis-spacing config lines) "( (content ..."
-    (if (and (ht-ref config (q multiple-leading-parenthesis-spacing)) (length-greater-one? lines))
+    (if (and (ht-ref config (q multiple-leading-parenthesis-spacing)) (< 1 (length lines)))
       (map
         (l (a)
           (if (string-contains a "\n")
@@ -411,6 +411,6 @@
         "(string ...) string string string -> string
         join expressions eventually with empty lines inbetween them"
         (if (null? a) ""
-          (if (length-one? a) (first a)
+          (if (= 1 (length a)) (first a)
             (join-multiline (join-oneline a indent vertical-spacing-oneline) indent
               vertical-spacing)))))))

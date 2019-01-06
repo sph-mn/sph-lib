@@ -35,7 +35,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
 * (sph filesystem)
-* (sph install) - program and library installer
 * (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
 * (sph lang indent-syntax) - converting to and from strings with indented lines
 * (sph lang parser type-signature) - a parser and writer for the sph type signature notation
@@ -43,7 +42,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph lang scm-format) - format scheme code
 * (sph libmagic) - binding to the libmagic library from the "file" utility that guesses file types
 * (sph list) - helpers for working with lists
-* (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph process) - execute programs and evaluate shell or scheme code
 * (sph process create) - create child processes and process chains
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
@@ -72,6 +70,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph exception) - rnrs exception helpers. experimental
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph hashtable) - rnrs-hashtable processing
+* (sph install) - program and library installer
 * (sph io other) - port and file input/output
 * (sph json) - a basic but fast json writer
 * (sph lang config) - a scheme syntax configuration file format that parses to a alist or hashtable, possibly nested
@@ -81,14 +80,14 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph lang scm-format base)
 * (sph lang scm-format format) - formatters for individual expressions
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
-* (sph lang template) - s-expression template processor
+* (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
 * (sph math)
 * (sph module) - guile module system and rnrs library related procedures
 * (sph module binding-info) - get information about bindings in modules
 * (sph number)
 * (sph other) - miscellaneous
-* (sph random-data) - generate random data. strings, booleans, lists, and more
+* (sph record) - *deprecated* vectors as records
 * (sph server base)
 * (sph server fibers) - a generic socket data processing server that uses fibers for parallel request processing and non-blocking port input/output
 * (sph sql) - create sql-statements from scheme data

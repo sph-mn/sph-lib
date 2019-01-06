@@ -289,7 +289,7 @@
   (define (filename-extension a)
     "string -> string
      results in the last dot-separated part of string or the empty-string if no such part exists"
-    (let ((r (string-split a #\.))) (if (length-greater-one? r) (last r) "")))
+    (let ((r (string-split a #\.))) (if (< 1 (length r)) (last r) "")))
 
   (define* (make-path-unique path #:optional suffix)
     "string [string] -> string

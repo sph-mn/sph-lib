@@ -1,4 +1,4 @@
-; Copyright (C) 2010-2018 sph <sph@posteo.eu>
+; Copyright (C) 2010-2019 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -45,8 +45,7 @@
       flatten
       any->list
       contains?
-      flat?
-      length-one?)
+      flat?)
     (only (sph number) in-between?)
     (only (sph string) parenthesise string-replace-chars))
 
@@ -74,19 +73,23 @@
   (define row-expr-prefixes (q (or and not)))
 
   (define (operator->sql-operator a) "symbol/string -> string"
-    (case a ((equal =) "=")
-      ((greater >) ">") ((greater-or-equal >=) ">=")
-      ((less <) "<") ((less-or-equal <=) "<=")
+    (case a
+      ((equal =) "=")
+      ((greater >) ">")
+      ((greater-or-equal >=) ">=")
+      ((less <) "<")
+      ((less-or-equal <=) "<=")
       ((like) " like ")
       ; not is already used for row-expressions, so use "isnot"
-      ((isnot) " is not ") ((space) " ")
+      ((isnot) " is not ")
+      ((space) " ")
       (else
         (if (string? a) a
           (if (symbol? a) (string-append " " (symbol->string a) " ")
             (raise (q wrong-type-for-argument)))))))
 
   (define (sql-where-column-expr-produce-proc column-name state->combinator)
-    ;this procedure may do too much at once, split it if you can
+    ; this procedure may do too much at once, split if possible
     (let*
       ( (join-values
           (l (c values operator sql-operator)
@@ -100,7 +103,7 @@
                           (or (eq? (q equal) operator) (eq? (q isnot) operator)) (flat? values))))
                     (let
                       (combine-with-values
-                        (if (length-one? values)
+                        (if (= 1 (length values))
                           ;optimisation
                           ( (l (v) (l (c) (join-column-value (column-name c) sql-operator v)))
                             (first values))
@@ -126,7 +129,7 @@
                 (l (columns column-state)
                   (let (column-combinator (state->combinator column-state))
                     ( (if (eq? 1 column-state) identity list)
-                      (if (length-one? columns)
+                      (if (= 1 (length columns))
                         ;optimisation
                         (if (list? (first columns)) (first (first columns))
                           (join-values (first columns) values operator sql-operator))
@@ -146,7 +149,7 @@
     (let*
       ( (row-expr-binary
           (l (prefix suffix level)
-            ( (if (or (eqv? 1 level) (length-one? suffix)) identity parenthesise)
+            ( (if (or (eqv? 1 level) (= 1 (length suffix))) identity parenthesise)
               (string-join suffix (if (eq? (q or) prefix) " or " " and ")))))
         (row-expr-unary (l (prefix suffix level) (string-append "not " (first suffix))))
         (state->combinator (l (state) (if (even? state) " and " " or ")))
@@ -160,8 +163,10 @@
                 (list (q equal) prefix (first suffix))))))
         (handle-row-expr
           (l (prefix suffix level)
-            ( (case prefix ((or and) row-expr-binary)
-                ((not) row-expr-unary) (else (pair (q invalid-row-expr-prefix) prefix)))
+            ( (case prefix
+                ((or and) row-expr-binary)
+                ((not) row-expr-unary)
+                (else (pair (q invalid-row-expr-prefix) prefix)))
               prefix
               (if (pair? (first suffix))
                 (map (l (a) (if (pair? a) (join-column-value (first a) "=" (tail a)) a)) suffix)
@@ -235,7 +240,8 @@
           (if offset
             (string-append " offset " (if (integer? offset) (number->string offset) offset)) "")
           (if limit
-            (cond ((number? limit) (string-append " limit " (number->string limit)))
+            (cond
+              ((number? limit) (string-append " limit " (number->string limit)))
               ( (and (pair? limit))
                 (string-append " limit " (number->string (first limit))
                   "," (if (list? limit) (number->string (list-ref limit 1)) (tail limit))))
@@ -296,7 +302,9 @@
     (let
       ( (options (sql-options options))
         (values
-          (cond ((string? data) data) ((boolean? data) " default values")
+          (cond
+            ((string? data) data)
+            ((boolean? data) " default values")
             (else (sql-insert-values data)))))
       (and table-name (sql-insert-values? data)
         options (string-append "insert" (first options) " into " table-name values (tail options)))))

@@ -92,7 +92,7 @@
     (group-consecutive
       ((unquote even?) (1 2 2 3 4 4 6 5 6 7))
       (1 (2 2) 3 (4 4 6) 5 6 7))
-    (fold-multiple-with-continue
+    (fold-multiple-c
       ((unquote
           (lambda (e continue a b)
             (continue (pair e a) (+ b 1))))
@@ -147,9 +147,6 @@
       ((1 3 4) (1 3 5) (2 3 4) (2 3 5))
       (,+ (1 3) (2 6)) (3 7 5 9)
       (,+ (1 3) (6)) (7 9))
-    (produce-controlled
-      ((unquote list) ((unquote map) (unquote map)) (1 2) (3 4))
-      (((1 3) (1 4)) ((2 3) (2 4))))
     (contains?
       ((1 2 3) 3)
       #t

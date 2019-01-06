@@ -1,4 +1,4 @@
-; Copyright (C) 2010-2018 sph <sph@posteo.eu>
+; Copyright (C) 2010-2019 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -13,7 +13,6 @@
 (library (sph list)
   (export
     any->list
-    any->list-s
     compact
     complement
     complement-both
@@ -31,8 +30,8 @@
     define-list
     delete-duplicates-sorted
     difference
-    difference+intersection
-    difference+intersection-p
+    difference-and-intersection
+    difference-and-intersection-p
     difference-p
     drop*
     duplicates
@@ -45,9 +44,7 @@
     every-or-index
     false-if-null
     filter-append-map
-    filter-not
     filter-produce
-    first-if-single
     first-intersection
     first-intersection-p
     first-or-false
@@ -56,8 +53,8 @@
     flatten
     fold-integers
     fold-multiple
+    fold-multiple-c
     fold-multiple-right
-    fold-multiple-with-continue
     fold-segments
     fold-slice
     fold-span
@@ -69,14 +66,11 @@
     group-split-at-matches
     improper-list-split-at-last
     insert-second
-    integer->list
     interleave
     intersection
     intersection-p
     iterate-three
-    iterate-three-with-stop+end
-    length-greater-one?
-    length-one?
+    iterate-three-stop-end
     let*-list
     list-bind
     list-deselect
@@ -134,7 +128,6 @@
     tail-or-null
     take*
     true->list
-    true->list-s
     union
     (rename (lset-adjoin list-set-add)
       (list-tail list-tail-ref)
@@ -185,14 +178,6 @@
     ((((name a) rest ...) body ...) ((lambda (name) (let*-list (rest ...) body ...)) a))
     ((() body ...) (begin body ...)))
 
-  (define-syntax-rule (any->list-s a)
-    ; "like \"any->list\" but as syntax"
-    (if (list? a) a (list a)))
-
-  (define-syntax-rule (true->list-s a)
-    ; "like \"any->list-s\" but results in \"a\" if \"a\" is not true"
-    (if a (any->list-s a) a))
-
   (define-syntax-rule (define-list name a ...) (define name (list a ...)))
 
   (define-syntax-rule (pair-bind a (b c) body ...)
@@ -213,7 +198,7 @@
   (define (list-page a entry-count number lookahead c)
     "list integer integer integer procedure:{list boolean:last-page? -> any} -> any
      pass a list of \"entry-count\" elements at an offset of (* number entry-count),
-     eventually including \"lookahead\" number of elements if they are the last elements,
+     eventually including \"lookahead\" number of elements if they are the last elements
      and a boolean indicating if it is the last page to continuation procedure \"c\""
     (let*
       ( (offset (* (- number 1) entry-count)) (rest (if (< 1 number) (drop* offset a) a))
@@ -243,7 +228,7 @@
 
   (define (every-or-index f . a)
     "procedure:{any ... -> boolean} list ... -> true/integer
-     true if \"f\" is true for all elements, otherwise the index of the element for which \"f\" failed"
+     true if \"f\" is true for all elements, otherwise the index of the element for which \"f\" was false"
     (let (r (apply list-index (negate (l e (apply f e))) a)) (if (boolean? r) (not r) r)))
 
   (define (fold-every f init . a)
@@ -254,12 +239,7 @@
   (define (any->list a)
     "any -> list
      wraps a non-list argument in a list"
-    (any->list-s a))
-
-  (define (true->list a)
-    "any -> list/false
-     wraps a true non-list argument in a list"
-    (true->list-s a))
+    (if (list? a) a (list a)))
 
   (define (map-first f a)
     "procedure list -> list
@@ -291,7 +271,7 @@
     (any (l (b) (contains? a b)) values))
 
   (define (containsv-some? a values)
-    "list ... -> boolean
+    "list list -> boolean
      test if argument \"a\" contains any of the given values"
     (any (l (b) (containsv? a b)) values))
 
@@ -300,8 +280,15 @@
      return a boolean indicating if list \"a\" contains \"value\""
     (if (member value a) #t #f))
 
-  (define (containsq? a value) (if (memq value a) #t #f))
-  (define (containsv? a value) (if (memv value a) #t #f))
+  (define (containsq? a value)
+    "true if list contains value.
+     comparison with eq?"
+    (if (memq value a) #t #f))
+
+  (define (containsv? a value)
+    "true if list contains value.
+     comparison with eqv?"
+    (if (memv value a) #t #f))
 
   (define* (count-value value a #:optional (equal? equal?))
     "any list -> integer
@@ -431,7 +418,7 @@
      result in a list of elements not included in all given lists"
     (apply difference-p equal? lists))
 
-  (define (difference+intersection-p equal-f . lists)
+  (define (difference-and-intersection-p equal-f . lists)
     "{any any -> boolean} list ... -> (list:difference list:intersection)
      like difference+intersection but the predicate for comparing list elements can be specified"
     (let (every* (l (a b) (every (l (e-2) (any (l (e-3) (equal-f a e-3)) e-2)) b)))
@@ -443,12 +430,12 @@
             e d i))
         lists (list) (list))))
 
-  (define (difference+intersection . lists)
+  (define (difference-and-intersection . lists)
     "list ... -> (list list)
      results in a list with two elements, one being the symmetric-difference between the given lists and one being the intersection.
      that means one list of all elements that are included in all lists, and one list of elements that are not included in all lists.
      it does both calculations in one step saving resources compared to making them in separate steps."
-    (apply difference+intersection-p equal? lists))
+    (apply difference-and-intersection-p equal? lists))
 
   (define (intersection-p equal-f . rest)
     "procedure:{any any -> boolean} list ... -> list
@@ -461,12 +448,6 @@
     "list ... -> list
      result in a list of all elements which are contained in all given lists"
     (apply intersection-p equal? lists))
-
-  (define (filter-not f a)
-    "{any -> boolean} list -> list
-     like filter but keeps only values where the result of f is false.
-     same as (filter (compose not f) list)"
-    (filter (l (e) (not (f e))) a))
 
   (define (filter-produce f . a)
     "procedure list ...
@@ -491,11 +472,6 @@
     "list list -> any
      give the first found element that is included in both lists"
     (first-intersection-p equal? a b))
-
-  (define (first-if-single a)
-    "list -> any/list
-     give the first element of a list if the list has only one element, otherwise give the list"
-    (if (or (null? a) (not (null? (tail a)))) a (first a)))
 
   (define (first-or-false a)
     "list -> any/false
@@ -530,11 +506,11 @@
     (if (null? a) custom-state-values
       (apply fold-multiple f (tail a) (apply f (first a) custom-state-values))))
 
-  (define (fold-multiple-with-continue f a . custom-state-values)
+  (define (fold-multiple-c f a . custom-state-values)
     "procedure:{any:element procedure:continue:{list:next-pair any:state-value ...} any:state-value ... -> any} list any:state-value ... -> list"
     (if (null? a) custom-state-values
       (apply f (first a)
-        (l custom-state-values (apply fold-multiple-with-continue f (tail a) custom-state-values))
+        (l custom-state-values (apply fold-multiple-c f (tail a) custom-state-values))
         custom-state-values)))
 
   (define (fold-multiple-right f a . r)
@@ -582,11 +558,6 @@
     (let loop ((rest a) (r (list)))
       (if (pair? rest) (loop (tail rest) (pair (first rest) r)) (pair (reverse r) rest))))
 
-  (define (integer->list a)
-    "any -> any/list
-     wrap the argument in a list, but only if it is an integer. otherwise give the argument"
-    (if (integer? a) (list a) a))
-
   (define (interleave a value)
     "list any -> list
      inserts value in front of each element in \"a\" except the first element.
@@ -606,7 +577,7 @@
         multiple custom values can be updated each call with the result of \"f\" which must be a list"
         (apply loop f (list) (first a) (tail a) states))))
 
-  (define iterate-three-with-stop+end
+  (define iterate-three-stop-end
     (letrec
       ( (loop
           (l (stop? end map-f r current next . states)
@@ -617,7 +588,8 @@
                 (pair current r) (first next) (tail next) (apply map-f r current next states))))))
       (l (stop? end map-f a . states)
         "{list any list any ... -> boolean} {list any list any ... -> list:state-values}:after-stop? {list any list any ... -> list:state-values} list any ... -> any
-        like \"iterate-three\" but takes two additional procedures - one for stopping the iteration after a \"map-f\" result, and one that is called for the last element or when \"stop?\" is true"
+        like \"iterate-three\" but takes two additional procedures - one for stopping the iteration
+         after a \"map-f\" result, and one that is called for the last element or when \"stop?\" is true"
         (loop stop? end map-f (list) (first a) (tail a)))))
 
   (define (list-distribute-sorted a indices default)
@@ -635,17 +607,6 @@
      not included in the list indices. the length of indices must equal the length of a, and indices should not have duplicates."
     (let (indices (list-sort (l (a b) (< (first a) (first b))) (map cons indices a)))
       (list-distribute-sorted (map tail indices) (map first indices) default)))
-
-  (define (length-one? a)
-    "list -> boolean
-     test if list length equals one. possibly faster than (= (length a) 1)."
-    (if (null? a) #f (null? (tail a))))
-
-  (define (length-greater-one? a)
-    "list -> boolean
-     true if list length is greater than one. possibly faster than (> (length a) 1).
-     has-multiple-elements?"
-    (if (null? a) #f (not (null? (tail a)))))
 
   (define* (list-index-value a value #:optional (equal-f equal?)) "get the index of value in list"
     (list-index (l (a) (equal-f a value)) a))
@@ -700,7 +661,7 @@
 
   (define (list-deselect a indices)
     "list (integer ...) -> list
-     return a new, possibly smaller, list consisting of values not at specified indices"
+     return a new, eventually smaller, list consisting of values not at specified indices"
     (let loop ((rest a) (index 0))
       (if (null? rest) rest
         (if (containsv? indices index) (loop (tail rest) (+ 1 index))
@@ -780,7 +741,7 @@
 
   (define (map-selected select? f . a)
     "procedure procedure list ... -> list
-     apply f only to elements for which \"select?\" is true. non-matched items are included in the result list.
+     apply f only to elements for which \"select?\" is true. unmatched items are included in the result list.
      if multiple lists are given, it works like \"map\" except that the elements from the multiple lists for one call that are not selected are saved as a list.
      map-some/map-only"
     ; as a possible enhancement, a second procedure for non-matches could be specified
@@ -825,7 +786,9 @@
 
   (define (map-segments len f a)
     "procedure:{any ... -> any} integer list -> list
-     map over each overlapping segment of length len"
+     map over each overlapping segment of length len.
+     each segment is one step apart.
+     example: for (1 2 3 4) length 2 maps (1 2) (2 3) (3 4)"
     (fold-segments (l (result . a) (append result (list (apply f a)))) len (list) a))
 
   (define (map-slice slice-length f a)
@@ -849,7 +812,7 @@
   (define (map-consecutive filter-f f a)
     "{any -> boolean} {any any ... -> any} list -> list
      \"f\" is called for and with every list of elements that consecutively matched \"filter-f\". at least two elements at a time"
-    (fold-span filter-f (l (e r) (if (length-greater-one? e) (pair (apply f e) r) (append e r))) a))
+    (fold-span filter-f (l (e r) (if (< 1 (length e)) (pair (apply f e) r) (append e r))) a))
 
   (define (map-span filter-f f a)
     "procedure:{any -> any/false} procedure:{any any ... -> any} list -> list
@@ -880,13 +843,13 @@
      combination of map and fold.
      call f with each list element and state values, which are set to init for the first call.
      each call to f must return a list of: the mapped result element and one
-     element for the each new value of states.
+     element for each updated value of state.
      example: (map-fold (l (a index) (list (+ a index) (+ 1 index))) (list 1 2 3) 0)"
     (apply fold-multiple (l (b result-list . state) (pair (apply f b state) result-list))
       a (list) init))
 
   (define (map-integers count f)
-    "integer {integer -> any} -> list
+    "integer procedure:{integer -> any} -> list
      map over integers from 0 to count - 1"
     (let loop ((n 0)) (if (= n count) null (pair (f n) (loop (+ 1 n))))))
 
@@ -927,25 +890,6 @@
       (if (null? a) (apply f arguments)
         (let (rest (tail a))
           ((if (null? rest) map append-map) (l a (loop rest (append arguments a))) (first a))))))
-
-  (define (produce-controlled f mappers . lists)
-    "{any ... -> any} (procedure:{procedure:{any -> any} list -> list} ...) any/list ... -> list
-     experimental.
-     apply \"f\" to each ordered combination of elements from one or multiple lists, the cartesian product,
-     and return the results in a list.
-     the combinations passed to \"f\" are obtained by nested application of the procedures in the second argument list.
-     there should be as many lists as mappers.
-     accepts multiple lists, multiple mappers and non-list arguments.
-     example:
-       (produce-controlled f (f1 f2 f3) (1 2) (4 5) (6 7))
-     is equivalent to
-       (f1 (lambda (a) (f2 (lambda (b) (f3 (lambda (c) (f a b c)) (6 7))) (4 5))) (1 2))"
-    (let loop ((rest-mappers mappers) (rest-lists (map any->list lists)) (a (list)))
-      (if (null? rest-mappers) (apply f a)
-        ( (first rest-mappers)
-          (let ((tail-mappers (tail rest-mappers)) (tail-lists (tail rest-lists)))
-            (l e (loop tail-mappers tail-lists (append a e))))
-          (first rest-lists)))))
 
   (define (produce-unless f stop? default a b)
     "{any any -> any} {any -> boolean} any list list -> false/any
@@ -995,7 +939,7 @@
 
   (define* (split-at-value a search-value #:optional inclusiveness)
     "list any [symbol:exclusive/inclusive] -> (list:left list:right)"
-    (iterate-three-with-stop+end (l (prev e next . r) (equal? e search-value))
+    (iterate-three-stop-end (l (prev e next . r) (equal? e search-value))
       (l (prev e next . r)
         (if (equal? e search-value)
           (if (equal? (q inclusive) inclusiveness) (list (reverse (pair e prev)) next)
@@ -1041,8 +985,8 @@
      creates alist elements for variables in pattern that match elements in list \"a\".
      the result is a list with two values: one for the match and one for the unmatched rest.
      if pattern did not match, then both values are false. if pattern is null, matches is null and rest is the input list.
-     unlike other pattern matchers, \"pattern\" is a list and not syntax and so can be passed as a variable
-     example
+     unlike other pattern matchers, \"pattern\" is a list and not syntax and so can be passed as a variable.
+     # example
        (split-by-pattern (quote (a b ... c)) (list 1 2 3 4)) -> (((a . 1) (b 2 3) (c . 4)) ())"
     (if (null? pattern) (list (list) a)
       (if (null? a) (list #f #f)
@@ -1052,7 +996,7 @@
     "list -> integer
      takes a flat list with symbols and ellipses and counts the required parts of a pattern with
      symbols interpreted as matching any element and ellipses to match zero or many occurences of the previous element.
-     examples
+     # examples
        ((a ...)) -> 0
        ((a a ...)) -> 1
        ((a ... b ...)) -> 0
@@ -1087,9 +1031,13 @@
           (apply (l (matches rest-2) (pair (pair (first rest) matches) (loop rest-2)))
             (consecutive not-start-group? (tail rest)))))))
 
-  (define (insert-second e a)
+  (define (insert-second a b)
     "any list -> list
-     insert \"e\" as the second element into list \"a\""
-    (pair (first a) (pair e (tail a))))
+     insert \"a\" as the second element into list \"b\""
+    (pair (first b) (pair a (tail b))))
 
-  (define (tail-or-null a) "list -> list" (if (null? a) a (tail a))))
+  (define (tail-or-null a)
+    "list -> list
+     return the tail of list or null if there is no tail which is
+     the case when list is null"
+    (if (null? a) a (tail a))))

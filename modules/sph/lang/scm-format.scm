@@ -89,11 +89,13 @@
         config)))
 
   (define (format-non-list a current-indent config config-format)
-    (cond ((string? a) (format-string a config-format current-indent))
+    (cond
+      ((string? a) (format-string a config-format current-indent))
       ( (vector? a)
         (string-append "#"
           (format-sequence a (vector-length a) vector-ref current-indent config config-format)))
-      ((pair? a) (any->string-write* a)) (else (any->string-write* a))))
+      ((pair? a) (any->string-write* a))
+      (else (any->string-write* a))))
 
   (define (scm-format-list->string a nesting-depth config)
     (let

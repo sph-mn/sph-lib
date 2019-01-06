@@ -8,16 +8,16 @@
     (rnrs sorting)
     (sph)
     (sph alist)
-    (sph module binding-info)
     (sph documentation)
     (sph documentation display-format-plist)
     (sph list)
     (sph module)
+    (sph module binding-info)
     (sph other)
     (sph string)
     (except (srfi srfi-1) map))
 
-  (define (create-newline-indent size) (string-append "\n" (create-indent size)))
+  (define (create-newline-indent size) (string-append "\n" (string-multiply "  " size)))
 
   (define (with-binding-info-title-and-lines-proc c)
     (l (binding-info)

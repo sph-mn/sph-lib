@@ -44,9 +44,13 @@
   (define* (group-recursively a #:optional (accessor first))
     "((any ...) ...) [procedure] -> list
      group lists and the elements of groups until no further sub-groups are possible.
-     example
-       (group-recursively (list (list 1 2 3) (list 1 2 6) (list 1 3 7) (list 8 9)) first)
-       -> ((1 (2 3 6) (3 7)) (8 9))"
+     the default accessor is \"first\".
+     # example
+         (group-recursively (list (list 1 2 3) (list 1 2 6) (list 1 4 7) (list 8 9)) first)
+         -> ((1 (2 3 6) (4 7)) (8 9))
+     note in the example input how the entries after 1 2 have been grouped into (2 3 6)
+     # example use case
+     converting a list of filesystem paths split at slashes to a nested list where prefixes are directories"
     (map
       (l (a)
         ; (group-name element ...)

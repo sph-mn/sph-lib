@@ -230,7 +230,7 @@
     (let*
       ( (settings (apply-settings-reporter+hook settings (q modules-before) module-names))
         (r
-          (fold-multiple-with-continue
+          (fold-multiple-c
             (l (a continue index r)
               (let*
                 ( (name (first a)) (module (tail a))
@@ -379,7 +379,7 @@
      executes tests one after another and stops if one fails"
     (let
       (r
-        (fold-multiple-with-continue
+        (fold-multiple-c
           (l (e continue index r)
             (let (r-test (apply test-procedures-execute-one settings index hooks e))
               (if (test-result-success? r-test) (continue (+ 1 index) (pair r-test r))
