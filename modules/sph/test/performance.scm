@@ -25,9 +25,19 @@
     "adaptive performance testing with formatted result display.
      adapts the number of calls until a meaningful run time difference has been found.
      # example
-     (define (test-path-append n) (apply path-append path-parts))
-     (define (test-path-append* n) (apply path-append* path-parts))
-     (evaluate-performance 6 test-path-append test-path-append*)")
+     (define (test-match-regular n) (regexp-replace regular-string "12" "121212"))
+     (define (test-match-varied n) (regexp-replace varied-string "12" "121212"))
+     (define (test-replace-regular n) (string-replace-string regular-string "12" "121212"))
+     (define (test-replace-varied n) (string-replace-string varied-string "12" "121212"))
+     (evaluate-performance 2 test-match-regular
+       test-match-varied test-replace-regular test-replace-varied)
+     # example output
+     name                      time                      faster than slowest
+     ------------------------------------------------------------------------------
+     1. replace-varied         45090                     790.8x
+     2. match-varied           211080                    168.1x
+     3. replace-regular        1677740                   20.3x
+     4. match-regular          35700210                  0.0x")
 
   (define (multiply-until proc base factor)
     (if (proc base factor) base (multiply-until proc (* base factor) factor)))

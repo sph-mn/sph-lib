@@ -19,11 +19,13 @@
     (only (sph io) read-until-string-proc)
     (only (srfi srfi-1) reverse))
 
-  (define sph-system-reader-description "a scheme reader that can include comments")
+  (define sph-system-reader-description
+    "a scheme reader that can include comments.
+     depends on guile-reader")
 
   (define (read-range-expr->string port start end)
     "calls proc for all characters that are not start or end and builds a nested list with the results of proc.
-    this procedure assumes that the first char has already been read"
+     this procedure assumes that the first char has already been read"
     (list->string
       (reverse
         (let loop ((char (read-char port)) (depth 0) (r (list)))

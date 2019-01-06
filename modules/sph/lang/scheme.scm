@@ -16,7 +16,7 @@
     (sph io)
     (sph tree))
 
-  (define sph-lang-parser "parser helpers and scheme read based parsing")
+  (define sph-lang-scheme "scheme parsing helpers")
 
   (define* (iq-file path #:optional (env (current-module)))
     "string -> list

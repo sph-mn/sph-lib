@@ -81,7 +81,9 @@
                 (qq
                   (div (@ (class "rest-sig"))
                     (unquote-splicing (map (l (a) (list (q div) a)) rest-signature))))))
-            (unquote (if description (qq (div (@ (class "description")) (unquote description))) "")))))))
+            (unquote
+              (if description
+                (qq (div (@ (class "description")) (unquote (map shtml-text->sxml description)))) "")))))))
 
   (define (get-bindings module-name) "list -> ((symbol:name . list:alist) ...)"
     (list-sort-with-accessor string<? first

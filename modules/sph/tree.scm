@@ -1,4 +1,4 @@
-; Copyright (C) 2010-2017 sph <sph@posteo.eu>
+; Copyright (C) 2010-2019 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -99,7 +99,7 @@
       last))
 
   (define sph-tree-description
-    "processing tree-like list structures.
+    "process tree-like list structures.
      denoted
        a representation using pairs where the first element denotes the nesting level and the second element is content
        (a b (c (d e)) f)-> ((0 . a) (1 . b) (2 . c) (3 . d) (3 . e) (0 . 4))

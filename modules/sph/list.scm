@@ -518,8 +518,8 @@
      like fold-multiple but works through the list elements from last to first"
     (if (null? a) r (apply f (first a) (apply fold-multiple-right f (tail a) r))))
 
-  (define (fold-segments f size init a)
-    "{any:state element ... -> any:state} integer any:state list -> any
+  (define (fold-segments size f init a)
+    "integer {any:state element ... -> any:state}  any:state list -> any
      fold over each overlapping segment with length \"size\".
      example:
      (fold-segments f 2 #t (list 4 5 6 7))"
@@ -784,12 +784,12 @@
           (if (predicate e) (append (reverse (pair (f e) r)) (tail rest))
             (loop (tail rest) (pair e r)))))))
 
-  (define (map-segments len f a)
-    "procedure:{any ... -> any} integer list -> list
+  (define (map-segments size f a)
+    "integer procedure:{any ... -> any} list -> list
      map over each overlapping segment of length len.
      each segment is one step apart.
-     example: for (1 2 3 4) length 2 maps (1 2) (2 3) (3 4)"
-    (fold-segments (l (result . a) (append result (list (apply f a)))) len (list) a))
+     example: for (1 2 3 4) size 2 maps (1 2) (2 3) (3 4)"
+    (fold-segments size (l (result . a) (append result (list (apply f a)))) (list) a))
 
   (define (map-slice slice-length f a)
     "integer procedure:{any ... -> any} list -> list
