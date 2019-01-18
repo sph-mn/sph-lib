@@ -1,6 +1,8 @@
 (library (sph math)
   (export
+    absolute-difference
     angle-between
+    arithmetic-mean
     bezier-curve
     bezier-curve-cubic
     catmull-rom-spline
@@ -13,22 +15,82 @@
     integer-summands
     line-path
     linear-interpolation
+    list-average
+    list-center-of-mass
+    list-median
+    list-mode
+    list-range
+    percent
     pi
     point-distance)
   (import
     (sph)
     (sph vector)
     (only (guile) *random-state* random)
+    (only (rnrs sorting) list-sort)
     (only (sph alist) alist-q)
-    (only (sph list) consecutive map-integers))
+    (only (sph list)
+      consecutive
+      count-value
+      map-integers
+      map-with-index
+      list-sort-with-accessor))
 
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
+
+  (define (arithmetic-mean a)
+    "number ... -> number
+     calculate the arithmetic mean of the given numbers"
+    (/ (apply + a) (length a)))
+
+  (define list-average arithmetic-mean)
+
+  (define (absolute-difference n-1 n-2)
+    "number number -> number
+     give the non-negative difference of two numbers"
+    (abs (- n-1 n-2)))
 
   (define (cusum a . b)
     "calculate cumulative sums from the given numbers.
      (a b c ...) -> (a (+ a b) (+ a b c) ...)"
     (pair a (if (null? b) null (apply cusum (+ a (first b)) (tail b)))))
+
+  (define (list-center-of-mass a)
+    "(number ...) -> number
+     the distribution of mass is balanced around the center of mass and the average
+     of the weighted position coordinates of the distributed mass defines its coordinates.
+     c = sum(n * x(n)) / sum(x(n))"
+    (/ (apply + (map-with-index (l (index a) (* index a)) a)) (apply + a)))
+
+  (define (list-median a)
+    "(number ...) -> number
+     return the median value of list. the median is the value separating the
+     higher half from the lower half in a sorted list of samples.
+     it may be thought of as the \"middle\" value"
+    (let ((sorted (list-sort < a)) (size (length a)))
+      (if (odd? size) (list-ref sorted (/ (- size 1) 2))
+        (let ((index-a (- (/ size 2) 1)) (index-b (/ size 2)))
+          (/ (+ (list-ref sorted index-a) (list-ref sorted index-b)) 2)))))
+
+  (define (list-mode a)
+    "(number ...) -> number
+     return the most common value in list or zero if none repeats"
+    (let
+      (most-common
+        (tail
+          (first
+            (list-sort-with-accessor > first
+              (map (l (b) (pair (count-value b a) b)) (delete-duplicates a))))))
+      (if (= 1 most-common) 0 most-common)))
+
+  (define (list-range a)
+    "(number ...) -> number
+     return the difference of the largest and the smallest value in list"
+    (- (apply max a) (apply min a)))
+
+  (define (percent value base) "how many percent is value from base"
+    (if (zero? base) 0 (/ (* value 100) base)))
 
   (define* (integer-summands int count minimum #:optional (random-state *random-state*))
     "split an integer int into count numbers equal or greater than minimum whose sum is int.

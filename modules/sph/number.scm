@@ -1,7 +1,5 @@
 (library (sph number)
   (export
-    absolute-difference
-    average
     bit->byte-length
     bound
     bound-max
@@ -18,7 +16,6 @@
     log-base
     number-container-length
     number-format-float
-    percent
     round-to-decimal-places
     round-to-increment
     truncate-to-decimal-places)
@@ -86,9 +83,6 @@
      example use case is calculating the size of a bytevector for storing an integer"
     (if (= 0 a) 0 (+ 1 (inexact->exact (floor (log-base a base))))))
 
-  (define (percent value base) "how many percent is value from base"
-    (if (zero? base) 0 (/ (* value 100) base)))
-
   (define (integer-and-fraction a c)
     "number procedure:{integer real -> any:result} -> any:result
      splits a number into its integer and fractional part. example: 1.74 -> 1 0.74"
@@ -123,16 +117,6 @@
 
   (define (increment-one a) (+ 1 a))
   (define (decrement-one a) (- a 1))
-
-  (define (average . a)
-    "number ... -> number
-     calculate the average of the given numbers"
-    (/ (apply + a) (length a)))
-
-  (define (absolute-difference n-1 n-2)
-    "number number -> number
-     result in the non-negative difference of two numbers"
-    (abs (- n-1 n-2)))
 
   (define* (number-format-float a #:key decimal-min decimal-max truncate* (base 10)) "number"
     (let*

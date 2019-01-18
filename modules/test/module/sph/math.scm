@@ -18,6 +18,8 @@
                     (assert-true "no value smaller than minimum" (every (l (a) (>= a minimum)) b))))))))
         inp)))
 
+  (define list-a (list 1 3 3 6 7 8 9))
+
   (test-execute-procedures-lambda
     (integer-summands (50 4 2) #t
       ; minimum to large
@@ -27,4 +29,11 @@
       ; count is smallest
       (50 1 0) #t
       ; int is smallest
-      (1 1 0) #t)))
+      (1 1 0) #t)
+    (percent (3 200) 3/2 (200 200) 100 (0 200) 0)
+    (absolute-difference (1 3) 2 (3 1) 2 (-1 -3) 2 (-3 -1) 2 (3 -1) 4 (-1 3) 4)
+    (list-average ((1 2 3 4)) 5/2)
+    (list-center-of-mass ((unquote list-a)) 149/37)
+    (list-median ((unquote list-a)) 6)
+    (list-range ((unquote list-a)) 8)
+    (list-mode ((unquote list-a)) 3)))
