@@ -22,7 +22,8 @@
     list-range
     percent
     pi
-    point-distance)
+    point-distance
+    relative-change)
   (import
     (sph)
     (sph vector)
@@ -91,6 +92,14 @@
 
   (define (percent value base) "how many percent is value from base"
     (if (zero? base) 0 (/ (* value 100) base)))
+
+  (define (relative-change a b)
+    "number number -> number
+     give the relative change between two numbers.
+     result times 100 gives the percentage change.
+     if a or b is zero then 1 is used in place.
+     example: 4 to 1 -> -3/4"
+    (/ (- b a) (if (or (zero? a) (zero? b)) 1 a)))
 
   (define* (integer-summands int count minimum #:optional (random-state *random-state*))
     "split an integer int into count numbers equal or greater than minimum whose sum is int.
