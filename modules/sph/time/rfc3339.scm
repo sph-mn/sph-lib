@@ -29,9 +29,9 @@
      ns: nanoseconds")
 
   (define-syntax-rules if-pass
-    ;"any procedure:{any -> any} -> any
-    ;call proc with "a" if "a" is a true value, otherwise return false or evaluate else.
-    ;also known as \"and=>\""
+    ; any procedure:{any -> any} -> any
+    ; call proc with "a" if "a" is a true value, otherwise return false or evaluate else.
+    ; also known as \"and=>\"
     ((a consequent alternative) (let (b a) (if b (consequent b) alternative)))
     ((a consequent) (let (b a) (if b (consequent b) b))))
 
@@ -124,7 +124,6 @@
               #:hour hours
               #:minute minutes
               #:second seconds
-              ; todo: improve conversion process
               #:nanosecond
               (inexact->exact
                 (seconds->nanoseconds
