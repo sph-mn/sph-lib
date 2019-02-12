@@ -100,10 +100,10 @@
      works with positive and negative day values and considers partial years where the leap day always falls on february 29"
     (if (negative? a)
       (let (a-abs (abs a))
-        ;the calculation for negative values is similar to greg-years->leap-days, based on the fact that the formula for
-        ;positive values can be used as long as year 0 is ignored.
-        ;for day totals shorter than a year we check if the leap day in year 0 has passed.
-        ;for longer day totals the contained cycles are counted, like for positive values.
+        ; the calculation for negative values is similar to greg-years->leap-days, based on the fact that the formula for
+        ; positive values can be used as long as year 0 is ignored.
+        ; for day totals shorter than a year we check if the leap day in year 0 has passed.
+        ; for longer day totals the contained cycles are counted, like for positive values.
         (if (<= a-abs greg-year-days-leap-year) (if (> a-abs after-month-2-29-days) 1 0)
           (+ 1
             (days-cycles& (- a-abs greg-year-days-leap-year)
@@ -117,8 +117,8 @@
         (l (cycles-400 rest-400 cycles-100 rest-100 cycles-4 rest-4)
           (+ (* (abs cycles-400) 97) (* (abs cycles-100) 24)
             (abs cycles-4)
-            ;check if the last day falls into the centurial 4-year range, which does not include a leap day.
-            ;(+ years-100-days rest-100) are the days after the last included 100 year cycle
+            ; check if the last day falls into the centurial 4-year range, which does not include a leap day.
+            ; (+ years-100-days rest-100) are the days after the last included 100 year cycle
             (if (< (- years-100-days rest-100) years-4-days) 0
               (if (< rest-4 years-3-month-2-29-days) 0 1)))))))
 
@@ -128,7 +128,7 @@
     (truncate-quotient ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days))
 
   (define (greg-days->year a)
-    ;floor is the largest integer less than or equal to x
+    ; floor is the largest integer less than or equal to x
     (let (years (/ ((if (negative? a) + -) a (greg-days->leap-days a)) greg-year-days))
       (if (and (negative? a) (zero? years)) 0 (greg-years->year (floor years)))))
 
@@ -172,7 +172,7 @@
           7))))
 
   (define (greg-year-first-week-day a) "integer:year-number -> integer:0-6:week-day-number"
-    ;could be solved with greg-week-day but this seems more efficient
+    ; could be solved with greg-week-day but this seems more efficient
     (week-day-start-sunday->monday
       (let ((a (greg-year->years a)))
         (truncate-remainder
