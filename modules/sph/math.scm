@@ -1,6 +1,7 @@
 (library (sph math)
   (export
     absolute-difference
+    absolute-threshold
     angle-between
     arithmetic-mean
     bezier-curve
@@ -20,14 +21,16 @@
     list-median
     list-mode
     list-range
+    log2
     percent
     pi
     point-distance
-    relative-change)
+    relative-change
+    scale-to-mean)
   (import
     (sph)
     (sph vector)
-    (only (guile) *random-state* random)
+    (only (guile) make-list *random-state* random)
     (only (rnrs sorting) list-sort)
     (only (sph alist) alist-q)
     (only (sph list)
@@ -39,6 +42,16 @@
 
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
+  (define (log2 b) "calculate the base two logarithm for b" (/ (log b) (log 2)))
+
+  (define (absolute-threshold b limit) "return zero if the absolute value of b is below limit"
+    (if (< (abs b) limit) 0 b))
+
+  (define (scale-to-mean mean b)
+    "number (number ...) -> (number ...)
+     scale the numbers in b to the given mean while keeping ratios between values the same"
+    (if (zero? mean) (make-list (length b) 0)
+      (let (ratio (/ (arithmetic-mean b) mean)) (map (l (b) (/ b ratio)) b))))
 
   (define (arithmetic-mean a)
     "number ... -> number

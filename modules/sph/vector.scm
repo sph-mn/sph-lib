@@ -1,6 +1,6 @@
 ; (sph vector) - vector processing.
 ; written for the guile scheme interpreter
-; Copyright (C) 2010-2018 sph <sph@posteo.eu>
+; Copyright (C) 2010-2019 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -17,6 +17,7 @@
     alist-values->vector
     any->vector
     sph-vector-description
+    vector->index-alist
     vector-accessor
     vector-append
     vector-copy*
@@ -26,13 +27,13 @@
     vector-each-with-index
     vector-extend
     vector-first
+    vector-from-index-alist
     vector-index-value
     vector-map-with-index
     vector-object
     vector-range
     vector-second
     vector-select
-    vector-shrink
     vector-third
     vector-update)
   (import
@@ -44,7 +45,7 @@
       module-map)
     (only (rnrs sorting) list-sort)
     (only (sph alist) alist-values)
-    (only (sph list) map-slice)
+    (only (sph list) map-with-index map-slice)
     (only (srfi srfi-1)
       append-map
       delete
@@ -161,4 +162,10 @@
      create a copy of the given vector with values at indices set to new values.
      index and value are given alternatingly.
      example: (vector-update myvector 1 #\a 4 #\b)"
-    (vector-copy* a (l (a) (map-slice 2 (l (index value) (vector-set! a index value)) index/value)))))
+    (vector-copy* a (l (a) (map-slice 2 (l (index value) (vector-set! a index value)) index/value))))
+
+  (define (vector->index-alist a) "#(any ...) -> ((integer:index . any) ...)"
+    (map-with-index pair (vector->list a)))
+
+  (define (vector-from-index-alist size a) "((integer:index . any) ...) -> #(any ...)"
+    (let (b (make-vector size 0)) (each (l (a) (vector-set! b (first a) (tail a))) a) b)))
