@@ -9,7 +9,7 @@
     (sph hashtable)
     (sph vector))
 
-  (define sph-json-description "a basic but fast json writer")
+  (define sph-json-description "a rudimentary but fast json writer")
 
   (define (list->json a port) "list port ->"
     (display "[" port)
@@ -45,18 +45,23 @@
     (if (> (ht-size a) 1) (unread-char port)) (display "}" port))
 
   (define-syntax-rule (object-key->json a port)
-    ;"string/symbol port ->"
+    ; string/symbol port ->
     (if (string? a) (string->json a port) (string->json (symbol->string a) port)))
 
   (define-syntax-rule (boolean->json a port)
-    ;"boolean port ->"
+    ; boolean port ->
     (display (if a "true" "false") port))
 
   (define* (scm->json a #:optional (port (current-output-port))) "any ->"
-    (cond ((list? a) (list->json a port)) ((vector? a) (vector->json a port))
-      ((string? a) (string->json a port)) ((symbol? a) (string->json (symbol->string a) port))
-      ((number? a) (number->json a port)) ((ht? a) (hashtable->json a port))
-      ((pair? a) (pair->json a port)) ((boolean? a) (boolean->json a port))
+    (cond
+      ((list? a) (list->json a port))
+      ((vector? a) (vector->json a port))
+      ((string? a) (string->json a port))
+      ((symbol? a) (string->json (symbol->string a) port))
+      ((number? a) (number->json a port))
+      ((ht? a) (hashtable->json a port))
+      ((pair? a) (pair->json a port))
+      ((boolean? a) (boolean->json a port))
       (else (throw (q json-invalid)))))
 
   (define (scm->json-string a) "any -> string"

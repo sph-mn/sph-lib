@@ -30,7 +30,10 @@
   (import
     (sph)
     (sph vector)
-    (only (guile) make-list *random-state* random)
+    (only (guile)
+      make-list
+      *random-state*
+      random)
     (only (rnrs sorting) list-sort)
     (only (sph alist) alist-q)
     (only (sph list)
@@ -51,7 +54,7 @@
     "number (number ...) -> (number ...)
      scale the numbers in b to the given mean while keeping ratios between values the same"
     (if (zero? mean) (make-list (length b) 0)
-      (let (ratio (/ (arithmetic-mean b) mean)) (map (l (b) (/ b ratio)) b))))
+      (let (ratio (/ (arithmetic-mean b) mean)) (if (zero? ratio) b (map (l (b) (/ b ratio)) b)))))
 
   (define (arithmetic-mean a)
     "number ... -> number
