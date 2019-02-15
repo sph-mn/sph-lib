@@ -8,6 +8,7 @@
     bezier-curve-cubic
     catmull-rom-spline
     circle
+    complex-from-magnitude-and-imaginary
     cusum
     ellipse
     elliptical-arc
@@ -15,7 +16,7 @@
     hermite-interpolation
     integer-summands
     line-path
-    linear-interpolation
+    linearly-interpolate
     list-average
     list-center-of-mass
     list-median
@@ -26,7 +27,8 @@
     pi
     point-distance
     relative-change
-    scale-to-mean)
+    scale-to-mean
+    vector-linearly-interpolate)
   (import
     (sph)
     (sph vector)
@@ -116,6 +118,12 @@
      if a or b is zero then 1 is used in place.
      example: 4 to 1 -> -3/4"
     (/ (- b a) (if (or (zero? a) (zero? b)) 1 a)))
+
+  (define (complex-from-magnitude-and-imaginary m i)
+    "create a complex number from a magnitude and the imaginary part of the number"
+    ; sqrt gives a complex number if the input value is negative
+    (let* ((a (- (* m m) (* i i))) (b (sqrt (abs a))) (c (if (< a 0) (- b) b)))
+      (make-rectangular c i)))
 
   (define* (integer-summands int count minimum #:optional (random-state *random-state*))
     "split an integer int into count numbers equal or greater than minimum whose sum is int.
@@ -209,10 +217,15 @@
           (+ (* a1 d2) (* a2 diff1) (* a3 diff2) (* a4 d3))))
       p1 p2 p3 p4))
 
-  (define (linear-interpolation n p1 p2)
-    "number:0..1 vector vector -> point
-     return a point on a straight line between p1 and p2 at fractional offset n"
-    (vector-map (l (d1 d2) (+ (* d2 n) (* d1 (- 1 n)))) p1 p2))
+  (define (vector-linearly-interpolate offset a b)
+    "real:0..1 (number ...) ... -> point
+     return a point on a straight line between a and b at fractional offset"
+    (vector-map (l (a b) (+ (* b offset) (* a (- 1 offset)))) a b))
+
+  (define (linearly-interpolate offset a b)
+    "real:0..1 (number ...) ... -> point
+     return a point on a straight line between a and b at fractional offset"
+    (map (l (a b) (+ (* b offset) (* a (- 1 offset)))) a b))
 
   (define (circle n radius)
     "return a point on a circle with given radius at fractional offset n (on the circumference)"
@@ -261,7 +274,7 @@
           (let*
             ( (p2 (first (tail sub)))
               (sub-n (/ (- x (vector-first p1)) (- (vector-first p2) (vector-first p1)))))
-            (linear-interpolation sub-n p1 p2))))))
+            (vector-linearly-interpolate sub-n p1 p2))))))
 
   (define* (elliptical-arc n p1 p2 rx ry #:optional (rotation 0) large-arc sweep)
     "number:0..1 vector vector number number number:radians boolean boolean -> (vector . extra-calculated-values)
@@ -272,7 +285,7 @@
     ; there seems to be a bug in the scheme version with the sweep-angle
     (cond
       ((equal? p1 p2) p1)
-      ((or (= 0 rx) (= 0 ry)) (linear-interpolation n p1 p2))
+      ((or (= 0 rx) (= 0 ry)) (vector-linearly-interpolate n p1 p2))
       (else
         (let*
           ( (rx (abs rx)) (ry (abs ry))

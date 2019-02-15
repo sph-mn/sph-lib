@@ -78,43 +78,48 @@
     (sph vector)
     (only (rnrs base) set!))
 
-  (define sph-other-description "miscellaneous")
+  (define sph-other-description
+    "miscellaneous.
+     # syntax
+     ## begin-first :: result expression ...
+     like begin but returns the result of the first expression instead of the last one.
+     ## identity-if :: result-if-true else ...
+     give the result of result-if-true, otherwise execute else
+     ## procedure-cond :: a (predicate handler) ... else
+     similar to \"cond\" but with procedures for predicate and handler.
+     passes the result to predicate, and if it evaluates to true then it passes the result to handler and the result
+     will be the result of handler. if predicate evaluates to false, the next predicate is checked.
+     if no predicate matches, the result of procedure-cond is the result of the last expression
+     ## values->list :: producer
+     converts multiple values to a list.
+     example: (values->list (values 1 2 3)) -> (1 2 3)")
 
   (define (cusum a . b)
-    ; copied from (sph math)
-    "calculate the cumulative sum for the given numbers.
-     (a b c ...) -> (a (+ a b) (+ a b c) ...)"
+    ; copied from (sph math) to avoid circular dependency
     (pair a (if (null? b) null (apply cusum (+ a (first b)) (tail b)))))
 
   (define-syntax-rule (values->list producer) (call-with-values (l () producer) list))
 
   (define-syntax-rule (procedure-cond a (predicate handler) ... else)
-    ; "passes the result to predicate, and if it evaluates to true then it passes the result to handler and the result
-    ; is the result of handler. if predicate evaluates to false, the next predicate is checked.
-    ; if no predicate matches, the result of procedure-cond is the result of the last expression.
-    ; similar to \"cond\" but with procedures for predicate and handler"
+    ; should probably have an else keyword case instead of returning the last expression
     (let (b a)
       (cond
         ((predicate b) (handler b))
         ...
         else)))
 
-  (define-syntax-rule (begin-first result expression ...)
-    ; like begin but returns the result of the first expression instead of the last one.
-    ((l (a) expression ... a) result))
-
+  (define-syntax-rule (begin-first result expression ...) ((l (a) expression ... a) result))
   (define-syntax-rule (any->list a) (if (list? a) a (list a)))
 
   (define-syntax-rule (identity-if result-if-true else ...)
-    ;result in "test" if "test" is true, otherwise execute "else"
     ((lambda (r) (if r r (begin else ...))) result-if-true))
 
   (define-syntax-rule (false-if test consequent)
-    ;result in false if "test" is true, otherwise execute consequent
+    ; result in false if "test" is true, otherwise execute consequent
     (if test #f consequent))
 
   (define-syntax-rule (false-if-not test consequent)
-    ;execute consequent if "test" is true, otherwise result in false
+    ; execute consequent if "test" is true, otherwise result in false
     (if test consequent #f))
 
   (define (ignore . a)
@@ -123,27 +128,29 @@
     (if #f #t))
 
   (define-syntax-rules if-predicate-and
+    ; all predicate procedures must match
     ( ( (predicate ...) subject consequent alternative)
       (let (b subject) (if (and (predicate b) ...) consequent alternative)))
     ( (predicate subject consequent alternative)
       (if-predicate-and (predicate) subject consequent alternative)))
 
   (define-syntax-rules if-predicate-or
+    ; one predicate procedure must match
     ( ( (predicate ...) subject consequent alternative)
       (let (b subject) (if (or (predicate b) ...) consequent alternative)))
     ( (predicate subject consequent alternative)
       (if-predicate-or (predicate) subject consequent alternative)))
 
   (define-syntax-rules if-pass
-    ;"any procedure:{any -> any} -> any
-    ;call proc with "a" if "a" is a true value, otherwise return false or evaluate else.
-    ;also known as \"and=>\""
+    ; "any procedure:{any -> any} -> any
+    ; call proc with "a" if "a" is a true value, otherwise return false or evaluate else.
+    ; also known as \"and=>\""
     ((a consequent alternative) (let (b a) (if b (consequent b) alternative)))
     ((a consequent) (let (b a) (if b (consequent b) b))))
 
   (define-syntax-rules if-pass-apply
-    ;"list procedure:{any ... -> any} -> any
-    ;like if-pass but uses apply to use the contents of \"a\", which should be a list in the true case, as arguments to proc"
+    ; "list procedure:{any ... -> any} -> any
+    ; like if-pass but uses apply to use the contents of \"a\", which should be a list in the true case, as arguments to proc"
     ((a consequent alternative) (let (b a) (if b (apply consequent b) alternative)))
     ((a consequent) (let (b a) (if b (apply consequent b) b))))
 

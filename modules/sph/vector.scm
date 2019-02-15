@@ -172,7 +172,7 @@
     (let (b (make-vector size 0)) (each (l (a) (vector-set! b (first a) (tail a))) a) b))
 
   (define (relative-change a b)
-    ; copied from (sph vector) to avoid circular dependency
+    ; copied from (sph math) to avoid circular dependency
     (/ (- b a) (if (or (zero? a) (zero? b)) 1 a)))
 
   (define (vector-relative-change-index/value a b)
