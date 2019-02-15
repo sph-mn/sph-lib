@@ -59,8 +59,7 @@
     search-env-path-one
     socket-bind
     sph-other-description
-    values->list
-    vector-relative-change-index/value)
+    values->list)
   (import
     (guile)
     (ice-9 pretty-print)
@@ -381,23 +380,6 @@
     (apply
       (l (previous count) (if (< count repeat-count) (list previous (+ 1 count)) (list (f) 1)))
       (or state (list (f) 0))))
-
-  (define (vector-relative-change-index/value a b)
-    "#(number ...) #(number ...) -> number
-     return a number that describes the amount of change between
-     two numeric vectors based on value and index shifts.
-     it sorts values by magnitude and compares relative changes.
-     all vectors must be of equal length"
-    (let*
-      ( (sorted-points
-          (map (l (a) (list-sort (l (a b) (> (tail a) (tail b))) (vector->index-alist a)))
-            (list a b)))
-        (change-values
-          (apply map
-            (l (a b)
-              (/ (+ (relative-change (first a) (first b)) (relative-change (tail a) (tail b))) 2))
-            sorted-points)))
-      (/ (apply + change-values) (vector-length a))))
 
   (define* (random-discrete-f probabilities #:optional (state *random-state*))
     "(real ...) [random-state] -> procedure:{-> real}

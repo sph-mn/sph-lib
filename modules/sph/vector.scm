@@ -32,6 +32,7 @@
     vector-map-with-index
     vector-object
     vector-range
+    vector-relative-change-index/value
     vector-second
     vector-select
     vector-third
@@ -168,4 +169,27 @@
     (map-with-index pair (vector->list a)))
 
   (define (vector-from-index-alist size a) "((integer:index . any) ...) -> #(any ...)"
-    (let (b (make-vector size 0)) (each (l (a) (vector-set! b (first a) (tail a))) a) b)))
+    (let (b (make-vector size 0)) (each (l (a) (vector-set! b (first a) (tail a))) a) b))
+
+  (define (relative-change a b)
+    ; copied from (sph vector) to avoid circular dependency
+    (/ (- b a) (if (or (zero? a) (zero? b)) 1 a)))
+
+  (define (vector-relative-change-index/value a b)
+    "#(number ...) #(number ...) -> number
+     return a number that describes the amount of change between
+     two numeric vectors based on value and index shifts.
+     it sorts values by magnitude and compares relative changes.
+     the result is a change factor with small values meaning little change.
+     all vectors must be of equal length"
+    (let*
+      ( (sorted-points
+          (map (l (a) (list-sort (l (a b) (> (tail a) (tail b))) (vector->index-alist a)))
+            (list a b)))
+        (change-values
+          (apply map
+            (l (a b)
+              (/
+                (abs (+ (relative-change (first a) (first b)) (relative-change (tail a) (tail b)))) 2))
+            sorted-points)))
+      (/ (apply + change-values) (vector-length a)))))
