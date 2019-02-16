@@ -6,14 +6,15 @@
     arithmetic-mean
     bezier-curve
     bezier-curve-cubic
-    catmull-rom-spline
+    catmull-rom-interpolate-f
+    catmull-rom-path
     circle
     complex-from-magnitude-and-imaginary
     cusum
     ellipse
     elliptical-arc
     golden-ratio
-    hermite-interpolation
+    hermite-interpolate
     integer-summands
     line-path
     linearly-interpolate
@@ -42,6 +43,7 @@
       consecutive
       count-value
       map-integers
+      map-segments
       map-with-index
       list-sort-with-accessor))
 
@@ -59,7 +61,7 @@
       (let (ratio (/ (arithmetic-mean b) mean)) (if (zero? ratio) b (map (l (b) (/ b ratio)) b)))))
 
   (define (arithmetic-mean a)
-    "number ... -> number
+    "(number ...) -> number
      calculate the arithmetic mean of the given numbers"
     (/ (apply + a) (length a)))
 
@@ -146,6 +148,11 @@
                     (if (= 1 deviation) (vector->list numbers)
                       (loop (- deviation 1) (random count))))))))))))
 
+  (define (euclidean-distance p0 p1)
+    "(number ...) (number ...) -> number
+     unlimited dimensions"
+    (sqrt (apply + (map (l (p0d p1d) (expt (- p0d p1d) 2)) p0 p1))))
+
   (define (bezier-curve n . points)
     "number:0..1 #(number ...) ... -> #(number ...)
      get a point for a bezier curve at fractional offset n.
@@ -184,21 +191,60 @@
         ; map all point dimensions
         (l (d1 d2 d3 d4) (+ (* r-cube d1) (* l-square d2) (* r-square d3) (* l-cube d4))) p1 p2 p3 p4)))
 
-  (define (catmull-rom-spline n p1 p2 p3 p4)
-    "number:0..1 vector vector vector vector -> vector
-     return a point between p2 and p3 at fractional offset n
-     calculated using catmull rom spline interpolation (probably not centripetal).
-     no limit on the dimensions of point vectors.
-     catmull rom splines have c1 continuity, local control, and interpolation,
-     but do not lie within the convex hull of their control points (p1 and p4)"
-    (vector-map
-      (l (d1 d2 d3 d4)
-        (* 0.5
-          (+ (* 2 d2) (* n (- d3 d1))
-            (* n n (- (+ (* 2 d1) (* 4 d3)) (* 5 d2) d4)) (* n n n (- (+ (* 3 d2) d4) (* 3 d3) d1)))))
-      p1 p2 p3 p4))
+  (define* (catmull-rom-interpolate-f p0 p1 p2 p3 #:optional (alpha 0.5) (tension 0))
+    "(number ...) (number ...) (number ...) (number ...) [real:0..1 real:0..1] -> procedure:{real:0..1 -> (number ...)}
+     return a function that gives points on a catmull-rom spline segment between p1 and p2 at fractional offsets.
+     the returned function is called as (f time) where time is a real number between 0 and 1.
+     to draw paths this function can be called with overlapping segments of a points series
+     * alpha: 0 uniform, 0.5 centripetal, 1 chordal
+     * tension: 0: smooth, 1: linear
+     * no limit on the number of point dimensions
+     adapted from code from mika rantanen at https://qroph.github.io/2018/07/30/smooth-paths-using-catmull-rom-splines.html"
+    ; some coefficients constant for the segment are pre-calculated
+    (let*
+      ( (t0 0) (t1 (+ t0 (expt (euclidean-distance p0 p1) alpha)))
+        (t2 (+ t1 (expt (euclidean-distance p1 p2) alpha)))
+        (t3 (+ t2 (expt (euclidean-distance p2 p3) alpha)))
+        (m1
+          (map
+            (l (p0d p1d p2d)
+              (* (- 1 tension) (- t2 t1)
+                (+ (- (/ (- p0d p1d) (- t0 t1)) (/ (- p0d p2d) (- t0 t2)))
+                  (/ (- p1d p2d) (- t1 t2)))))
+            p0 p1 p2))
+        (m2
+          (map
+            (l (p1d p2d p3d)
+              (* (- 1 tension) (- t2 t1)
+                (+ (- (/ (- p1d p2d) (- t1 t2)) (/ (- p1d p3d) (- t1 t3)))
+                  (/ (- p2d p3d) (- t2 t3)))))
+            p1 p2 p3))
+        (a (map (l (p1d p2d m1d m2d) (+ (- (* 2 p1d) (* 2 p2d)) m1d m2d)) p1 p2 m1 m2))
+        (b (map (l (p1d p2d m1d m2d) (- (+ (* -3 p1d) (* 3 p2d)) (* 2 m1d) m2d)) p1 p2 m1 m2)) (c m1)
+        (d p1))
+      (l (t) (map (l (a b c d) (+ (* a t t t) (* b t t) (* c t) d)) a b c d))))
 
-  (define (hermite-interpolation n tension bias p1 p2 p3 p4)
+  (define (catmull-rom-path alpha tension . points)
+    (let
+      (points
+        ; add one before and one after the series to interpolate between all given points,
+        ; because the interpolation is only always between two of four points
+        (let
+          ( (first-point (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first points) (second points)))
+            (last-point
+              (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first (reverse points))
+                (second (reverse points)))))
+          (append (list first-point) points (list last-point))))
+      (apply append
+        (map-segments 4
+          (l (p0 p1 p2 p3) "map points to point lists"
+            (let*
+              ( (interpolate-f (catmull-rom-interpolate-f p0 p1 p2 p3 alpha tension))
+                (resolution 100))
+              (map-integers resolution (l (t) (interpolate-f (/ t resolution))))))
+          points))))
+
+  (define (hermite-interpolate n tension bias p1 p2 p3 p4)
     "number:0..1 number-1..1 symbol:-1..1 vector vector vector vector -> vector
      tension: -1 low, 0 normal, 1 high
      bias: negative: towards p1, zero: even, positive: towards p4"

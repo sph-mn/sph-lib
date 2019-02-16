@@ -10,7 +10,7 @@
     (rnrs sorting)
     (sph)
     (sph list)
-    (sph number)
+    (sph math)
     (sph string)
     (sph time)
     (only (guile)
@@ -25,10 +25,10 @@
     "adaptive performance testing with formatted result display.
      adapts the number of calls until a meaningful run time difference has been found.
      # example
-     (define (test-match-regular n) (regexp-replace regular-string "12" "121212"))
-     (define (test-match-varied n) (regexp-replace varied-string "12" "121212"))
-     (define (test-replace-regular n) (string-replace-string regular-string "12" "121212"))
-     (define (test-replace-varied n) (string-replace-string varied-string "12" "121212"))
+     (define (test-match-regular n) (regexp-replace regular-string \"12\" \"121212\"))
+     (define (test-match-varied n) (regexp-replace varied-string \"12\" \"121212\"))
+     (define (test-replace-regular n) (string-replace-string regular-string \"12\" \"121212\"))
+     (define (test-replace-varied n) (string-replace-string varied-string \"12\" \"121212\"))
      (evaluate-performance 2 test-match-regular
        test-match-varied test-replace-regular test-replace-varied)
      # example output
@@ -65,7 +65,7 @@
     (if (integer? seconds)
       (let*
         ( (seconds (s->ns seconds)) (results (execute-w-managed-iterations tests seconds))
-          (result-average (apply average results)) (result-max (apply max results))
+          (result-average (arithmetic-mean results)) (result-max (apply max results))
           (result-percent-factor (/ 100 result-max))
           (results
             (list-sort (l (ele-1 ele-2) (< (list-ref ele-1 1) (list-ref ele-2 1)))
@@ -97,7 +97,7 @@
       (throw (q wrong-type-for-argument) seconds)))
 
   (define-syntax-rules evaluate-performance
-    ;takes a list of procedure names, procedures with the signature (n) ->
+    ; takes a list of procedure names, procedures with the signature (n) ->
     ((minimum-seconds tests) (evaluate-result minimum-seconds tests))
     ( (minimum-seconds identifier ...)
       (evaluate-result minimum-seconds (list (cons (quote identifier) identifier) ...)))))
