@@ -26,12 +26,12 @@
     log2
     percent
     pi
-    point-distance
     relative-change
     scale-to-mean
     vector-linearly-interpolate)
   (import
     (sph)
+    (sph number)
     (sph vector)
     (only (guile)
       make-list
@@ -133,6 +133,7 @@
      * get count random numbers of the range minimum to int
      * scale numbers by int divided by sum-of-numbers so to preserve relative differences
      * add either 1 or -1 to every number at random indices until the sum is int"
+    ; a new parameter for a custom random function should be added to control probabilities
     (if (> (* count minimum) int) null
       (let*
         ( (numbers (map-integers count (l (a) (+ minimum (random (- int minimum) random-state)))))
@@ -202,29 +203,27 @@
      adapted from code from mika rantanen at https://qroph.github.io/2018/07/30/smooth-paths-using-catmull-rom-splines.html"
     ; some coefficients constant for the segment are pre-calculated
     (let*
-      ( (t0 0) (t1 (+ t0 (expt (euclidean-distance p0 p1) alpha)))
-        (t2 (+ t1 (expt (euclidean-distance p1 p2) alpha)))
-        (t3 (+ t2 (expt (euclidean-distance p2 p3) alpha)))
+      ( (+ float-sum) (t01 (expt (euclidean-distance p0 p1) alpha))
+        (t12 (expt (euclidean-distance p1 p2) alpha)) (t23 (expt (euclidean-distance p2 p3) alpha))
         (m1
           (map
             (l (p0d p1d p2d)
-              (* (- 1 tension) (- t2 t1)
-                (+ (- (/ (- p0d p1d) (- t0 t1)) (/ (- p0d p2d) (- t0 t2)))
-                  (/ (- p1d p2d) (- t1 t2)))))
+              (* (- 1 tension)
+                (+ (- p2d p1d) (* t12 (- (/ (- p1d p0d) t01) (/ (- p2d p0d) (+ t01 t12)))))))
             p0 p1 p2))
         (m2
           (map
             (l (p1d p2d p3d)
-              (* (- 1 tension) (- t2 t1)
-                (+ (- (/ (- p1d p2d) (- t1 t2)) (/ (- p1d p3d) (- t1 t3)))
-                  (/ (- p2d p3d) (- t2 t3)))))
+              (* (- 1 tension)
+                (+ (- p2d p1d) (* t12 (- (/ (- p3d p2d) t23) (/ (- p3d p1d) (+ t12 t23)))))))
             p1 p2 p3))
-        (a (map (l (p1d p2d m1d m2d) (+ (- (* 2 p1d) (* 2 p2d)) m1d m2d)) p1 p2 m1 m2))
-        (b (map (l (p1d p2d m1d m2d) (- (+ (* -3 p1d) (* 3 p2d)) (* 2 m1d) m2d)) p1 p2 m1 m2)) (c m1)
-        (d p1))
+        (a (map (l (p1d p2d m1d m2d) (+ (* 2 (- p1d p2d)) m1d m2d)) p1 p2 m1 m2))
+        (b (map (l (p1d p2d m1d m2d) (- (* -3 (- p1d p2d)) m1d m1d m2d)) p1 p2 m1 m2)) (c m1) (d p1))
       (l (t) (map (l (a b c d) (+ (* a t t t) (* b t t) (* c t) d)) a b c d))))
 
-  (define (catmull-rom-path alpha tension . points)
+  (define (catmull-rom-path alpha tension resolution points)
+    "real real integer -> ((number ...):point ...)
+     example: (catmull-rom-path 0.5 0 100 (quote ((-0.72 -0.3) (0 0) (1 0.8) (1.1 0.5) (2.7 1.2) (3.4 0.27))))"
     (let
       (points
         ; add one before and one after the series to interpolate between all given points,
@@ -238,9 +237,7 @@
       (apply append
         (map-segments 4
           (l (p0 p1 p2 p3) "map points to point lists"
-            (let*
-              ( (interpolate-f (catmull-rom-interpolate-f p0 p1 p2 p3 alpha tension))
-                (resolution 100))
+            (let (interpolate-f (catmull-rom-interpolate-f p0 p1 p2 p3 alpha tension))
               (map-integers resolution (l (t) (interpolate-f (/ t resolution))))))
           points))))
 
@@ -287,12 +284,9 @@
         (- (* radius-x (cos n) (cos rotation)) (* radius-y (sin n) (sin rotation)))
         (+ (* radius-x (cos n) (sin rotation)) (* radius-y (sin n) (cos rotation))))))
 
-  (define (point-distance p1 p2)
-    (sqrt
-      (+ (expt (- (vector-first p2) (vector-first p1)) 2)
-        (expt (- (vector-second p2) (vector-second p1)) 2))))
-
   (define (angle-between p1 p2)
+    "#(number number) #(number number) -> number
+     only for two dimensions"
     (let*
       ( (p (+ (* (vector-first p1) (vector-first p2)) (* (vector-second p1) (vector-second p2))))
         (n
