@@ -228,7 +228,7 @@
 
   (define (catmull-rom-path alpha tension resolution points)
     "real real integer ((number ...):point ...) -> ((number ...):point ...)
-     create a smooth interpolated path from intermediate points.
+     create a smooth interpolated path from intermediate points of any but equal dimension.
      example: (catmull-rom-path 0.5 0 100 (quote ((-0.72 -0.3) (0 0) (1 0.8) (1.1 0.5) (2.7 1.2) (3.4 0.27))))"
     (let
       (points
@@ -429,7 +429,7 @@
             (let*
               ( (points (pair p0 points))
                 (points*
-                  ; add points to because cr interpolates only between p1 p2
+                  ; add points because cr interpolates only between p1 p2
                   (let*
                     ( (config-get-first-point
                         (l (a)
@@ -440,14 +440,12 @@
                       (first-point
                         (if (> 2 (length segments))
                           (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first points) (second points))
-                          (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first points)
-                            (spline-path-segment-end (second (reverse segments))))))
+                          (spline-path-segment-end (second (reverse segments)))))
                       (last-point
                         (if (null? following-points)
                           (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first (reverse points))
                             (second (reverse points)))
-                          (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first (reverse points))
-                            (first following-points)))))
+                          (first following-points))))
                     (append (list first-point) points (list last-point))))
                 (new-segments
                   (map-segments 4
@@ -484,30 +482,30 @@
         (infer-dimensions (l (segments) (length (second (first segments))))))
       (l (segments-config)
         "number ((symbol:type number:offset any:parameter ...) ...) -> path-state
-         create a state for drawing a path between points interpolated by selected functions.
-         the returned object is to be passed to spline-path to get points on the path.
-         all interpolation functions can draw paths with an unlimited number of dimensions except for arc, which is 2d only.
-         the dimensions of all segments must be the same.
-         there are no required segment types but at least one must be given.
-         if no \"move\" segment is given as the first element then the path starts at zero.
-         move can also be used as a path segment to create gaps.
-         this implementation is similar to the path element of svg vector graphics.
-         for \"arc\" see how arcs are created with a path with svg graphics.
-         the catmull-rom interpolation is always centripetal.
-         the given segments describe the endpoints as in \"line to\" or \"move to\".
-         point: (number:dimension ...)
-         segment types
-           (move point)
-           (line point ...)
-           (bezier point ...)
-           (catmull-rom tension:0..1 point ...)
-           (arc (x y) radius-x [radius-y rotation large-arc sweep])
-         example
-           (spline-path-new* (move (20 0)) (line (50 0.25)) (line (80 0.4)) (line (120 0.01)))"
+         * the returned object is to be passed to spline-path to get points on a path between
+           given points interpolated by selected functions
+         * all interpolation functions can draw paths in an unlimited number of dimensions except for arc, which is 2d only
+         * the dimensions of all segments must be the same
+         * there are no required segment types but at least one must be given
+         * if no \"move\" segment is given as the first element then the path starts at zero
+         * move can also be used as a path segment to create gaps
+         * this implementation is similar to the path element of svg vector graphics
+         * for \"arc\" see how arcs are created with a path with svg graphics
+         * the catmull-rom interpolation is always centripetal
+         * the given segments describe the endpoints as in \"line to\" or \"move to\"
+         * point: (number:dimension ...)
+         # segment types
+         * (move point)
+         * (line point ...)
+         * (bezier point ...)
+         * (catmull-rom tension:0..1 point ...)
+         * (arc (x y) radius-x [radius-y rotation large-arc sweep])
+         # example
+         (spline-path-new* (move (20 0)) (line (50 0.25)) (line (80 0.4)) (line (120 0.01)))"
         (let*
           ( (dimensions (infer-dimensions segments-config))
             (segments
-              ; map segment configuration to functions that draw it.
+              ; map segment configuration to segment objects with functions that draw it.
               ; pair-fold allows to pass following segment-config to handlers
               (first
                 (pair-fold-multiple
@@ -545,9 +543,10 @@
   (define* (spline-path time path #:optional (c pair))
     "number path-state [procedure -> result] -> (data . path-state)/any
      get value at time for a path created by spline-path-new.
-     returns zero for gaps or after the end of the path.
-     path-state does not have to be passed to subsequent calls to spline-path but
-     if it is passed it should be more efficient"
+     returns a zero vector for gaps or when after the end of the path.
+     the returned path-state does not have to be passed to subsequent calls to
+     spline-path but it can be more efficient to do so,
+     unless repeated access to previously returned points is required"
     (let (a (first path))
       (if (and a (>= time (first (spline-path-segment-start a))))
         (if (< time (first (spline-path-segment-end a)))
