@@ -198,7 +198,9 @@
     (let ((record-layout-size (ht-size record-layout)) (vec-size (vector-length a)))
       (if (eqv? record-layout-size vec-size) a
         (if (< vec-size record-layout-size) (vector-extend a (- record-layout-size vec-size))
-          (vector-shrink a (- vec-size record-layout-size))))))
+          a
+          ;(vector-shrink a (- vec-size record-layout-size))
+          ))))
 
   (define (define-record-prepare-field-spec record-name a)
     "(symbol/(symbol [symbol symbol]) ...) -> ((symbol symbol symbol) ...)"

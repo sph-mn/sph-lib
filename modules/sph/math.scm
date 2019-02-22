@@ -28,8 +28,12 @@
     pi
     relative-change
     scale-to-mean
+    spline-path
+    spline-path-new
+    spline-path-new*
     vector-linearly-interpolate)
   (import
+    (rnrs exceptions)
     (sph)
     (sph number)
     (sph vector)
@@ -45,7 +49,8 @@
       map-integers
       map-segments
       map-with-index
-      list-sort-with-accessor))
+      list-sort-with-accessor)
+    (only (sph list) pair-fold-multiple))
 
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
@@ -154,17 +159,17 @@
      unlimited dimensions"
     (sqrt (apply + (map (l (p0d p1d) (expt (- p0d p1d) 2)) p0 p1))))
 
-  (define (bezier-curve n . points)
-    "number:0..1 #(number ...) ... -> #(number ...)
-     get a point for a bezier curve at fractional offset n.
+  (define (bezier-curve t . points)
+    "number:0..1 (number ...) ... -> (number ...)
+     get a point for a bezier curve at fractional offset t.
      no limit on the number of control points.
      no limit on the dimension of point vectors.
      at least one point must be given.
      uses the \"de casteljau\" algorithm"
     (if (null? (tail points)) (first points)
-      (let ((left n) (right (- 1 n)))
+      (let ((left t) (right (- 1 t)))
         ; length of points is reduced by one for each recursive call
-        (apply bezier-curve n
+        (apply bezier-curve t
           ; use of pair-fold to check for following elements
           (pair-fold-right
             (l (a result)
@@ -172,9 +177,9 @@
               (if (null? (tail a)) result
                 (let ((p1 (first a)) (p2 (second a)))
                   (pair
-                    (vector-map
+                    (map
                       ; map all point dimensions
-                      (l (p1-d p2-d) (+ (* right p1-d) (* left p2-d))) p1 p2)
+                      (l (p1d p2d) (+ (* right p1d) (* left p2d))) p1 p2)
                     result))))
             null points)))))
 
@@ -222,7 +227,8 @@
       (l (t) (map (l (a b c d) (+ (* a t t t) (* b t t) (* c t) d)) a b c d))))
 
   (define (catmull-rom-path alpha tension resolution points)
-    "real real integer -> ((number ...):point ...)
+    "real real integer ((number ...):point ...) -> ((number ...):point ...)
+     create a smooth interpolated path from intermediate points.
      example: (catmull-rom-path 0.5 0 100 (quote ((-0.72 -0.3) (0 0) (1 0.8) (1.1 0.5) (2.7 1.2) (3.4 0.27))))"
     (let
       (points
@@ -320,6 +326,7 @@
     "number:0..1 vector vector number number number:radians boolean boolean -> (vector . extra-calculated-values)
      extra-calculated-values: ((symbol:start-angle/end-angle/angle/center/radius-x/radius-y number) ...)
      return a point on an elliptical arc at fractional offset n.
+     only for two dimensions.
      modeled after the svg path arc command.
      code translated from https://github.com/MadLittleMods/svg-curve-lib"
     ; there seems to be a bug in the scheme version with the sweep-angle
@@ -391,4 +398,159 @@
           (pair point
             ; include some extra information in the result which might be useful
             (alist-q start-angle start-angle
-              end-angle (+ start-angle sweep-angle) angle angle center center radius-x rx radius-y ry)))))))
+              end-angle (+ start-angle sweep-angle) angle angle center center radius-x rx radius-y ry))))))
+
+  (define spline-path-new
+    (let
+      ( (line-new
+          (l (segments rest-config . points) "list list list -> (segments next-start)"
+            (let*
+              ( (new-segments
+                  (map-segments 2
+                    (l (p0 p1)
+                      (let* ((start (first p0)) (end (first p1)) (size (- end start)))
+                        (vector p0 p1
+                          ; segment-f
+                          (l (offset) (linearly-interpolate (/ (- offset start) size) p0 p1)))))
+                    points)))
+              (list (append segments new-segments) (last points)))))
+        (bezier-new
+          (l (segments rest-config . points)
+            (let*
+              ( (p0 (first points)) (p1 (last points)) (start (first p0))
+                (end (first p1)) (size (- end start))
+                (new-segments
+                  (list
+                    (vector p0 p1
+                      (l (offset) (apply bezier-curve (/ (- offset start) size) points))))))
+              (list (append segments new-segments) (last points)))))
+        (catmull-rom-new
+          (l (segments rest-config p0 tension . points)
+            (let*
+              ( (points (pair p0 points))
+                (points*
+                  ; add points to because cr interpolates only between p1 p2
+                  (let*
+                    ( (config-get-first-point
+                        (l (a)
+                          (case (first a)
+                            ((catmull-rom) (third a))
+                            (else (second a)))))
+                      (following-points (map config-get-first-point rest-config))
+                      (first-point
+                        (if (> 2 (length segments))
+                          (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first points) (second points))
+                          (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first points)
+                            (spline-path-segment-end (second (reverse segments))))))
+                      (last-point
+                        (if (null? following-points)
+                          (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first (reverse points))
+                            (second (reverse points)))
+                          (map (l (p0d p1d) (- (* 2 p0d) p1d)) (first (reverse points))
+                            (first following-points)))))
+                    (append (list first-point) points (list last-point))))
+                (new-segments
+                  (map-segments 4
+                    (l (p0 p1 p2 p3)
+                      (let*
+                        ( (start (first p1)) (end (first p2)) (size (- end start))
+                          (interpolate-f (catmull-rom-interpolate-f p0 p1 p2 p3 0.5 tension)))
+                        (vector p1 p2 (l (offset) (interpolate-f (/ (- offset start) size))))))
+                    points*)))
+              (list (append segments new-segments) (last points)))))
+        (move-new (l (segments rest-config p0 p1) (list segments p1)))
+        (arc-new
+          (l (segments rest-config p0 p1 . params)
+            "the arc ends at point (x, y)
+            the ellipse has the two radii (rx, ry)
+            the x-axis of the ellipse is rotated by x-axis-rotation"
+            ; hasnt been tested in a while
+            (apply
+              (l* (radius-x #:optional (radius-y radius-x) (rotation 0) large-arc sweep)
+                (let*
+                  ( (start (first p0)) (end (first p1)) (size (- end start))
+                    (p0-vector (list->vector p0)) (p1-vector (list->vector p1)))
+                  (list
+                    (append segments
+                      (list
+                        (vector p0 p1
+                          (l (offset)
+                            (vector-second
+                              (first
+                                (elliptical-arc (/ (- offset start) size) p0-vector
+                                  p1-vector radius-x radius-y rotation large-arc sweep)))))))
+                    p1)))
+              params)))
+        (infer-dimensions (l (segments) (length (second (first segments))))))
+      (l (segments-config)
+        "number ((symbol:type number:offset any:parameter ...) ...) -> path-state
+         create a state for drawing a path between points interpolated by selected functions.
+         the returned object is to be passed to spline-path to get points on the path.
+         all interpolation functions can draw paths with an unlimited number of dimensions except for arc, which is 2d only.
+         the dimensions of all segments must be the same.
+         there are no required segment types but at least one must be given.
+         if no \"move\" segment is given as the first element then the path starts at zero.
+         move can also be used as a path segment to create gaps.
+         this implementation is similar to the path element of svg vector graphics.
+         for \"arc\" see how arcs are created with a path with svg graphics.
+         the catmull-rom interpolation is always centripetal.
+         the given segments describe the endpoints as in \"line to\" or \"move to\".
+         point: (number:dimension ...)
+         segment types
+           (move point)
+           (line point ...)
+           (bezier point ...)
+           (catmull-rom tension:0..1 point ...)
+           (arc (x y) radius-x [radius-y rotation large-arc sweep])
+         example
+           (spline-path-new* (move (20 0)) (line (50 0.25)) (line (80 0.4)) (line (120 0.01)))"
+        (let*
+          ( (dimensions (infer-dimensions segments-config))
+            (segments
+              ; map segment configuration to functions that draw it.
+              ; pair-fold allows to pass following segment-config to handlers
+              (first
+                (pair-fold-multiple
+                  (l (a segments start)
+                    (let ((current (first a)) (rest (tail a)))
+                      (apply
+                        (case (first current)
+                          ((line) line-new)
+                          ((bezier) bezier-new)
+                          ((catmull-rom) catmull-rom-new)
+                          ((arc) arc-new)
+                          ((move) move-new)
+                          (else (raise (q spline-path-unknown-segment-type))))
+                        segments rest start (tail current))))
+                  segments-config null (make-list dimensions 0))))
+            (next (first segments)) (index-i 0) (index (apply vector segments)))
+          (list next index-i index dimensions)))))
+
+  (define-syntax-rule (spline-path-new* segment ...) (spline-path-new (list (quote segment) ...)))
+
+  (define (spline-path-advance path-state)
+    "path-state -> path-state
+     continue with the next segment"
+    (apply
+      (l (next index-i index dimensions)
+        (let (index-i (+ 1 index-i))
+          (if (< index-i (vector-length index))
+            (list (vector-ref index index-i) index-i index dimensions) (list #f #f index dimensions))))
+      path-state))
+
+  (define spline-path-segment-start (vector-accessor 0))
+  (define spline-path-segment-end (vector-accessor 1))
+  (define spline-path-segment-f (vector-accessor 2))
+
+  (define* (spline-path time path #:optional (c pair))
+    "number path-state [procedure -> result] -> (data . path-state)/any
+     get value at time for a path created by spline-path-new.
+     returns zero for gaps or after the end of the path.
+     path-state does not have to be passed to subsequent calls to spline-path but
+     if it is passed it should be more efficient"
+    (let (a (first path))
+      (if (and a (>= time (first (spline-path-segment-start a))))
+        (if (< time (first (spline-path-segment-end a)))
+          (pair ((spline-path-segment-f a) time) path)
+          (spline-path time (spline-path-advance path) c))
+        (pair (make-list (last path) 0) path)))))

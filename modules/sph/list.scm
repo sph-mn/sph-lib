@@ -860,7 +860,7 @@
 
   (define (pair-fold-multiple f a . init)
     "{pair any -> any} list any ... -> any
-     like fold-multiple but applying f to the pairs of list"
+     like fold-multiple but calling f with the pairs of list"
     (if (null? a) init (apply pair-fold-multiple f (tail a) (apply f a init))))
 
   (define (pair-map f a)
