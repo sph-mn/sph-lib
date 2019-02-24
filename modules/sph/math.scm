@@ -52,6 +52,7 @@
       list-sort-with-accessor)
     (only (sph list) pair-fold-multiple))
 
+  (define sph-math-description "splines, statistics and more")
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
   (define (log2 b) "calculate the base two logarithm for b" (/ (log b) (log 2)))
@@ -467,17 +468,16 @@
               (l* (radius-x #:optional (radius-y radius-x) (rotation 0) large-arc sweep)
                 (let*
                   ( (start (first p0)) (end (first p1)) (size (- end start))
-                    (p0-vector (list->vector p0)) (p1-vector (list->vector p1)))
-                  (list
-                    (append segments
+                    (p0-vector (list->vector p0)) (p1-vector (list->vector p1))
+                    (new-segments
                       (list
                         (vector p0 p1
                           (l (offset)
-                            (vector-second
+                            (vector->list
                               (first
                                 (elliptical-arc (/ (- offset start) size) p0-vector
-                                  p1-vector radius-x radius-y rotation large-arc sweep)))))))
-                    p1)))
+                                  p1-vector radius-x radius-y rotation large-arc sweep))))))))
+                  (list (append segments new-segments) p1)))
               params)))
         (infer-dimensions (l (segments) (length (second (first segments))))))
       (l (segments-config)

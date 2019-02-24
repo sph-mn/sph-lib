@@ -256,11 +256,11 @@
      # syntax
      quote-odd
        any ... -> list
-       quotes each second argument starting from the first
+       quotes each second argument starting with the first
        example: a b c d -> ((quote a) b (quote c) d)
      quote-even
        any ... -> list
-       quotes each second argument starting from the second
+       quotes each second argument starting with the second
        example: a b c d -> (a (quote b) c (quote d))
      quote-duplicate
        any ... -> list
