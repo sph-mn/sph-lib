@@ -35,6 +35,7 @@
     vector-relative-change-index/value
     vector-second
     vector-select
+    vector-setter
     vector-third
     vector-update)
   (import
@@ -75,8 +76,13 @@
 
   (define (vector-accessor index)
     "integer -> procedure:{vector -> any}
-     returns a procedure that when called with a vector returns the value at index"
+     return a procedure that when called with a vector returns the value at index"
     (l (a) (vector-ref a index)))
+
+  (define (vector-setter index)
+    "integer -> procedure:{vector value -> unspecified}
+     return a procedure that when called with a vector and a value sets index to value"
+    (l (a value) (vector-set! a index value)))
 
   (define (vector-object a)
     "vector -> procedure:{integer -> any}
