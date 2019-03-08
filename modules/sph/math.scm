@@ -29,8 +29,14 @@
     relative-change
     scale-to-mean
     spline-path
+    spline-path-constant
+    spline-path-copy
+    spline-path-dimensions
+    spline-path-end
     spline-path-new
     spline-path-new*
+    spline-path-null
+    spline-path-start
     vector-linearly-interpolate)
   (import
     (rnrs exceptions)
@@ -38,8 +44,11 @@
     (sph number)
     (sph vector)
     (only (guile)
+      inf?
+      floor
       make-list
       *random-state*
+      inf
       random)
     (only (rnrs sorting) list-sort)
     (only (sph alist) alist-q)
@@ -50,7 +59,8 @@
       map-segments
       map-with-index
       list-sort-with-accessor)
-    (only (sph list) pair-fold-multiple))
+    (only (sph list) any->list pair-fold-multiple)
+    (only (srfi srfi-1) find-tail))
 
   (define sph-math-description "splines, statistics and more")
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
@@ -174,7 +184,7 @@
           ; use of pair-fold to check for following elements
           (pair-fold-right
             (l (a result)
-              ; ignore last point
+              ; last point already used
               (if (null? (tail a)) result
                 (let ((p1 (first a)) (p2 (second a)))
                   (pair
@@ -409,22 +419,22 @@
               ( (new-segments
                   (map-segments 2
                     (l (p0 p1)
-                      (let* ((start (first p0)) (end (first p1)) (size (- end start)))
+                      (let* ((start (first p0)) (size (- (first p1) start)))
                         (vector p0 p1
                           ; segment-f
-                          (l (offset) (linearly-interpolate (/ (- offset start) size) p0 p1)))))
+                          (l (t) (linearly-interpolate (/ (- t start) size) p0 p1)))))
                     points)))
               (list (append segments new-segments) (last points)))))
         (bezier-new
           (l (segments rest-config . points)
             (let*
-              ( (p0 (first points)) (p1 (last points)) (start (first p0))
-                (end (first p1)) (size (- end start))
+              ( (first-point (first points)) (last-point (last points)) (start (first first-point))
+                (size (- (first last-point) start))
                 (new-segments
                   (list
-                    (vector p0 p1
-                      (l (offset) (apply bezier-curve (/ (- offset start) size) points))))))
-              (list (append segments new-segments) (last points)))))
+                    (vector first-point last-point
+                      (l (t) (apply bezier-curve (/ (- t start) size) points))))))
+              (list (append segments new-segments) last-point))))
         (catmull-rom-new
           (l (segments rest-config p0 tension . points)
             (let*
@@ -454,10 +464,16 @@
                       (let*
                         ( (start (first p1)) (end (first p2)) (size (- end start))
                           (interpolate-f (catmull-rom-interpolate-f p0 p1 p2 p3 0.5 tension)))
-                        (vector p1 p2 (l (offset) (interpolate-f (/ (- offset start) size))))))
+                        (vector p1 p2 (l (t) (interpolate-f (/ (- t start) size))))))
                     points*)))
               (list (append segments new-segments) (last points)))))
         (move-new (l (segments rest-config p0 p1) (list segments p1)))
+        (constant-new
+          (l* (segments rest-config previous #:optional (p0 previous))
+            (let*
+              ( (p0-tail (tail p0)) (p1 (pair (inf) p0-tail))
+                (new-segments (list (vector p0 p1 (l (t) (pair t p0-tail))))))
+              (list (append segments new-segments) p1))))
         (arc-new
           (l (segments rest-config p0 p1 . params)
             "the arc ends at point (x, y)
@@ -479,27 +495,54 @@
                                   p1-vector radius-x radius-y rotation large-arc sweep))))))))
                   (list (append segments new-segments) p1)))
               params)))
+        (custom-simple-new
+          (l (segments rest-config p0 p1 f . a)
+            (list (append segments (list (vector p0 p1 (l (time) (apply f time p0 p1 a))))) p1)))
+        (custom-new
+          (l (segments rest-config p0 f . a)
+            (apply (l (new-segments end) (list (append segments (any->list new-segments)) end))
+              (apply f segments rest-config p0 a))))
         (infer-dimensions (l (segments) (length (second (first segments))))))
       (l (segments-config)
-        "number ((symbol:type number:offset any:parameter ...) ...) -> path-state
-         * the returned object is to be passed to spline-path to get points on a path between
-           given points interpolated by selected functions
-         * all interpolation functions can draw paths in an unlimited number of dimensions except for arc, which is 2d only
-         * the dimensions of all segments must be the same
-         * there are no required segment types but at least one must be given
-         * if no \"move\" segment is given as the first element then the path starts at zero
-         * move can also be used as a path segment to create gaps
-         * this implementation is similar to the path element of svg vector graphics
-         * for \"arc\" see how arcs are created with a path with svg graphics
-         * the catmull-rom interpolation is always centripetal
-         * the given segments describe the endpoints as in \"line to\" or \"move to\"
+        "((symbol:interpolator-name any:parameter ...) ...) -> path-state
+         the returned object is to be passed to spline-path to get points on a path between
+         given points interpolated by selected functions. similar to the path element of svg vector graphics.
+         # data types
          * point: (number:dimension ...)
+         * segment: #(point:start point:end procedure:{number -> point})
+         # dimensions
+         * the number of dimensions must be equal between all segments
+         * all interpolators support an unlimited number of dimensions except for arc, which is 2d only
+         # segments
+         * the given segments describe the endpoints as in \"line to\" or \"move to\"
+         * at least one segment must be given
          # segment types
+         ## syntax
          * (move point)
          * (line point ...)
          * (bezier point ...)
          * (catmull-rom tension:0..1 point ...)
          * (arc (x y) radius-x [radius-y rotation large-arc sweep])
+         * (constant [point])
+         * (custom-simple point:end f custom-arguments ...)
+         * (custom f custom-arguments ...)
+         ## move
+         * move can be given as the first element to start the path at this point
+         * move can also be used to create gaps
+         ## constant
+         * describes a flat line to t(infinity)
+         * infinitely repeats the values of all dimensions except the first
+         * the optional point argument is a move
+         * cant be used inbetween other segments as the end is never reached
+         ## custom
+         takes a procedure and arguments passed with each call to the procedure.
+         f :: preceeding-segments following-config start custom-argument ... -> ((segment ...) next-start)
+         f :: (vector ...) (list ...) point any ... -> (vector list)
+         segment: #(point:start point:end procedure:{t -> point})
+         # other
+         * the catmull-rom interpolation is always centripetal
+         * custom-simple takes a procedure (t offset start:point end:point any:custom ... -> point)
+         * for \"arc\" see how arcs are created with svg
          # example
          (spline-path-new* (move (20 0)) (line (50 0.25)) (line (80 0.4)) (line (120 0.01)))"
         (let*
@@ -514,42 +557,90 @@
                       (apply
                         (case (first current)
                           ((line) line-new)
-                          ((bezier) bezier-new)
                           ((catmull-rom) catmull-rom-new)
                           ((arc) arc-new)
+                          ((bezier) bezier-new)
+                          ((constant) constant-new)
+                          ((custom) custom-new)
+                          ((custom-simple) custom-simple-new)
                           ((move) move-new)
                           (else (raise (q spline-path-unknown-segment-type))))
                         segments rest start (tail current))))
                   segments-config null (make-list dimensions 0))))
-            (next (first segments)) (index-i 0) (index (apply vector segments)))
-          (list next index-i index dimensions)))))
+            (current (first segments)) (current-start (first (spline-path-segment-start current))))
+          (vector (q spline-path)
+            ; path-start
+            current-start
+            ; path-end
+            (first (spline-path-segment-end (last segments)))
+            ; current-start
+            current-start
+            ; current-end
+            (first (spline-path-segment-end current))
+            ; current-f
+            (spline-path-segment-f current)
+            ; rest
+            (tail segments)
+            ; all
+            segments
+            ; dimensions
+            dimensions
+            ; null
+            (make-list dimensions 0))))))
 
-  (define-syntax-rule (spline-path-new* segment ...) (spline-path-new (list (quote segment) ...)))
-
-  (define (spline-path-advance path-state)
-    "path-state -> path-state
-     continue with the next segment"
-    (apply
-      (l (next index-i index dimensions)
-        (let (index-i (+ 1 index-i))
-          (if (< index-i (vector-length index))
-            (list (vector-ref index index-i) index-i index dimensions) (list #f #f index dimensions))))
-      path-state))
-
+  (define spline-path-start (vector-accessor 1))
+  (define spline-path-end (vector-accessor 2))
+  (define spline-path-current-start (vector-accessor 3))
+  (define spline-path-current-end (vector-accessor 4))
+  (define spline-path-current-f (vector-accessor 5))
+  (define spline-path-rest (vector-accessor 6))
+  (define spline-path-all (vector-accessor 7))
+  (define spline-path-dimensions (vector-accessor 8))
+  (define spline-path-null (vector-accessor 9))
+  (define spline-path-start-set! (vector-setter 1))
+  (define spline-path-end-set! (vector-setter 2))
+  (define spline-path-current-start-set! (vector-setter 3))
+  (define spline-path-current-end-set! (vector-setter 4))
+  (define spline-path-current-f-set! (vector-setter 5))
+  (define spline-path-rest-set! (vector-setter 6))
+  (define spline-path-all-set! (vector-setter 7))
   (define spline-path-segment-start (vector-accessor 0))
   (define spline-path-segment-end (vector-accessor 1))
   (define spline-path-segment-f (vector-accessor 2))
+  (define spline-path-copy vector-copy)
 
-  (define* (spline-path time path #:optional (c pair))
-    "number path-state [procedure -> result] -> (data . path-state)/any
+  (define-syntax-rule (spline-path-new* segment ...)
+    (spline-path-new (list (quasiquote segment) ...)))
+
+  (define (spline-path-set-rest a rest)
+    (let (b (first rest)) (spline-path-rest-set! a rest)
+      (spline-path-current-start-set! a (first (spline-path-segment-start b)))
+      (spline-path-current-end-set! a (first (spline-path-segment-end b)))
+      (spline-path-current-f-set! a (spline-path-segment-f b)))
+    a)
+
+  (define (spline-path-forward time a)
+    (spline-path-set-rest a
+      (find-tail (l (a) (<= time (first (spline-path-segment-end a)))) (spline-path-rest a)))
+    a)
+
+  (define (spline-path time path)
+    "number path -> (number ...):point
      get value at time for a path created by spline-path-new.
-     returns a zero vector for gaps or when after the end of the path.
-     the returned path-state does not have to be passed to subsequent calls to
-     spline-path but it can be more efficient to do so,
-     unless repeated access to previously returned points is required"
-    (let (a (first path))
-      (if (and a (>= time (first (spline-path-segment-start a))))
-        (if (< time (first (spline-path-segment-end a)))
-          (pair ((spline-path-segment-f a) time) path)
-          (spline-path time (spline-path-advance path) c))
-        (pair (make-list (last path) 0) path)))))
+     returns a zero vector for gaps and before or after the path.
+     path may get modified, use spline-path-copy to create paths that work in parallel"
+    (if (and (>= time (spline-path-start path)) (<= time (spline-path-end path)))
+      ( (spline-path-current-f
+          (if (>= time (spline-path-current-start path))
+            (if (<= time (spline-path-current-end path)) path (spline-path-forward time path))
+            (spline-path-forward time (spline-path-set-rest path (spline-path-all path)))))
+        time)
+      (spline-path-null path)))
+
+  (define (spline-path-constant . a)
+    "create a path that always gives the same value for values other than the first/time value.
+     equivalent to (sp-path-new* (constant (0 a ...)))"
+    (spline-path-new (list-qq (constant (0 (unquote-splicing a))))))
+
+  (define (spline-path? a)
+    (and (vector? a) (not (= 0 (vector-length a))) (eq? (q spline-path) (vector-first a)))))

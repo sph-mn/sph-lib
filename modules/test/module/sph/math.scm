@@ -20,7 +20,41 @@
 
   (define list-a (list 1 3 3 6 7 8 9))
 
+  (define path-all
+    (spline-path-new* (move (2 10)) (line (10 20) (20 50))
+      (bezier (30 10) (40 40) (50 10)) (catmull-rom 0 (60 10) (70 40) (80 10) (90 50))
+      (custom-simple (100 0)
+        (unquote (l (time start end) (list time (+ (second start) (sin (* time (/ (* 2 pi) 10))))))))
+      (custom
+        (unquote
+          (l (segments config start end)
+            (list (list (vector start end (l (t) (list t (+ (second start) (/ t 2)))))) end)))
+        (110 0))))
+
+  (define path-constant-1 (spline-path-new* (constant (10 20 30))))
+  (define path-constant-2 (spline-path-new* (move (0 10)) (constant)))
+
   (test-execute-procedures-lambda
+    (spline-path
+      ; test constant
+      (0 (unquote path-constant-1)) (0 0 0)
+      (11 (unquote path-constant-1)) (11 20 30)
+      (1000 (unquote path-constant-1)) (1000 20 30)
+      (0 (unquote path-constant-2)) (0 10)
+      (100 (unquote path-constant-2)) (100 10)
+      ; test before/after
+      (0 (unquote path-all)) (0 0)
+      (1000 (unquote path-all)) (0 0)
+      ; test segment types
+      (10 (unquote path-all)) (10 20)
+      (11 (unquote path-all)) (11 23)
+      (35 (unquote path-all)) (35 105/4)
+      (45 (unquote path-all)) (45 2225/108)
+      (75 (unquote path-all)) (75.0725039934904 24.954778489117004)
+      (105 (unquote path-all)) (105 105/2)
+      ; test random access
+      (45 (unquote path-all)) (45 2225/108)
+      (11 (unquote path-all)) (11 23) (45 (unquote path-all)) (45 2225/108))
     (relative-change (2 3) 1/2
       (2 6) 2 (3 2) -1/3 (6 2) -2/3 (0 4) 4 (4 0) -4 (4 4) 0 (1 4) 3 (4 1) -3/4)
     (integer-summands (50 4 2) #t

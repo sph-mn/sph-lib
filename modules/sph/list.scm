@@ -839,7 +839,7 @@
 
   (define (map-fold f a . init)
     "procedure list any ... -> list any ...
-     procedure:{(list-element state ...) -> list-element state ...}
+     procedure:{(list-element state ...) -> (list-element state ...)}
      combination of map and fold.
      call f with each list element and state values, which are set to init for the first call.
      each call to f must return a list of: the mapped result element and one
