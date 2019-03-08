@@ -52,6 +52,7 @@
       random)
     (only (rnrs sorting) list-sort)
     (only (sph alist) alist-q)
+    (only (sph list) any->list pair-fold-multiple)
     (only (sph list)
       consecutive
       count-value
@@ -59,7 +60,6 @@
       map-segments
       map-with-index
       list-sort-with-accessor)
-    (only (sph list) any->list pair-fold-multiple)
     (only (srfi srfi-1) find-tail))
 
   (define sph-math-description "splines, statistics and more")
@@ -467,7 +467,13 @@
                         (vector p1 p2 (l (t) (interpolate-f (/ (- t start) size))))))
                     points*)))
               (list (append segments new-segments) (last points)))))
-        (move-new (l (segments rest-config p0 p1) (list segments p1)))
+        (move-new
+          (l (segments rest-config p0 p1)
+            (let ((end (first p1)) (null-point (make-list (- (length p1) 1) 0)))
+              (list
+                (append segments
+                  (list (vector p0 p1 (l (t) (if (= t end) p1 (pair t null-point))))))
+                p1))))
         (constant-new
           (l* (segments rest-config previous #:optional (p0 previous))
             (let*
@@ -504,7 +510,7 @@
               (apply f segments rest-config p0 a))))
         (infer-dimensions (l (segments) (length (second (first segments))))))
       (l (segments-config)
-        "((symbol:interpolator-name any:parameter ...) ...) -> path-state
+        "((symbol:interpolator-name any:parameter ...) ...) -> path
          the returned object is to be passed to spline-path to get points on a path between
          given points interpolated by selected functions. similar to the path element of svg vector graphics.
          # data types
@@ -586,7 +592,7 @@
             ; dimensions
             dimensions
             ; null
-            (make-list dimensions 0))))))
+            (make-list (- dimensions 1) 0))))))
 
   (define spline-path-start (vector-accessor 1))
   (define spline-path-end (vector-accessor 2))
@@ -625,7 +631,7 @@
     a)
 
   (define (spline-path time path)
-    "number path -> (number ...):point
+    "number path -> (time number ...):point
      get value at time for a path created by spline-path-new.
      returns a zero vector for gaps and before or after the path.
      path may get modified, use spline-path-copy to create paths that work in parallel"
@@ -635,7 +641,7 @@
             (if (<= time (spline-path-current-end path)) path (spline-path-forward time path))
             (spline-path-forward time (spline-path-set-rest path (spline-path-all path)))))
         time)
-      (spline-path-null path)))
+      (pair time (spline-path-null path))))
 
   (define (spline-path-constant . a)
     "create a path that always gives the same value for values other than the first/time value.

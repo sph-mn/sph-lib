@@ -31,11 +31,19 @@
             (list (list (vector start end (l (t) (list t (+ (second start) (/ t 2)))))) end)))
         (110 0))))
 
+  (define path-move
+    (spline-path-new* (move (2 10)) (line (10 20) (20 50)) (move (30 30)) (line (40 50))))
+
   (define path-constant-1 (spline-path-new* (constant (10 20 30))))
   (define path-constant-2 (spline-path-new* (move (0 10)) (constant)))
 
   (test-execute-procedures-lambda
     (spline-path
+      ; test move
+      (0 (unquote path-move)) (0 0)
+      (1 (unquote path-move)) (1 0)
+      (25 (unquote path-move)) (25 0)
+      (35 (unquote path-move)) (35 40)
       ; test constant
       (0 (unquote path-constant-1)) (0 0 0)
       (11 (unquote path-constant-1)) (11 20 30)
@@ -44,7 +52,7 @@
       (100 (unquote path-constant-2)) (100 10)
       ; test before/after
       (0 (unquote path-all)) (0 0)
-      (1000 (unquote path-all)) (0 0)
+      (1000 (unquote path-all)) (1000 0)
       ; test segment types
       (10 (unquote path-all)) (10 20)
       (11 (unquote path-all)) (11 23)
