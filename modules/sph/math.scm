@@ -49,7 +49,7 @@
       map-with-index
       list-sort-with-accessor))
 
-  (define sph-math-description "splines, statistics and more")
+  (define sph-math-description "statistics and more")
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
   (define (log2 b) "calculate the base two logarithm for b" (/ (log b) (log 2)))

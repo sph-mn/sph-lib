@@ -47,7 +47,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
 * (sph scrypt)
 * (sph server) - a generic socket data processing server that uses a thread-pool for parallel request processing
-* (sph spline-path) - paths between interpolated points
+* (sph spline-path) - interpolated paths through points
 * (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph test) - automated code testing with composable modules
 * (sph test performance) - adaptive performance testing with formatted result display
@@ -83,7 +83,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
 * (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
-* (sph math) - splines, statistics and more
+* (sph math) - statistics and more
 * (sph module) - guile module system and rnrs library related procedures
 * (sph module binding-info) - get information about bindings in modules
 * (sph number)

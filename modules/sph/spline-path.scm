@@ -1,9 +1,11 @@
 (library (sph spline-path)
   (export
+    sph-spline-path-description
     spline-path
     spline-path->procedure
     spline-path-append
     spline-path-config
+    spline-path-config->generic-config
     spline-path-constant
     spline-path-copy
     spline-path-dimensions
@@ -29,7 +31,7 @@
       pair-fold-multiple)
     (only (srfi srfi-1) find-tail take-right))
 
-  (define sph-math-spline-path-description "paths between interpolated points")
+  (define sph-spline-path-description "interpolated paths through points")
   (define spline-path-start (vector-accessor 1))
   (define spline-path-end (vector-accessor 2))
   (define spline-path-current-start (vector-accessor 3))
@@ -51,7 +53,7 @@
   (define spline-path-segment-start (vector-accessor 0))
   (define spline-path-segment-end (vector-accessor 1))
   (define spline-path-segment-f (vector-accessor 2))
-  (define spline-path-copy vector-copy)
+  (define (spline-path-copy a) (vector-copy a))
 
   (define (spline-path-new-generic config) "new spline path object from generic-config"
     (let*
@@ -85,10 +87,7 @@
      the returned object is to be passed to spline-path to get points on a path between
      given points interpolated by selected functions. similar to the path element of svg vector graphics.
      points in the given segment configuration are relative to the start of the path.
-     is a duration.
-     # data types
-     * point: (number:dimension ...)
-     * segment: #(point:start point:end procedure:{number -> point})
+     point: (number:dimension ...)
      # dimensions
      * the number of dimensions must be equal between all segments
      * all interpolators support an unlimited number of dimensions except for arc, which is 2d only
@@ -103,7 +102,7 @@
      * (catmull-rom tension:0..1 point point ...)
      * (arc (x y):point radius-x [radius-y rotation large-arc sweep])
      * (constant [point])
-     * (custom-simple point:end f custom-arguments ...)
+     * (custom-simple point:end/(point ...) f custom-arguments ...)
      * (custom point/(point ...) f custom-arguments ...)
      ## move
      * move can be given as the first element to start the path at this point
@@ -115,12 +114,12 @@
      * cant be used inbetween other segments as the end is never reached
      ## custom
      takes a procedure and arguments passed with each call to the procedure.
-     f :: preceeding-segments following-config start custom-argument ... -> ((segment ...) next-start)
-     f :: (vector ...) (list ...) point any ... -> (vector list)
+     f :: preceeding-segments following-config points custom-argument ... -> (segment ...)
+     f :: (vector ...) (list ...) (point ...) any ... -> (vector ...)
      segment: #(point:start point:end procedure:{t -> point})
      # other
      * the catmull-rom interpolation is always centripetal
-     * custom-simple takes a procedure (t offset start:point end:point any:custom ... -> point)
+     * custom-simple takes a procedure (t points any:custom ... -> point)
      * for \"arc\" see how arcs are created with svg
      # example
      (spline-path-new* (move (20 0)) (line (20 0.25) (10 0.4)))"
