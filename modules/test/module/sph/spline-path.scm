@@ -6,12 +6,18 @@
     (spline-path-new* (move (2 10)) (line (10 20) (20 50))
       (bezier (30 10) (40 40) (50 10)) (catmull-rom 0 (60 10) (70 40) (80 10) (90 50))
       (custom-simple (100 0)
-        (unquote (l (time start end) (list time (+ (second start) (sin (* time (/ (* 2 pi) 10))))))))
-      (custom
         (unquote
-          (l (segments config start end)
-            (list (vector start end (l (t) (list t (+ (second start) (/ (+ (first start) t) 2))))))))
-        (110 0))))
+          (l (time points)
+            (apply (l (start end) (list time (+ (second start) (sin (* time (/ (* 2 pi) 10))))))
+              points))))
+      (custom (110 0)
+        (unquote
+          (l (segments next points)
+            (apply
+              (l (start end)
+                (list
+                  (vector start end (l (t) (list t (+ (second start) (/ (+ (first start) t) 2)))))))
+              points))))))
 
   (define path-move
     (spline-path-new* (move (2 10)) (line (10 20) (20 50)) (move (30 30)) (line (40 50))))
