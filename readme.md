@@ -37,7 +37,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph filesystem)
 * (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
 * (sph lang indent-syntax) - converting to and from strings with indented lines
-* (sph lang parser type-signature) - a parser and writer for the sph type signature notation
+* (sph lang parser type-signature) - a parser and writer for a type signature notation
 * (sph lang plcss) - s-expression language that compiles to css
 * (sph lang scm-format) - format scheme code
 * (sph libmagic) - binding to the libmagic library from the "file" utility that guesses file types
@@ -45,8 +45,9 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph process) - execute programs and evaluate shell or scheme code
 * (sph process create) - create child processes and process chains
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
-* (sph scrypt) - use the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt
+* (sph scrypt)
 * (sph server) - a generic socket data processing server that uses a thread-pool for parallel request processing
+* (sph spline-path) - paths between interpolated points
 * (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph test) - automated code testing with composable modules
 * (sph test performance) - adaptive performance testing with formatted result display
@@ -54,7 +55,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph time) - time as tai or utc nanoseconds since the unix epoch or gregorian calendar dates
 * (sph time gregorian) - gregorian calendar calculations
 * (sph time rfc3339) - parse and create strings in the rfc3339 time format
-* (sph tree) - processing tree-like list structures
+* (sph tree) - process tree-like list structures
 * (sph vector selection) - create and analyse selections from sets: permutations, combinations, n-tuples
 * (sph web atom) - create atom syndication feeds with sxml
 
@@ -72,7 +73,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph hashtable) - rnrs-hashtable processing
 * (sph install) - program and library installer
 * (sph io other) - port and file input/output
-* (sph json) - a basic but fast json writer
+* (sph json) - a rudimentary but fast json writer
 * (sph lang config) - a scheme syntax configuration file format that parses to a alist or hashtable, possibly nested
 * (sph lang itpn) - helpers for working with parsed itpn
 * (sph lang parser outline) - parse a document with possible nesting of sections where headings are prefixed by one or multiple characters
@@ -82,7 +83,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
 * (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
-* (sph math)
+* (sph math) - splines, statistics and more
 * (sph module) - guile module system and rnrs library related procedures
 * (sph module binding-info) - get information about bindings in modules
 * (sph number)

@@ -13,6 +13,7 @@
 (sph scgi)
 (sph scrypt)
 (sph server)
+(sph spline-path)
 (sph string)
 (sph test performance)
 (sph test)
