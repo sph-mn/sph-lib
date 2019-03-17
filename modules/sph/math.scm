@@ -11,6 +11,7 @@
     circle
     complex-from-magnitude-and-imaginary
     cusum
+    differences
     ellipse
     elliptical-arc
     golden-ratio
@@ -319,6 +320,13 @@
             ( (p2 (first (tail sub)))
               (sub-n (/ (- x (vector-first p1)) (- (vector-first p2) (vector-first p1)))))
             (vector-linearly-interpolate sub-n p1 p2))))))
+
+  (define (differences a)
+    "return the differences between each pair of subsequent values in a given list.
+     result length is input length minus one.
+     example: (differences (list 1 3 7 8 6)) -> (2 4 1 -2)"
+    (pair-fold-right
+      (l (a result) (if (null? (tail a)) result (pair (- (first (tail a)) (first a)) result))) null a))
 
   (define* (elliptical-arc n p1 p2 rx ry #:optional (rotation 0) large-arc sweep)
     "number:0..1 vector vector number number number:radians boolean boolean -> (vector . extra-calculated-values)

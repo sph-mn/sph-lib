@@ -12,12 +12,14 @@
     spline-path-copy
     spline-path-dimensions
     spline-path-end
+    spline-path-input-mapper-set!
     spline-path-map-segments
     spline-path-modify
     spline-path-new
     spline-path-new*
     spline-path-new-generic
     spline-path-null
+    spline-path-output-mapper-set!
     spline-path-shift
     spline-path-start
     spline-path-stretch
