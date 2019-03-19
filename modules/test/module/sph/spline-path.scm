@@ -4,7 +4,7 @@
 
   (define path-all
     (spline-path-new* (move (2 10)) (line (10 20) (20 50))
-      (bezier (30 10) (40 40) (50 10)) (catmull-rom 0 (60 10) (70 40) (80 10) (90 50))
+      (bezier (30 10) (40 40) (50 10)) (catmull-rom (60 10) (70 40) (80 10) (90 50))
       (custom-simple (100 0)
         (unquote
           (l (time points)
