@@ -121,7 +121,8 @@
      * (move point)
      * (line point point ...)
      * (bezier point ...)
-     * (catmull-rom tension:0..1 point point ...)
+     * (catmull-rom point point ...)
+     * (catmull-rom-tension tension point point ...)
      * (arc (x y):point radius-x [radius-y rotation large-arc sweep])
      * (constant [point])
      * (custom-simple point:end/(point ...) f custom-arguments ...)
@@ -203,8 +204,8 @@
       (l (a)
         (let ((type (first a)) (a (tail a)))
           (case type
-            ((line bezier move constant) (list type a null))
-            ((catmull-rom) (list type (tail a) (list (first a))))
+            ((line bezier move constant catmull-rom) (list type a null))
+            ((catmull-rom-tension) (list type (tail a) (list (first a))))
             ( (arc custom custom-simple)
               (let (points (first a))
                 (list type (if (number? (first points)) (list points) points) (tail a))))
@@ -233,14 +234,15 @@
                 (size (- (first last-point) start)))
               (list
                 (vector first-point last-point
-                  (let (points (map (l (a) (pair (- (first a) start) (tail a))) points))
-                    (l (t) (apply bezier-curve (/ t size) points))))))))
+                  (let
+                    (segment-relative-points
+                      (map (l (a) (pair (- (first a) start) (tail a))) points))
+                    (l (t) (apply bezier-curve (/ t size) segment-relative-points))))))))
         (move-new
           (l (segments next points)
             (let*
-              ( (p0 (first points)) (p1 (last points)) (end (first p1))
-                (null-point (make-list (- (length p1) 1) 0)))
-              (list (vector p0 p1 (l (t) (if (= t end) p1 (pair t null-point))))))))
+              ((p1 (last points)) (end (first p1)) (null-point (make-list (- (length p1) 1) 0)))
+              (list (vector (first points) p1 (l (t) (if (= t end) p1 (pair t null-point))))))))
         (constant-new
           (l* (segments next points)
             (let* ((p0 (last points)) (p0-tail (tail p0)))
@@ -257,26 +259,22 @@
           (l (segments next points f . a) "-> (vector ...):segments"
             (apply f segments next points a)))
         (catmull-rom-new
-          (l (segments next points tension)
-            ; points are at least two, (start end).
-            ; the last point of the element of segments is the current start point.
-            ; add points because cr interpolates only between the middle two points
+          (l* (segments next points #:optional (tension 0))
+            "points are at least two, (start end).
+            the last point of the element of segments is the current start point"
             (let*
+              ; add points to keep the tangents at the connecting points
               ( (points
-                  (pair
-                    (if (null? segments)
-                      (map (l (p0d p1d) (- p0d (- p1d p0d))) (first points) (second points))
-                      (spline-path-segment-start (last segments)))
+                  (pair (map (l (p0d p1d) (- p0d (- p1d p0d))) (first points) (second points))
                     points))
                 (points
                   (append points
-                    (if (null? next)
+                    (list
                       (let (last-two (take-right points 2))
-                        (list
-                          (map (l (p0d p1d) (- p0d (- p1d p0d))) (first last-two) (second last-two))))
-                      (list (first (second (first next))))))))
+                        (map (l (p0d p1d) (+ p1d (- p1d p0d))) (first last-two) (second last-two)))))))
               (map-segments 4
                 (l (p0 p1 p2 p3)
+                  ; make segment-relative
                   (let*
                     ( (start (first p1)) (end (first p2)) (size (- end start))
                       (interpolate-f
@@ -319,7 +317,7 @@
                       (apply
                         (case type
                           ((line) line-new)
-                          ((catmull-rom) catmull-rom-new)
+                          ((catmull-rom catmull-rom-tension) catmull-rom-new)
                           ((arc) arc-new)
                           ((bezier) bezier-new)
                           ((constant) constant-new)
