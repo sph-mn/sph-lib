@@ -46,6 +46,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph process create) - create child processes and process chains
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
 * (sph scrypt)
+* (sph selection) - create and analyse set selections: permutations, combinations and similar
 * (sph server) - a generic socket data processing server that uses a thread-pool for parallel request processing
 * (sph spline-path) - interpolated paths through points
 * (sph string) - string processing. includes string-replace-string, a fast replacer
@@ -56,7 +57,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph time gregorian) - gregorian calendar calculations
 * (sph time rfc3339) - parse and create strings in the rfc3339 time format
 * (sph tree) - process tree-like list structures
-* (sph vector selection) - create and analyse selections from sets: permutations, combinations, n-tuples
 * (sph web atom) - create atom syndication feeds with sxml
 
 ## other

@@ -2,7 +2,7 @@
   (export
     divisions
     number-divisions
-    sph-vector-selection-description
+    sph-selection-description
     vector-distinct-count
     vector-distinct-maximum
     vector-distinct-stream
@@ -25,8 +25,8 @@
       produce)
     (only (sph vector) vector-range))
 
-  (define sph-vector-selection-description
-    "create and analyse selections from sets: permutations, combinations, n-tuples and similar")
+  (define sph-selection-description
+    "create and analyse set selections: permutations, combinations and similar")
 
   (define-syntax-rule (vector-distinct-set-create tuple-length width)
     (set-create-empty (+ 1 (- tuple-length width))))
@@ -172,8 +172,8 @@
      example for count 3: ((1 1 1) (1 2) (2 1) (3))"
     ; algorithm:
     ; collect all possible values and associate a rest value that following values have to sum to.
-    ; for each of those associations, reduce the rest value and the filter the list of possible values to produce possible tails.
-    ; the rest values are removed when all combinations have been found
+    ; for each of those associations, reduce the rest value and the list of possible values while producing possible tails.
+    ; the rest values are removed after all combinations have been found
     (define (produce-chain parts rest size)
       (let
         (parts

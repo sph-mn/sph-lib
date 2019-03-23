@@ -12,6 +12,7 @@
 (sph process)
 (sph scgi)
 (sph scrypt)
+(sph selection)
 (sph server)
 (sph spline-path)
 (sph string)
@@ -22,5 +23,4 @@
 (sph time rfc3339)
 (sph time)
 (sph tree)
-(sph vector selection)
 (sph web atom)
