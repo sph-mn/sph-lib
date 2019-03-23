@@ -1,5 +1,7 @@
-(library (sph vector selection)
+(library (sph selection)
   (export
+    divisions
+    number-divisions
     sph-vector-selection-description
     vector-distinct-count
     vector-distinct-maximum
@@ -17,10 +19,14 @@
     (sph hashtable)
     (srfi srfi-41)
     (only (guile) vector-copy)
+    (only (sph list)
+      map-integers
+      map-map
+      produce)
     (only (sph vector) vector-range))
 
   (define sph-vector-selection-description
-    "create and analyse selections from sets: permutations, combinations, n-tuples")
+    "create and analyse selections from sets: permutations, combinations, n-tuples and similar")
 
   (define-syntax-rule (vector-distinct-set-create tuple-length width)
     (set-create-empty (+ 1 (- tuple-length width))))
@@ -107,7 +113,7 @@
   (define* (vector-distinct-count a #:optional (min-width 1) max-width)
     "vector integer integer -> integer
      count all distinct sub-vectors in a vector with lengths from min-width to max-width.
-     distinctness is defined by elements, order and length"
+     distinctness is defined by length, order and value"
     ; how sub-vectors are counted:
     ; #([1 2 3] 4)
     ; #(1 [2 3 4])
@@ -157,4 +163,37 @@
             (let (width (- width 1))
               (next (vector-distinct-set-create a-length width) width
                 0 (- a-length width) (= 1 width)))
-            stream-null))))))
+            stream-null)))))
+
+  (define (divisions count)
+    "integer -> ((integer ...) ...)
+     return all integer selections that sum to count.
+     distinctness is defined by length, order and value.
+     example for count 3: ((1 1 1) (1 2) (2 1) (3))"
+    ; algorithm:
+    ; collect all possible values and associate a rest value that following values have to sum to.
+    ; for each of those associations, reduce the rest value and the filter the list of possible values to produce possible tails.
+    ; the rest values are removed when all combinations have been found
+    (define (produce-chain parts rest size)
+      (let
+        (parts
+          (filter-map (l (a) (and (<= (tail a) rest) (pair (- (first a) size) (tail a)))) parts))
+        (apply append
+          (map
+            (l (a)
+              (let (chain (produce-chain parts (first a) (tail a)))
+                (if (null? chain) (list (list a)) (produce pair (list a) chain))))
+            parts))))
+    (let
+      (parts
+        (map-integers count (l (n) "integer -> (rest . value)" (pair (- count (+ 1 n)) (+ 1 n)))))
+      (map-map tail (produce-chain parts count 0))))
+
+  (define (number-divisions b count)
+    "number integer -> ((number ...) ...)
+     return all selections of multiples of b divided by count that sum to b.
+     distinctness is defined by length, order and value.
+     example
+       b: 60, count: 3
+       result: ((20 20 20) (20 40) (40 20) (60))"
+    (map-map (l (c) (* c (/ b count))) (divisions count))))

@@ -1,6 +1,6 @@
-(define-test-module (test module sph vector selection)
+(define-test-module (test module sph selection)
   (import
-    (sph vector selection)
+    (sph selection)
     (srfi srfi-41))
 
   (define-test (vector-numeric-increment-be arguments)

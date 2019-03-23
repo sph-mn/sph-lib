@@ -5,7 +5,6 @@
     spline-path->procedure
     spline-path-append
     spline-path-compose-input-mapper
-    spline-path-compose-output-mapper
     spline-path-config
     spline-path-config->generic-config
     spline-path-constant
@@ -19,7 +18,6 @@
     spline-path-new*
     spline-path-new-generic
     spline-path-null
-    spline-path-output-mapper-set!
     spline-path-shift
     spline-path-start
     spline-path-stretch
@@ -53,7 +51,6 @@
   (define spline-path-null (vector-accessor 9))
   (define spline-path-config (vector-accessor 10))
   (define spline-path-input-mapper (vector-accessor 11))
-  (define spline-path-output-mapper (vector-accessor 12))
   (define spline-path-segment-start (vector-accessor 0))
   (define spline-path-segment-end (vector-accessor 1))
   (define spline-path-segment-f (vector-accessor 2))
@@ -67,12 +64,10 @@
   (define spline-path-all-set! (vector-setter 7))
   (define spline-path-config-set! (vector-setter 10))
   (define spline-path-input-mapper-set! (vector-setter 11))
-  (define spline-path-output-mapper-set! (vector-setter 12))
   (define (spline-path-copy a) (vector-copy a))
   (define default-input-mapper identity)
-  (define default-output-mapper (l (point t) point))
 
-  (define* (spline-path-new-generic config #:optional input-mapper output-mapper)
+  (define* (spline-path-new-generic config #:optional input-mapper)
     "new spline path object from generic-config"
     (let*
       ( (dimensions (length (first (second (first config))))) (null-point (make-list dimensions 0))
@@ -100,11 +95,9 @@
         ; config
         config
         ; input-mapper
-        (or input-mapper default-input-mapper)
-        ; output-mapper
-        (or output-mapper default-output-mapper))))
+        (or input-mapper default-input-mapper))))
 
-  (define* (spline-path-new config #:optional input-mapper output-mapper)
+  (define* (spline-path-new config #:optional input-mapper)
     "((symbol:interpolator-name any:parameter ...) ...) [procedure:{t -> t}] -> path
      the returned object is to be passed to spline-path to get points on a path between
      given points interpolated by selected functions. similar to the path element of svg vector graphics.
@@ -142,7 +135,6 @@
      segment: #(point:start point:end procedure:{t -> point})
      # mapping
      * input-mapper maps time when spline-path is called. f :: t -> t
-     * output-mapper maps the result of spline-path. f :: point t -> point
      * allows for interesting transformations like dynamic time stretches, value scaling or path combination
      * the mapper support allows paths to still be sampled generically with spline-path
      # other
@@ -151,7 +143,7 @@
      * for \"arc\" see how arcs are created with svg
      # example
      (spline-path-new* (move (20 0)) (line (20 0.25) (10 0.4)))"
-    (spline-path-new-generic (spline-path-config->generic-config config) input-mapper output-mapper))
+    (spline-path-new-generic (spline-path-config->generic-config config) input-mapper))
 
   (define-syntax-rule (spline-path-new* segment ...)
     (spline-path-new (list (quasiquote segment) ...)))
@@ -173,19 +165,17 @@
      get value at time for a path created by spline-path-new.
      returns a zero vector for gaps and before or after the path.
      path may get modified, use spline-path-copy to create paths that work in parallel"
-    ( (spline-path-output-mapper path)
-      (let (time ((spline-path-input-mapper path) time))
-        (if (and (>= time (spline-path-start path)) (<= time (spline-path-end path)))
-          (let*
-            ( (path
-                (if (>= time (spline-path-current-start path))
-                  (if (<= time (spline-path-current-end path)) path (spline-path-forward time path))
-                  (spline-path-forward time (spline-path-set-rest path (spline-path-all path)))))
-              (start (spline-path-current-start path))
-              (point ((spline-path-current-f path) (- time start))))
-            (pair (+ start (first point)) (tail point)))
-          (pair time (spline-path-null path))))
-      time))
+    (let (time ((spline-path-input-mapper path) time))
+      (if (and (>= time (spline-path-start path)) (<= time (spline-path-end path)))
+        (let*
+          ( (path
+              (if (>= time (spline-path-current-start path))
+                (if (<= time (spline-path-current-end path)) path (spline-path-forward time path))
+                (spline-path-forward time (spline-path-set-rest path (spline-path-all path)))))
+            (start (spline-path-current-start path))
+            (point ((spline-path-current-f path) (- time start))))
+          (pair (+ start (first point)) (tail point)))
+        (pair time (spline-path-null path)))))
 
   (define (spline-path-constant . a)
     "create a path that always returns the same values. the first time dimension is still updated.
@@ -339,22 +329,18 @@
         (l (type points other)
           (list type (map (l (a) (pair (+ amount (first a)) (tail a))) points) other))
         (spline-path-config a))
-      (spline-path-input-mapper a) (spline-path-output-mapper a)))
+      (spline-path-input-mapper a)))
 
   (define (spline-path-compose-input-mapper a b)
     "procedure procedure -> procedure
      only compose the procedures if none is the default identity mapper"
     (if (eq? default-input-mapper b) a (if (eq? default-input-mapper a) b (compose a b))))
 
-  (define (spline-path-compose-output-mapper a b)
-    (if (eq? default-output-mapper b) a (if (eq? default-output-mapper a) b (compose a b))))
-
   (define (spline-path-modify a f)
-    "path procedure:{generic-config input-mapper output-mapper -> (generic-config input-mapper output-mapper)} -> path
+    "path procedure:{generic-config input-mapper -> (generic-config input-mapper)} -> path
      create a new path with parameters mapped by f"
     ; allows for all kinds of changes including dimension changes
-    (apply spline-path-new-generic
-      (f (spline-path-config a) (spline-path-input-mapper a) (spline-path-output-mapper a))))
+    (apply spline-path-new-generic (f (spline-path-config a) (spline-path-input-mapper a))))
 
   (define (spline-path-append a b)
     "spline-path ... -> spline-path
@@ -366,16 +352,11 @@
             (l (type points other)
               (list type (map (l (a) (pair (+ a-end (first a)) (tail a))) points) other)))
           (spline-path-config b)))
-      (spline-path-compose-input-mapper (spline-path-input-mapper a) (spline-path-input-mapper b))
-      (spline-path-compose-output-mapper (spline-path-output-mapper a)
-        (spline-path-output-mapper b))))
+      (spline-path-compose-input-mapper (spline-path-input-mapper a) (spline-path-input-mapper b))))
 
   (define (spline-path-stretch a amount)
     "return a new path that is a version of the given path compressed or elongated in time by factor"
     (let (a (spline-path-copy a))
       (spline-path-input-mapper-set! a
         (spline-path-compose-input-mapper (l (t) (/ t amount)) (spline-path-input-mapper a)))
-      (spline-path-output-mapper-set! a
-        (spline-path-compose-output-mapper (l (point t) (pair t (tail point)))
-          (spline-path-output-mapper a)))
       a)))

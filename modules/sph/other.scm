@@ -50,6 +50,7 @@
     random-bytevector
     random-chars
     random-discrete-f
+    random-generic-f
     random-string
     remove-keyword-associations
     repeat
@@ -403,6 +404,22 @@
         (let (deviate (random sum state))
           (let loop ((a 0) (b cuprob))
             (if (null? b) a (if (< deviate (first b)) a (loop (+ 1 a) (tail b)))))))))
+
+  (define*
+    (random-generic-f mean deviation #:optional (distribution (q uniform))
+      (random-state *random-state*))
+    "number number symbol/(number:probability ...) random-state -> procedure:{-> number}
+     create a random function that returns samples with given mean, deviation and distribution"
+    (and-let*
+      ( (random-f
+          (if (symbol? distribution)
+            (case distribution
+              ((normal) (nullary (random:normal random-state)))
+              ((uniform) (nullary (random:uniform random-state)))
+              ((exponential) (nullary (random:exp random-state)))
+              (else #f))
+            (random-discrete-f distribution random-state))))
+      (nullary (+ mean (* deviation (random-f))))))
 
   (define (random-between min max) (+ min (random (- max min))))
 
