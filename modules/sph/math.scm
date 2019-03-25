@@ -14,6 +14,7 @@
     differences
     ellipse
     elliptical-arc
+    exponential-decay
     golden-ratio
     hermite-interpolate
     integer-summands
@@ -327,6 +328,11 @@
      example: (differences (list 1 3 7 8 6)) -> (2 4 1 -2)"
     (pair-fold-right
       (l (a result) (if (null? (tail a)) result (pair (- (first (tail a)) (first a)) result))) null a))
+
+  (define (exponential-decay x from change)
+    "number number number -> number
+     from / ((x + 1) ** change)"
+    (/ from (expt (+ 1 x) change)))
 
   (define* (elliptical-arc n p1 p2 rx ry #:optional (rotation 0) large-arc sweep)
     "number:0..1 vector vector number number number:radians boolean boolean -> (vector . extra-calculated-values)

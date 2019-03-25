@@ -119,9 +119,9 @@
   (define-syntax-rule (define-uv-each-index id vector-length)
     (define (id f a)
       "procedure:{integer integer:a-length -> unspecified} xvector -> unspecified
-       call f for each element in \"a\" with the index of the current element in \"a\" and the size of \"a\""
+       call f for each element in \"a\" with the index of the current element in \"a\""
       (let (length (vector-length a))
-        (let loop ((index 0)) (if (< index length) (begin (f index length) (loop (+ 1 index))))))))
+        (let loop ((index 0)) (if (< index length) (begin (f index) (loop (+ 1 index))))))))
 
   (define-syntax-rule (define-uv-range-map! id vector-set! vector-ref)
     (define (id result f start end a . b)
@@ -134,7 +134,8 @@
           (begin
             (vector-set! result index
               (apply f (vector-ref a index) (map (l (a) (vector-ref a index)) b)))
-            (loop (+ 1 index)))))))
+            (loop (+ 1 index)))
+          result))))
 
   (define-syntax-rule (define-uv-range-set! id vector-set!)
     (define (id a f start end)
