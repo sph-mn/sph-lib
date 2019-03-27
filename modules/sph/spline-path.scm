@@ -8,10 +8,9 @@
     spline-path-config
     spline-path-config->generic-config
     spline-path-constant
-    spline-path-copy
     spline-path-dimensions
     spline-path-end
-    spline-path-input-mapper-set!
+    spline-path-input-mapper
     spline-path-map-segments
     spline-path-modify
     spline-path-new
@@ -20,7 +19,6 @@
     spline-path-null
     spline-path-shift
     spline-path-start
-    spline-path-stretch
     spline-path?)
   (import
     (rnrs exceptions)
@@ -36,35 +34,19 @@
       map-apply
       map-segments
       pair-fold-multiple)
-    (only (srfi srfi-1) find-tail take-right))
+    (only (srfi srfi-1) find take-right))
 
   (define sph-spline-path-description "interpolated paths through points")
-  ; accessors
   (define spline-path-start (vector-accessor 1))
   (define spline-path-end (vector-accessor 2))
-  (define spline-path-current-start (vector-accessor 3))
-  (define spline-path-current-end (vector-accessor 4))
-  (define spline-path-current-f (vector-accessor 5))
-  (define spline-path-rest (vector-accessor 6))
-  (define spline-path-all (vector-accessor 7))
-  (define spline-path-dimensions (vector-accessor 8))
-  (define spline-path-null (vector-accessor 9))
-  (define spline-path-config (vector-accessor 10))
-  (define spline-path-input-mapper (vector-accessor 11))
+  (define spline-path-index (vector-accessor 3))
+  (define spline-path-dimensions (vector-accessor 4))
+  (define spline-path-null (vector-accessor 5))
+  (define spline-path-config (vector-accessor 6))
+  (define spline-path-input-mapper (vector-accessor 7))
   (define spline-path-segment-start (vector-accessor 0))
   (define spline-path-segment-end (vector-accessor 1))
   (define spline-path-segment-f (vector-accessor 2))
-  ; setters
-  (define spline-path-start-set! (vector-setter 1))
-  (define spline-path-end-set! (vector-setter 2))
-  (define spline-path-current-start-set! (vector-setter 3))
-  (define spline-path-current-end-set! (vector-setter 4))
-  (define spline-path-current-f-set! (vector-setter 5))
-  (define spline-path-rest-set! (vector-setter 6))
-  (define spline-path-all-set! (vector-setter 7))
-  (define spline-path-config-set! (vector-setter 10))
-  (define spline-path-input-mapper-set! (vector-setter 11))
-  (define (spline-path-copy a) (vector-copy a))
   (define default-input-mapper identity)
 
   (define* (spline-path-new-generic config #:optional input-mapper)
@@ -78,15 +60,7 @@
         current-start
         ; path-end
         (first (spline-path-segment-end (last segments)))
-        ; current-start
-        current-start
-        ; current-end
-        (first (spline-path-segment-end current))
-        ; current-f
-        (spline-path-segment-f current)
-        ; rest
-        (tail segments)
-        ; all
+        ; segment-index
         segments
         ; dimensions
         dimensions
@@ -148,32 +122,19 @@
   (define-syntax-rule (spline-path-new* segment ...)
     (spline-path-new (list (quasiquote segment) ...)))
 
-  (define (spline-path-set-rest a rest)
-    (let (b (first rest)) (spline-path-rest-set! a rest)
-      (spline-path-current-start-set! a (first (spline-path-segment-start b)))
-      (spline-path-current-end-set! a (first (spline-path-segment-end b)))
-      (spline-path-current-f-set! a (spline-path-segment-f b)))
-    a)
-
-  (define (spline-path-forward time a)
-    (spline-path-set-rest a
-      (find-tail (l (a) (<= time (first (spline-path-segment-end a)))) (spline-path-rest a)))
-    a)
+  (define (spline-path-current a time)
+    (find (l (a) (<= time (first (spline-path-segment-end a)))) (spline-path-index a)))
 
   (define (spline-path time path)
     "number path -> (time number ...):point
      get value at time for a path created by spline-path-new.
-     returns a zero vector for gaps and before or after the path.
-     path may get modified, use spline-path-copy to create paths that work in parallel"
+     returns a zero vector for gaps and before or after the path."
     (let (time ((spline-path-input-mapper path) time))
       (if (and (>= time (spline-path-start path)) (<= time (spline-path-end path)))
         (let*
-          ( (path
-              (if (>= time (spline-path-current-start path))
-                (if (<= time (spline-path-current-end path)) path (spline-path-forward time path))
-                (spline-path-forward time (spline-path-set-rest path (spline-path-all path)))))
-            (start (spline-path-current-start path))
-            (point ((spline-path-current-f path) (- time start))))
+          ( (current (spline-path-current path time))
+            (start (first (spline-path-segment-start current)))
+            (point ((spline-path-segment-f current) (- time start))))
           (pair (+ start (first point)) (tail point)))
         (pair time (spline-path-null path)))))
 
@@ -183,7 +144,7 @@
     (spline-path-new (list-qq (constant (0 (unquote-splicing a))))))
 
   (define (spline-path? a) "any -> boolean"
-    (and (vector? a) (not (= 0 (vector-length a))) (eq? (q spline-path) (vector-first a))))
+    (and (vector? a) (= 8 (vector-length a)) (eq? (q spline-path) (vector-first a))))
 
   (define (spline-path->procedure path) (l (t) (spline-path t path)))
 
@@ -352,11 +313,4 @@
             (l (type points other)
               (list type (map (l (a) (pair (+ a-end (first a)) (tail a))) points) other)))
           (spline-path-config b)))
-      (spline-path-compose-input-mapper (spline-path-input-mapper a) (spline-path-input-mapper b))))
-
-  (define (spline-path-stretch a amount)
-    "return a new path that is a version of the given path compressed or elongated in time by factor"
-    (let (a (spline-path-copy a))
-      (spline-path-input-mapper-set! a
-        (spline-path-compose-input-mapper (l (t) (/ t amount)) (spline-path-input-mapper a)))
-      a)))
+      (spline-path-compose-input-mapper (spline-path-input-mapper a) (spline-path-input-mapper b)))))
