@@ -70,6 +70,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph documentation shtml)
 * (sph exception) - rnrs exception helpers. experimental
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
+* (sph futures) - fine-grain parallelism based on (sph thread-pool)
 * (sph hashtable) - rnrs-hashtable processing
 * (sph install) - program and library installer
 * (sph io other) - port and file input/output
