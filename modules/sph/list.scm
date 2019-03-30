@@ -51,10 +51,13 @@
     first-or-null
     flat?
     flatten
+    fold*
+    fold-c*
     fold-integers
     fold-multiple
     fold-multiple-c
     fold-multiple-right
+    fold-right*
     fold-segments
     fold-slice
     fold-span
@@ -517,6 +520,10 @@
     "procedure list any ... -> any
      like fold-multiple but works through the list elements from last to first"
     (if (null? a) r (apply f (first a) (apply fold-multiple-right f (tail a) r))))
+
+  (define fold* fold-multiple)
+  (define fold-c* fold-multiple)
+  (define fold-right* fold-multiple-right)
 
   (define (fold-segments size f init a)
     "integer {any:state element ... -> any:state}  any:state list -> any

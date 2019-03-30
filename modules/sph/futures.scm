@@ -34,5 +34,5 @@
   (define (touch a)
     "future -> any
      wait until the future is finished and return its result"
-    ; may be something other than sleep can be used
+    ; maybe something other than sleep can be used
     (if (vector-ref a 1) (vector-ref a 2) (begin (usleep 500000) (touch a)))))

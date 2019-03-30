@@ -22,9 +22,13 @@
   (define path-move
     (spline-path-new* (move (2 10)) (line (10 20) (20 50)) (move (30 30)) (line (40 50))))
 
-  (define path-constant-1 (spline-path-new* (constant (10 20 30))))
-  (define path-constant-2 (spline-path-new* (move (0 10)) (constant)))
   (define path-arc (spline-path-new* (arc (100 100) 10)))
+
+  (define-test (spline-path-modify)
+    (spline-path?
+      (spline-path-modify path-all #:reverse
+        #t #:randomise
+        (random-state-from-platform) #:shift 2 #:scale 0.2 #:stretch (* 1 (spline-path-end path-all)))))
 
   (test-execute-procedures-lambda
     (spline-path
@@ -34,12 +38,6 @@
       (2 (unquote path-move)) (2 10)
       (25 (unquote path-move)) (25 0)
       (35 (unquote path-move)) (35 40)
-      ; test constant
-      (0 (unquote path-constant-1)) (0 0 0)
-      (11 (unquote path-constant-1)) (11 20 30)
-      (1000 (unquote path-constant-1)) (1000 20 30)
-      (0 (unquote path-constant-2)) (0 10)
-      (100 (unquote path-constant-2)) (100 10)
       ; test arc
       (20 (unquote path-arc)) (38.93841289587629 -19.84011233337104)
       ; test before/after
@@ -54,4 +52,5 @@
       (105 (unquote path-all)) (105 105/2)
       ; test random access
       (45 (unquote path-all)) (45 2225/108)
-      (11 (unquote path-all)) (11 23) (45 (unquote path-all)) (45 2225/108))))
+      (11 (unquote path-all)) (11 23) (45 (unquote path-all)) (45 2225/108))
+    (spline-path-modify)))

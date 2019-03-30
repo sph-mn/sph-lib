@@ -7,30 +7,34 @@
     spline-path-compose-input-mapper
     spline-path-config
     spline-path-config->generic-config
-    spline-path-constant
+    spline-path-config-distance->t
+    spline-path-config-t->distance
     spline-path-dimensions
     spline-path-end
     spline-path-input-mapper
+    spline-path-map-config
     spline-path-map-segments
     spline-path-modify
     spline-path-new
     spline-path-new*
     spline-path-new-generic
     spline-path-null
-    spline-path-shift
     spline-path-start
     spline-path?)
   (import
     (rnrs exceptions)
     (sph)
+    (sph list other)
     (sph math)
     (sph number)
     (sph vector)
     (only (guile)
       compose
+      inf
       make-list
-      inf)
+      *random-state*)
     (only (sph list)
+      fold-segments
       map-apply
       map-segments
       pair-fold-multiple)
@@ -91,17 +95,11 @@
      * (catmull-rom point point ...)
      * (catmull-rom-tension tension point point ...)
      * (arc (x y):point radius-x [radius-y rotation large-arc sweep])
-     * (constant [point])
      * (custom-simple point:end/(point ...) f custom-arguments ...)
      * (custom point/(point ...) f custom-arguments ...)
      ## move
      * move can be given as the first element to start the path at this point
      * move can also be used to create gaps
-     ## constant
-     * describes a flat line to t(infinity)
-     * infinitely repeats the values of all dimensions except the first
-     * the optional point argument is a move
-     * cant be used inbetween other segments as the end is never reached
      ## custom
      takes a procedure and arguments passed with each call to the procedure.
      f :: preceeding-segments following-config points custom-argument ... -> (segment ...)
@@ -138,11 +136,6 @@
           (pair (+ start (first point)) (tail point)))
         (pair time (spline-path-null path)))))
 
-  (define (spline-path-constant . a)
-    "create a path that always returns the same values. the first time dimension is still updated.
-     equivalent to (sp-path-new* (constant (0 a ...)))"
-    (spline-path-new (list-qq (constant (0 (unquote-splicing a))))))
-
   (define (spline-path? a) "any -> boolean"
     (and (vector? a) (= 8 (vector-length a)) (eq? (q spline-path) (vector-first a))))
 
@@ -150,18 +143,25 @@
 
   (define (spline-path-config->generic-config a)
     "((type arguments ...) ...) -> ((type points other) ...)
-     convert a spline-path-new config to the internally used more generic config"
-    (map
-      (l (a)
-        (let ((type (first a)) (a (tail a)))
-          (case type
-            ((line bezier move constant catmull-rom) (list type a null))
-            ((catmull-rom-tension) (list type (tail a) (list (first a))))
-            ( (arc custom custom-simple)
-              (let (points (first a))
-                (list type (if (number? (first points)) (list points) points) (tail a))))
-            (else (raise (q spline-path-unknown-segment-type))))))
-      a))
+     convert a spline-path-new config to the internally used more generic config where points
+     and arguments are at predictable places"
+    (let
+      (result
+        (map
+          (l (a)
+            (let ((type (first a)) (a (tail a)))
+              (case type
+                ((line bezier move catmull-rom) (list type a null))
+                ((catmull-rom-tension) (list type (tail a) (list (first a))))
+                ( (arc custom custom-simple)
+                  (let (points (first a))
+                    (list type (if (number? (first points)) (list points) points) (tail a))))
+                (else (raise (q spline-path-unknown-segment-type))))))
+          a))
+      ; add implied start point
+      (if (eq? (q move) (first (first result))) result
+        (pair (list (q move) (list (make-list (length (first (second (first result)))) 0)) null)
+          result))))
 
   (define spline-path-generic-config->segments
     (let
@@ -194,10 +194,6 @@
             (let*
               ((p1 (last points)) (end (first p1)) (null-point (make-list (- (length p1) 1) 0)))
               (list (vector (first points) p1 (l (t) (if (= t end) p1 (pair t null-point))))))))
-        (constant-new
-          (l* (segments next points)
-            (let* ((p0 (last points)) (p0-tail (tail p0)))
-              (list (vector p0 (pair (inf) p0-tail) (l (t) (pair t p0-tail)))))))
         (custom-simple-new
           (l (segments next points f . a)
             (let*
@@ -271,7 +267,6 @@
                           ((catmull-rom catmull-rom-tension) catmull-rom-new)
                           ((arc) arc-new)
                           ((bezier) bezier-new)
-                          ((constant) constant-new)
                           ((custom) custom-new)
                           ((custom-simple) custom-simple-new)
                           ((move) move-new)
@@ -282,22 +277,12 @@
                 (tail a) (first a)))
             a null null-point)))))
 
-  (define (spline-path-shift a amount)
-    "spline-path number -> spline-path
-     return a new path that is the given path shifted in time by positive or negative amount"
-    (spline-path-new-generic
-      (map
-        (l (type points other)
-          (list type (map (l (a) (pair (+ amount (first a)) (tail a))) points) other))
-        (spline-path-config a))
-      (spline-path-input-mapper a)))
-
   (define (spline-path-compose-input-mapper a b)
     "procedure procedure -> procedure
      only compose the procedures if none is the default identity mapper"
     (if (eq? default-input-mapper b) a (if (eq? default-input-mapper a) b (compose a b))))
 
-  (define (spline-path-modify a f)
+  (define (spline-path-map-config a f)
     "path procedure:{generic-config input-mapper -> (generic-config input-mapper)} -> path
      create a new path with parameters mapped by f"
     ; allows for all kinds of changes including dimension changes
@@ -313,4 +298,134 @@
             (l (type points other)
               (list type (map (l (a) (pair (+ a-end (first a)) (tail a))) points) other)))
           (spline-path-config b)))
-      (spline-path-compose-input-mapper (spline-path-input-mapper a) (spline-path-input-mapper b)))))
+      (spline-path-compose-input-mapper (spline-path-input-mapper a) (spline-path-input-mapper b))))
+
+  (define (spline-path-config-distance->t config)
+    "generic-config -> generic-config
+     convert the first point values which are point-relative distances to path-relative offsets"
+    (let*
+      ( (with-fold-arguments
+          (l (f)
+            "expects the fold state value to be a list and
+           passes it as multiple arguments to f.
+           only for versions of fold where the state is the first argument.
+           example: if state is (1 2) and current fold arguments are 3 4 then call (f 1 2 3 4)"
+            (l (result . a) (apply f (append result a)))))
+        (points (map second config))
+        (fold-result
+          (fold-segments 2
+            (with-fold-arguments
+              (l (path-points path-time a b)
+                "list integer (point ...) (point ...) -> ((point ...) integer)"
+                (let (path-time (+ path-time (first (first b))))
+                  (apply
+                    (l (segment-points segment-time)
+                      (list
+                        (pair (pair (pair path-time (tail (first b))) (reverse segment-points))
+                          path-points)
+                        segment-time))
+                    (if (null? (tail b)) (list null path-time)
+                      (fold-segments 2
+                        (with-fold-arguments
+                          (l (segment-points time a b)
+                            "list integer point point -> ((point ...) integer)"
+                            (let (time (+ time (first b)))
+                              (list (pair (pair time (tail b)) segment-points) time))))
+                        (list null path-time) b))))))
+            (list null (first (first (first points)))) points))
+        (points (pair (first points) (reverse (first fold-result))))
+        (config (map (l (a b) (list (first b) a (third b))) points config)))
+      config))
+
+  (define (spline-path-config-t->distance config)
+    "generic-config -> generic-config
+     convert the first point values which are path-relative offets to point-relative distances"
+    (let*
+      ( (points (map second config))
+        (points
+          (pair (first points)
+            (map-segments 2
+              (l (a b)
+                "get distance between last of previous segment and current segment,
+              and distances between points inside the segment"
+                (pair (pair (- (first (first b)) (first (last a))) (tail (first b)))
+                  (if (null? (tail b)) null
+                    (map-segments 2 (l (a b) (pair (- (first b) (first a)) (tail b))) b))))
+              points)))
+        (config (map (l (a b) (list (first b) a (third b))) points config)))
+      config))
+
+  (define* (spline-path-config-randomise config #:optional random-state)
+    "spline-path generic-config [random-state] -> generic-config
+     randomise the order of segments. the starting point stays the same"
+    (spline-path-config-distance->t
+      (let (distance-config (spline-path-config-t->distance config))
+        (pair (first distance-config)
+          (randomise (tail distance-config)
+            (if (boolean? random-state) *random-state* random-state))))))
+
+  (define (spline-path-config-stretch config to-end)
+    (let*
+      ( (start (first (first (second (first config))))) (end (first (first (second (last config)))))
+        (old-size (- end start)) (factor (/ (- to-end start) old-size)))
+      (map-apply
+        (l (type points other)
+          (list type (map (l (a) (pair (* factor (first a)) (tail a))) points) other))
+        config)))
+
+  (define (spline-path-config-scale config factor)
+    (map-apply
+      (l (type points other)
+        (list type (map (l (a) (pair (first a) (map (l (a) (* factor a)) (tail a)))) points) other))
+      config))
+
+  (define (spline-path-config-reverse config . a)
+    ; path reversal is complicated by the fact that each segment can have multiple points.
+    (let*
+      ( (start (first (first (second (first config))))) (end (first (first (second (last config)))))
+        (end-values (tail (last (second (last config))))) (points (map second config))
+        (points
+          ; convert times
+          (reverse
+            (map
+              (l (a)
+                (reverse (map (l (point) (pair (+ start (- end (first point))) (tail point))) a)))
+              points)))
+        (points
+          ; shift points left by one over sub-lists
+          (pair (list (first (first points)))
+            (map-segments 2 (l (a b) (append (tail a) (list (first b)))) points)))
+        (config
+          (map (l (a b) (list (first b) a (third b))) points
+            (pair (first config) (reverse (tail config))))))
+      config))
+
+  (define (spline-path-config-shift config amount)
+    "spline-path number -> spline-path
+     return a new path that is the given path shifted in time by positive or negative amount"
+    (map-apply
+      (l (type points other)
+        (list type (map (l (a) (pair (+ amount (first a)) (tail a))) points) other))
+      config))
+
+  (define* (spline-path-modify a #:key randomise reverse scale shift stretch)
+    "spline-path [keys ...] -> spline-path
+     return a new path with the specified modifications.
+     # keys
+     randomise: boolean/random-state
+     reverse: boolean
+     scale: false/number:factor
+     shift: false/number:amount
+     stretch: false/number:to-end
+     # example
+     (spline-path-modify path #:reverse #t #:randomise (random-state-from-platform)
+       #:scale 0.2 #:stretch (* 2 (spline-path-end path)))"
+    (spline-path-map-config a
+      (l (config input-mapper)
+        (let
+          (result
+            (fold (l (mod config) (if (first mod) ((tail mod) config (first mod)) config)) config
+              (list (pair randomise spline-path-config-randomise)
+                (pair reverse spline-path-config-reverse) (pair scale spline-path-config-scale)
+                (pair shift spline-path-config-shift) (pair stretch spline-path-config-stretch))))
+          (list result input-mapper))))))
