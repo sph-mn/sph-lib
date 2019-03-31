@@ -15,6 +15,7 @@
     ellipse
     elliptical-arc
     exponential-decay
+    fmod
     golden-ratio
     hermite-interpolate
     integer-summands
@@ -37,9 +38,10 @@
     (sph number)
     (sph vector)
     (only (guile)
+      floor
+      inf
       make-list
       *random-state*
-      inf
       random)
     (only (rnrs sorting) list-sort)
     (only (sph alist) alist-q)
@@ -55,6 +57,9 @@
   (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
   (define pi (* 4 (atan 1)))
   (define (log2 b) "calculate the base two logarithm for b" (/ (log b) (log 2)))
+
+  (define (fmod a b) "modulo for float values"
+    (let* ((c (/ a b)) (d (if (> c 0.0) (floor c) (ceiling c)))) (- a (* b d))))
 
   (define (absolute-threshold b limit) "return zero if the absolute value of b is below limit"
     (if (< (abs b) limit) 0 b))

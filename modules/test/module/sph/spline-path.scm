@@ -23,6 +23,9 @@
     (spline-path-new* (move (2 10)) (line (10 20) (20 50)) (move (30 30)) (line (40 50))))
 
   (define path-arc (spline-path-new* (arc (100 100) 10)))
+  (define path-constant-1 (spline-path-new* (constant (10 20 30))))
+  (define path-constant-2 (spline-path-new* (line (10 10)) (constant)))
+  (define path-constant-3 (spline-path-constant 10 20 30))
 
   (define-test (spline-path-modify)
     (spline-path?
@@ -30,7 +33,28 @@
         #t #:randomise
         (random-state-from-platform) #:shift 2 #:scale 0.2 #:stretch (* 1 (spline-path-end path-all)))))
 
+  (define-test (spline-path->procedure)
+    (let (f (spline-path->procedure path-constant-3))
+      (and (list? (f 0)) (every equal? (map tail (list (f 0) (f -1000) (f 1000)))))))
+
+  (define-test (spline-path-combine)
+    (let*
+      ( (path-a (spline-path-new* (line (10 10)))) (path-b (spline-path-new* (line (10 20))))
+        (path-ab (spline-path-combine + path-a path-b)))
+      (assert-equal (list 5 15) (spline-path 5 path-ab))))
+
+  (define-test (spline-path-repeat)
+    (let*
+      ( (path (spline-path-modify (spline-path-new* (line (10 10))) #:repeat #t))
+        (path2 (spline-path-modify path #:repeat 3)))
+      (assert-and (assert-equal (list 15 5) (spline-path 15 path))
+        (assert-equal (list 25 5) (spline-path 25 path2))
+        (assert-equal (list 35 0) (spline-path 35 path2)))))
+
   (test-execute-procedures-lambda
+    (spline-path-constant? ((unquote path-constant-1)) #t
+      ((unquote path-constant-2)) #f ((unquote path-constant-3)) #t)
+    (spline-path-infinite? ((unquote path-constant-1)) #t ((unquote path-constant-2)) #t)
     (spline-path
       ; test move
       (0 (unquote path-move)) (0 0)
@@ -40,6 +64,12 @@
       (35 (unquote path-move)) (35 40)
       ; test arc
       (20 (unquote path-arc)) (38.93841289587629 -19.84011233337104)
+      ; test constant
+      (0 (unquote path-constant-1)) (0 0 0)
+      (11 (unquote path-constant-1)) (11 20 30)
+      (1000 (unquote path-constant-1)) (1000 20 30)
+      (5 (unquote path-constant-2)) (5 5)
+      (100 (unquote path-constant-2)) (100 10)
       ; test before/after
       (0 (unquote path-all)) (0 0)
       (1000 (unquote path-all)) (1000 0)
@@ -53,4 +83,4 @@
       ; test random access
       (45 (unquote path-all)) (45 2225/108)
       (11 (unquote path-all)) (11 23) (45 (unquote path-all)) (45 2225/108))
-    (spline-path-modify)))
+    (spline-path-modify) (spline-path->procedure) (spline-path-combine) (spline-path-repeat)))

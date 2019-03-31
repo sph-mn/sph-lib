@@ -285,7 +285,7 @@
       (port-output (current-output-port))
       #:key
       (handle-delim (q concat)))
-    "procedure [port port symbol:concat/trim/peek/split] ->
+    "procedure:{line -> line} [port port symbol:concat/trim/peek/split] -> unspecified
      map lines from port to port. the trailing newline is included by default but this behaviour can be set like for read-line.
      the default ports are the current input and output ports"
     (rw-port->port (l (port) (read-line port handle-delim)) (l (e port) (display (proc e) port))
