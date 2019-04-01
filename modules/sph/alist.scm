@@ -182,7 +182,7 @@
   (define (alist-merge a b)
     "list list -> list
      create a new alist with the associations of both alists, preferring entries of \"b\""
-    (append (filter (l (e) (not (alist-ref b (first e)))) a) b))
+    (append (filter (l (a) (not (alist-ref b (first a)))) a) b))
 
   (define (alist-set-multiple a . key/value)
     "list [any:key any:value] ...

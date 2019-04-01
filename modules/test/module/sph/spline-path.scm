@@ -17,7 +17,8 @@
               (l (start end)
                 (list
                   (vector start end (l (t) (list t (+ (second start) (/ (+ (first start) t) 2)))))))
-              points))))))
+              points))))
+      (path (unquote (spline-path-new* (line (10 10)))) (unquote (spline-path-new* (line (10 10)))))))
 
   (define path-move
     (spline-path-new* (move (2 10)) (line (10 20) (20 50)) (move (30 30)) (line (40 50))))
@@ -52,6 +53,7 @@
         (assert-equal (list 35 0) (spline-path 35 path2)))))
 
   (test-execute-procedures-lambda
+    (spline-path? (unquote path-all) #t (unquote path-constant-3) #t)
     (spline-path-constant? ((unquote path-constant-1)) #t
       ((unquote path-constant-2)) #f ((unquote path-constant-3)) #t)
     (spline-path-infinite? ((unquote path-constant-1)) #t ((unquote path-constant-2)) #t)
@@ -63,7 +65,7 @@
       (25 (unquote path-move)) (25 0)
       (35 (unquote path-move)) (35 40)
       ; test arc
-      (20 (unquote path-arc)) (38.93841289587629 -19.84011233337104)
+      (20 (unquote path-arc)) (20 -19.84011233337104)
       ; test constant
       (0 (unquote path-constant-1)) (0 0 0)
       (11 (unquote path-constant-1)) (11 20 30)
@@ -78,8 +80,10 @@
       (11 (unquote path-all)) (11 23)
       (35 (unquote path-all)) (35 105/4)
       (45 (unquote path-all)) (45 2225/108)
-      (75 (unquote path-all)) (75.0725039934904 24.954778489117004)
+      (75 (unquote path-all)) (75 24.954778489117004)
       (105 (unquote path-all)) (105 105/2)
+      (115 (unquote path-all)) (115 5)
+      (125 (unquote path-all)) (125 5)
       ; test random access
       (45 (unquote path-all)) (45 2225/108)
       (11 (unquote path-all)) (11 23) (45 (unquote path-all)) (45 2225/108))
