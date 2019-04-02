@@ -193,6 +193,19 @@
       (let (point (first (second (first (spline-path-config a))))) (l (t) (pair t (tail point))))
       (l (t) (spline-path t a))))
 
+  (define (spline-paths->points paths start-time)
+    "(spline-path ...) point -> (point:end ...)
+     get a list of end points for one or a series of spline-paths.
+     the time value is cumulated as if the paths were concatenated.
+     paths start at zero or start-time "
+    (let (last-points (map (compose last second last spline-path-config) paths))
+      (reverse
+        (first
+          (fold*
+            (l (a points time)
+              (let (time (+ time (first a))) (list (pair (pair time (tail a)) points) time)))
+            last-points null start-time)))))
+
   (define (spline-path-config->generic-config a)
     "((type arguments ...) ...) -> ((type points other) ...)
      convert a spline-path-new config to the internally used more generic config where points
@@ -204,17 +217,12 @@
               (let ((type (first a)) (a (tail a)))
                 (case type
                   ( (path)
-                    (let*
-                      ( (last-points (map (compose last second last spline-path-config) a))
-                        (points
-                          (fold*
-                            (l (a points time)
-                              (let (time (+ time (first a)))
-                                (list (pair (pair time (tail a)) points) time)))
-                            last-points null
-                            (if (null? result) 0 (first (last (second (first result)))))))
-                        (points (reverse (first points))))
-                      (pair (list type points a) result)))
+                    (pair
+                      (list type
+                        (spline-paths->points a
+                          (if (null? result) 0 (first (last (second (first result))))))
+                        a)
+                      result))
                   (else
                     (pair
                       (case type
@@ -423,23 +431,44 @@
         (config (map (l (a b) (list (first b) a (third b))) points config)))
       config))
 
-  (define* (spline-path-config-randomise config #:optional random-state)
-    "spline-path generic-config [random-state] -> generic-config
-     randomise the order of segments. the starting point stays the same"
-    (spline-path-config-distance->t
-      (let (distance-config (spline-path-config-t->distance config))
-        (pair (first distance-config)
-          (randomise (tail distance-config)
-            (if (boolean? random-state) *random-state* random-state))))))
+  (define (spline-path-config-map-sub-paths config f)
+    "generic-config {spline-path -> spline-path} -> config
+     map over the spline-paths in path segments"
+    (reverse
+      (fold
+        (l (config-element result)
+          (apply
+            (l (type points other)
+              (case type
+                ( (path)
+                  (let (other (map f other))
+                    (pair
+                      (list type
+                        (spline-paths->points other
+                          (if (null? result) 0 (first (last (second (first result))))))
+                        other)
+                      result)))
+                (else (pair config-element result))))
+            config-element))
+        null config)))
 
   (define (spline-path-config-stretch config to-end)
+    "contract or extend the path so it ends at to-end. nested path segments are processed as well"
     (let*
       ( (start (first (first (second (first config))))) (end (first (first (second (last config)))))
         (old-size (- end start)) (factor (/ (- to-end start) old-size)))
-      (map-apply
-        (l (type points other)
-          (list type (map (l (a) (pair (* factor (first a)) (tail a))) points) other))
-        config)))
+      (let loop ((config config))
+        (map-apply
+          (l (type points other)
+            (list type (map (l (a) (pair (* factor (first a)) (tail a))) points)
+              (case type
+                ( (path)
+                  (map
+                    (l (a)
+                      (spline-path-map-config a (l (config mapper c) (c (loop config) mapper))))
+                    other))
+                (else other))))
+          config))))
 
   (define (spline-path-config-scale config factor)
     (map-apply
@@ -447,7 +476,25 @@
         (list type (map (l (a) (pair (first a) (map (l (a) (* factor a)) (tail a)))) points) other))
       config))
 
-  (define (spline-path-config-reverse config . a)
+  (define (spline-path-config-randomise config deep random-state)
+    "spline-path generic-config [random-state] -> generic-config
+     randomise the order of segments. the starting point stays the same"
+    (let
+      (config
+        (spline-path-config-distance->t
+          (let (distance-config (spline-path-config-t->distance config))
+            (pair (first distance-config)
+              (randomise (tail distance-config)
+                (if (boolean? random-state) *random-state* random-state))))))
+      (if deep
+        (spline-path-config-map-sub-paths config
+          (l (path)
+            (spline-path-map-config path
+              (l (config mapper c)
+                (c (spline-path-config-randomise config deep random-state) mapper)))))
+        config)))
+
+  (define (spline-path-config-reverse config deep)
     (let*
       ( (start (first (first (second (first config))))) (end (first (first (second (last config)))))
         (end-values (tail (last (second (last config))))) (points (map second config))
@@ -465,7 +512,12 @@
         (config
           (map (l (a b) (list (first b) a (third b))) points
             (pair (first config) (reverse (tail config))))))
-      config))
+      (if deep
+        (spline-path-config-map-sub-paths config
+          (l (path)
+            (spline-path-map-config path
+              (l (config mapper c) (c (spline-path-config-reverse config deep) mapper)))))
+        config)))
 
   (define (spline-path-config-shift config amount)
     "spline-path number -> spline-path
@@ -476,19 +528,21 @@
       config))
 
   (define*
-    (spline-path-modify a #:key randomise repeat reverse scale shift stretch input-mapper
-      output-mapper)
+    (spline-path-modify a #:key deep input-mapper output-mapper randomise repeat reverse scale
+      shift
+      stretch)
     "spline-path [keys ...] -> spline-path
      return a new path with specified modifications.
      # keys
      input-mapper: false/procedure
      output-mapper: false/procedure
      randomise: boolean/random-state
+     repeat: boolean/number (experimental)
      reverse: boolean
      scale: false/number:factor
      shift: false/number:amount
      stretch: false/number:to-end
-     repeat: boolean/number (experimental)
+     deep: with reverse or randomise: apply to paths as segments as well
      # example
      (spline-path-modify path #:reverse #t #:randomise (random-state-from-platform)
        #:scale 0.2 #:stretch (* 2 (spline-path-end path)))"
@@ -497,8 +551,10 @@
         (let
           ( (config
               (fold (l (mod config) (if (first mod) ((tail mod) config (first mod)) config)) config
-                (list (pair randomise spline-path-config-randomise)
-                  (pair reverse spline-path-config-reverse)
+                (list
+                  (pair randomise
+                    (l (config . a) (apply spline-path-config-randomise config deep a)))
+                  (pair reverse (l (config . a) (spline-path-config-reverse config deep)))
                   (pair (and scale (not (= 1 scale)) scale) spline-path-config-scale)
                   (pair stretch spline-path-config-stretch)
                   (pair (and shift (not (= 1 shift)) shift) spline-path-config-shift))))

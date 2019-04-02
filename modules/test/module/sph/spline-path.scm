@@ -32,7 +32,8 @@
     (spline-path?
       (spline-path-modify path-all #:reverse
         #t #:randomise
-        (random-state-from-platform) #:shift 2 #:scale 0.2 #:stretch (* 1 (spline-path-end path-all)))))
+        (random-state-from-platform) #:deep
+        #t #:shift 2 #:scale 0.2 #:stretch (* 1 (spline-path-end path-all)))))
 
   (define-test (spline-path->procedure)
     (let (f (spline-path->procedure path-constant-3))
@@ -52,8 +53,7 @@
         (assert-equal (list 25 5) (spline-path 25 path2))
         (assert-equal (list 35 0) (spline-path 35 path2)))))
 
-  (test-execute-procedures-lambda
-    (spline-path? (unquote path-all) #t (unquote path-constant-3) #t)
+  (test-execute-procedures-lambda (spline-path? (unquote path-all) #t (unquote path-constant-3) #t)
     (spline-path-constant? ((unquote path-constant-1)) #t
       ((unquote path-constant-2)) #f ((unquote path-constant-3)) #t)
     (spline-path-infinite? ((unquote path-constant-1)) #t ((unquote path-constant-2)) #t)
