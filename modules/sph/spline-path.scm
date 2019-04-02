@@ -36,8 +36,9 @@
       inf
       make-list
       *random-state*)
-    (only (sph alist) alist-merge)
+    (only (sph alist) alist-delete-multiple alist-merge)
     (only (sph list)
+      any->list
       compact
       fold-segments
       fold*
@@ -93,7 +94,7 @@
         ; output-mapper
         (filter-map third mapper))))
 
-  (define* (spline-path-new config #:optional input-mapper output-mapper)
+  (define* (spline-path-new config #:optional mapper)
     "((symbol:interpolator-name any:parameter ...) ...) [procedure:{t -> t}] -> path
      the returned object is to be passed to spline-path to get points on a path between
      given points interpolated by selected functions. similar to the path element of svg vector graphics.
@@ -142,8 +143,7 @@
      * for \"arc\" see how arcs are created with svg
      # example
      (spline-path-new* (move (20 0)) (line (20 0.25) (10 0.4)))"
-    (spline-path-new-generic (spline-path-config->generic-config config)
-      (and (or input-mapper output-mapper) (list (list (q user) input-mapper output-mapper)))))
+    (spline-path-new-generic (spline-path-config->generic-config config) mapper))
 
   (define-syntax-rule (spline-path-new* segment ...)
     (spline-path-new (list (quasiquote segment) ...)))
@@ -528,14 +528,11 @@
       config))
 
   (define*
-    (spline-path-modify a #:key deep input-mapper output-mapper randomise repeat reverse scale
-      shift
-      stretch)
+    (spline-path-modify a #:key deep randomise repeat reverse scale shift stretch mapper-add
+      mapper-remove)
     "spline-path [keys ...] -> spline-path
      return a new path with specified modifications.
      # keys
-     input-mapper: false/procedure
-     output-mapper: false/procedure
      randomise: boolean/random-state
      repeat: boolean/number (experimental)
      reverse: boolean
@@ -543,6 +540,8 @@
      shift: false/number:amount
      stretch: false/number:to-end
      deep: with reverse or randomise: apply to paths as segments as well
+     mapper-add: ((symbol:id false/procedure:input false/procedure:output custom-info ...) ...)
+     mapper-remove: id/(id ...)
      # example
      (spline-path-modify path #:reverse #t #:randomise (random-state-from-platform)
        #:scale 0.2 #:stretch (* 2 (spline-path-end path)))"
@@ -559,16 +558,18 @@
                   (pair stretch spline-path-config-stretch)
                   (pair (and shift (not (= 1 shift)) shift) spline-path-config-shift))))
             (mapper
-              (alist-merge mapper
-                (compact
-                  (list
-                    (and (or input-mapper output-mapper) (list (q user) input-mapper output-mapper))
-                    (and repeat
+              (alist-merge
+                (if mapper-remove (apply alist-delete-multiple mapper (any->list mapper-remove))
+                  mapper)
+                (append (or mapper-add null)
+                  (if repeat
+                    (list
                       (list (q repeat)
                         (let (end (first (first (second (last config)))))
                           (if (number? repeat) (l (t) (if (> t (* repeat end)) t (fmod t end)))
                             (l (t) (fmod t end))))
-                        #f repeat)))))))
+                        #f repeat))
+                    null)))))
           (c config mapper)))))
 
   (define (spline-path-append a . b)
