@@ -241,7 +241,7 @@
             (tail change+state))))
       min-interval state))
 
-  (define (procedure->cached-procedure proc)
+  (define* (procedure->cached-procedure proc #:optional (key-f (l a a)))
     "procedure -> procedure procedure
      returns a new procedure with the same signature that calculates each result only once.
      calling the procedure again with the same arguments will lead to the cached result to be returned.
@@ -254,10 +254,11 @@
     (let (cache (ht-make ht-hash-equal equal?))
       (values
         (l a
-          (let (cached-result (ht-ref cache a (q --not-in-cache)))
+          (let* ((key (debug-log (apply key-f a))) (cached-result (ht-ref cache key (q --not-in-cache))))
             (if (eq? (q --not-in-cache) cached-result)
-              ((l (r) (ht-set! cache a r) r) (apply proc a)) cached-result)))
-        (l () (ht-clear! cache)))))
+              ((l (r) (ht-set! cache key r) r) (apply proc a))
+              cached-result)))
+        (nullary (ht-clear! cache)))))
 
   (define (procedure->temporarily-cached-procedure cache-duration proc)
     "integer:seconds procedure -> procedure

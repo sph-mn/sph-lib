@@ -189,9 +189,7 @@
     (and (vector? a) (= 10 (vector-length a)) (eq? (q spline-path) (vector-first a))))
 
   (define (spline-path->procedure a) "spline-path -> {number:t -> (t number ...)}"
-    (if (spline-path-constant? a)
-      (let (point (first (second (first (spline-path-config a))))) (l (t) (pair t (tail point))))
-      (l (t) (spline-path t a))))
+    (l (t) (spline-path t a)))
 
   (define (spline-paths->points paths start-time)
     "(spline-path ...) point -> (point:end ...)
