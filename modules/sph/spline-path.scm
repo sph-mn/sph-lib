@@ -11,7 +11,6 @@
     spline-path-config-t->distance
     spline-path-constant
     spline-path-constant?
-    spline-path-dimensions
     spline-path-end
     spline-path-infinite?
     spline-path-map-config
@@ -47,28 +46,66 @@
       pair-fold-multiple)
     (only (srfi srfi-1) find take-right))
 
-  (define sph-spline-path-description "interpolated paths through points")
+  (define sph-spline-path-description
+    "interpolated paths through points.
+     spline-path-new creates path objects and spline-path gets values from it.
+     path objects contain a configuration object that can be modified to create a new modified path.
+     paths can also contain other paths as segments.
+     # usage
+     ~~~
+     (define path-all
+       (spline-path-new*
+         (move (2 10))
+         (line (10 20) (20 50))
+         (bezier (30 10) (40 40) (50 10))
+         (catmull-rom (60 10) (70 40) (80 10) (90 50))
+         (custom-simple (100 0)
+           (unquote
+             (l (time points)
+               (apply (l (start end) (list time (+ (second start) (sin (* time (/ (* 2 pi) 10))))))
+                 points))))
+         (custom (110 0)
+           (unquote
+             (l (segments next points)
+               (apply
+                 (l (start end)
+                   (list
+                     (vector start end (l (t) (list t (+ (second start) (/ (+ (first start) t) 2)))))))
+                 points))))
+         (path (unquote (spline-path-new* (line (10 10)))) (unquote (spline-path-new* (line (10 10)))))))
+     ~~~
+     spline-path gets points on the path at offset:
+     ~~~
+     (spline-path 0 path-all)
+     (spline-path 1 path-all)
+     (spline-path 55 path-all)
+     ~~~")
+
   (define spline-path-start (vector-accessor 1))
   (define spline-path-end (vector-accessor 2))
   (define spline-path-index (vector-accessor 3))
-  (define spline-path-dimensions (vector-accessor 4))
-  (define spline-path-null (vector-accessor 5))
-  (define spline-path-config (vector-accessor 6))
-  (define spline-path-mapper-config (vector-accessor 7))
-  (define spline-path-input-mapper (vector-accessor 8))
-  (define spline-path-output-mapper (vector-accessor 9))
+  (define spline-path-null (vector-accessor 4))
+  (define spline-path-config (vector-accessor 5))
+  (define spline-path-mapper-config (vector-accessor 6))
+  (define spline-path-input-mapper (vector-accessor 7))
+  (define spline-path-output-mapper (vector-accessor 8))
   (define spline-path-segment-start (vector-accessor 0))
   (define spline-path-segment-end (vector-accessor 1))
   (define spline-path-segment-f (vector-accessor 2))
 
   (define* (spline-path-new-generic config #:optional mapper)
-    "new spline path object from generic-config.
-     mapper is ((symbol:key procedure:{t -> t}:input procedure:{point -> point}:output any:custom-info ...) ...)
-     where key should be (quote user) and multiple procedures should be composed if necessary. mapper will be accessible in the path object
-     with spline-path-mapper-config.
+    "list [list] -> spline-path
+     new spline path object from generic-config.
      spline-path always gives a point with the time value to output mapper that was originally passed to spline-path,
      so that input mapper can change it and the output will have the users requested time.
      having mappers in a separate config makes internally used mappers easier to replace and subsequently added user mappers manageable"
+    ; # implementation overview
+    ; * user config is converted to generic configuration object
+    ; * user config uses path-relative time offsets
+    ; * config is converted to vectors with segment start/end and interpolator procedures
+    ; * interpolator procedures receive segment relative time offsets so to not depend on the order of segments
+    ; * on each access, find the current segment with a simple list search (performance surprisingly good), and call the interpolator.
+    ; * input and output mapper are lists of optional procedures called with spline-path. if no mappers are set, only a null check is needed
     (let*
       ( (dimensions (length (first (second (first config))))) (null-point (make-list dimensions 0))
         (segments (spline-path-generic-config->segments config null-point))
@@ -81,8 +118,6 @@
         (first (spline-path-segment-end (last segments)))
         ; segment-index
         segments
-        ; dimensions
-        dimensions
         ; null
         (tail null-point)
         ; config
@@ -95,7 +130,7 @@
         (filter-map third mapper))))
 
   (define* (spline-path-new config #:optional mapper)
-    "((symbol:interpolator-name any:parameter ...) ...) [procedure:{t -> t}] -> path
+    "((symbol:interpolator-name any:parameter ...) ...) [(list ...)] -> path
      the returned object is to be passed to spline-path to get points on a path between
      given points interpolated by selected functions. similar to the path element of svg vector graphics.
      points in the given segment configuration are relative to the start of the path.
@@ -124,19 +159,26 @@
      * describes a flat line to t(infinity)
      * infinitely repeats the values of all dimensions except the first time dimension
      * the optional point argument is a move
-     * not useful inbetween segments as the end is never reached
+     * not useful inbetween segments as the next segment is never reached
      ## path
      * segments can be paths
      * this can be used to append multiple paths
      ## custom
-     takes a procedure and arguments passed with each call to the procedure.
-     f :: preceeding-segments following-config points custom-argument ... -> (segment ...)
-     f :: (vector ...) (list ...) (point ...) any ... -> (vector ...)
-     segment: #(point:start point:end procedure:{t -> point})
+     * calls a procedure that should return segments
+     * additional config arguments are passed on
+     * segment: #(point:start point:end procedure:{t -> point})
+     * f :: preceeding-segments following-config points custom-argument ... -> (segment ...)
+     * f :: (vector ...) (list ...) (point ...) any ... -> (vector ...)
      # mapping
-     * input-mapper maps time when spline-path is called. f :: t -> t
-     * allows for interesting transformations like dynamic time stretches, value scaling or path combination
-     * the mapper support allows paths to still be sampled generically with spline-path
+     * an arbitrary number of procedures can be installed that are called either for the input to spline-path or the output
+     * this allows for interesting transformations like dynamic time stretches, value scaling or path combination
+     * the mapper support allows paths to be sampled using spline-path
+     * the mapper argument is a list with mapper config elements
+     * mapper config elements are (symbol:key false/procedure:{t -> t}:input false/procedure:{point -> point}:output any:custom-info ...)
+     * key is a custom symbol except \"repeat\", which is used internally.
+     * input and output mapper procedures are optional
+     * the collection of all active mappers will be accessible in the path object with spline-path-mapper-config.
+     * the active mapper list will be created from the mapper config
      # other
      * the catmull-rom interpolation is always centripetal
      * custom-simple takes a procedure (t points any:custom ... -> point)
@@ -186,7 +228,7 @@
       (if (null? output-mapper) point (fold (l (a p) (a p)) point output-mapper))))
 
   (define (spline-path? a) "any -> boolean"
-    (and (vector? a) (= 10 (vector-length a)) (eq? (q spline-path) (vector-first a))))
+    (and (vector? a) (= 9 (vector-length a)) (eq? (q spline-path) (vector-first a))))
 
   (define (spline-path->procedure a) "spline-path -> {number:t -> (t number ...)}"
     (l (t) (spline-path t a)))
@@ -211,41 +253,37 @@
     (let*
       ( (result
           (fold
-            (l (a result)
+            (l (a result) "use fold to have access to previous values"
               (let ((type (first a)) (a (tail a)))
-                (case type
-                  ( (path)
-                    (pair
+                (pair
+                  (case type
+                    ((line bezier move catmull-rom constant) (list type a null))
+                    ((catmull-rom-tension) (list type (tail a) (list (first a))))
+                    ( (arc custom custom-simple)
+                      (let (points (first a))
+                        (list type (if (number? (first points)) (list points) points) (tail a))))
+                    ( (path)
                       (list type
                         (spline-paths->points a
                           (if (null? result) 0 (first (last (second (first result))))))
-                        a)
-                      result))
-                  (else
-                    (pair
-                      (case type
-                        ((line bezier move catmull-rom constant) (list type a null))
-                        ((catmull-rom-tension) (list type (tail a) (list (first a))))
-                        ( (arc custom custom-simple)
-                          (let (points (first a))
-                            (list type (if (number? (first points)) (list points) points) (tail a))))
-                        (else (raise (q spline-path-unknown-segment-type))))
-                      result)))))
+                        a))
+                    (else (raise (q spline-path-unknown-segment-type))))
+                  result)))
             null a))
         (result (reverse result)))
+      ; add implied start point
       (case (first (first result))
         ((constant move) result)
         (else
-          ; add implied start point
-          (pair (list (q move) (list (make-list (length (first (second (first result)))) 0)) null)
-            result)))))
+          (let (dimensions (length (first (second (first result)))))
+            (pair (list (q move) (list (make-list dimensions 0)) null) result))))))
 
   (define spline-path-generic-config->segments
     (let
       ( (line-new
           (l (segments next points)
-            "list list list -> (segment:#(point:start point:end interpolator ...)
-            interpolators are called with times relative to the segment start. the segment start is t(zero).
+            "list list list -> (segment:#(point:start point:end procedure:interpolator any:custom ...)
+            interpolators are called with times relative to the segment start as t(zero).
             this allows segment start/ends to be modified without having to update interpolators"
             (map-segments 2
               (l (p0 p1)
@@ -295,7 +333,7 @@
         (catmull-rom-new
           (l* (segments next points #:optional (tension 0))
             "points are at least two, (start end).
-            the last point of the element of segments is the current start point"
+            the last point of segments is the current start point"
             (let*
               ; add points to keep the tangents at the connecting points
               ( (points
@@ -338,9 +376,9 @@
                         (elliptical-arc (/ (- t start) size) p0-vector
                           p1-vector radius-x radius-y rotation large-arc sweep))))))))))
       (l (a null-point)
-        "(list ...) -> (vector ...)
+        "(list ...) (0 ...) -> (vector ...)
          map generic configuration to segment objects from which the current interpolator will be selected from.
-         pair-fold allows to pass following segment-config to handlers"
+         pair-fold allows to pass subsequent segment-config to handlers"
         (first
           (pair-fold-multiple
             (l (a result start)

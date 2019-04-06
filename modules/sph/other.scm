@@ -254,10 +254,9 @@
     (let (cache (ht-make ht-hash-equal equal?))
       (values
         (l a
-          (let* ((key (debug-log (apply key-f a))) (cached-result (ht-ref cache key (q --not-in-cache))))
+          (let* ((key (apply key-f a)) (cached-result (ht-ref cache key (q --not-in-cache))))
             (if (eq? (q --not-in-cache) cached-result)
-              ((l (r) (ht-set! cache key r) r) (apply proc a))
-              cached-result)))
+              ((l (r) (ht-set! cache key r) r) (apply proc a)) cached-result)))
         (nullary (ht-clear! cache)))))
 
   (define (procedure->temporarily-cached-procedure cache-duration proc)

@@ -1,4 +1,4 @@
-; Copyright (C) 2010-2017 sph <sph@posteo.eu>
+; Copyright (C) 2010-2019 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -92,7 +92,7 @@
        #:socket socket-object
      start listening on a socket and call handle-request for each new connection.
      the socket protocol-family depends on the address: if it starts with a slash a local unix socket is used, if it contains colons then ip6, otherwise ip4.
-     if a socket is not given, a local unix socket is created with. default port for tcp sockets is 6500.
+     if a socket is not given, a local unix socket is created. default port for tcp sockets is 6500.
      server-listen and server-socket can be specified to use alternative server implementations, for example (sph server fibers)"
     (server-listen
       (l (port)
