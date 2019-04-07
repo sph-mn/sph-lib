@@ -342,10 +342,11 @@
 
   (define socket-bind bind)
 
-  (define (each-integer count proc)
+  (define* (each-integer count proc #:optional (start 0))
     "integer procedure:{integer ->} ->
      call proc \"count\" times"
-    (let loop ((n 0)) (if (< n count) (begin (proc n) (loop (+ 1 n))))))
+    (let (end (+ start count))
+      (let loop ((n start)) (if (< n end) (begin (proc n) (loop (+ 1 n)))))))
 
   (define (pass proc obj)
     "procedure any -> any
