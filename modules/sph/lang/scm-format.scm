@@ -58,6 +58,7 @@
     hash-bang format-hash-bang
     lambda format-lambda
     let format-let
+    let* format-let
     let-macro format-list-assoc
     library format-library
     quasiquote format-quasiquote

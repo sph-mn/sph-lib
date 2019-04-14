@@ -621,7 +621,7 @@
   (define (spline-path-combine f a . b)
     "return a new path that is a combination of the given paths.
      each point of path is combined by f for each dimension.
-     example that sums three paths: (sp-path-combine + path1 path2 path3)"
+     example that sums three paths: (spline-path-combine + path1 path2 path3)"
     ; note: this may add duplicate keys to the mapper-config
     (spline-path-map-config a
       (l (config mapper c)

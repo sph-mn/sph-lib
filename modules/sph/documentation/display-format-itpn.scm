@@ -1,20 +1,22 @@
 (library (sph documentation display-format-itpn)
   (export
     default-format-arguments
-    display-format-itpn)
+    display-format-itpn
+    sph-documentation-display-format-itpn-description)
   (import
     (guile)
     (ice-9 peg)
     (sph)
     (sph alist)
-    (sph module binding-info)
     (sph documentation)
     (sph lang parser type-signature)
     (sph list)
+    (sph module binding-info)
     (sph string)
     (except (srfi srfi-1) map)
     (only (ice-9 regex) regexp-substitute/global))
 
+  (define sph-documentation-display-format-itpn-description "plaintext with indent for subsections")
   (define itpn-indent (string #\space #\space))
 
   (define-as display-format-itpn alist-q

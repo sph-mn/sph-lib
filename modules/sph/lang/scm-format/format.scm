@@ -25,11 +25,11 @@
   (import
     (guile)
     (ice-9 match)
-    (sph hashtable)
     (sph)
-    (sph string)
-    (sph list)
+    (sph hashtable)
     (sph lang scm-format base)
+    (sph list)
+    (sph string)
     (sph tree))
 
   (define sph-lang-scm-format-format-description "formatters for individual expressions")
@@ -64,7 +64,8 @@
     (ht-bind config
       (indent-string max-chars-per-line max-exprs-per-line-start
         max-exprs-per-line-middle max-exprs-per-line-end)
-      (let (indent-length (* current-indent (string-length indent-string)))
+      (let
+        (indent-length (* current-indent (string-length indent-string)))
         (l (rest r line line-expr-length line-expr-count)
           (let* ((a (first rest)) (expr-length (first a)) (expr-string (tail a)))
             (if (string-contains expr-string "\n")
@@ -126,7 +127,8 @@
       max-exprs-per-line-middle
       max-exprs-per-line-start
       r)
-    (let (line-length (+ (+ line-expr-length (- line-expr-count 1)) indent-length))
+    (let
+      (line-length (+ (+ line-expr-length (- line-expr-count 1)) indent-length))
       (and
         (or
           ; (+ line remaining-exprs) does not fit on one line
@@ -145,7 +147,8 @@
   (define (consecutive-parentheses-indentation a indent-string)
     "string string -> string
      offsets leading parentheses on one line by the level of idendation. example: ( ("
-    (let (index (string-skip a #\())
+    (let
+      (index (string-skip a #\())
       (if (and index (> index 1))
         (string-append
           (string-join (string-split (substring a 0 (- index 1)) #\()
@@ -191,7 +194,8 @@
                   (if (= second-line-index indent-end-index) ""
                     (substring a (+ 1 second-line-index) indent-end-index))))
               (if offset-doublequote
-                (let (lines (string-split a #\newline))
+                (let
+                  (lines (string-split a #\newline))
                   ; add one extra space to offset the initial doublequote
                   (string-join
                     (pair (first lines)
@@ -326,7 +330,8 @@
   (define (format-list-f start mid end)
     "integer integer integer -> procedure:{any:expression recurse config indent -> (result false)}
      return a function for descend-prefix->format-f that formats a list with the given start/mid/end expression distribution"
-    (let ((start (inf-if-zero start)) (mid (inf-if-zero mid)) (end (inf-if-zero end)))
+    (let
+      ((start (inf-if-zero start)) (mid (inf-if-zero mid)) (end (inf-if-zero end)))
       (l (a recurse config indent)
         (list
           (format-application (map-recurse recurse a indent)
@@ -372,7 +377,8 @@
   (define (format-string a . rest) (string-append "\"" a "\""))
 
   (define (multiline-expression? a) "string -> boolean"
-    (let (index-newline (string-contains a "\n"))
+    (let
+      (index-newline (string-contains a "\n"))
       (and index-newline (< index-newline (- (string-length a) 1)))))
 
   (define (string-remove-trailing-newline a) (if (string-suffix? "\n" a) (string-drop-right a 1) a))
@@ -402,7 +408,8 @@
         (join-multiline
           (l (a indent vertical-spacing)
             ;expressions like comments that modify the rest of the line need a newline at the end or they may affect following parentheses
-            (let (index-last (- (length a) 1))
+            (let
+              (index-last (- (length a) 1))
               (string-join
                 (map-with-index
                   (l (index e) (if (= index index-last) e (string-remove-trailing-newline e))) a)

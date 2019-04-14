@@ -1,14 +1,19 @@
 (library (sph documentation display-format-signature)
   (export
-    display-format-signature)
+    display-format-signature
+    sph-documentation-display-format-signature-description)
   (import
     (guile)
     (sph)
     (sph alist)
-    (sph module binding-info)
     (sph documentation)
     (sph list)
+    (sph module binding-info)
     (only (srfi srfi-1) remove))
+
+  (define sph-documentation-display-format-signature-description
+    "only names and type signatures.
+     currently it displays argument names as defined in the procedure, not type names from signatures as the first line the docstring")
 
   (define-as display-format-signature alist-q
     format-arguments default-format-arguments
@@ -16,14 +21,12 @@
     (l (bi formatted-arguments) "vector:record string -> string"
       (docstring-split-signature (bi-documentation bi) ""
         (l (signature text-lines)
+          ;(and signature (not (string-contains signature "\n")))
           (let
-            ( (arguments-string
-                (if (or signature (not (string-null? formatted-arguments)))
-                  (string-append
-                    (if (and signature (not (string-contains signature "\n"))) signature
-                      (if formatted-arguments formatted-arguments "")))
-                  ""))
-              (docstring (string-join (remove string-null? (if text-lines (any->list text-lines) null)) "\n  " (q prefix))))
+            ( (arguments-string formatted-arguments)
+              (docstring
+                (string-join (remove string-null? (if text-lines (any->list text-lines) null))
+                  "\n  " (q prefix))))
             (string-append (symbol->string (bi-name bi))
               (if (contains? (list-q procedure syntax) (bi-type bi))
                 (string-append " :: " arguments-string) "")
