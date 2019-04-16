@@ -3,6 +3,7 @@
     sph-spline-path-description
     spline-path
     spline-path->procedure
+    spline-path->procedure-fast
     spline-path-append
     spline-path-combine
     spline-path-config
@@ -12,6 +13,7 @@
     spline-path-constant
     spline-path-constant?
     spline-path-end
+    spline-path-fast
     spline-path-infinite?
     spline-path-map-config
     spline-path-map-segments
@@ -208,6 +210,12 @@
   (define (spline-path-current a time)
     (find (l (a) (<= time (first (spline-path-segment-end a)))) (spline-path-index a)))
 
+  (define (spline-path-fast time path) "bypasses all mappers and only works if time is on path"
+    (let*
+      ( (current (spline-path-current path time))
+        (start (first (spline-path-segment-start current))))
+      (pair time (tail ((spline-path-segment-f current) (- time start))))))
+
   (define (spline-path time path)
     "number path -> (time number ...):point
      get value at time for a path created by spline-path-new.
@@ -232,6 +240,11 @@
 
   (define (spline-path->procedure a) "spline-path -> {number:t -> (t number ...)}"
     (l (t) (spline-path t a)))
+
+  (define (spline-path->procedure-fast a)
+    "spline-path -> {number:t -> (t number ...)}
+     uses spline-path-fast"
+    (l (t) (spline-path-fast t a)))
 
   (define (spline-paths->points paths start-time)
     "(spline-path ...) point -> (point:end ...)
