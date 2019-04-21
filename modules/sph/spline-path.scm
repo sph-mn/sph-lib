@@ -242,8 +242,7 @@
 
   (define (spline-path->procedure a) "spline-path -> {number:t -> (t number ...)}"
     (if (and #f (spline-path-constant? a) (null? (spline-path-mapper-config a)))
-      (let (point (tail (first (second (first (spline-path-config a))))))
-        (l (t) (debug-log (pair t point))))
+      (let (point (tail (first (second (first (spline-path-config a)))))) (l (t) (pair t point)))
       (l (t) (spline-path t a))))
 
   (define (spline-path->procedure-fast a)
