@@ -89,7 +89,23 @@
     s8vector-range-map-with!
     s8vector-range-set
     s8vector-range-set!
-    sph-uniform-vector-description)
+    sph-uniform-vector-description
+    u32vector-copy
+    u32vector-copy*
+    u32vector-copy-zero
+    u32vector-copy-zero*
+    u32vector-create
+    u32vector-each-index
+    u32vector-map
+    u32vector-map!
+    u32vector-map-with
+    u32vector-map-with!
+    u32vector-range-map
+    u32vector-range-map!
+    u32vector-range-map-with
+    u32vector-range-map-with!
+    u32vector-range-set
+    u32vector-range-set!)
   (import
     (guile)
     (rnrs base)
@@ -328,6 +344,24 @@
   (define-uv-range-map-with! s8vector-range-map-with! s8vector-range-map!)
   (define-uv-range-set! s8vector-range-set! s8vector-set!)
   (define-uv-range-set s8vector-range-set s8vector-copy* s8vector-range-set!)
+  ;
+  ; u32
+  (define-uv-copy u32vector-copy make-u32vector u32vector-length 4)
+  (define-uv-copy-zero u32vector-copy-zero make-u32vector u32vector-length)
+  (define-uv-copy* u32vector-copy* u32vector-copy)
+  (define-uv-copy-zero* u32vector-copy-zero* u32vector-copy-zero)
+  (define-uv-each-index u32vector-each-index u32vector-length)
+  (define-uv-range-map! u32vector-range-map! u32vector-set! u32vector-ref)
+  (define-uv-map! u32vector-map! u32vector-length u32vector-range-map!)
+  (define-uv-map-with! u32vector-map-with! u32vector-map!)
+  (define-uv-range-map u32vector-range-map u32vector-copy-zero* u32vector-range-map!)
+  (define-uv-map u32vector-map u32vector-copy-zero* u32vector-range-map! u32vector-length)
+  (define-uv-create u32vector-create make-u32vector u32vector-set!)
+  (define-uv-map-with u32vector-map-with u32vector-map)
+  (define-uv-range-map-with u32vector-range-map-with u32vector-range-map)
+  (define-uv-range-map-with! u32vector-range-map-with! u32vector-range-map!)
+  (define-uv-range-set! u32vector-range-set! u32vector-set!)
+  (define-uv-range-set u32vector-range-set u32vector-copy* u32vector-range-set!)
 
   (define (integer->bytevector a)
     "integer:signed-integer -> bytevector

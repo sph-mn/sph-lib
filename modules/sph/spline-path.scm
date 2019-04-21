@@ -210,7 +210,9 @@
   (define (spline-path-current a time)
     (find (l (a) (<= time (first (spline-path-segment-end a)))) (spline-path-index a)))
 
-  (define (spline-path-fast time path) "bypasses all mappers and only works if time is on path"
+  (define (spline-path-fast time path)
+    "bypasses all mappers and only works if time is on path.
+     about 10% faster"
     (let*
       ( (current (spline-path-current path time))
         (start (first (spline-path-segment-start current))))
@@ -239,7 +241,10 @@
     (and (vector? a) (= 9 (vector-length a)) (eq? (q spline-path) (vector-first a))))
 
   (define (spline-path->procedure a) "spline-path -> {number:t -> (t number ...)}"
-    (l (t) (spline-path t a)))
+    (if (and #f (spline-path-constant? a) (null? (spline-path-mapper-config a)))
+      (let (point (tail (first (second (first (spline-path-config a))))))
+        (l (t) (debug-log (pair t point))))
+      (l (t) (spline-path t a))))
 
   (define (spline-path->procedure-fast a)
     "spline-path -> {number:t -> (t number ...)}
