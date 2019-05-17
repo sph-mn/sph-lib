@@ -57,32 +57,6 @@
   (define-syntax-rule (create-vertical-spacing* spacing)
     (if (string? spacing) spacing (create-vertical-spacing spacing)))
 
-  (define (format-application-expr-proc config current-indent)
-    "hashtable integer -> list
-     cache config values and return a procedure to be called for each pair of a list
-     returned by format-application-prepare-exprs"
-    (ht-bind config
-      (indent-string max-chars-per-line max-exprs-per-line-start
-        max-exprs-per-line-middle max-exprs-per-line-end)
-      (let
-        (indent-length (* current-indent (string-length indent-string)))
-        (l (rest r line line-expr-length line-expr-count)
-          (let* ((a (first rest)) (expr-length (first a)) (expr-string (tail a)))
-            (if (string-contains expr-string "\n")
-              (handle-newline-subexpression rest expr-string line r)
-              (if
-                (line-full? expr-length indent-length
-                  line-expr-count line-expr-length
-                  rest max-chars-per-line
-                  max-exprs-per-line-end max-exprs-per-line-middle max-exprs-per-line-start r)
-                (list (if (null? line) r (pair (string-join (reverse line) " ") r))
-                  (list expr-string) expr-length 1)
-                (list r (pair expr-string line)
-                  (+ line-expr-length expr-length) (+ 1 line-expr-count)))))))))
-
-  (define (format-application-prepare-exprs a) "(any ...) -> ((integer:string-length string) ...)"
-    (map (l (a) ((l (a-string) (pair (string-length a-string) a-string)) (any->string a))) a))
-
   (define (format-import a recurse config current-indent)
     (format-list (format-import-spec a recurse config (+ 1 current-indent)) config
       current-indent 1 1 1))
@@ -121,23 +95,6 @@
         (if (null? line) r (pair (string-join (reverse line) " ") r)))
       (list) 0 0))
 
-  (define-syntax-rule
-    (line-full? expr-length indent-length line-expr-count line-expr-length rest max-chars-per-line
-      max-exprs-per-line-end
-      max-exprs-per-line-middle
-      max-exprs-per-line-start
-      r)
-    (let
-      (line-length (+ (+ line-expr-length (- line-expr-count 1)) indent-length))
-      (and
-        (or
-          ; (+ line remaining-exprs) does not fit on one line
-          (> (+ line-length (apply + (map first rest)) (- (length rest) 1)) max-chars-per-line)
-          (>= (length rest) max-exprs-per-line-end))
-        (or (= (if (null? r) max-exprs-per-line-start max-exprs-per-line-middle) line-expr-count)
-          ; (+ line current-element) does not fit on one line
-          (> (+ line-length expr-length) max-chars-per-line)))))
-
   (define-syntax-rule (map-recurse recurse a current-indent)
     (map (l (e) (first (recurse e current-indent))) a))
 
@@ -147,14 +104,56 @@
   (define (consecutive-parentheses-indentation a indent-string)
     "string string -> string
      offsets leading parentheses on one line by the level of idendation. example: ( ("
-    (let
-      (index (string-skip a #\())
+    (let (index (string-skip a #\())
       (if (and index (> index 1))
         (string-append
           (string-join (string-split (substring a 0 (- index 1)) #\()
             (string-append "(" (string-drop indent-string 1)))
           "(" (substring a index))
         a)))
+
+  (define-syntax-rule
+    (line-full? expr-length indent-length line-expr-count line-expr-length rest max-chars-per-line
+      max-exprs-per-line-end
+      max-exprs-per-line-middle
+      max-exprs-per-line-start
+      r)
+    ; expr-length and spaces
+    (let (line-length (+ (+ line-expr-length (- line-expr-count 1)) indent-length))
+      (and
+        ; whole expression fits on one line
+        (not
+          (and (null? r)
+            (<= (+ line-length (apply + (map first rest)) (- (length rest) 1)) max-chars-per-line)))
+        (or
+          ; (+ line remaining-exprs) does not fit on one line
+          (> (+ line-length (apply + (map first rest)) (- (length rest) 1)) max-chars-per-line)
+          (>= (length rest) max-exprs-per-line-end))
+        (or (= (if (null? r) max-exprs-per-line-start max-exprs-per-line-middle) line-expr-count)
+          ; (+ line current-element) does not fit on one line
+          (> (+ line-length expr-length) max-chars-per-line)))))
+
+  (define (format-application-pair-fold-f config current-indent)
+    "hashtable integer -> list
+     cache config values and return a procedure to be called for each pair of a list
+     returned by format-application-prepare-exprs"
+    (ht-bind config
+      (indent-string max-chars-per-line max-exprs-per-line-start
+        max-exprs-per-line-middle max-exprs-per-line-end)
+      (let (indent-length (* current-indent (string-length indent-string)))
+        (l (rest r line line-expr-length line-expr-count)
+          (let* ((a (first rest)) (expr-length (first a)) (expr-string (tail a)))
+            (if (string-contains expr-string "\n")
+              (handle-newline-subexpression rest expr-string line r)
+              (if
+                (line-full? expr-length indent-length
+                  line-expr-count line-expr-length
+                  rest max-chars-per-line
+                  max-exprs-per-line-end max-exprs-per-line-middle max-exprs-per-line-start r)
+                (list (if (null? line) r (pair (string-join (reverse line) " ") r))
+                  (list expr-string) expr-length 1)
+                (list r (pair expr-string line)
+                  (+ line-expr-length expr-length) (+ 1 line-expr-count)))))))))
 
   (define (format-application a config current-indent)
     "list hashtable integer -> string
@@ -169,8 +168,11 @@
                 ; add the last line
                 (reverse (if (null? line) r (pair (string-join (reverse line) " ") r))))
               line-spacing)))
-        (pair-fold-multiple (format-application-expr-proc config current-indent)
-          (format-application-prepare-exprs a)
+        (pair-fold-multiple (format-application-pair-fold-f config current-indent)
+          (map
+            (l (a) "any -> (integer:string-length string)"
+              (let (a-string (any->string a)) (pair (string-length a-string) a-string)))
+            a)
           ; arguments: result lines, expressions on line, line string length and line expression count
           (list) (list) 1 0))))
 
@@ -194,8 +196,7 @@
                   (if (= second-line-index indent-end-index) ""
                     (substring a (+ 1 second-line-index) indent-end-index))))
               (if offset-doublequote
-                (let
-                  (lines (string-split a #\newline))
+                (let (lines (string-split a #\newline))
                   ; add one extra space to offset the initial doublequote
                   (string-join
                     (pair (first lines)
@@ -330,8 +331,7 @@
   (define (format-list-f start mid end)
     "integer integer integer -> procedure:{any:expression recurse config indent -> (result false)}
      return a function for descend-prefix->format-f that formats a list with the given start/mid/end expression distribution"
-    (let
-      ((start (inf-if-zero start)) (mid (inf-if-zero mid)) (end (inf-if-zero end)))
+    (let ((start (inf-if-zero start)) (mid (inf-if-zero mid)) (end (inf-if-zero end)))
       (l (a recurse config indent)
         (list
           (format-application (map-recurse recurse a indent)
@@ -377,8 +377,7 @@
   (define (format-string a . rest) (string-append "\"" a "\""))
 
   (define (multiline-expression? a) "string -> boolean"
-    (let
-      (index-newline (string-contains a "\n"))
+    (let (index-newline (string-contains a "\n"))
       (and index-newline (< index-newline (- (string-length a) 1)))))
 
   (define (string-remove-trailing-newline a) (if (string-suffix? "\n" a) (string-drop-right a 1) a))
@@ -408,8 +407,7 @@
         (join-multiline
           (l (a indent vertical-spacing)
             ;expressions like comments that modify the rest of the line need a newline at the end or they may affect following parentheses
-            (let
-              (index-last (- (length a) 1))
+            (let (index-last (- (length a) 1))
               (string-join
                 (map-with-index
                   (l (index e) (if (= index index-last) e (string-remove-trailing-newline e))) a)
