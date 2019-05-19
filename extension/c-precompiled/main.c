@@ -1,6 +1,6 @@
 /* code for creating a guile extension as a shared library.
-  for features that can not adequately be written in guile scheme, for example
-  child process creation */
+  for features that can apparently not adequately be written in guile scheme,
+  for example child process creation */
 /* set gnu source to include functions that arent part of the c standard (dirfd)
  */
 #define _GNU_SOURCE 1
