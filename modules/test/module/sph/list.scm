@@ -166,12 +166,11 @@
       ((unquote identity) (1 2 3)) (1 2 3)
       ((unquote odd?) (1 2 3)) #f)
     (list-replace-last
-      ((1 2 3) 4) (1 2 4)
-      ((1 2 3) (unquote (l (ele) (list 4 5)))) (1 2 4 5)
-      ((1 2 3) (unquote (l (ele) (list 4 ele 5)))) (1 2 4 3 5))
+      ((1 2 3) 4) (1 2 4))
     (list-replace-last-n
-      (2 (1 2 3) 4) (1 4)
-      (2 (1 2 3) (unquote (l (ele ele-2) (list 4 5))))
+      (2 (1 2 3) 4) (1 4))
+    (map-last-n
+      (2 (1 2 3) (unquote (l (a b) (list 4 5))) )
       (1 4 5))
     (simplify
       ((1)) 1
