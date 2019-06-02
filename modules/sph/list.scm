@@ -100,6 +100,7 @@
     map-first
     map-fold
     map-integers
+    map-last-n
     map-map
     map-one
     map-segments
@@ -640,9 +641,19 @@
     (let (length-suffix (length suffix))
       (if (< (length a) length-suffix) #f (equal? (take-right a length-suffix) suffix))))
 
-  (define (split-at-last a) "list -> (list list)"
+  (define (split-at-last a)
+    "list -> (list list)
+     get a list with the list of the initial elements and a list with the last element"
     (if (> 2 (length a)) (list a (list))
       (let (a-reverse (reverse a)) (list (reverse (tail a-reverse)) (list (first a-reverse))))))
+
+  (define (map-last-n n b f)
+    "procedure:{any ... -> any/(any ...)} list -> list
+     call f to replace the last n elements in list b"
+    (if (null? b) b
+      (apply-values
+        (l (last-n rest) (append (reverse rest) (any->list (apply f (reverse last-n)))))
+        (split-at (reverse b) n))))
 
   (define (list-replace-last a replacement)
     "list any/procedure:{any -> any} -> list
@@ -653,13 +664,7 @@
   (define (list-replace-last-n n a replacement)
     "list integer any/procedure:{any ... -> any/list} -> list
      if replacement is a procedure, it is called with the last \"n\" elements and if the procedure result is a list then the result is appended"
-    (call-with-values (l () (split-at (reverse a) n))
-      (l (replaced rest)
-        (reverse
-          (append
-            (reverse
-              (any->list (if (procedure? replacement) (apply replacement replaced) replacement)))
-            rest)))))
+    (map-last-n n a (l a (list replacement))))
 
   (define (list-select a indices)
     "list (integer ...) -> list
@@ -720,12 +725,7 @@
   (define (list-logical-condition? a)
     "any -> boolean
      true if \"a\" is a list-logical condition"
-    (if (list? a)
-      (if (null? a) #f
-        (case (first a)
-          ((or and not) #t)
-          (else #f)))
-      #f))
+    (if (list? a) (if (null? a) #f (case (first a) ((or and not) #t) (else #f))) #f))
 
   (define* (list-sort-by-list order a #:optional (accessor identity))
     "list list -> list
