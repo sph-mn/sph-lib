@@ -649,7 +649,9 @@
 
   (define (map-last-n n b f)
     "procedure:{any ... -> any/(any ...)} list -> list
-     call f to replace the last n elements in list b"
+     call f to replace the last n elements in list b.
+     if the result of f is a list it is spliced so that the
+     elements can be replaced with multiple elements"
     (if (null? b) b
       (apply-values
         (l (last-n rest) (append (reverse rest) (any->list (apply f (reverse last-n)))))
@@ -657,13 +659,11 @@
 
   (define (list-replace-last a replacement)
     "list any/procedure:{any -> any} -> list
-     replace the last element in a list.
-     if replacement is a procedure, it is called with the last element and if the procedure result is a list then the result is appended"
+     replace the last element in a list"
     (list-replace-last-n 1 a replacement))
 
   (define (list-replace-last-n n a replacement)
-    "list integer any/procedure:{any ... -> any/list} -> list
-     if replacement is a procedure, it is called with the last \"n\" elements and if the procedure result is a list then the result is appended"
+    "list integer any/procedure:{any ... -> any/list} -> list"
     (map-last-n n a (l a (list replacement))))
 
   (define (list-select a indices)
