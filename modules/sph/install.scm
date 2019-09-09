@@ -77,6 +77,7 @@
       (group-split-at-matches integer? a)))
 
   (define (copy-proc path-destination symlink? dry-run?)
+    "returns a procedure that calls \"cp\" program in a subprocess"
     (l (paths-source)
       (apply (if dry-run? dry-run-log execute-and-check-result) "cp"
         (qq

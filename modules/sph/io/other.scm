@@ -27,6 +27,7 @@
     port-lines-map
     port-lines-map->port
     read-until-string-proc
+    rw-port->port
     socket-address-string->protocol-family
     socket-create-bound
     socket-protocol-family->address-family
