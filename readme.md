@@ -1,6 +1,6 @@
 # sph-lib
 more than 80 gpl3+ licensed guile scheme libraries.
-example implementations of various procedures. use the library as is or extract the code you need.
+example implementations of various procedures. use the library as is or extract code as needed.
 see also [sph.mn](http://sph.mn/computer/software/sph-lib.html)
 
 # dependencies
