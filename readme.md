@@ -5,9 +5,11 @@ see also [sph.mn](http://sph.mn/computer/software/sph-lib.html)
 
 # dependencies
 * [gnu guile](https://www.gnu.org/software/guile/) >= 2
-* for the installation executable: shell
-* for (sph process create): linux, libc, gcc
-* for (sph scrypt): [scrypt](https://github.com/jkalbhenn/scrypt)
+* optional
+  * for the installation executable: shell
+  * for (sph process create): linux, libc, gcc
+  * for (sph scrypt): [scrypt](https://github.com/jkalbhenn/scrypt)
+
 # installation
 ```
 su root
