@@ -1,10 +1,9 @@
 (define-module (sph filesystem))
 
-(use-modules (guile) (ice-9 ftw)
-  (ice-9 regex) (ice-9 threads)
-  (rnrs bytevectors) (rnrs io ports)
-  (sph) (sph hashtable)
-  (sph list) (sph list other) (sph other) (sph string) (srfi srfi-1) (srfi srfi-2))
+(use-modules (srfi srfi-1) (srfi srfi-2)
+  (ice-9 ftw) (ice-9 regex)
+  (ice-9 threads) (rnrs bytevectors)
+  (rnrs io ports) (sph) (sph hashtable) (sph list) (sph list other) (sph other) (sph string))
 
 (export call-with-directory copy-file-recursive
   directory-fold directory-list
@@ -15,15 +14,14 @@
   ensure-directory-structure ensure-directory-structure-and-new-mode
   ensure-trailing-slash filename-extension
   filesystem-glob fold-directory-tree
-  last list->path
-  make-path-unique mtime-difference
-  path->full-path path->list
-  path-append path-append*
-  path-directories poll-watch
-  readlink* realpath*
-  remove-filename-extension remove-trailing-slash
-  search-load-path stat-accessor->stat-field-name
-  stat-diff stat-diff->accessors stat-field-name->stat-accessor)
+  list->path make-path-unique
+  mtime-difference path->full-path
+  path->list path-append
+  path-append* path-directories
+  poll-watch readlink*
+  realpath* remove-filename-extension
+  remove-trailing-slash search-load-path
+  stat-accessor->stat-field-name stat-diff stat-diff->accessors stat-field-name->stat-accessor)
 
 (define filesystem-glob
   (let*

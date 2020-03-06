@@ -1,8 +1,11 @@
 (define-module (sph selection))
 
 (use-modules (sph) (sph hashtable)
-  (srfi srfi-41) ((sph list) #:select (map-integers map-map produce))
-  ((sph vector) #:select (vector-range)))
+  (srfi srfi-41) (srfi srfi-1)
+  ((sph list) #:select (map-integers map-map produce))
+
+  ((sph vector) #:select (vector-range ))
+  ((rnrs base) #:select (vector-map)))
 
 (export divisions number-divisions
   sph-selection-description vector-distinct-count

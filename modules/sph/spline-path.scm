@@ -1,12 +1,11 @@
 (define-module (sph spline-path))
 
-(use-modules (sph) (sph list other)
-  (sph math) (sph number)
-  (sph vector) ((rnrs base) #:select (infinite?))
-  ((sph alist) #:select (alist-delete-multiple alist-merge))
+(use-modules (srfi srfi-1) (sph)
+  (sph list other) (sph math)
+  (sph number) (sph vector)
+  ((rnrs base) #:select (infinite?)) ((sph alist) #:select (alist-delete-multiple alist-merge))
   ( (sph list) #:select
-    (any->list compact fold-segments fold* map-apply map-segments pair-fold-multiple))
-  (srfi srfi-1))
+    (any->list compact fold-segments fold* map-apply map-segments pair-fold-multiple)))
 
 (export sph-spline-path-description spline-path
   spline-path->procedure spline-path->procedure-fast

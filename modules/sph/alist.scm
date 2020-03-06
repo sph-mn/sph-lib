@@ -90,7 +90,7 @@
   "key/value ... -> alist
    create an association list from the given arguments,
    mapping each argument alternatingly to key and value.
-   (alist (quote a) 1 "b" 2 (quote c) 3)"
+   (alist (quote a) 1 \"b\" 2 (quote c) 3)"
   (list->alist key/value))
 
 (define-syntax-rule (alist-q key/value ...) "only the keys are quoted"

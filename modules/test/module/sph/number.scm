@@ -1,5 +1,6 @@
 (define-test-module (test module sph number)
   (import
+    (srfi srfi-1)
     (sph number)
     (sph list))
 

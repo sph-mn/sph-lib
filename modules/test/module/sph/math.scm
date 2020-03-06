@@ -1,5 +1,6 @@
 (define-test-module (test module sph math)
   (import
+    (srfi srfi-1)
     (sph math)
     (sph list))
 

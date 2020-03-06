@@ -5,7 +5,7 @@
 
 (define exclusions
   (if (file-exists? "/usr/lib/libguile-sph-lib.so") (list)
-    (list (q (test module sph process create)) (q (test module sph record)))))
+    (list (q (test module sph process create)))))
 
 (define settings
   (test-settings-default-custom

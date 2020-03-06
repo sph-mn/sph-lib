@@ -1,5 +1,6 @@
 (define-test-module (test module sph filesystem)
   (import
+    (except (srfi srfi-1) map)
     (sph string)
     (sph list)
     (sph tree)

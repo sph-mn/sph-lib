@@ -1,5 +1,6 @@
 (define-test-module (test module sph hashtable)
   (import
+    (srfi srfi-1)
     (sph alist)
     (sph list)
     (sph hashtable))

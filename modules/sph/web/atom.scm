@@ -40,7 +40,7 @@
     (pairs (q @) (sxml-element term)
       (filter identity (list (sxml-element-optional scheme) (sxml-element-optional label))))))
 
-(define* (atom-text tag #:key (type text) . content)
+(define* (atom-text tag #:key (type "text") . content)
   "symbol [#:type string] sxml ... -> sxml
    examples for type are \"text\", \"html\", \"xhtml\""
   (qq

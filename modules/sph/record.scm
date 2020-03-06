@@ -1,8 +1,5 @@
 (define-module (sph record))
-
-(use-modules (sph) (sph hashtable)
-  (sph list) (sph vector) (srfi srfi-1) ((srfi srfi-43) #:select (vector-map)))
-
+(use-modules (sph) (sph hashtable) (sph list) (sph vector) (srfi srfi-1))
 (export! record-accessor record?)
 
 (export alist->record define-record

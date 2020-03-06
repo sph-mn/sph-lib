@@ -1,5 +1,6 @@
 (define-test-module (test module sph spline-path)
   (import
+    (except (srfi srfi-1) map)
     (sph spline-path))
 
   (define path-all
