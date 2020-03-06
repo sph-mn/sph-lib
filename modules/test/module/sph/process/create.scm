@@ -1,5 +1,6 @@
 (define-test-module (test module sph process create)
   (import
+    (srfi srfi-1)
     (sph process)
     (sph process create)
     (sph io)

@@ -5,7 +5,7 @@
 (sc-comment "set gnu source to include functions that arent part of the c standard (dirfd)")
 (pre-define _GNU_SOURCE #t)
 
-(pre-include "dirent.h" "sys/types.h"
+(pre-include "stdio.h" "string.h" "dirent.h" "sys/types.h"
   "sys/stat.h" "fcntl.h" "dirent.h" "unistd.h" "errno.h" "linux/limits.h" "libguile.h")
 
 (pre-define-if-not-defined OPEN-MAX 1024)

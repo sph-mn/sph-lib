@@ -1,17 +1,19 @@
 (define-module (sph process create))
 
-(use-modules (sph) (sph exception)
-  (sph io) (sph io path-pipe-chain)
+(use-modules (srfi srfi-1) (sph)
+  (sph exception) (sph io)
+  (sph io path-pipe-chain) (rnrs exceptions)
   (sph process) ((sph alist) #:select (list->alist))
   ((sph list) #:select (any->list compact first-or-false pair-reverse))
   ((sph other) #:select (search-env-path-one begin-first)))
+
+(load-extension "libguile-sph-lib" "init_sph_lib")
 
 (export execute-with-pipes process-chain
   process-chain->string process-chain-finish
   process-chain-finish-success? process-chain-path-pipe process-create sph-process-create-description)
 
 (define sph-process-create-description "create child processes and process chains")
-(load-extension "libguile-sph-lib" "init_sph_lib")
 (define-syntax-rule (boolean->integer a) (if a 1 0))
 
 (define*
