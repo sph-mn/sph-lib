@@ -12,58 +12,30 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-(library (sph vector)
-  (export
-    alist-values->vector
-    any->vector
-    sph-vector-description
-    vector->index-alist
-    vector-accessor
-    vector-append
-    vector-copy*
-    vector-delete-duplicates
-    vector-deselect
-    vector-each
-    vector-each-with-index
-    vector-extend
-    vector-first
-    vector-from-index-alist
-    vector-index-value
-    vector-map-with-index
-    vector-object
-    vector-range
-    vector-relative-change-index/value
-    vector-second
-    vector-select
-    vector-setter
-    vector-third
-    vector-update)
-  (import
+(define-module (sph vector))
+
+  (use-modules
     (sph)
-    (only (guile)
-      current-module
-      module-re-export!
-      resolve-interface
-      module-map)
-    (only (rnrs sorting) list-sort)
-    (only (sph alist) alist-values)
-    (only (sph list) map-with-index map-slice)
-    (only (srfi srfi-1)
-      append-map
-      delete
+
+  ((rnrs sorting) #:select (list-sort))
+  ( (sph alist) #:select (alist-values))
+  ((sph list) #:select (map-with-index map-slice))
+    ((srfi srfi-1)
+    #:select  (append-map delete
       delete-duplicates)
-    (rename (srfi srfi-43) (vector-map srfi43-vector-map) (vector-for-each srfi43-vector-for-each)))
+    )
+  ((rnrs base) #:select (vector-for-each vector-map))
+  ((srfi srfi-43)
+    #:prefix srfi-43-
+    ))
+
 
   (define sph-vector-description "vector processing")
 
-  (module-re-export! (current-module)
-    ; export most bindings of srfi43
-    (delete (q vector-for-each)
-      (delete (q vector-map)
-        (module-map (l (name variable) name) (resolve-interface (q (srfi srfi-43)))))))
+
 
   (define vector-each vector-for-each)
-  (define vector-each-with-index srfi43-vector-for-each)
+  (define vector-each-with-index srfi-43-vector-for-each)
   (define (any->vector a) (if (vector? a) a (vector a)))
 
   (define (each-integer n f)
@@ -149,7 +121,7 @@
     "procedure:{integer:index any -> any} vector ... -> vector
      map each vector element suppliing its index to the
      mapping procedure and result in a new vector"
-    (apply srfi43-vector-map f a))
+    (apply srfi-43-vector-map f a))
 
   (define* (vector-range a start #:optional (end (- (vector-length a) 1)))
     "vector [integer integer] -> vector
@@ -198,4 +170,30 @@
               (/
                 (abs (+ (relative-change (first a) (first b)) (relative-change (tail a) (tail b)))) 2))
             sorted-points)))
-      (/ (apply + change-values) (vector-length a)))))
+      (/ (apply + change-values) (vector-length a))))
+
+(export
+    alist-values->vector
+    any->vector
+    sph-vector-description
+    vector->index-alist
+    vector-accessor
+    vector-append
+    vector-copy*
+    vector-delete-duplicates
+    vector-deselect
+    vector-each
+    vector-each-with-index
+    vector-extend
+    vector-first
+    vector-from-index-alist
+    vector-index-value
+    vector-map-with-index
+    vector-object
+    vector-range
+    vector-relative-change-index/value
+    vector-second
+    vector-select
+    vector-setter
+    vector-third
+    vector-update)

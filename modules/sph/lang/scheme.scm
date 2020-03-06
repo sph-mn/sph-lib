@@ -1,61 +1,51 @@
-(library (sph lang scheme)
-  (export
-    file->datums
-    iq-file
-    iq-file-hashtable
-    iq-file-lines
-    port->datums
-    string->datum
-    string->datums)
-  (import
-    (guile)
-    (rnrs eval)
-    (sph)
-    (sph alist)
-    (sph hashtable)
-    (sph io)
-    (sph tree))
+(define-module (sph lang scheme))
 
-  (define sph-lang-scheme "scheme parsing helpers")
+(use-modules (rnrs eval) (rnrs io ports)
+  ((srfi srfi-1) #:select (remove)) (sph) (sph alist) (sph hashtable) (sph io) (sph tree))
 
-  (define* (iq-file path #:optional (env (current-module)))
-    "string -> list
-     \"implicitly quasiquoted\".
-     read all scheme expressions from file like elements of a quasiquoted
-     list (quasiquote (file-content-expression ...)).
-     unquote can be used and will be evaluated.
-     example use case: configuration files"
-    (eval (list (q quasiquote) (file->datums path)) env))
+(export file->datums iq-file
+  iq-file-hashtable iq-file-lines port->datums string->datum string->datums)
 
-  (define* (iq-file-lines path #:optional (env (current-module)))
-    "string -> ((line-expressions ...) ...)
-     like iq-file but keep the expressions of lines in separate lists"
-    (eval
-      (list (q quasiquote)
-        (remove null? (map string->datums (call-with-input-file path port->lines))))
-      env))
+(define sph-lang-scheme "scheme parsing helpers")
 
-  (define (iq-file-hashtable path)
-    "string -> list
-     read file like iq-file and then convert the resulting list to an association list
-     by interpreting elements as key and value alternatingly"
-    (tree-map-lists-self (compose ht-from-alist list->alist) (iq-file path)))
+(define* (iq-file path #:optional (env (current-module)))
+  "string -> list
+   \"implicitly quasiquoted\".
+   read all scheme expressions from file like elements of a quasiquoted
+   list (quasiquote (file-content-expression ...)).
+   unquote can be used and will be evaluated.
+   example use case: configuration files"
+  (eval (list (q quasiquote) (file->datums path)) env))
 
-  (define* (string->datum a #:optional (reader read))
-    "get the first scheme expression from a string" (call-with-input-string a reader))
+(define* (iq-file-lines path #:optional (env (current-module)))
+  "string -> ((line-expressions ...) ...)
+   like iq-file but keep the expressions of lines in separate lists"
+  (eval
+    (list (q quasiquote)
+      (remove null? (map string->datums (call-with-input-file path port->lines))))
+    env))
 
-  (define* (string->datums a #:optional (reader read))
-    "string -> list
-     get all scheme expression from a string"
-    (let (a (open-input-string a))
-      (let loop () (let (b (reader a)) (if (eof-object? b) (list) (pair b (loop)))))))
+(define (iq-file-hashtable path)
+  "string -> list
+   read file like iq-file and then convert the resulting list to an association list
+   by interpreting elements as key and value alternatingly"
+  (tree-map-lists-self (compose ht-from-alist list->alist) (iq-file path)))
 
-  (define* (port->datums port #:optional (get-datum get-datum))
-    "string procedure:reader -> list
-     read all scheme datums from a port"
-    (let loop ((a (get-datum port))) (if (eof-object? a) (list) (pair a (loop (get-datum port))))))
+(define* (string->datum a #:optional (reader read)) "get the first scheme expression from a string"
+  (call-with-input-string a reader))
 
-  (define* (file->datums path #:optional (get-datum get-datum))
-    "string procedure:reader -> list
-     read all scheme datums of a file specified by path"
-    (call-with-input-file path (l (port) (port->datums port get-datum)))))
+(define* (string->datums a #:optional (reader read))
+  "string -> list
+   get all scheme expression from a string"
+  (let (a (open-input-string a))
+    (let loop () (let (b (reader a)) (if (eof-object? b) (list) (pair b (loop)))))))
+
+(define* (port->datums port #:optional (get-datum get-datum))
+  "string procedure:reader -> list
+   read all scheme datums from a port"
+  (let loop ((a (get-datum port))) (if (eof-object? a) (list) (pair a (loop (get-datum port))))))
+
+(define* (file->datums path #:optional (get-datum get-datum))
+  "string procedure:reader -> list
+   read all scheme datums of a file specified by path"
+  (call-with-input-file path (l (port) (port->datums port get-datum))))

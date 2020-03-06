@@ -1,73 +1,64 @@
-(library (sph lang scm-format)
-  (export
-    ascend-prefix->format-f
-    default-format-ascend
-    descend-prefix->format-f
-    scm-format
-    scm-format-default-config
-    scm-format-list->string
-    scm-format-port
-    sph-lang-scm-format-description)
-  (import
+(define-module  (sph lang scm-format))
+
+  (use-modules
     (ice-9 streams)
     (rnrs bytevectors)
     (sph)
     (sph hashtable)
     (sph lang scm-format format)
     (sph lang scm-format transform)
-    (sph system reader)
     (sph tree)
-    (only (guile)
-      inf
-      object->string
-      write
-      array-type
-      string-join)
-    (only (sph list) map-integers)
-    (only (sph string)
+  ((srfi srfi-1) #:select (any))
+
+  ((sph list)  #:select (map-integers))
+  ((sph string) #:select (
       any->string
       any->string-write*
-      string-multiply))
+      string-multiply)))
+
 
   (define sph-lang-scm-format-description "format scheme code")
   (define default-format-ascend format-application)
 
-  (define-as scm-format-default-config ht-create-symbol-q
-    format
-    (ht-create-symbol-q indent-string (string-multiply " " 2)
-      max-chars-per-line 100
-      max-exprs-per-line-start 3
-      max-exprs-per-line-middle 2
-      max-exprs-per-line-end (inf)
-      use-read-syntax-quote #f
-      docstring-offset-doublequote #t
-      multiple-leading-parenthesis-spacing #t
-      toplevel-vertical-spacing 1 toplevel-vertical-spacing-oneline 0)
-    transform
-    (ht-create-symbol-q sort-export #t
-      sort-import #t sort-definitions #f separate-unexported-definitions #f))
+  (define scm-format-default-config
+    (ht-create-symbol-q
+      format
+      (ht-create-symbol-q indent-string (string-multiply " " 2)
+        max-chars-per-line 100
+        max-exprs-per-line-start 3
+        max-exprs-per-line-middle 2
+        max-exprs-per-line-end (inf)
+        use-read-syntax-quote #f
+        docstring-offset-doublequote #t
+        multiple-leading-parenthesis-spacing #t
+        toplevel-vertical-spacing 1 toplevel-vertical-spacing-oneline 0)
+      transform
+      (ht-create-symbol-q sort-export #t
+        sort-import #t sort-definitions #f separate-unexported-definitions #f)))
 
-  (define-as descend-prefix->format-f ht-create-symbol-q
-    case (format-list-f 2 1 1)
-    cond (format-list-f 1 1 1)
-    define format-lambda
-    define* format-lambda
-    define-syntax-case format-lambda
-    define-syntax-rule format-lambda
-    define-test-module format-test-module
-    hash-bang format-hash-bang
-    lambda format-lambda
-    let format-let
-    let* format-let
-    let-macro format-list-assoc
-    library format-library
-    quasiquote format-quasiquote
-    quasisyntax format-quasisyntax
-    quote format-quote
-    range-comment format-range-comment
-    scsh-block-comment format-scsh-block-comment
-    semicolon-comment format-semicolon-comment
-    syntax format-syntax unquote format-unquote unsyntax format-unsyntax)
+  (define descend-prefix->format-f
+    (ht-create-symbol-q
+      case (format-list-f 2 1 1)
+      cond (format-list-f 1 1 1)
+      define format-lambda
+      define* format-lambda
+      define-syntax-case format-lambda
+      define-syntax-rule format-lambda
+      define-test-module format-test-module
+      hash-bang format-hash-bang
+      lambda format-lambda
+      l format-lambda
+      let format-let
+      let* format-let
+      let-macro format-list-assoc
+      library format-library
+      quasiquote format-quasiquote
+      quasisyntax format-quasisyntax
+      quote format-quote
+      range-comment format-range-comment
+      scsh-block-comment format-scsh-block-comment
+      semicolon-comment format-semicolon-comment
+      syntax format-syntax unquote format-unquote unsyntax format-unsyntax))
 
   (define ascend-prefix->format-f (ht-create))
 
@@ -139,4 +130,14 @@
 
   (define* (scm-format-port a #:optional config) "port [r6rs-hashtable] -> string"
     (let (config (if config (config-add-defaults config) scm-format-default-config))
-      (primitive-scm-format (stream->list (port->stream a read-for-formatting)) 0 config))))
+      (primitive-scm-format (stream->list (port->stream a read)) 0 config)))
+
+(export
+    ascend-prefix->format-f
+    default-format-ascend
+    descend-prefix->format-f
+    scm-format
+    scm-format-default-config
+    scm-format-list->string
+    scm-format-port
+    sph-lang-scm-format-description)

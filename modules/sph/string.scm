@@ -9,70 +9,15 @@
 ; GNU General Public License for more details.
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
-
-(library (sph string)
-  (export
-    any->string
-    any->string-display
-    any->string-pretty-print
-    any->string-write
-    any->string-write*
-    list->string-columns
-    list-string-append-each
-    parenthesise
-    parenthesised?
-    regexp-match-replace
-    regexp-replace
-    sph-string-description
-    string-ascii->utf8
-    string-brackets-closed?
-    string-brackets-unclosed-count
-    string-camelcase->dash
-    string-camelcase->underscore
-    string-case
-    string-compress-space
-    string-contains-all?
-    string-contains-char?
-    string-contains-some?
-    string-downcase-first
-    string-drop-prefix
-    string-drop-prefix-if-exists
-    string-drop-suffix
-    string-drop-suffix-if-exists
-    string-each
-    string-enclose
-    string-equal?
-    string-fill-left
-    string-fill-right
-    string-indices
-    string-indices-char
-    string-join-tree
-    string-last-index
-    string-longest-prefix
-    string-lowercase?
-    string-matches-any-regexp?
-    string-matches-every-regexp?
-    string-multiply
-    string-numeric?
-    string-octet-length
-    string-quote
-    string-replace-char
-    string-replace-chars
-    string-replace-string
-    string-replace-strings
-    string-skip-string
-    string-slice-at-words
-    string-split-regexp
-    string-trim-string
-    symbol?->string)
-  (import
-    (guile)
+(define-module (sph string))
+  (use-modules
     (ice-9 pretty-print)
     (ice-9 regex)
-    (rnrs base)
     (sph)
-    (only (rnrs bytevectors) u8-list->bytevector utf8->string)
-    (only (sph list) fold-multiple))
+    (srfi srfi-1)
+  ((rnrs bytevectors) #:select ( u8-list->bytevector utf8->string))
+  ((sph list) #:select (  fold-multiple)))
+
 
   (define (string-camelcase-replace a replace-proc)
     "string {match-structure -> replacement} -> string"
@@ -467,4 +412,60 @@
   (define (symbol?->string a)
     "any -> any
      converts \"a\" to string only if it is a symbol, otherwise results in \"a\""
-    (if (symbol? a) (symbol->string a) a)))
+    (if (symbol? a) (symbol->string a) a))
+
+
+(export
+    any->string
+    any->string-display
+    any->string-pretty-print
+    any->string-write
+    any->string-write*
+    list->string-columns
+    list-string-append-each
+    parenthesise
+    parenthesised?
+    regexp-match-replace
+    regexp-replace
+    sph-string-description
+    string-ascii->utf8
+    string-brackets-closed?
+    string-brackets-unclosed-count
+    string-camelcase->dash
+    string-camelcase->underscore
+    string-case
+    string-compress-space
+    string-contains-all?
+    string-contains-char?
+    string-contains-some?
+    string-downcase-first
+    string-drop-prefix
+    string-drop-prefix-if-exists
+    string-drop-suffix
+    string-drop-suffix-if-exists
+    string-each
+    string-enclose
+    string-equal?
+    string-fill-left
+    string-fill-right
+    string-indices
+    string-indices-char
+    string-join-tree
+    string-last-index
+    string-longest-prefix
+    string-lowercase?
+    string-matches-any-regexp?
+    string-matches-every-regexp?
+    string-multiply
+    string-numeric?
+    string-octet-length
+    string-quote
+    string-replace-char
+    string-replace-chars
+    string-replace-string
+    string-replace-strings
+    string-skip-string
+    string-slice-at-words
+    string-split-regexp
+    string-trim-string
+    symbol?->string)

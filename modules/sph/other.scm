@@ -78,6 +78,8 @@
     (sph vector)
     (only (rnrs base) set!))
 
+
+
   (define sph-other-description
     "miscellaneous.
      # syntax
@@ -93,6 +95,23 @@
      ## values->list :: producer
      converts multiple values to a list.
      example: (values->list (values 1 2 3)) -> (1 2 3)")
+
+  (define* (display-line a #:optional (port (current-output-port)))
+    "any [port] -> unspecified
+     like \"display\" but emits a newline at the end"
+    (display a port) (newline port))
+(define-syntax-case (compose-s name expr ...) s
+    (let (name-datum (syntax->datum (syntax name)))
+      (if (list? name-datum)
+        (let (name-datum (reverse name-datum))
+          (datum->syntax s
+            (fold list (pair (first name-datum) (syntax->datum (syntax (expr ...))))
+              (tail name-datum))))
+        (syntax (name expr ...)))))
+
+  (define-syntax-rules define-as
+    ((name (wrap-name ...) expr ...) (define name (compose-s (wrap-name ...) expr ...)))
+    ((name wrap-name expr ...) (define name (wrap-name expr ...))))
 
   (define (cusum a . b)
     ; copied from (sph math) to avoid circular dependency

@@ -10,8 +10,16 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-(library (sph list)
-  (export
+(define-module (sph list))
+
+(use-modules
+    (ice-9 match)
+    (sph)
+    (srfi srfi-31)
+    (srfi srfi-1)
+  ((rnrs sorting) #:select (list-sort)))
+
+(export
     any->list
     compact
     complement
@@ -133,30 +141,11 @@
     take*
     true->list
     union
-    (rename (lset-adjoin list-set-add)
-      (list-tail list-tail-ref)
-      (lset-union list-set-union)
-      (lset-difference list-set-difference)
-      (lset<= list-set-subset?)))
-  (import
-    (ice-9 match)
-    (sph)
-    (srfi srfi-31)
-    (except (rnrs base) map)
-    (except (srfi srfi-1) map)
-    (only (guile)
-      filter
-      inf
-      identity
-      acons
-      generate-temporaries
-      map
-      memv
-      memq
-      member
-      negate
-      syntax-case)
-    (only (rnrs sorting) list-sort))
+       (lset-adjoin . list-set-add)
+      (list-tail . list-tail-ref)
+      (lset-union . list-set-union)
+  (lset-difference . list-set-difference)
+  (lset<= . list-set-subset?))
 
   ; this library currently also contains bindings for non-list pairs
 
@@ -497,10 +486,13 @@
     "procedure:{any -> any/false} procedure:{list -> any} list -> any
      fold over each list of elements that consecutively matched filter-f (utilising the \"span\" procedure)"
     (let loop ((rest a) (r (list)))
-      (if (null? rest) (reverse r)
-        (let-values (((consecutive rest) (span filter-f rest)))
+    (if (null? rest) (reverse r)
+      (apply-values (l (consecutive rest)
           (if (null? consecutive) (loop (tail rest) (pair (first rest) r))
-            (loop rest (f consecutive r)))))))
+            (loop rest (f consecutive r)))
+          )
+        (span filter-f rest))
+ )))
 
   (define (fold-multiple f a . custom-state-values)
     "procedure:{any:list-element any:state-value ... -> (any:state-value)} list any:state-value ... -> list:state-values
@@ -1047,4 +1039,4 @@
     "list -> list
      return the tail of list or null if there is no tail which is
      the case when list is null"
-    (if (null? a) a (tail a))))
+    (if (null? a) a (tail a)))

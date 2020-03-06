@@ -1,4 +1,4 @@
-; Copyright (C) 2010-2019 sph <sph@posteo.eu>
+; Copyright (C) 2010-2020 sph <sph@posteo.eu>
 ; This program is free software; you can redistribute it and/or modify it
 ; under the terms of the GNU General Public License as published by
 ; the Free Software Foundation; either version 3 of the License, or
@@ -10,8 +10,9 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-(library (sph tree)
-  (export
+(define-module (sph tree))
+
+(export
     denoted-tree->prefix-tree
     denoted-tree->tree
     denoted-tree->tree-inner
@@ -77,26 +78,26 @@
     tree-transform*
     tree-transform-ascend
     tree-transform-descend-identity)
-  (import
+
+(use-modules
     (sph)
-    (only (guile)
-      1+
-      compose
-      identity
-      negate
-      string-join)
-    (only (sph alist) alist-ref)
-    (only (sph list)
+
+  ((sph alist) #:select (alist-ref))
+  ((sph list) #:select (
       contains?
       fold-integers
       flatten
       fold-multiple
-      fold-segments)
-    (only (srfi srfi-1)
+      fold-segments))
+  ((srfi srfi-1) #:select (
       append-map
       find
+      any fold
+      every
       fold-right
-      last))
+      last)))
+
+
 
   (define sph-tree-description
     "process tree-like list structures.
@@ -685,4 +686,4 @@
   (define* (denoted-tree->tree a #:optional (depth-start 0))
     "list:((integer any ...) ...) [integer] -> list
      convert a tree representation like this ((0 a) (1 b) (2 c) (1 d)) to this (a (b (c) d))"
-    (denoted-tree->tree-inner a depth-start r-2 r (pair r-2 r))))
+    (denoted-tree->tree-inner a depth-start r-2 r (pair r-2 r)))

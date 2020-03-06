@@ -1,30 +1,13 @@
-; (sph cli) - creating command-line interfaces
-; written for the guile scheme interpreter
-; Copyright (C) 2010-2018 sph <sph@posteo.eu>
-; This program is free software; you can redistribute it and/or modify it
-; under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 3 of the License, or
-; (at your option) any later version.
-; This program is distributed in the hope that it will be useful,
-; but WITHOUT ANY WARRANTY; without even the implied warranty of
-; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-; GNU General Public License for more details.
-; You should have received a copy of the GNU General Public License
-; along with this program; if not, see <http://www.gnu.org/licenses/>.
+(define-module (sph cli)
 
-(library (sph cli)
-  (export
-    cli-command-match
-    cli-create
-    cli-option-spec->list
-    sph-cli-description)
-  (import
-    (guile)
+  )
+
+  (use-modules
     (rnrs sorting)
     (sph)
     (sph alist)
     (srfi srfi-37)
-    (only (sph list)
+  ((sph list) #:select (
       contains?
       any->list
       list-prefix?
@@ -33,15 +16,17 @@
       first-or-null
       containsv?
       fold-multiple
-      split-by-pattern)
-    (only (sph string) string-multiply any->string-write)
-    (only (srfi srfi-1)
+      split-by-pattern))
+  ((sph string) #:select (string-multiply any->string-write))
+  ((srfi srfi-1) #:select (
       drop-right
+      any
+      fold
       drop
       drop-while
       remove
       append-map
-      partition))
+      partition)))
 
   (define sph-cli-description "create command-line interfaces")
   (define help-text-line-description-delimiter "  ")
@@ -197,7 +182,6 @@
             (or a (config->parameters-text config options)))
           (if (and text (not (string-null? text)))
             (string-append "\ndescription" (format-help-description text indent)) "")
-          ;"options" can not be empty since it at least includes the "--help" option leading to this message
           "\noptions"
           (string-join-lines-with-indent
             (options->help-text-lines (remove unnamed-option? options)) indent)
@@ -441,4 +425,10 @@
                     (if unsupported-option-handler
                       (nullary (catch (q unsupported-option) cli unsupported-option-handler)) cli)))
                 cli)))
-          (command-dispatch& command-handler arguments commands command-options no-command-cli))))))
+          (command-dispatch& command-handler arguments commands command-options no-command-cli)))))
+
+(export
+    cli-command-match
+    cli-create
+    cli-option-spec->list
+    sph-cli-description)
