@@ -5,7 +5,7 @@
   ((rnrs sorting) #:select (list-sort)) ((sph alist) #:select (alist-q))
   ( (sph list) #:select
     (consecutive count-value map-integers map-segments map-with-index list-sort-with-accessor))
-  (srfi srfi-1) (srfi srfi-43) ((rnrs base) #:select (mod)))
+  (srfi srfi-1) ((rnrs base) #:select (mod)))
 
 (export absolute-difference absolute-threshold
   angle-between arithmetic-mean
@@ -309,8 +309,8 @@
   (cond
     ((equal? p1 p2) p1)
     ((or (= 0 rx) (= 0 ry)) (vector-linearly-interpolate n p1 p2))
-    (else
-      "following \"conversion from endpoint to center parameterization\" at\n            http://www.w3.org/TR/SVG/implnote.html#ArcConversionEndpointToCenter\n            step 1: compute transformed point"
+    (else "following \"conversion from endpoint to center parameterization\" at"
+      "http://www.w3.org/TR/SVG/implnote.html#ArcConversionEndpointToCenter"
       (let*
         ( (rx (abs rx)) (ry (abs ry)) (dx (/ (- (vector-first p1) (vector-first p2)) 2))
           (dy (/ (- (vector-second p1) (vector-second p2)) 2))
