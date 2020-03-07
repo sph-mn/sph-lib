@@ -2,7 +2,8 @@
 
 (use-modules (ice-9 rdelim) (rnrs io ports)
   (sph) (sph time)
-  (srfi srfi-19) ((ice-9 regex) #:select (match:substring regexp-substitute/global))
+  (srfi srfi-19) (srfi srfi-1)
+  ((ice-9 regex) #:select (match:substring regexp-substitute/global))
   ((sph list) #:select (map-slice)) ((sph module) #:select (import-unexported))
   ((sph string) #:select (any->string)))
 
