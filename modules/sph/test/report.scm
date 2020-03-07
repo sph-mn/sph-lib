@@ -3,8 +3,7 @@
 (use-modules (ice-9 match) (sph)
   (sph alist) (sph hashtable)
   (sph string) (sph test base)
-  ((sph other) #:select (ignore each-integer boolean->integer))
-  ((srfi srfi-1) #:select (filter-map fold)))
+  ((sph other) #:select (ignore each-integer boolean->integer)) (srfi srfi-1))
 
 (export test-report test-report-compact
   test-report-null test-reporter-get test-reporter-names test-reporters-default)
@@ -74,7 +73,8 @@
                 (c group rest (default-if-not-list (apply proc-group-extended group state) state))))
             (_ (c group a state))))))
     (l (result proc proc-group-extended . custom-state)
-      "test-result procedure ->\n        calls proc for each test-result record, memoizing nested group-names"
+      "test-result procedure ->
+       calls proc for each test-result record, memoizing nested group-names"
       (let loop ((e result) (group (list)) (state custom-state))
         (if (list? e)
           (with-group e group

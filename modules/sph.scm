@@ -1,16 +1,17 @@
 (define-module (sph))
 
-(use-modules (ice-9 pretty-print) ((ice-9 optargs) #:select (lambda* define* let-keywords))
-  ((srfi srfi-2) #:select (and-let*)))
+(use-modules (srfi srfi-2) (ice-9 pretty-print)
+  ((ice-9 optargs) #:select (lambda* define* let-keywords)))
 
 (export! let first)
+(re-export and-let* lambda* define* let-keywords)
 
 (export sph-description define-syntax-rules
   define-syntax-case define-syntax-cases
-  l pair
-  pairs tail
-  each debug-log
-  null l* q qq list-q list-qq apply-values quote-odd quote-even quote-duplicate nullary)
+  display-line l
+  pair pairs
+  tail each
+  debug-log null l* q qq list-q list-qq apply-values quote-odd quote-even quote-duplicate nullary)
 
 (read-disable (quote square-brackets))
 
@@ -117,3 +118,8 @@
   "any-1 any-n ... -> any-1
    writes all arguments to standard output and returns the first argument"
   (pretty-print (cons (q --) a)) (first a))
+
+(define* (display-line a #:optional (port (current-output-port)))
+  "any [port] -> unspecified
+   like \"display\" but emits a newline at the end"
+  (display a port) (newline port))

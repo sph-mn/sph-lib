@@ -1,6 +1,6 @@
 (define-module (sph lang plcss))
 
-(use-modules (sph) ((sph list) #:select (flatten map-slice))
+(use-modules (srfi srfi-1) (sph) ((sph list) #:select (flatten map-slice))
   ((sph string) #:select (any->string)) ((srfi srfi-1) #:select (break)))
 
 (export css css-style

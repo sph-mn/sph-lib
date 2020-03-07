@@ -1,29 +1,29 @@
 (define-module (sph alist))
+(use-modules (sph) ((sph list) #:select (contains? fold-multiple)) (srfi srfi-1))
+(re-export alist-delete)
 
 (export alist alist->list
   alist-bind alist-bind-and*
   alist-cond alist-contains
   alist-containsq alist-containsv
-  alist-delete alist-delete-multiple
-  alist-keys alist-keys-map
-  alist-map alist-merge
-  alist-prepend alist-q
-  alist-ref alist-ref-q
-  alist-select alist-select-apply
-  alist-select-q alist-select-q-apply
-  alist-set alist-set!
-  alist-set-multiple alist-set-multiple-q
-  alist-update alist-update-multiple
-  alist-update-multiple-q alist-values
-  alist? alistq-ref
-  alistq-select alists-ref
-  alists-ref-p alists-ref-q
-  alists-set! alistv-ref
-  alistv-select bindings->alist
-  keyword-list->alist+keyless list->alist
-  list->group-alist list-alist? set-alist-bindings! sph-alist-description)
+  alist-delete-multiple alist-keys
+  alist-keys-map alist-map
+  alist-merge alist-prepend
+  alist-q alist-ref
+  alist-ref-q alist-select
+  alist-select-apply alist-select-q
+  alist-select-q-apply alist-set
+  alist-set! alist-set-multiple
+  alist-set-multiple-q alist-update
+  alist-update-multiple alist-update-multiple-q
+  alist-values alist?
+  alistq-ref alistq-select
+  alists-ref alists-ref-p
+  alists-ref-q alists-set!
+  alistv-ref alistv-select
+  bindings->alist keyword-list->alist+keyless
+  list->alist list->group-alist list-alist? set-alist-bindings! sph-alist-description)
 
-(use-modules (sph) ((sph list) #:select (contains? fold-multiple)) (srfi srfi-1))
 (define alist-prepend acons)
 (define alistq-ref assq-ref)
 (define alistv-ref assv-ref)
@@ -131,8 +131,8 @@
 
 (define (alist-merge a b)
   "list list -> list
-   create a new alist with the associations of both alists, preferring entries of "b""
-  (append (filter (l (a) (not (alist-ref b (first a)))) a) b))
+   create a new alist with the associations of both alists, preferring entries of "
+  b "" (append (filter (l (a) (not (alist-ref b (first a)))) a) b))
 
 (define (alist-set-multiple a . key/value)
   "list [any:key any:value] ...

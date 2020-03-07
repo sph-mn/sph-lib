@@ -14,10 +14,10 @@
   test-execute-modules-by-prefix test-execute-procedures
   test-execute-procedures-lambda test-lambda
   test-list test-module-name-from-files
-  test-result test-settings-default
+  test-settings-default
   test-settings-default-custom test-settings-default-custom-by-list test-success?)
 
-(re-export test-create-result test-result-success?)
+(re-export test-create-result test-result-success? test-result)
 
 (define sph-test-description
   "automated code testing with composable modules.

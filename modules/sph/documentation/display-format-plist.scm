@@ -1,20 +1,13 @@
-(library (sph documentation display-format-plist)
-  (export
-    display-format-plist)
-  (import
-    (guile)
-    (rnrs base)
-    (sph)
-    (sph alist)
-    (sph module binding-info)
-    (sph documentation))
+(define-module (sph documentation display-format-plist))
+(use-modules (sph) (sph alist) (sph module binding-info) (sph documentation))
+(export display-format-plist)
 
-  (define sph-documentation-display-format-plist
-    "display format for (sph documentation).
-     format that creates a list with entries like this: (dg-any-read (signature _ [_] dg-selection [count] -> error/(vector ...)) (description ) (type procedure))")
+(define sph-documentation-display-format-plist
+  "display format for (sph documentation).
+   format that creates a list with entries like this: (dg-any-read (signature _ [_] dg-selection [count] -> error/(vector ...)) (description ) (type procedure))")
 
-  (define-as display-format-plist alist-q
-    format-arguments default-format-arguments
+(define display-format-plist
+  (alist-q format-arguments default-format-arguments
     format-binding-info
     (l (bi formatted-arguments)
       (pair (symbol->string (bi-name bi))
@@ -31,7 +24,7 @@
                     (list (list (q signature) formatted-arguments))))
                 (if (or (not text) (string-null? text)) null (list (list (q description) text))))))
           (list (list (q type) (bi-type bi))))))
-    format-module-documentation (l (module-name md) md) format-modules-documentation (l (mds) mds))
+    format-module-documentation (l (module-name md) md) format-modules-documentation (l (mds) mds)))
 
-  (set! documentation-display-formats
-    (pair (pair (q plist) display-format-plist) documentation-display-formats)))
+(set! documentation-display-formats
+  (pair (pair (q plist) display-format-plist) documentation-display-formats))

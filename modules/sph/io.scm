@@ -23,7 +23,7 @@
   socket-protocol-family->address-family sph-io-description
   string->file temp-file-port temp-file-port->file)
 
-(define sph-io-other-description
+(define sph-io-description
   "port and file input/output.
    part of (sph io), which additionally exports (rnrs io ports) and (rnrs io simple)")
 
@@ -226,7 +226,7 @@
   (let (table-init (map (l (e) (vector 0 (- (string-length e) 1) e)) strings))
     (l (port)
       "port (string ...) -> (string:before-string . matched-string)
-      reads from port until any of the given strings has matched"
+       reads from port until any of the given strings has matched"
       (let loop ((char (read-char port)) (before-chars (list)) (table table-init))
         (if (eof-object? char) #f
           (let (match/table (table-match-or-update char table))

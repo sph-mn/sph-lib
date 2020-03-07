@@ -1,26 +1,19 @@
-(library (sph documentation display-format-itpn)
-  (export
-    default-format-arguments
-    display-format-itpn
-    sph-documentation-display-format-itpn-description)
-  (import
-    (guile)
-    (ice-9 peg)
-    (sph)
-    (sph alist)
-    (sph documentation)
-    (sph lang parser type-signature)
-    (sph list)
-    (sph module binding-info)
-    (sph string)
-    (except (srfi srfi-1) map)
-    (only (ice-9 regex) regexp-substitute/global))
+(define-module (sph documentation display-format-itpn))
 
-  (define sph-documentation-display-format-itpn-description "plaintext with indent for subsections")
-  (define itpn-indent (string #\space #\space))
+(use-modules (ice-9 peg) (sph)
+  (sph alist) (sph documentation)
+  (sph lang parser type-signature) (sph list)
+  (sph module binding-info) (sph string)
+  (srfi srfi-1) ((ice-9 regex) #:select (regexp-substitute/global)))
 
-  (define-as display-format-itpn alist-q
-    format-arguments default-format-arguments
+(export default-format-arguments display-format-itpn
+  sph-documentation-display-format-itpn-description)
+
+(define sph-documentation-display-format-itpn-description "plaintext with indent for subsections")
+(define itpn-indent (string #\space #\space))
+
+(define display-format-itpn
+  (alist-q format-arguments default-format-arguments
     format-binding-info
     (l (bi formatted-arguments) "vector:record string -> string"
       (string-append (symbol->string (bi-name bi)) "\n"
@@ -38,7 +31,7 @@
         itpn-indent "type: " (symbol->string (bi-type bi))))
     format-module-documentation
     (l (module-name md) "any (string ...) -> string" (string-join md "\n"))
-    format-modules-documentation (l (mds) "(string ...) -> string" (apply string-append mds)))
+    format-modules-documentation (l (mds) "(string ...) -> string" (apply string-append mds))))
 
-  (set! documentation-display-formats
-    (pair (pair (q itpn) display-format-itpn) documentation-display-formats)))
+(set! documentation-display-formats
+  (pair (pair (q itpn) display-format-itpn) documentation-display-formats))

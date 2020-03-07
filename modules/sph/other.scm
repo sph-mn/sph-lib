@@ -52,11 +52,6 @@
      list procedure:{any ... -> any} -> any
      like if-pass but uses apply to use the contents of \"a\", which should be a list in the true case, as arguments to proc")
 
-(define* (display-line a #:optional (port (current-output-port)))
-  "any [port] -> unspecified
-   like \"display\" but emits a newline at the end"
-  (display a port) (newline port))
-
 (define-syntax-case (compose-s name expr ...) s
   (let (name-datum (syntax->datum (syntax name)))
     (if (list? name-datum)

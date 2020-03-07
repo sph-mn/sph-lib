@@ -8,6 +8,7 @@
   ((sph string) #:select (string-multiply any->string-write))
   ((srfi srfi-1) #:select (drop-right any fold drop drop-while remove append-map partition)))
 
+(export cli-create cli-command-match cli-option-spec->list sph-cli-description)
 (define sph-cli-description "create command-line interfaces")
 (define help-text-line-description-delimiter "  ")
 (define indent "  ")
@@ -334,6 +335,10 @@
     (if (eqv? (q undefined) v) default-unsupported-option-handler (and (procedure? v) v))))
 
 (define (cli-create . config)
+  "without this wrapper, cli-create is bound to command-dispatch& inside command-dispatch&"
+  (apply cli-create-original config))
+
+(define (cli-create-original . config)
   "::
    #:version string/(integer ...)
    #:about string/procedure:{-> string}
@@ -402,5 +407,3 @@
                     (nullary (catch (q unsupported-option) cli unsupported-option-handler)) cli)))
               cli)))
         (command-dispatch& command-handler arguments commands command-options no-command-cli)))))
-
-(export cli-command-match cli-create cli-option-spec->list sph-cli-description)
