@@ -3,12 +3,14 @@
 (use-modules (ice-9 rdelim) (rnrs io ports)
   (sph) (sph hashtable) (sph module) (srfi srfi-41) ((sph other) #:select (identity-if)))
 
+(export! port->stream)
+
 (export sph-stream-description stream-each
   stream-first stream-tail
   stream-page stream-fold-right-multiple
   stream-any stream-first-or-null
   stream-deduplicate port->buffered-octet-stream
-  port->line-stream port->delimited-stream port->stream file->stream)
+  port->line-stream port->delimited-stream file->stream)
 
 (define sph-stream-description "srfi-41 stream helpers")
 (define stream-each stream-for-each)
