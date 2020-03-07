@@ -16,8 +16,7 @@
 (read-disable (quote square-brackets))
 
 (define sph-description
-  "bindings that are fundamental to all sph libraries.
-   exports (rnrs base) except set!. if you need set!, import it with (import (only (rnrs base) set!))
+  "few bindings that are used in all sph libraries.
    # syntax
    define-syntax-case :: (name pattern ...) syntax-name expansion
      removes possibility to define keywords
