@@ -1,4 +1,4 @@
-(define-module (sph module) #:declarative? #f)
+(define-module (sph module))
 
 (use-modules (ice-9 ftw) (srfi srfi-1)
   (srfi srfi-2) (ice-9 match)
