@@ -1,9 +1,10 @@
 (define-module (sph other))
 
-(use-modules (srfi srfi-1) ((rnrs exceptions) #:select (guard)) (ice-9 pretty-print)
-  (ice-9 rdelim) (ice-9 regex)
-  (rnrs bytevectors) (rnrs io ports)
-  (rnrs sorting) (sph) (sph hashtable) (sph list) (sph math) (sph number) (sph string) (sph vector))
+(use-modules (srfi srfi-1) ((rnrs exceptions) #:select (guard))
+  (ice-9 pretty-print) (ice-9 rdelim)
+  (ice-9 regex) (rnrs bytevectors)
+  (rnrs io ports) (rnrs sorting)
+  (sph) (sph hashtable) (sph list) (sph math) (sph number) (sph string) (sph vector))
 
 (export begin-first boolean->integer
   boolean-true? call-at-approximated-interval
@@ -32,18 +33,25 @@
 (define sph-other-description
   "miscellaneous.
    # syntax
-   ## begin-first :: result expression ...
-   like begin but returns the result of the first expression instead of the last one.
-   ## identity-if :: result-if-true else ...
-   give the result of result-if-true, otherwise execute else
-   ## procedure-cond :: a (predicate handler) ... else
-   similar to \"cond\" but with procedures for predicate and handler.
-   passes the result to predicate, and if it evaluates to true then it passes the result to handler and the result
-   will be the result of handler. if predicate evaluates to false, the next predicate is checked.
-   if no predicate matches, the result of procedure-cond is the result of the last expression
-   ## values->list :: producer
-   converts multiple values to a list.
-   example: (values->list (values 1 2 3)) -> (1 2 3)
+   define-as
+     example: (define-as list 1 2 3)
+     example: (define-as (quasiquote list) 1 (unquote 3))
+   compose-s
+     (compose-s a (list 1 2)) -> (a (list 1 2))
+     (compose-s (a b) (list 1 2)) -> (a (b (list 1 2)))
+     it does not fail in the case (_ (quasiquote list) expr ...)
+   begin-first :: result expression ...
+     like begin but returns the result of the first expression instead of the last one
+   identity-if :: result-if-true else ...
+     give the result of result-if-true, otherwise execute else
+   procedure-cond :: a (predicate handler) ... else
+     similar to \"cond\" but with procedures for predicate and handler.
+     passes the result to predicate, and if it evaluates to true then it passes the result to handler and the result
+     will be the result of handler. if predicate evaluates to false, the next predicate is checked.
+     if no predicate matches, the result of procedure-cond is the result of the last expression
+   values->list :: producer
+     converts multiple values to a list.
+     example: (values->list (values 1 2 3)) -> (1 2 3)
    if-pass
      any procedure:{any -> any} -> any
      call proc with \"a\" if \"a\" is a true value, otherwise return false or evaluate else.
@@ -339,7 +347,13 @@
 
 (define* (random-discrete-f probabilities #:optional (state *random-state*))
   "(real ...) [random-state] -> procedure:{-> real}
-   return a function that when called returns an index of a value in probabilities.
+   return a function that when called returns an index of a ;;; note: source file /usr/share/guile/site/sph/other.scm
+;;;       newer than compiled /home/nonroot/.cache/guile/ccache/3.0-LE-8-4.2/home/nonroot/personal/projects/public/sph/sph-lib/modules/sph/other.scm.go
+;;; note: auto-compilation is enabled, set GUILE_AUTO_COMPILE=0
+;;;       or pass the --no-auto-compile argument to disable.
+;;; compiling /usr/share/guile/site/sph/other.scm
+;;; compiled /home/nonroot/.cache/guile/ccache/3.0-LE-8-4.2/home/nonroot/personal/projects/public/sph/sph-lib/modules/sph/other.scm.go
+value in probabilities.
    each index will be returned with a probability given by the value at the index.
    each value is a fraction of the sum of probabilities.
    for example, if the values sum to 100, each entry in probabilities is a percentage.

@@ -18,10 +18,15 @@
 (define sph-description
   "few bindings that are used in all sph libraries.
    # syntax
+   define-syntax-rules :: name ((pattern ...) expansion) ...
+     similar to define-syntax-rule but for multiple patterns
    define-syntax-case :: (name pattern ...) syntax-name expansion
+     similar to define-syntax-rule but for syntax-case
      removes possibility to define keywords
      removes possibility to use custom lambda for define-syntax
      removes possibility to define multiple clauses
+     example
+       (define-syntax-case (string-case a (condition expr ...) ...) s \"body\")
    quote-odd
      any ... -> list
      quotes each second argument starting with the first
@@ -38,18 +43,11 @@
      example 2
        (let ((a 1) (b 2) (c 3)) (quote-duplicate a b c))
        -> (list a 1 b 2 c 3)
-   define-as
-     example: (define-as list 1 2 3)
-     example: (define-as (quasiquote list) 1 (unquote 3))
-   compose-s
-     (compose-s a (list 1 2)) -> (a (list 1 2))
-     (compose-s (a b) (list 1 2)) -> (a (b (list 1 2)))
-     this does not fail in the case (_ (quasiquote list) expr ...)
    nullary
      create a procedure that accepts zero arguments and evaluates body when called.
      often used for thunks
    let
-     typical scheme let and named-let extended with a simplified syntax for binding just one variable
+     typical scheme let and named-let extended for making just one binding
      example: (let (a 3) a)
    list-q list-qq
      list-q :: any ...
