@@ -4,7 +4,8 @@
 
 (define sph-io-path-pipe-chain-description
   "call procedures with input/output arguments in a chained manner to allow data flow between them.
-   procedures can be configured to take paths or ports as arguments and the links are made compatible automatically")
+   procedures can be configured to take paths or ports as arguments and the links are made compatible automatically.
+   for example paths are temporarily created fifo pipes and ports are guile ports")
 
 (define path-pipe-chain
   (let-syntax
