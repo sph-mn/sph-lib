@@ -10,7 +10,7 @@
 (define sph-time-utc-description
   "utc related time calculations.
    utc uses leap seconds to ensure that (/ utc-seconds 86400) is the number of elapsed days.
-   future leap second inserts are unfortunately not predictable and so future tai times can not be calculated accurately, only day dependent dates")
+   future leap second inserts are unfortunately not predictable and so future tai times can not be calculated accurately")
 
 (define utc-nanoseconds-minute 60000000000)
 (define utc-nanoseconds-hour 3600000000000)

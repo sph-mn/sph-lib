@@ -77,8 +77,7 @@
       (if (null? line) r (pair (string-join (reverse line) " ") r)))
     (list) 0 0))
 
-(define-syntax-rule (map-recurse recurse a current-indent)
-  (map (l (e) (first (recurse e current-indent))) a))
+(define (map-recurse recurse a indent) (map (l (a) (first (recurse a indent))) a))
 
 (define (parenthesise-indented-list indent a)
   (string-append "(" a (if (string-suffix? "\n" a) (string-append indent ")") ")")))
@@ -110,26 +109,38 @@
       (or (= (if (null? r) max-exprs-per-line-start max-exprs-per-line-middle) line-expr-count)
         (> (+ line-length expr-length) max-chars-per-line)))))
 
+(define-syntax-rule
+  (line-full-max-exprs? result rest line-expr-count max-exprs-per-line-start max-exprs-per-line-end
+    max-exprs-per-line-middle)
+  (and (>= (length rest) max-exprs-per-line-end)
+    (= (if (null? result) max-exprs-per-line-start max-exprs-per-line-middle) line-expr-count)))
+
 (define (format-application-pair-fold-f config current-indent)
   "hashtable integer -> list
    cache config values and return a procedure to be called for each pair of a list
-   returned by format-application-prepare-exprs"
+   returned by format-application-prepare-exprs.
+   max-exprs-per-line-assoc keeps this number of expressions either on one line or each on a separate line"
   (ht-bind config
     (indent-string max-chars-per-line max-exprs-per-line-start
-      max-exprs-per-line-middle max-exprs-per-line-end)
+      max-exprs-per-line-middle max-exprs-per-line-end max-exprs-per-line-assoc)
     (let (indent-length (* current-indent (string-length indent-string)))
-      (l (rest r line line-expr-length line-expr-count)
+      (l (rest result line line-expr-length line-expr-count)
         (let* ((a (first rest)) (expr-length (first a)) (expr-string (tail a)))
           (if (string-contains expr-string "\n")
-            (handle-newline-subexpression rest expr-string line r)
+            (handle-newline-subexpression rest expr-string line result)
             (if
               (line-full? expr-length indent-length
                 line-expr-count line-expr-length
                 rest max-chars-per-line
-                max-exprs-per-line-end max-exprs-per-line-middle max-exprs-per-line-start r)
-              (list (if (null? line) r (pair (string-join (reverse line) " ") r))
-                (list expr-string) expr-length 1)
-              (list r (pair expr-string line)
+                max-exprs-per-line-end max-exprs-per-line-middle max-exprs-per-line-start result)
+              (list (if (null? line) result (pair (string-join (reverse line) " ") result))
+                (list expr-string) expr-length
+                (if
+                  (line-full-max-exprs? result rest
+                    line-expr-count max-exprs-per-line-start
+                    max-exprs-per-line-end max-exprs-per-line-middle)
+                  1 max-exprs-per-line-assoc))
+              (list result (pair expr-string line)
                 (+ line-expr-length expr-length) (+ 1 line-expr-count)))))))))
 
 (define (format-application a config current-indent)
@@ -137,11 +148,11 @@
    format the standard list application form. example (append a b)"
   (let* ((indent (create-indent config current-indent)) (line-spacing (string-append "\n" indent)))
     (apply
-      (l (r line . rest)
+      (l (result line . rest)
         (parenthesise-indented-list indent
           (string-join
             (add-multiple-leading-parenthesis-spacing config
-              (reverse (if (null? line) r (pair (string-join (reverse line) " ") r))))
+              (reverse (if (null? line) result (pair (string-join (reverse line) " ") result))))
             line-spacing)))
       (pair-fold-multiple (format-application-pair-fold-f config current-indent)
         (map
@@ -200,14 +211,13 @@
                 (format-list (map-recurse recurse formals current-indent) config
                   (+ 1 current-indent) (inf) 1 1)
                 formals)
-              (if (and (list? body) (not (null? body)))
+              (if (null? body) body
                 (if (string? (first body))
                   (pair
                     (format-docstring (first body) (ht-ref-q config docstring-offset-doublequote)
                       (ht-ref-q config indent-string) current-indent)
                     (map-recurse recurse (tail body) current-indent))
-                  (map-recurse recurse body current-indent))
-                body)))
+                  (map-recurse recurse body current-indent)))))
           (_ (tail a))))
       config current-indent
       3 (ht-ref config (q max-exprs-per-line-middle)) (ht-ref config (q max-exprs-per-line-end)))
@@ -286,6 +296,7 @@
 (define (format-unsyntax . a) (apply format-read-syntax-quote "#," a))
 
 (define (format-list a config current-indent start middle end)
+  "helper that customises config start/middle/end"
   (format-application a
     (ht-copy* config
       (l (a)
@@ -300,14 +311,7 @@
    return a function for descend-prefix->format-f that formats a list with the given start/mid/end expression distribution"
   (let ((start (inf-if-zero start)) (mid (inf-if-zero mid)) (end (inf-if-zero end)))
     (l (a recurse config indent)
-      (list
-        (format-application (map-recurse recurse a indent)
-          (ht-copy* config
-            (l (a)
-              (ht-set-multiple! a (q max-exprs-per-line-start)
-                start (q max-exprs-per-line-middle) mid (q max-exprs-per-line-end) end)))
-          indent)
-        #f))))
+      (list (format-list (map-recurse recurse a indent) config indent start mid end) #f))))
 
 (define (format-list-assoc a recurse config current-indent)
   (list
@@ -379,7 +383,8 @@
                 (l (index e) (if (= index index-last) e (string-remove-trailing-newline e))) a)
               (string-append (create-vertical-spacing* vertical-spacing) indent))))))
     (l (a indent vertical-spacing vertical-spacing-oneline)
-      "(string ...) string string string -> string\n        join expressions eventually with empty lines inbetween them"
+      "(string ...) string string string -> string
+       join expressions eventually with empty lines inbetween them"
       (if (null? a) ""
         (if (= 1 (length a)) (first a)
           (join-multiline (join-oneline a indent vertical-spacing-oneline) indent vertical-spacing))))))
