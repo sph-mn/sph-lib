@@ -1,6 +1,6 @@
 /* code for creating a guile extension as a shared library.
-  for features that can apparently not adequately be written in guile scheme,
-  for example child process creation */
+   for features that can apparently not adequately be written in guile scheme,
+   for example child process creation */
 /* set gnu source to include functions that arent part of the c standard (dirfd)
  */
 #define _GNU_SOURCE 1
@@ -17,178 +17,233 @@
 #ifndef OPEN_MAX
 #define OPEN_MAX 1024
 #endif
-#define imht_set_key_t int
-#define imht_set_can_contain_zero_p 0
-/* include imht-set to use for tracking file descriptors to keep after fork */
+/* include sph-sc-lib sph/set.c to use for tracking file descriptors to keep
+ * after fork */
+/* a macro that defines set data types and functions for arbitrary value types.
+ * compared to hashtable.c, this uses less than half the space and operations
+ * are faster (about 20% in first tests) linear probing for collision resolve
+ * sph-set-declare-type allows the null value (used for unset elements) to be
+ * part of the set except the null value, values are in .values starting from
+ * index 1 notnull is used at index 0 to check if the empty-value is included
+ * sph-set-declare-type-nonull does not allow the null value to be part of the
+ * set and should be a bit faster values are in .values starting from index 0
+ * null and notnull arguments are user provided so that they have same data type
+ * as other set elements primes from https://planetmath.org/goodhashtableprimes
+ * automatic resizing is not implemented */
 #include <inttypes.h>
 #include <stdlib.h>
-#ifndef imht_set_key_t
-#define imht_set_key_t uint64_t
-#endif
-#ifndef imht_set_can_contain_zero_p
-#define imht_set_can_contain_zero_p 1
-#endif
-#ifndef imht_set_size_factor
-#define imht_set_size_factor 2
-#endif
-uint16_t imht_set_primes[] = {
-    0,   3,   7,   13,  19,  29,  37,  43,  53,  61,  71,  79,  89,  101, 107,
-    113, 131, 139, 151, 163, 173, 181, 193, 199, 223, 229, 239, 251, 263, 271,
-    281, 293, 311, 317, 337, 349, 359, 373, 383, 397, 409, 421, 433, 443, 457,
-    463, 479, 491, 503, 521, 541, 557, 569, 577, 593, 601, 613, 619, 641, 647,
-    659, 673, 683, 701, 719, 733, 743, 757, 769, 787, 809, 821, 827, 839, 857,
-    863, 881, 887, 911, 929, 941, 953, 971, 983, 997};
-uint16_t *imht_set_primes_end = (imht_set_primes + 83);
-typedef struct {
-  size_t size;
-  imht_set_key_t *content;
-} imht_set_t;
-size_t imht_set_calculate_hash_table_size(size_t min_size) {
-  min_size = (imht_set_size_factor * min_size);
-  uint16_t *primes = imht_set_primes;
-  while ((primes < imht_set_primes_end)) {
-    if (min_size <= *primes) {
-      return ((*primes));
-    } else {
-      primes = (1 + primes);
-    };
-  };
-  if (min_size <= *primes) {
-    return ((*primes));
-  };
-  return ((1 | min_size));
-}
-uint8_t imht_set_create(size_t min_size, imht_set_t **result) {
-  *result = malloc((sizeof(imht_set_t)));
-  if (!*result) {
-    return (0);
-  };
-  min_size = imht_set_calculate_hash_table_size(min_size);
-  (*(*result)).content = calloc(min_size, (sizeof(imht_set_key_t)));
-  (*(*result)).size = min_size;
-  return (((*result)->content ? 1 : 0));
-}
-void imht_set_destroy(imht_set_t *a) {
-  if (a) {
-    free((a->content));
-    free(a);
-  };
-}
-#if imht_set_can_contain_zero_p
-#define imht_set_hash(value, hash_table)                                       \
-  (value ? (1 + (value % (hash_table.size - 1))) : 0)
-#else
-#define imht_set_hash(value, hash_table) (value % hash_table.size)
-#endif
-/** returns the address of the element in the set, 0 if it was not found.
-  caveat: if imht-set-can-contain-zero? is defined, which is the default,
-  pointer-geterencing a returned address for the found value 0 will return 1
-  instead */
-imht_set_key_t *imht_set_find(imht_set_t *a, imht_set_key_t value) {
-  imht_set_key_t *h = (a->content + imht_set_hash(value, (*a)));
-  if (*h) {
-#if imht_set_can_contain_zero_p
-    if ((*h == value) || (0 == value)) {
-      return (h);
-    };
-#else
-    if (*h == value) {
-      return (h);
-    };
-#endif
-    imht_set_key_t *content_end = (a->content + (a->size - 1));
-    imht_set_key_t *h2 = (1 + h);
-    while ((h2 < content_end)) {
-      if (!*h2) {
-        return (0);
-      } else {
-        if (value == *h2) {
-          return (h2);
-        };
-      };
-      h2 = (1 + h2);
-    };
-    if (!*h2) {
-      return (0);
-    } else {
-      if (value == *h2) {
-        return (h2);
-      };
-    };
-    h2 = a->content;
-    while ((h2 < h)) {
-      if (!*h2) {
-        return (0);
-      } else {
-        if (value == *h2) {
-          return (h2);
-        };
-      };
-      h2 = (1 + h2);
-    };
-  };
-  return (0);
-}
-#define imht_set_contains_p(a, value) ((0 == imht_set_find(a, value)) ? 0 : 1)
-/** returns 1 if the element was removed, 0 if it was not found */
-uint8_t imht_set_remove(imht_set_t *a, imht_set_key_t value) {
-  imht_set_key_t *value_address = imht_set_find(a, value);
-  if (value_address) {
-    *value_address = 0;
-    return (1);
-  } else {
-    return (0);
-  };
-}
-/** returns the address of the added or already included element, 0 if there is
- * no space left in the set */
-imht_set_key_t *imht_set_add(imht_set_t *a, imht_set_key_t value) {
-  imht_set_key_t *h = (a->content + imht_set_hash(value, (*a)));
-  if (*h) {
-#if imht_set_can_contain_zero_p
-    if ((value == *h) || (0 == value)) {
-      return (h);
-    };
-#else
-    if (value == *h) {
-      return (h);
-    };
-#endif
-    imht_set_key_t *content_end = (a->content + (a->size - 1));
-    imht_set_key_t *h2 = (1 + h);
-    while (((h2 <= content_end) && *h2)) {
-      h2 = (1 + h2);
-    };
-    if (h2 > content_end) {
-      h2 = a->content;
-      while (((h2 < h) && *h2)) {
-        h2 = (1 + h2);
-      };
-      if (h2 == h) {
-        return (0);
-      } else {
-#if imht_set_can_contain_zero_p
-        *h2 = ((0 == value) ? 1 : value);
-#else
-        *h2 = value;
-#endif
-      };
-    } else {
-#if imht_set_can_contain_zero_p
-      *h2 = ((0 == value) ? 1 : value);
-#else
-      *h2 = value;
-#endif
-    };
-  } else {
-#if imht_set_can_contain_zero_p
-    *h = ((0 == value) ? 1 : value);
-#else
-    *h = value;
-#endif
-    return (h);
-  };
-}
+uint32_t sph_set_primes[] = {
+    53,        97,        193,       389,       769,       1543,     3079,
+    6151,      12289,     24593,     49157,     98317,     196613,   393241,
+    786433,    1572869,   3145739,   6291469,   12582917,  25165843, 50331653,
+    100663319, 201326611, 402653189, 805306457, 1610612741};
+uint32_t *sph_set_primes_end = (sph_set_primes + 25);
+#define sph_set_hash_integer(value, hashtable_size) (value % hashtable_size)
+#define sph_set_equal_integer(value_a, value_b) (value_a == value_b)
+#define sph_set_declare_type_shared_1(name, value_type, set_hash, set_equal,   \
+                                      null, size_factor)                       \
+  typedef struct {                                                             \
+    size_t size;                                                               \
+    value_type *values;                                                        \
+  } name##_t;                                                                  \
+  size_t name##_calculate_size(size_t min_size) {                              \
+    min_size = (size_factor * min_size);                                       \
+    uint32_t *primes;                                                          \
+    for (primes = sph_set_primes; (primes <= sph_set_primes_end);              \
+         primes += 1) {                                                        \
+      if (min_size <= *primes) {                                               \
+        return ((*primes));                                                    \
+      };                                                                       \
+    };                                                                         \
+    /* if no prime has been found, make size at least an odd number */         \
+    return ((1 | min_size));                                                   \
+  }                                                                            \
+  void name##_clear(name##_t a) {                                              \
+    size_t i;                                                                  \
+    for (i = 0; (i < a.size); i = (1 + i)) {                                   \
+      (a.values)[i] = null;                                                    \
+    };                                                                         \
+  }                                                                            \
+  void name##_free(name##_t a) { free((a.values)); }
+#define sph_set_declare_type_shared_2(name, value_type, set_hash, set_equal,   \
+                                      null, size_factor)                       \
+  /** returns 0 if the element was removed, 1 if it was not found */           \
+  uint8_t name##_remove(name##_t a, value_type value) {                        \
+    value_type *v = name##_get(a, value);                                      \
+    if (v) {                                                                   \
+      *v = null;                                                               \
+      return (0);                                                              \
+    } else {                                                                   \
+      return (1);                                                              \
+    };                                                                         \
+  }
+#define sph_set_declare_type_with_null(name, value_type, set_hash, set_equal,  \
+                                       null, notnull, size_factor)             \
+  /** returns 0 on success or 1 if the memory allocation failed */             \
+  uint8_t name##_new(size_t min_size, name##_t *result) {                      \
+    name##_t temp;                                                             \
+    temp.size = (1 + name##_calculate_size(min_size));                         \
+    temp.values = calloc((temp.size), (sizeof(value_type)));                   \
+    if (!temp.values) {                                                        \
+      return (1);                                                              \
+    };                                                                         \
+    name##_clear(temp);                                                        \
+    *result = temp;                                                            \
+    return (0);                                                                \
+  }                                                                            \
+                                                                               \
+  /** returns the address of the value or 0 if it was not found.               \
+         if value is the null value and exists, then address points to the     \
+     notnull value */                                                          \
+  value_type *name##_get(name##_t a, value_type value) {                       \
+    size_t i;                                                                  \
+    size_t hash_i;                                                             \
+    if (set_equal(null, value)) {                                              \
+      return ((set_equal(notnull, (*(a.values))) ? a.values : 0));             \
+    };                                                                         \
+    hash_i = (1 + set_hash(value, (a.size - 1)));                              \
+    i = hash_i;                                                                \
+    while ((i < a.size)) {                                                     \
+      if (set_equal(null, ((a.values)[i]))) {                                  \
+        return (0);                                                            \
+      } else {                                                                 \
+        if (set_equal(value, ((a.values)[i]))) {                               \
+          return ((i + a.values));                                             \
+        };                                                                     \
+      };                                                                       \
+      i += 1;                                                                  \
+    };                                                                         \
+    /* wraps over */                                                           \
+    i = 1;                                                                     \
+    while ((i < hash_i)) {                                                     \
+      if (set_equal(null, ((a.values)[i]))) {                                  \
+        return (0);                                                            \
+      } else {                                                                 \
+        if (set_equal(value, ((a.values)[i]))) {                               \
+          return ((i + a.values));                                             \
+        };                                                                     \
+      };                                                                       \
+      i += 1;                                                                  \
+    };                                                                         \
+    return (0);                                                                \
+  }                                                                            \
+                                                                               \
+  /** returns the address of the value or 0 if no space is left */             \
+  value_type *name##_add(name##_t a, value_type value) {                       \
+    size_t i;                                                                  \
+    size_t hash_i;                                                             \
+    if (set_equal(null, value)) {                                              \
+      *(a.values) = notnull;                                                   \
+      return ((a.values));                                                     \
+    };                                                                         \
+    hash_i = (1 + set_hash(value, (a.size - 1)));                              \
+    i = hash_i;                                                                \
+    while ((i < a.size)) {                                                     \
+      if (set_equal(null, ((a.values)[i]))) {                                  \
+        (a.values)[i] = value;                                                 \
+        return ((i + a.values));                                               \
+      };                                                                       \
+      i += 1;                                                                  \
+    };                                                                         \
+    /* wraps over */                                                           \
+    i = 1;                                                                     \
+    while ((i < hash_i)) {                                                     \
+      if (set_equal(null, ((a.values)[i]))) {                                  \
+        (a.values)[i] = value;                                                 \
+        return ((i + a.values));                                               \
+      };                                                                       \
+      i += 1;                                                                  \
+    };                                                                         \
+    return (0);                                                                \
+  }
+#define sph_set_declare_type_without_null(name, value_type, set_hash,          \
+                                          set_equal, null, size_factor)        \
+  /** returns 0 on success or 1 if the memory allocation failed */             \
+  uint8_t name##_new(size_t min_size, name##_t *result) {                      \
+    value_type *values;                                                        \
+    min_size = name##_calculate_size(min_size);                                \
+    values = calloc(min_size, (sizeof(value_type)));                           \
+    if (!values) {                                                             \
+      return (1);                                                              \
+    };                                                                         \
+    (*result).values = values;                                                 \
+    (*result).size = min_size;                                                 \
+    return (0);                                                                \
+  }                                                                            \
+                                                                               \
+  /** returns the address of the value or 0 if it was not found */             \
+  value_type *name##_get(name##_t a, value_type value) {                       \
+    size_t i;                                                                  \
+    size_t hash_i;                                                             \
+    hash_i = set_hash(value, (a.size));                                        \
+    i = hash_i;                                                                \
+    while ((i < a.size)) {                                                     \
+      if (set_equal(null, ((a.values)[i]))) {                                  \
+        return (0);                                                            \
+      } else {                                                                 \
+        if (set_equal(value, ((a.values)[i]))) {                               \
+          return ((i + a.values));                                             \
+        };                                                                     \
+      };                                                                       \
+      i += 1;                                                                  \
+    };                                                                         \
+    /* wraps over */                                                           \
+    i = 0;                                                                     \
+    while ((i < hash_i)) {                                                     \
+      if (set_equal(null, ((a.values)[i]))) {                                  \
+        return (0);                                                            \
+      } else {                                                                 \
+        if (set_equal(value, ((a.values)[i]))) {                               \
+          return ((i + a.values));                                             \
+        };                                                                     \
+      };                                                                       \
+      i += 1;                                                                  \
+    };                                                                         \
+    return (0);                                                                \
+  }                                                                            \
+                                                                               \
+  /** returns the address of the value or 0 if no space is left */             \
+  value_type *name##_add(name##_t a, value_type value) {                       \
+    size_t i;                                                                  \
+    size_t hash_i;                                                             \
+    hash_i = set_hash(value, (a.size));                                        \
+    i = hash_i;                                                                \
+    while ((i < a.size)) {                                                     \
+      if (set_equal(null, ((a.values)[i]))) {                                  \
+        (a.values)[i] = value;                                                 \
+        return ((i + a.values));                                               \
+      };                                                                       \
+      i += 1;                                                                  \
+    };                                                                         \
+    /* wraps over */                                                           \
+    i = 0;                                                                     \
+    while ((i < hash_i)) {                                                     \
+      if (set_equal(null, ((a.values)[i]))) {                                  \
+        (a.values)[i] = value;                                                 \
+        return ((i + a.values));                                               \
+      };                                                                       \
+      i += 1;                                                                  \
+    };                                                                         \
+    return (0);                                                                \
+  }
+#define sph_set_declare_type(name, value_type, hash, equal, null, notnull,     \
+                             size_factor)                                      \
+  sph_set_declare_type_shared_1(name, value_type, hash, equal, null,           \
+                                size_factor)                                   \
+      sph_set_declare_type_with_null(name, value_type, hash, equal, null,      \
+                                     notnull, size_factor)                     \
+          sph_set_declare_type_shared_2(name, value_type, hash, equal, null,   \
+                                        size_factor)
+#define sph_set_declare_type_nonull(name, value_type, hash, equal, null,       \
+                                    size_factor)                               \
+  sph_set_declare_type_shared_1(name, value_type, hash, equal, null,           \
+                                size_factor)                                   \
+      sph_set_declare_type_without_null(name, value_type, hash, equal, null,   \
+                                        size_factor)                           \
+          sph_set_declare_type_shared_2(name, value_type, hash, equal, null,   \
+                                        size_factor)
+sph_set_declare_type_nonull(fd_set, int, sph_set_hash_integer,
+                            sph_set_equal_integer, 0, 2);
 #define debug_log(format, ...)                                                 \
   fprintf(stderr, "%s:%d " format "\n", __func__, __LINE__, __VA_ARGS__)
 #define move_fd(a)                                                             \
@@ -205,15 +260,15 @@ imht_set_key_t *imht_set_add(imht_set_t *a, imht_set_key_t value) {
     close(a);                                                                  \
   }
 /** variable integer null/path ->
-    if "a" is -1, set it to a newly opened filed descriptor for path or
+     if "a" is -1, set it to a newly opened filed descriptor for path or
    /dev/null */
 #define ensure_fd(a, open_flags, path)                                         \
   if (-1 == a) {                                                               \
     a = open((path ? path : "/dev/null"), open_flags);                         \
   }
 /** SCM int-variable char*-variable ->
-    set fd to a file descriptor from an SCM argument or -1.
-    if "a" is a path string, set "path" */
+     set fd to a file descriptor from an SCM argument or -1.
+     if "a" is a path string, set "path" */
 #define port_argument_set_fd(a, fd, path)                                      \
   if (scm_is_true((scm_port_p(a)))) {                                          \
     fd = scm_to_int((scm_fileno(a)));                                          \
@@ -228,7 +283,7 @@ imht_set_key_t *imht_set_add(imht_set_t *a, imht_set_key_t value) {
     };                                                                         \
   }
 /** integer integer integer ->
-    to be called in a new process */
+     to be called in a new process */
 #define set_standard_streams(input, output, error)                             \
   if (input > 0) {                                                             \
     if (0 == output) {                                                         \
@@ -248,12 +303,12 @@ imht_set_key_t *imht_set_add(imht_set_t *a, imht_set_key_t value) {
   if (error > 2) {                                                             \
     dup2_fd(error, 2);                                                         \
   }
-/** integer imht-set ->
-  try to close all used file descriptors greater than or equal to start-fd.
-  tries to use one of /proc/{process-id}/fd, sysconf and getdtablesize.
-  if none of those is available, closes file descriptors from sart-fd
-  to 1024 or OPEN_MAX if that as defined at compile time */
-void close_file_descriptors_from(int start_fd, imht_set_t *keep) {
+/** integer fd-set ->
+   try to close all used file descriptors greater than or equal to start-fd.
+   tries to use one of /proc/{process-id}/fd, sysconf and getdtablesize.
+   if none of those is available, closes file descriptors from start-fd
+   to 1024 or OPEN_MAX if that is defined at compile time */
+void close_file_descriptors_from(int start_fd, fd_set_t keep) {
   long fd;
   long maxfd;
   char path_proc_fd[PATH_MAX];
@@ -269,12 +324,13 @@ void close_file_descriptors_from(int start_fd, imht_set_t *keep) {
       fd = strtol((entry->d_name), (&first_invalid), 10);
       if (!(entry->d_name == first_invalid) && (*first_invalid == 0) &&
           (fd >= 0) && (fd < INT_MAX) && (fd >= start_fd) &&
-          !(fd == dirfd(directory)) && !imht_set_contains_p(keep, fd)) {
+          !(fd == dirfd(directory)) && !fd_set_get(keep, fd)) {
         ((void)(close(((int)(fd)))));
       };
     };
     ((void)(closedir(directory)));
   } else {
+/* fallback */
 #if HAVE_SYSCONF
     maxfd = sysconf(_SC_OPEN_MAX);
 #else
@@ -285,7 +341,7 @@ void close_file_descriptors_from(int start_fd, imht_set_t *keep) {
     };
     fd = start_fd;
     while ((fd <= maxfd)) {
-      if (!imht_set_contains_p(keep, fd)) {
+      if (!fd_set_get(keep, fd)) {
         ((void)(close(((int)(fd)))));
       };
       fd = (1 + fd);
@@ -300,18 +356,20 @@ void free_env(char **a) {
   };
   free(a);
 }
-int scm_list_to_imht_set(SCM scm_a, imht_set_t **result) {
+int scm_list_to_fd_set(SCM scm_a, fd_set_t *out) {
+  fd_set_t result;
   int a_length = scm_to_uint32((scm_length(scm_a)));
-  if (!imht_set_create((3 + a_length), result)) {
+  if (fd_set_new((3 + a_length), (&result))) {
     return (1);
   };
   while (!scm_is_null(scm_a)) {
-    if (!imht_set_add((*result), (scm_to_int((SCM_CAR(scm_a)))))) {
-      imht_set_destroy((*result));
+    if (!fd_set_add(result, (scm_to_int((SCM_CAR(scm_a)))))) {
+      fd_set_free(result);
       return (2);
     };
     scm_a = SCM_CDR(scm_a);
   };
+  *out = result;
   return (0);
 }
 /** returns a null pointer terminated char** */
@@ -332,7 +390,6 @@ char **scm_string_list_to_string_pointer_array(SCM scm_a) {
   };
   return (result);
 }
-/** see init-sph-lib for documentation */
 SCM scm_primitive_process_create(SCM scm_executable, SCM scm_arguments,
                                  SCM scm_input_port, SCM scm_output_port,
                                  SCM scm_error_port, SCM scm_env,
@@ -345,7 +402,7 @@ SCM scm_primitive_process_create(SCM scm_executable, SCM scm_arguments,
                     ? environ
                     : scm_string_list_to_string_pointer_array(scm_env));
   char *executable = scm_to_locale_string(scm_executable);
-  imht_set_t *keep;
+  fd_set_t keep;
   int input;
   int output;
   int error;
@@ -355,28 +412,31 @@ SCM scm_primitive_process_create(SCM scm_executable, SCM scm_arguments,
   port_argument_set_fd(scm_input_port, input, input_path);
   port_argument_set_fd(scm_output_port, output, output_path);
   port_argument_set_fd(scm_error_port, error, error_path);
-  if (scm_list_to_imht_set(scm_keep_descriptors, (&keep))) {
+  if (scm_list_to_fd_set(scm_keep_descriptors, (&keep))) {
     return (SCM_BOOL_F);
   };
   int process_id = fork();
   if (!(0 == process_id)) {
     free(arguments);
     free(executable);
-    imht_set_destroy(keep);
+    fd_set_free(keep);
     if (!(SCM_BOOL_F == scm_env)) {
       free_env(env);
     };
     return ((scm_from_int(process_id)));
   };
+  /* after fork */
   ensure_fd(input, O_RDONLY, input_path);
   ensure_fd(output, (O_WRONLY | O_CREAT | path_open_flags), output_path);
   ensure_fd(error, (O_WRONLY | O_CREAT | path_open_flags), error_path);
-  imht_set_add(keep, input);
-  imht_set_add(keep, output);
-  imht_set_add(keep, error);
+  fd_set_add(keep, input);
+  fd_set_add(keep, output);
+  fd_set_add(keep, error);
   close_file_descriptors_from(3, keep);
   set_standard_streams(input, output, error);
   execve(executable, arguments, env);
+  /* terminates the program immediately with neither scheme-level nor c-level
+   * cleanups */
   _exit(127);
   return (SCM_UNSPECIFIED);
 }
