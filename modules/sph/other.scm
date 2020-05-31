@@ -347,13 +347,8 @@
 
 (define* (random-discrete-f probabilities #:optional (state *random-state*))
   "(real ...) [random-state] -> procedure:{-> real}
-   return a function that when called returns an index of a ;;; note: source file /usr/share/guile/site/sph/other.scm
-;;;       newer than compiled /home/nonroot/.cache/guile/ccache/3.0-LE-8-4.2/home/nonroot/personal/projects/public/sph/sph-lib/modules/sph/other.scm.go
-;;; note: auto-compilation is enabled, set GUILE_AUTO_COMPILE=0
-;;;       or pass the --no-auto-compile argument to disable.
-;;; compiling /usr/share/guile/site/sph/other.scm
-;;; compiled /home/nonroot/.cache/guile/ccache/3.0-LE-8-4.2/home/nonroot/personal/projects/public/sph/sph-lib/modules/sph/other.scm.go
-value in probabilities.
+   return a function that when called returns an index of a
+   value in probabilities.
    each index will be returned with a probability given by the value at the index.
    each value is a fraction of the sum of probabilities.
    for example, if the values sum to 100, each entry in probabilities is a percentage.

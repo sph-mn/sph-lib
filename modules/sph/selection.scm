@@ -2,9 +2,7 @@
 
 (use-modules (sph) (sph hashtable)
   (srfi srfi-41) (srfi srfi-1)
-  ((sph list) #:select (map-integers map-map produce))
-
-  ((sph vector) #:select (vector-range ))
+  ((sph list) #:select (map-integers map-map produce)) ((sph vector) #:select (vector-range))
   ((rnrs base) #:select (vector-map)))
 
 (export divisions number-divisions
@@ -156,8 +154,11 @@
   "integer -> ((integer ...) ...)
    return all integer selections that sum to count.
    distinctness is defined by length, order and value.
-   example for count 3: ((1 1 1) (1 2) (2 1) (3))"
-  "algorithm:\n     collect all possible values and associate a rest value that following values have to sum to.\n     for each of those associations, reduce the rest value and the list of possible values while producing possible tails.\n     the rest values are removed after all combinations have been found"
+   example for count 3: ((1 1 1) (1 2) (2 1) (3))
+   algorithm:
+     collect all possible values and associate a rest value that following values have to sum to.
+     for each of those associations, reduce the rest value and the list of possible values while producing possible tails.
+     the rest values are removed after all combinations have been found"
   (define (produce-chain parts rest size)
     (let
       (parts (filter-map (l (a) (and (<= (tail a) rest) (pair (- (first a) size) (tail a)))) parts))

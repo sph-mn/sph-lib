@@ -1,8 +1,8 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph documentation) (sph filesystem)
-  (sph io) (sph lang scheme) (only (srfi srfi-1) partition) (sph alist) (sph list))
+(use-modules (sph) (sph documentation) (sph filesystem)
+  (sph io) (sph lang scheme) (srfi srfi-1) (sph alist) (sph list))
 
 (define (library-modules-list highlights-file module-path load-path)
   (let
