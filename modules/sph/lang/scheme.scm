@@ -6,7 +6,8 @@
 (export file->datums iq-file
   iq-file-hashtable iq-file-lines port->datums string->datum string->datums)
 
-(define sph-lang-scheme "scheme parsing helpers")
+(define sph-lang-scheme-description
+  "scheme parsing helpers including helpers for implicitly quasiquoted configuration files")
 
 (define* (iq-file path #:optional (env (current-module)))
   "string -> list

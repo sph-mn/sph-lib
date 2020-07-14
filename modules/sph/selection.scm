@@ -152,6 +152,7 @@
 
 (define (divisions count)
   "integer -> ((integer ...) ...)
+   returns the compositions.
    return all integer selections that sum to count.
    distinctness is defined by length, order and value.
    example for count 3: ((1 1 1) (1 2) (2 1) (3))

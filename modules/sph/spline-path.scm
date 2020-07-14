@@ -20,7 +20,7 @@
   spline-path-new-generic spline-path-null spline-path-repeat spline-path-start spline-path?)
 
 (define sph-spline-path-description
-  "interpolated paths through points.
+  "composable interpolated paths through points.
    spline-path-new creates path objects and spline-path gets values from it.
    path objects contain a configuration object that can be modified to create a new modified path.
    paths can also contain other paths as segments.

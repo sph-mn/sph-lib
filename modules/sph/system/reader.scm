@@ -11,8 +11,7 @@
   sph-read-with-upper-case-symbols sph-system-reader-description)
 
 (define sph-system-reader-description
-  "a scheme reader that can include comments.
-   depends on guile-reader")
+  "a scheme reader that can include comments. depends on guile-reader")
 
 (define (read-range-expr->string port start end)
   "calls proc for all characters that are not start or end and builds a nested list with the results of proc.

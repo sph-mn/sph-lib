@@ -70,7 +70,7 @@
 (define list-set-subset? lset<=)
 
 (define sph-list-description
-  "helpers for working with lists.
+  "list helpers.
    currently also contains bindings for non-list pairs.
    # syntax
    ## let*-list

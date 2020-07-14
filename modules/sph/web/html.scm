@@ -6,9 +6,12 @@
   ((sph alist) #:select (alist-ref alist-keys-map)) ((sph string) #:select (string-equal?))
   ((sph web http) #:select (http-read-header http-read-header-value)) (srfi srfi-1))
 
-(export html-fold-multipart-form-data html-multipart-form-data-ref
-  html-multipart-form-data? html-parse-urlencoded-form-data
-  html-read-multipart-form-data html-uri-decode html-uri-encode)
+(export sph-web-html-description html-fold-multipart-form-data
+  html-multipart-form-data-ref html-multipart-form-data?
+  html-parse-urlencoded-form-data html-read-multipart-form-data html-uri-decode html-uri-encode)
+
+(define sph-web-html-description
+  "html related methods including a powerful html multipart form data parser")
 
 (define (read-line-crlf-trim port)
   "try to read a line that is known to be cr-lf terminated and remove the cr-lf or return eof-object"

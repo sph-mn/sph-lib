@@ -28,7 +28,7 @@ if you intend to use (sph process create) also call the following before install
 ./exe/compile-c
 ```
 
-this is unfortunately necessary because guile does not come with a generic process creation procedure and it apparently can not be adequately implemented in scheme
+this is necessary because guile does not come with a generic process creation procedure and it seems that can not be adequately implemented in scheme
 
 ## install destinations
 * /usr/share/guile/site/sph/
@@ -38,8 +38,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 ## highlights
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
-* (sph filesystem)
-* (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
 * (sph lang parser type-signature) - a parser and writer for a type signature notation
 * (sph lang plcss) - s-expression language that compiles to css
 * (sph lang scm-format) - format scheme code
@@ -48,7 +46,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
 * (sph scrypt)
 * (sph server) - a generic socket data processing server that uses a thread-pool for parallel request processing
-* (sph spline-path) - interpolated paths through points
 * (sph test) - automated code testing with composable modules
 * (sph test performance) - adaptive performance testing with formatted result display
 * (sph thread-pool) - thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type
@@ -64,26 +61,29 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph documentation display-format-itpn)
 * (sph documentation display-format-plist)
 * (sph documentation display-format-signature) - only names and type signatures
+* (sph documentation itpn)
 * (sph documentation shtml)
 * (sph exception) - rnrs exception helpers. experimental
+* (sph filesystem)
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph futures) - fine-grain parallelism based on (sph thread-pool)
 * (sph hashtable) - rnrs-hashtable processing
 * (sph install) - program and library installer
 * (sph io) - port and file input/output
+* (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
 * (sph json) - a rudimentary and incomplete but fast json writer
 * (sph lang config) - a scheme syntax configuration file format that parses to a alist or hashtable, possibly nested
 * (sph lang indent-syntax) - converting to and from strings with indented lines
 * (sph lang itpn) - helpers for working with parsed itpn
 * (sph lang parser outline) - parse a document with possible nesting of sections where headings are prefixed by one or multiple characters
-* (sph lang scheme)
+* (sph lang scheme) - scheme parsing helpers including helpers for implicitly quasiquoted configuration files
 * (sph lang scm-format base)
 * (sph lang scm-format format) - formatters for individual expressions
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
-* (sph list) - helpers for working with lists
+* (sph list) - list helpers
 * (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
-* (sph math) - statistics and more
+* (sph math) - a few  mathematics related methods
 * (sph module) - guile module system and rnrs library related procedures
 * (sph module binding-info) - get information about bindings in modules
 * (sph number)
@@ -93,10 +93,11 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph selection) - create and analyse set selections: permutations, combinations and similar
 * (sph server base)
 * (sph server fibers)
+* (sph spline-path) - composable interpolated paths through points
 * (sph sql) - create sql-statements from scheme data
 * (sph stream) - srfi-41 stream helpers
 * (sph string) - string processing. includes string-replace-string, a fast replacer
-* (sph system reader) - a scheme reader that can include comments
+* (sph system reader) - a scheme reader that can include comments. depends on guile-reader
 * (sph test base)
 * (sph test report) - test reporters for writing to standard output for example while tests are running are implemented as a special hook
 * (sph time stream) - create an srfi-41 stream of (sph time) date vectors between two dates
@@ -105,7 +106,7 @@ this is unfortunately necessary because guile does not come with a generic proce
 * (sph tree) - process tree-like list structures
 * (sph uniform-vector) - helpers for srfi-4 and compatible vectors. for example f32vector
 * (sph vector) - vector processing
-* (sph web html)
+* (sph web html) - html related methods including a powerful html multipart form data parser
 * (sph web http)
 * (sph web shtml) - helpers to create html as sxml
 
@@ -113,3 +114,6 @@ this is unfortunately necessary because guile does not come with a generic proce
 * most procedures and modules have docstrings. extracted documentation can be browsed on [sph.mn](http://sph.mn/computer/software/sph-lib.html)
 * modules export the description as a string variable named like the module and "description" joined with minus. for example (sph vector) exports sph-vector-description
 * "other/highlights" is a newline separated list of module names to include under "highlights" when creating a module listing with "exe/list-modules"
+
+# maintenance
+modules under highlights receive most attention and all issues are tried to be fixed. other modules are to be seen as pools of examples and functions are more likely to be removed if it turns out to be too much work to fix it

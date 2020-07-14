@@ -21,7 +21,7 @@
   list-center-of-mass list-median
   list-mode list-range log2 percent pi relative-change scale-to-mean vector-linearly-interpolate)
 
-(define sph-math-description "statistics and more")
+(define sph-math-description "a few  mathematics related methods")
 (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
 (define pi (* 4 (atan 1)))
 (define (log2 b) "calculate the base two logarithm for b" (/ (log b) (log 2)))

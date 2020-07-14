@@ -1,4 +1,4 @@
-(define-modoule (sph documentation itpn))
+(define-module (sph documentation itpn))
 
 (use-modules (ice-9 threads) (rnrs sorting)
   (sph) (sph alist)
