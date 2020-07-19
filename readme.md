@@ -1,5 +1,5 @@
 # sph-lib
-more than 80 gpl3+ licensed guile scheme libraries.
+more than 80 gpl3+ licensed guile scheme modules.
 example implementations of various procedures. use the library as is or extract code as needed.
 see also [sph.mn](http://sph.mn/computer/software/sph-lib.html)
 
@@ -34,8 +34,7 @@ this is necessary because guile does not come with a generic process creation pr
 * /usr/share/guile/site/sph/
 * /usr/lib/libguile-sph-lib.so
 
-# libraries
-## highlights
+# modules
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
 * (sph lang parser type-signature) - a parser and writer for a type signature notation
@@ -46,6 +45,7 @@ this is necessary because guile does not come with a generic process creation pr
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
 * (sph scrypt)
 * (sph server) - a generic socket data processing server that uses a thread-pool for parallel request processing
+* (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph test) - automated code testing with composable modules
 * (sph test performance) - adaptive performance testing with formatted result display
 * (sph thread-pool) - thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type
@@ -68,14 +68,14 @@ this is necessary because guile does not come with a generic process creation pr
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph futures) - fine-grain parallelism based on (sph thread-pool)
 * (sph hashtable) - rnrs-hashtable processing
-* (sph install) - program and library installer
+* (sph install) - program and module installer
 * (sph io) - port and file input/output
 * (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
 * (sph json) - a rudimentary and incomplete but fast json writer
 * (sph lang config) - a scheme syntax configuration file format that parses to a alist or hashtable, possibly nested
 * (sph lang indent-syntax) - converting to and from strings with indented lines
-* (sph lang itpn) - helpers for working with parsed itpn
-* (sph lang parser outline) - parse a document with possible nesting of sections where headings are prefixed by one or multiple characters
+* (sph lang itpn) - helpers for working with a notation that lists space separated tags and then associated text indented in following lines
+* (sph lang parser outline) - parse a markup structure where headings are prefixed by one or multiple characters for nested sections
 * (sph lang scheme) - scheme parsing helpers including helpers for implicitly quasiquoted configuration files
 * (sph lang scm-format base)
 * (sph lang scm-format format) - formatters for individual expressions
@@ -89,14 +89,12 @@ this is necessary because guile does not come with a generic process creation pr
 * (sph number)
 * (sph other) - miscellaneous
 * (sph process) - execute programs and evaluate shell or scheme code
-* (sph record) - *deprecated* vectors as records
 * (sph selection) - create and analyse set selections: permutations, combinations and similar
 * (sph server base)
 * (sph server fibers)
 * (sph spline-path) - composable interpolated paths through points
 * (sph sql) - create sql-statements from scheme data
 * (sph stream) - srfi-41 stream helpers
-* (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph system reader) - a scheme reader that can include comments. depends on guile-reader
 * (sph test base)
 * (sph test report) - test reporters for writing to standard output for example while tests are running are implemented as a special hook
@@ -116,4 +114,4 @@ this is necessary because guile does not come with a generic process creation pr
 * "other/highlights" is a newline separated list of module names to include under "highlights" when creating a module listing with "exe/list-modules"
 
 # maintenance
-modules under highlights receive most attention and all issues are tried to be fixed. other modules are to be seen as pools of examples and functions are more likely to be removed if it turns out to be too much work to fix it
+modules under highlights receive most attention and all issues are tried to be fixed. other modules are to be seen as pools of examples and less mature or less useful features are more likely to be removed

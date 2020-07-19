@@ -6,7 +6,7 @@
 (export install install-cli-guile install-cli-guile-p install-one install-p sph-install-description)
 
 (define sph-install-description
-  "program and library installer
+  "program and module installer
    features
      install with a specific file mode. using \"cp\" or the like usually uses owner and permissions
        for the current user, which might be root and undesired.
