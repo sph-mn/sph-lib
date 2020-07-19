@@ -20,11 +20,9 @@
     (string-append "\"" (apply example-string a) "\""))
 
   (define format-docstring-io
-    ; (input indent output)
-    ; input is passed to example-string, output is passed to example-result
-    (list-q ((2 4 2) 0 (1 3 1)) ((2 4 2) 1 (3 5 3))
-      ((2 4 2) 2 (5 7 5)) ((2 4 0) 1 (3 5 3))
-      ((0 0 0) 0 (1 1 1)) ((0 0 0) 1 (3 3 3)) ((0 0 0) 2 (5 5 5))))
+    (q
+      ( ( (2 4 2) 0 (1 3 1)) ((2 4 2) 1 (3 5 3)) ((2 4 2) 2 (5 7 5))
+        ((2 4 0) 1 (3 5 3)) ((0 0 0) 0 (1 1 1)) ((0 0 0) 1 (3 3 3)) ((0 0 0) 2 (5 5 5)))))
 
   (define-test (format-docstring)
     "on failure it returns the index format-docstring-io index where it failed"

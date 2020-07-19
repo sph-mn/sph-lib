@@ -11,17 +11,24 @@
   directory-reference? directory-tree
   directory-tree-each directory-tree-leaf-directories
   directory? dotfile?
-  ensure-directory-structure ensure-directory-structure-and-new-mode
-  ensure-trailing-slash filename-extension
-  filesystem-glob fold-directory-tree
-  list->path make-path-unique
-  mtime-difference path->full-path
-  path->list path-append
-  path-append* path-directories
-  poll-watch readlink*
-  realpath* remove-filename-extension
-  remove-trailing-slash search-load-path
-  stat-accessor->stat-field-name stat-diff stat-diff->accessors stat-field-name->stat-accessor)
+  system-temp-dir ensure-directory-structure
+  ensure-directory-structure-and-new-mode ensure-trailing-slash
+  filename-extension filesystem-glob
+  fold-directory-tree list->path
+  get-unique-path mtime-difference
+  path->full-path path->list
+  path-append path-append*
+  path-directories poll-watch
+  readlink* realpath*
+  remove-filename-extension remove-trailing-slash
+  search-load-path stat-accessor->stat-field-name
+  stat-diff stat-diff->accessors stat-field-name->stat-accessor)
+
+(define (system-temp-dir)
+  "returns the value of the %TEMP% environment variable on windows, /tmp otherwise.
+   (port-filename (tmpfile)) returns #f, tmpnam is deprecated,
+   mkstmp! does not choose the path - currently no alternative found"
+  (if (eq? (q windows) (system-file-name-convention)) (or (getenv "TEMP") ".") "/tmp"))
 
 (define filesystem-glob
   (let*
@@ -251,10 +258,10 @@
    results in the last dot-separated part of string or the empty-string if no such part exists"
   (let ((r (string-split a #\.))) (if (< 1 (length r)) (last r) "")))
 
-(define* (make-path-unique path #:optional suffix)
+(define* (get-unique-path path #:optional suffix)
   "string [string] -> string
    if the given path with suffix already exists, insert a string between path and the suffix
-   so that file name is unique in its directory. suffix is empty by default.
+   until a path is found that doesnt yet exist. suffix is empty by default.
    eventually inserts a period and a base32 number.
    examples
      \"/tmp/abc\" -> \"/tmp/abc.1\"

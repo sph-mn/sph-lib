@@ -8,6 +8,7 @@
 (sph scgi)
 (sph scrypt)
 (sph server)
+(sph string)
 (sph test performance)
 (sph test)
 (sph thread-pool)

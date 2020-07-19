@@ -8,7 +8,7 @@
 
   (define cwd (getcwd))
   (define-test (realpath* arguments) (string-replace-string (apply realpath* arguments) cwd ""))
-  (define temp-path (ensure-trailing-slash (tmpnam)))
+  (define temp-path (ensure-trailing-slash (system-temp-dir)))
   (define realpath-temp-path (string-append temp-path "realpath"))
   (define glob-temp-path (string-append temp-path "filesystem-glob"))
   (define (realpath-temp-path* path) (string-append realpath-temp-path "/" path))

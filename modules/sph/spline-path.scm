@@ -144,7 +144,7 @@
 (define (spline-path-constant . a)
   "create a path that always returns the same values. the first time dimension is still updated.
    equivalent to (sp-path-new* (constant (0 a ...)))"
-  (spline-path-new (list-qq (constant (0 (unquote-splicing a))))))
+  (spline-path-new (qq ((constant (0 (unquote-splicing a)))))))
 
 (define (spline-path-infinite? a)
   "spline-path -> boolean

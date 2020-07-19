@@ -27,7 +27,7 @@
             (if (symbol? (first content)) (list content) (list (pair (q div) content))))
           (if (and (string? content) (string-null? content)) (list) (list (q div) content)))))))
 
-(define shtml-indent (list-q (*ENTITY* "#160") (*ENTITY* "#160")))
+(define shtml-indent (q ((*ENTITY* "#160") (*ENTITY* "#160"))))
 
 (define (shtml-indent-create depth)
   "integer -> sxml
@@ -44,7 +44,7 @@
    create the shtml for including a javascript file"
   (qq
     (script
-      (@ (src (unquote path)) (unquote-splicing (if is-async (list (list-q async async)) (list)))) "")))
+      (@ (src (unquote path)) (unquote-splicing (if is-async (list (q (async async))) (list)))) "")))
 
 (define (shtml-include-css path)
   "string -> sxml

@@ -1,24 +1,23 @@
 (define-test-module (test module sph io path-pipe-chain)
   (import
     (sph io)
+    (sph filesystem)
     (rnrs io ports)
     (sph list)
     (sph other)
     (ice-9 threads)
     (sph io path-pipe-chain))
 
-  (define (join-threads a)
-    ;(each join-thread a)
-    (each (l (a) (and (thread? a) (join-thread a))) a))
-
+  (define (join-threads a) (each (l (a) (and (thread? a) (join-thread a))) a))
   (define message "test")
+  (define (tmp-path) (string-append (system-temp-dir) "/test-path-pipe-chain"))
 
   (define-test (path-pipe-chain-ends) "test conversion of first-input and last-output"
     (assert-true "nothing-nothing"
       (first-or-false
         (path-pipe-chain #f #f (vector (q nothing) (q nothing) (l (in out) (not (or in out)))))))
     (assert-equal "nothing-nothing-port-path" message
-      (let (out (tmpnam))
+      (let (out (tmp-path))
         (path-pipe-chain #f out
           (vector (q nothing) (q port) (l (in out) (display message out) (close out))))
         (file->string out)))
@@ -37,7 +36,7 @@
     (assert-equal "path-port-nothing-nothing" message
       (call-with-output-string
         (l (out)
-          (let (in (tmpnam)) (string->file message in)
+          (let (in (tmp-path)) (string->file message in)
             (path-pipe-chain in out
               (vector (q port) (q port) (l (in out) (port-copy-all in out) (close in)))))))))
 

@@ -21,7 +21,7 @@
                 (string-join (remove string-null? (if text-lines (any->list text-lines) null))
                   "\n  " (q prefix))))
             (string-append (symbol->string (bi-name bi))
-              (if (contains? (list-q procedure syntax) (bi-type bi))
+              (if (contains? (q (procedure syntax)) (bi-type bi))
                 (string-append " :: " arguments-string) ""))))))
     format-module-documentation
     (l (module-name md) "any (string ...) -> string" (string-join md "\n"))

@@ -1,22 +1,15 @@
 (define-module (sph))
-
-(use-modules (srfi srfi-2) (ice-9 pretty-print)
-  ((ice-9 optargs) #:select (lambda* define* let-keywords)))
-
+(use-modules (ice-9 pretty-print))
 (export! let first)
-(re-export and-let* lambda* define* let-keywords)
 
 (export sph-description define-syntax-rules
   define-syntax-case define-syntax-cases
   display-line l
   pair pairs
-  tail each
-  debug-log null l* q qq list-q list-qq apply-values quote-odd quote-even quote-duplicate nullary)
-
-(read-disable (quote square-brackets))
+  tail each debug-log null l* q qq apply-values quote-odd quote-even quote-duplicate nullary)
 
 (define sph-description
-  "few bindings that are used in all sph libraries.
+  "few bindings that are shared with all sph modules.
    # syntax
    define-syntax-rules :: name ((pattern ...) expansion) ...
      similar to define-syntax-rule but for multiple patterns
@@ -48,12 +41,7 @@
      often used for thunks
    let
      typical scheme let and named-let extended for making just one binding
-     example: (let (a 3) a)
-   list-q list-qq
-     list-q :: any ...
-     list-qq :: any ...
-     same as (quote (a ...)) or (quasiquote (a ...))
-     example: (list-q a b c)")
+     example: (let (a 3) a)")
 
 (define-syntax-rule (define-syntax-rules name ((pattern ...) expansion) ...)
   (define-syntax name (syntax-rules () ((_ pattern ...) expansion) ...)))
@@ -82,8 +70,6 @@
 (define-syntax-rule (l* a ...) (lambda* a ...))
 (define-syntax-rule (q a) (quote a))
 (define-syntax-rule (qq a) (quasiquote a))
-(define-syntax-rule (list-q a ...) (q (a ...)))
-(define-syntax-rule (list-qq a ...) (qq (a ...)))
 (define-syntax-rule (apply-values proc producer) (call-with-values (lambda () producer) proc))
 
 (define-syntax-rules let
@@ -111,12 +97,12 @@
 (define each for-each)
 (define null (list))
 
-(define (debug-log . a)
-  "any-1 any-n ... -> any-1
-   writes all arguments to standard output and returns the first argument"
-  (pretty-print (cons (q --) a)) (first a))
-
 (define* (display-line a #:optional (port (current-output-port)))
   "any [port] -> unspecified
    like \"display\" but emits a newline at the end"
   (display a port) (newline port))
+
+(define (debug-log . a)
+  "any-1 any-n ... -> any-1
+   writes all arguments to standard output and returns the first argument"
+  (pretty-print (cons (q --) a)) (first a))

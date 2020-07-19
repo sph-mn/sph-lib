@@ -31,6 +31,35 @@
   string-replace-string string-replace-strings
   string-skip-string string-slice-at-words string-split-regexp string-trim-string symbol?->string)
 
+(define sph-string-description
+  "string processing. includes string-replace-string, a fast replacer.
+   # syntax
+   string-case :: string (condition any:consequent) ...
+     like case but for strings instead of symbols.
+     example:
+       (string-case \"test\"
+         (\"a\" 1)
+         ((\"b\" \"c\") 2)
+         (mystringlist 3)
+         (else 4))")
+
+(define-syntax-case (string-case a (condition expr) ...) s
+  (let*
+    ( (b (syntax->datum (syntax ((condition expr) ...)))) (c (gensym "string-case-"))
+      (cond-datum
+        (pair (q cond)
+          (map
+            (l (a) "(else x) is passed directly to the parent cond"
+              (let ((a-first (first a)) (a-tail (tail a)))
+                (cond
+                  ((string? a-first) (pair (list (q string-equal?) a-first c) a-tail))
+                  ((list? a-first) (pair (list (q member) c (list (q quote) a-first)) a-tail))
+                  ( (and (symbol? a-first) (not (eq? (q else) a-first)))
+                    (pair (list (q member) c a-first) a-tail))
+                  (else a))))
+            b))))
+    (quasisyntax ((unsyntax (datum->syntax s (qq (lambda ((unquote c)) (unquote cond-datum))))) a))))
+
 (define (string-camelcase-replace a replace-proc)
   "string {match-structure -> replacement} -> string"
   (regexp-replace a "(\\s|^)[a-z][a-zA-Z0-9]+"
@@ -105,8 +134,6 @@
    replace all occurences of regexp in string with replacement"
   (regexp-substitute/global #f regexp str (q pre) replacement (q post)))
 
-(define sph-string-description "string processing. includes string-replace-string, a fast replacer")
-
 (define (string-ascii->utf8 a)
   "string -> string
    convert an ascii string that has incorrectly coded utf8 chars to an utf8 string"
@@ -155,23 +182,6 @@
    aa aAa -> aa a-aa"
   (string-camelcase-replace a
     (l (match) (string-append "_" (string-downcase (match:substring match))))))
-
-(define-syntax-case (string-case a (condition expr ...) ...) s
-  (let*
-    ( (b (syntax->datum (syntax ((condition expr ...) ...)))) (c (gensym "string-case-"))
-      (cond-datum
-        (pair (q cond)
-          (map
-            (l (a)
-              (let ((a-first (first a)) (a-tail (tail a)))
-                (cond
-                  ((string? a-first) (pair (list (q string-equal?) a-first c) a-tail))
-                  ((list? a-first) (pair (list (q member) c (list (q quote) a-first)) a-tail))
-                  ( (and (symbol? a-first) (not (eq? (q else) a-first)))
-                    (pair (list (q member) c a-first) a-tail))
-                  (else a))))
-            b))))
-    (quasisyntax ((unsyntax (datum->syntax s (qq (lambda ((unquote c)) (unquote cond-datum))))) a))))
 
 (define (string-compress-space a)
   "string -> string
@@ -225,8 +235,8 @@
   "string character integer -> string
    prepend character to the given string until the string length equals target-length.
    examples
-     (string-fill-left \"1\" #\x00 2) -> \"01\"
-     (string-fill-left \"10\" #\x00 2) -> \"10\"
+     (string-fill-left \"1\" #\\0 2) -> \"01\"
+     (string-fill-left \"10\" #\\0 2) -> \"10\"
    string-fill-left-zeros"
   (let (count (- target-length (string-length a)))
     (if (> count 0) (string-append (list->string (make-list count character)) a) a)))
@@ -268,7 +278,7 @@
 
 (define (string-longest-prefix a prefix-list)
   "string (string ...) -> string/boolean
-   result in the element of prefix-list that is the longest prefix from prefix-list in string \"a\""
+   result in the element of prefix-list that is the longest prefix of prefix-list in string \"a\""
   (fold
     (l (e prev)
       (if (string-prefix? e a) (if prev (if (> (string-length e) (string-length prev)) e prev) e)
@@ -297,7 +307,7 @@
   (* (string-bytes-per-char a) (string-length a)))
 
 (define (string-quote a) "string -> string"
-  "enclose a string with \" or ' quotes, depending on if the string already\n    includes one of these. preferring \". results in false if string already contains both type of quotes."
+  "enclose a string with \" or ' quotes, depending on if the string already\n   includes one of these. preferring \". returns false if string already contains both types of quotes"
   (if (string-contains a "\"") (if (string-contains a "'") #f (string-enclose a "'"))
     (string-enclose a "\"")))
 
@@ -319,9 +329,9 @@
 (define (string-replace-string a replace replacement)
   "string string string -> string
    replace all occurences of string \"replace\" inside string \"a\" with string \"replacement\".
-   tests with guile 2.06 have shown it to be 22x faster than regexp-substitute/global.
-   this procedure is quite nice to debug - comment out one or all string-copy! calls,
-   and the result string will be a partial result"
+   tests have shown it to be up to 28x times faster than regexp-substitute/global (guile2.06 22x, guile3 5.75-28x).
+   this procedure is quite nice to debug - comment out one or all string-copy! calls and
+   the result string will be a partial result"
   (let (indices (string-indices a replace))
     (if (null? indices) a
       (let

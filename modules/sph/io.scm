@@ -2,7 +2,8 @@
 
 (use-modules (ice-9 rdelim) (rnrs io ports)
   (sph) (sph list)
-  ((sph filesystem) #:select (ensure-trailing-slash ensure-directory-structure))
+  ( (sph filesystem) #:select
+    (ensure-trailing-slash ensure-directory-structure system-temp-dir get-unique-path))
   ((sph other) #:select (begin-first)) ((srfi srfi-1) #:select (drop)))
 
 (export bytevector->file call-with-input-files
@@ -89,7 +90,7 @@
   (let (files (map (l (a) (open-file a "r")) paths))
     (begin-first (apply proc files) (each close-port files))))
 
-(define* (temp-file-port #:optional (path "/tmp") (name-part "."))
+(define* (temp-file-port #:optional (path (system-temp-dir)) (name-part "."))
   "[string] [string:infix] -> port
    create a new unique file in the file system and return a new buffered port for reading and writing to the file"
   (mkstemp! (string-append (ensure-trailing-slash path) name-part "XXXXXX")))
@@ -118,7 +119,8 @@
   "[string integer] -> string:path
    create a named pipe (fifo).
    named pipes persist in the filesystem"
-  (let (path (or path (tmpnam))) (mknod path (q fifo) permissions 0) path))
+  (let (path (or path (get-unique-path (string-append (system-temp-dir) "/sph-io"))))
+    (mknod path (q fifo) permissions 0) path))
 
 (define (pipe-chain first-input last-output . proc)
   "port/true port/true procedure:{pipe-input pipe-output -> false/any} ... -> (procedure-result ...)
@@ -147,8 +149,7 @@
 
 (define (named-pipe-ports)
   "-> (port:input . port:output)
-     "
-  port-filename " can be used to get the path"
+   \"port-filename\" can be used to get the path"
   "open reader before writer. there does not seem to be a way to do it at the same time or the other way round, even with O_RDWR"
   (let* ((path (named-pipe)) (in (open path (logior O_RDONLY O_NONBLOCK))))
     (pair in (open path O_WRONLY))))
