@@ -5,9 +5,9 @@
   (sph module binding-info) (sph lang indent-syntax)
   (sph lang parser type-signature) (sph lang scm-format format)
   (sph list) (sph module)
-  (sph record) (sph tree)
-  ((ice-9 regex) #:select (regexp-substitute/global)) ((rnrs sorting) #:select (list-sort))
-  ((sph string) #:select (string-multiply string-equal?)) (srfi srfi-1) (srfi srfi-2))
+  (sph tree) ((ice-9 regex) #:select (regexp-substitute/global))
+  ((rnrs sorting) #:select (list-sort)) ((sph string) #:select (string-multiply string-equal?))
+  (srfi srfi-1) (srfi srfi-2))
 
 (export default-format-arguments display-module-information-short
   doc-bindings docstring->lines

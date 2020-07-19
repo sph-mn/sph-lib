@@ -1,14 +1,13 @@
 (define-module (sph lang config))
 
-(use-modules (rnrs eval) (srfi srfi-1) (sph)
-  (sph alist) (sph hashtable)
-  (sph io) (sph lang indent-syntax) (sph lang scheme) (sph string) (sph tree))
+(use-modules (sph) (sph alist)
+  (sph string) (sph hashtable) (sph lang scheme) (sph tree) (sph lang indent-syntax))
 
 (export config-read config-read-file config-read-string config-write)
 
 (define sph-lang-config-description
   "a scheme syntax configuration file format that parses to a alist or hashtable, possibly nested.
-   * all elements are scheme expressions
+   * all elements are scheme literals
    * key and value are specified alternatingly
    * keys are symbols
    * indent of two spaces is used for nesting

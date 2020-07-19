@@ -3,8 +3,8 @@
 (export primitive-read-outline read-outline sph-lang-parser-outline-description)
 
 (define sph-lang-parser-outline-description
-  "parse a document with possible nesting of sections where headings are prefixed by one or multiple characters.
-   for example markdown heading structure")
+  "parse a markup structure where headings are prefixed by one or multiple characters for nested sections.
+   for example markdown and org-mode")
 
 (define (parse-heading-repeated-char-proc char) "char -> procedure"
   (l (line) "string -> (integer:nesting-depth/false string:heading/false)"

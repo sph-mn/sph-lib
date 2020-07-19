@@ -262,7 +262,7 @@
   "string [string] -> string
    if the given path with suffix already exists, insert a string between path and the suffix
    until a path is found that doesnt yet exist. suffix is empty by default.
-   eventually inserts a period and a base32 number.
+   may append a period and base32 number.
    examples
      \"/tmp/abc\" -> \"/tmp/abc.1\"
      \"/tmp/abc\" \".scm\" -> \"/tmp/abc.1.scm\""

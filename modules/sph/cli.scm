@@ -335,10 +335,6 @@
     (if (eqv? (q undefined) v) default-unsupported-option-handler (and (procedure? v) v))))
 
 (define (cli-create . config)
-  "without this wrapper, cli-create is bound to command-dispatch& inside command-dispatch&"
-  (apply cli-create-original config))
-
-(define (cli-create-original . config)
   "::
    #:version string/(integer ...)
    #:about string/procedure:{-> string}
@@ -370,6 +366,10 @@
                    #:value-required? boolean #:value-optional? boolean #:type symbol #:description string #:processor procedure:custom-processor)
    pattern: (symbol symbol/ellipsis:... ...)
    commands-spec: (((string:command-name ...) procedure:{command arguments}/[cli-create-argument ...]) ...)"
+  (apply cli-create-original config))
+
+(define (cli-create-original . config)
+  "without wrapping, cli-create was bound to command-dispatch& inside command-dispatch&"
   (let*
     ( (config+keyless (keyword-list->alist+keyless config)) (config (first config+keyless))
       (options-config

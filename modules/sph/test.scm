@@ -4,7 +4,7 @@
   (sph) (sph alist)
   (sph filesystem) (sph list)
   (sph list other) (sph module)
-  (sph other) (sph record) (sph string) (sph test base) (sph test report) (srfi srfi-1))
+  (sph other) (sph string) (sph test base) (sph test report) (srfi srfi-1))
 
 (export assert-and assert-equal
   assert-test-result assert-true
@@ -14,8 +14,8 @@
   test-execute-modules-by-prefix test-execute-procedures
   test-execute-procedures-lambda test-lambda
   test-list test-module-name-from-files
-  test-settings-default
-  test-settings-default-custom test-settings-default-custom-by-list test-success?)
+  test-settings-default test-settings-default-custom
+  test-settings-default-custom-by-list test-success?)
 
 (re-export test-create-result test-result-success? test-result)
 
@@ -182,7 +182,7 @@
       until)))
 
 (define (test-module-success? a)
-  (if (record? a) (test-result-success? a) (if (list? a) (every test-module-success? a) a)))
+  (if (vector? a) (test-result-success? a) (if (list? a) (every test-module-success? a) a)))
 
 (define (test-modules-execute settings module-names) "list list -> test-result"
   (let*
@@ -269,7 +269,8 @@
           (d-tail (tail d)) (expected (first d-tail))
           (r (test-proc arguments expected settings))
           (r
-            (if (test-result? r) (record-update-q test-result r title title index index)
+            (if (test-result? r)
+              (begin (test-result-title-set! r title) (test-result-index-set! r index) r)
               (test-create-result (equal? r expected) title #f index r arguments expected))))
         (hook-data-after settings index-procedure index r)
         (report-data-after settings index-procedure index r)
@@ -289,10 +290,11 @@
       (r (test-proc (list) #t settings))
       (r
         (if (test-result? r)
-          (record-update-q test-result r
-            title
-            (let (sub-title (test-result-title r))
-              (if sub-title (string-append title " " sub-title) title)))
+          (begin
+            (test-result-title-set! r
+              (let (sub-title (test-result-title r))
+                (if sub-title (string-append title " " sub-title) title)))
+            r)
           (test-any->result r title 0))))
     (hook-data-after settings index 0 r) (report-data-after settings index 0 r) r))
 
@@ -372,7 +374,7 @@
 (define (assert-failure-result result expected title arguments)
   "vector/any any false/string any -> vector:test-result"
   (if (test-result? result)
-    (if (string? title) (record-update-q test-result result assert-title title) result)
+    (if (string? title) (begin (test-result-assert-title-set! result title) result) result)
     (if (string? title) (test-create-result #f title #f #f result arguments expected)
       (test-create-result #f #f "assertion" #f result arguments expected))))
 

@@ -7,7 +7,7 @@
   itpn-from-file itpn-from-port itpn-packets-sort itpn-prefixes itpn-string line->tags tags->line)
 
 (define sph-lang-itpn-description
-  "helpers for working with parsed itpn
+  "helpers for working with a notation that lists space separated tags and then associated text indented in following lines.
    itpn: indent tree packet notation
    ittpn: indent tree tag packet notation")
 

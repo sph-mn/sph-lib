@@ -14,10 +14,10 @@
 
 (define sph-time-gregorian-description
   "gregorian calendar calculations
-   uses a year 0 like iso8601. a year 0 supposedly keeps leap-day calculations simpler")
+   uses a year 0 like iso8601. a year 0 appears to keep leap-day calculations simpler")
 
-(define greg-month-days ( vector 31 28 31 30 31 30 31 31 30 31 30 31))
-(define greg-month-days-leap-year( vector 31 29 31 30 31 30 31 31 30 31 30 31))
+(define greg-month-days (vector 31 28 31 30 31 30 31 31 30 31 30 31))
+(define greg-month-days-leap-year (vector 31 29 31 30 31 30 31 31 30 31 30 31))
 (define greg-number-of-months 12)
 (define greg-year-days 365)
 (define greg-year-days-leap-year 366)
