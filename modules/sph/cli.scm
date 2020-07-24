@@ -360,12 +360,13 @@
    command-handler: command-handler called for all commands (after individual command handlers)
    options: specify long, short and unnamed options
    # data-structures
-   custom-processor: procedure:args-fold-processor:{opt matched-name any result ->}
+   custom-processor: custom handler for option values. procedure:args-fold-processor:{opt matched-name any result ->}
    input-type-names: symbol:string/number/integer
-   option-spec: (symbol/list:name/pattern #:names character/string/(character/string) #:required? boolean
-                   #:value-required? boolean #:value-optional? boolean #:type symbol #:description string #:processor procedure:custom-processor)
+   option-spec: (symbol/list:name/pattern #:names character/string/(character/string ...) #:required? boolean
+                 #:value-required? boolean #:value-optional? boolean #:type symbol #:description string #:processor procedure:custom-processor)
    pattern: (symbol symbol/ellipsis:... ...)
-   commands-spec: (((string:command-name ...) procedure:{command arguments}/[cli-create-argument ...]) ...)"
+   commands-spec: (((string:command-name ...) procedure:{command arguments}/[cli-create-argument ...]) ...).
+   more documentation and examples can be found on http://sph.mn/computer/software/sph-lib/cli.html"
   (apply cli-create-original config))
 
 (define (cli-create-original . config)
