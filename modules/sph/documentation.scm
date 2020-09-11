@@ -1,23 +1,107 @@
 (define-module (sph documentation))
 
-(use-modules (ice-9 peg) (ice-9 threads)
-  (sph) (sph alist)
-  (sph module binding-info) (sph lang indent-syntax)
-  (sph lang parser type-signature) (sph lang scm-format format)
-  (sph list) (sph module)
-  (sph tree) ((ice-9 regex) #:select (regexp-substitute/global))
-  ((rnrs sorting) #:select (list-sort)) ((sph string) #:select (string-multiply string-equal?))
-  (srfi srfi-1) (srfi srfi-2))
+(use-modules (ice-9 peg) (sph)
+  ((sph alist) #:select (alist-q alist-bind)) (sph module binding-info)
+  ((sph lang indent-syntax) #:select (denoted-tree->indent-tree indent-tree->denoted-tree))
+  (sph lang parser type-signature) ((sph lang scm-format format) #:select (format-docstring))
+  ((sph list) #:select (contains? any->list fold-multiple))
+  ((sph module) #:select (module-find module-exports))
+  ((sph tree) #:select (denoted-tree-minimise-depth)) ((rnrs sorting) #:select (list-sort))
+  ((sph string) #:select (string-equal? any->string-pretty-print)) (srfi srfi-1) (srfi srfi-2))
 
 (export default-format-arguments display-module-information-short
   doc-bindings docstring->lines
-  docstring-split-signature documentation-display-formats
-  format-module-documentation lines->docstring
-  module-description module-find-one-information
-  module-find-one-information-sorted sort-module-information sph-documentation-description)
+  docstring-split-signature format-module-documentation
+  output-format-indent output-format-signature
+  output-format-markdown output-format-list
+  lines->docstring module-description
+  module-find-one-information module-find-one-information-sorted
+  sort-module-information sph-documentation-description)
 
-(define sph-documentation-description "extract and display guile scheme code documentation")
-(define indent-string (list->string (make-list 2 #\space)))
+(define sph-documentation-description
+  "extract and display documentation (bindings, arguments and docstrings) from modules")
+
+(define indent-string (string #\space #\space))
+(define (replace-underscore a state) (if (string-equal? "_" a) (number->string (+ 10 state) 32) a))
+
+(define output-format-markdown
+  (alist-q format-arguments default-format-arguments
+    format-binding-info
+    (l (bi formatted-arguments) "vector:record string -> string"
+      (string-append "# " (symbol->string (bi-name bi))
+        "\n"
+        (docstring-split-signature (bi-documentation bi) #f
+          (l (signature docstring)
+            (string-append
+              (if (or signature (not (string-null? formatted-arguments)))
+                (string-append "## signature\n"
+                  (if (string-null? formatted-arguments) formatted-arguments
+                    (string-append formatted-arguments "\n"))
+                  (if signature (string-append signature "\n") ""))
+                "")
+              (if docstring
+                (string-append "## " (lines->docstring (string-split docstring #\newline) "")) ""))))
+        "## type\n" (symbol->string (bi-type bi)) "\n"))
+    format-module-documentation
+    (l (module-name md) "any (string ...) -> string" (string-join md "\n"))))
+
+(define output-format-indent
+  (alist-q format-arguments default-format-arguments
+    format-binding-info
+    (l (bi formatted-arguments) "vector:record string -> string"
+      (string-append (symbol->string (bi-name bi)) "\n"
+        (docstring-split-signature (bi-documentation bi)
+          (string-append indent-string indent-string)
+          (l (signature docstring)
+            (string-append
+              (if (or signature (not (string-null? formatted-arguments)))
+                (string-append indent-string "signature\n"
+                  indent-string indent-string
+                  (if (string-null? formatted-arguments) formatted-arguments
+                    (string-append formatted-arguments "\n"))
+                  (if signature (string-append indent-string indent-string signature "\n") ""))
+                "")
+              (if docstring (lines->docstring (string-split docstring #\newline) indent-string) ""))))
+        indent-string "type: " (symbol->string (bi-type bi))))
+    format-module-documentation
+    (l (module-name md) "any (string ...) -> string" (string-join md "\n" (q suffix)))))
+
+(define output-format-signature
+  (alist-q format-arguments default-format-arguments
+    format-binding-info
+    (l (bi formatted-arguments) "vector:record string -> string"
+      (docstring-split-signature (bi-documentation bi) ""
+        (l (signature text-lines)
+          (let
+            ( (arguments-string formatted-arguments)
+              (docstring
+                (string-join (remove string-null? (if text-lines (any->list text-lines) null))
+                  "\n  " (q prefix))))
+            (string-append (symbol->string (bi-name bi))
+              (if (contains? (q (procedure syntax)) (bi-type bi))
+                (string-append " :: " arguments-string) ""))))))
+    format-module-documentation
+    (l (module-name md) "any (string ...) -> string" (string-join md "\n" (q suffix)))))
+
+(define output-format-list
+  (alist-q format-arguments default-format-arguments
+    format-binding-info
+    (l (bi formatted-arguments)
+      (pair (symbol->string (bi-name bi))
+        (append
+          (docstring-split-signature (bi-documentation bi) ""
+            (l (signature text)
+              (append
+                (if signature
+                  (list
+                    (pair (q signature)
+                      (if (string-null? formatted-arguments) (list signature)
+                        (list formatted-arguments signature))))
+                  (if (string-null? formatted-arguments) (list)
+                    (list (list (q signature) formatted-arguments))))
+                (if (or (not text) (string-null? text)) null (list (list (q description) text))))))
+          (list (list (q type) (bi-type bi))))))
+    format-module-documentation (l (module-name md) (any->string-pretty-print md))))
 
 (define (docstring-format a) "string -> string"
   "drop doublequotes of formatted string literal"
@@ -47,13 +131,11 @@
         (c #f (docstring-format a))))
     (c #f #f)))
 
-(define (lines->docstring a indent) "list (string ...) -> string"
+(define (lines->docstring a indent-string) "list (string ...) -> string"
   (let (a (remove string-null? (if a (any->list a) null)))
     (if (null? a) ""
-      (string-append indent "description"
-        (string-join a (string-append "\n" indent indent) (q prefix)) "\n"))))
-
-(define (replace-underscore a state) (if (string-equal? "_" a) (number->string (+ 10 state) 32) a))
+      (string-append indent-string "description"
+        (string-join a (string-append "\n" indent-string indent-string) (q prefix)) "\n"))))
 
 (define (list-replace-underscores& a state c) "call (c list-with-replacements updated-state)"
   (apply c
@@ -106,36 +188,10 @@
       (if (equal? (q variable) type)
         (if arguments (call-with-output-string (l (port) (display arguments port))) "") ""))))
 
-(define documentation-display-formats (list))
-
-(define* (format-module-documentation module-names #:optional (format-handler-name (q default)))
-  "((symbol ...) ...)/(symbol ...) symbol ->
-   output documentation for a list of module-names. format-handler-name can currently either be
-   default, itpn.
-   for just retrieving module documentation you might want to consider (sph module binding-info)"
-  (let
-    ( (format-handler
-        (or (assoc-ref documentation-display-formats format-handler-name)
-          (throw (q no-such-display-format) format-handler-name)))
-      (module-names (if (list? (first module-names)) module-names (list module-names))))
-    (alist-bind format-handler
-      (format-arguments format-binding-info format-module-documentation
-        format-modules-documentation)
-      (format-modules-documentation
-        (map
-          (l (module-name)
-            (format-module-documentation module-name
-              (map
-                (l (binding-info)
-                  (format-binding-info binding-info
-                    (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
-                (sort-module-binding-info (module-binding-info module-name)))))
-          module-names)))))
-
 (define (module-description name)
   "(symbol ...) -> false/string
-   get the module description from an exported variable with a specific name.
-   (a b c) -> a-b-c-description"
+   get the module description from an exported variable with a specific name:
+     (a b c) -> a-b-c-description"
   (and-let*
     ( (a
         (false-if-exception
@@ -191,3 +247,17 @@
           (map (l (export) (pair export library)) (module-exports (resolve-interface library))))
         null))
     libraries))
+
+(define* (format-module-documentation module-name #:optional (format-config output-format-indent))
+  "(symbol ...) [list] ->
+   return a string for the documentation found in a module (binding names, arguments and docstrings).
+   for just retrieving module documentation as scheme data consider (sph module binding-info).
+   example:
+     (format-module-documentation (quote (rnrs sorting)))"
+  (alist-bind format-config (format-arguments format-binding-info format-module-documentation)
+    (format-module-documentation module-name
+      (map
+        (l (binding-info)
+          (format-binding-info binding-info
+            (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
+        (sort-module-binding-info (module-binding-info module-name))))))

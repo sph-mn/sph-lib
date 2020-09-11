@@ -1,8 +1,7 @@
 (define-module (sph server))
 
-(use-modules (sph) (sph exception)
-  (sph module) (sph server base)
-  (sph string) (sph thread-pool) ((ice-9 threads) #:select (current-processor-count)))
+(use-modules ((ice-9 threads) #:select (current-processor-count)) (sph)
+  (sph exception) (sph server base) ((sph string) #:select (string-equal?)) (sph thread-pool))
 
 (re-export server-socket server-default-port)
 (export server-listen sph-server-description)

@@ -531,17 +531,17 @@
   (let loop ((rest a) (index 0) (r (list)))
     (if (null? rest) r (loop (tail rest) (+ 1 index) (if (f (first rest)) (pair index r) r)))))
 
-(define (list-prefix? a . prefix)
-  "list any ... -> boolean
+(define (list-prefix? a prefix)
+  "list list -> boolean
    true if the given \"prefix\" elements exist in order at the beginning of list.
    examples:
-   (list-prefix? (list 3 2 4) 3 1) -> #f
-   (list-prefix? (list 3 2 4) 3 2) -> #t"
+   (list-prefix? (list 3 2 4) (list 3 1)) -> #f
+   (list-prefix? (list 3 2 4) (list 3 2)) -> #t"
   (let (length-prefix (length prefix))
     (if (< (length a) length-prefix) #f (equal? (take a length-prefix) prefix))))
 
-(define (list-suffix? a . suffix)
-  "list any ... -> boolean
+(define (list-suffix? a suffix)
+  "list list -> boolean
    true if the given \"suffix\" elements exist in order at the end of list.
    see also \"list-prefix?\""
   (let (length-suffix (length suffix))
