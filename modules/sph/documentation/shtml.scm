@@ -3,10 +3,9 @@
 (use-modules (ice-9 match) (ice-9 threads)
   (rnrs sorting) (sph)
   (sph alist) (sph documentation)
-  (sph documentation display-format-plist) (sph hashtable)
-  (sph list) (sph module)
-  (sph module binding-info) (sph other)
-  (sph string) (sph web shtml) (srfi srfi-1) (srfi srfi-2))
+  (sph hashtable) (sph list)
+  (sph module) (sph module binding-info)
+  (sph other) (sph string) (sph web shtml) (srfi srfi-1) (srfi srfi-2))
 
 (export doc-shtml-libraries doc-shtml-library)
 
@@ -77,7 +76,7 @@
 
 (define (get-bindings module-name) "list -> ((symbol:name . list:alist) ...)"
   (list-sort-with-accessor string<? first
-    (alist-bind display-format-plist (format-binding-info format-arguments)
+    (alist-bind output-format-list (format-binding-info format-arguments)
       (map
         (l (binding-info)
           (format-binding-info binding-info
