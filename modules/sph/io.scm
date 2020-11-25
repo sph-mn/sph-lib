@@ -1,7 +1,7 @@
 (define-module (sph io))
 
 (use-modules (ice-9 rdelim) (rnrs io ports)
-  (sph) (sph list)
+  (sph) (sph list) (srfi srfi-2)
   ( (sph filesystem) #:select
     (ensure-trailing-slash ensure-directory-structure system-temp-dir get-unique-path))
   ((sph other) #:select (begin-first)) ((srfi srfi-1) #:select (drop)))

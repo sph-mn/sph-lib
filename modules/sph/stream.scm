@@ -1,6 +1,6 @@
 (define-module (sph stream))
 
-(use-modules (ice-9 rdelim) (rnrs io ports)
+(use-modules (ice-9 rdelim) (rnrs io ports) (srfi srfi-2)
   (sph) (sph hashtable) (sph module) (srfi srfi-41) ((sph other) #:select (identity-if)))
 
 (export! port->stream)

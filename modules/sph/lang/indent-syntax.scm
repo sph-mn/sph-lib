@@ -1,6 +1,6 @@
 (define-module (sph lang indent-syntax))
 
-(use-modules (ice-9 match) (rnrs io ports)
+(use-modules (ice-9 match) (rnrs io ports) (srfi srfi-2)
   (sph) (sph stream)
   (sph tree) (srfi srfi-41)
   ((sph io) #:select (port->lines)) ((sph string) #:select (string-multiply)) (srfi srfi-1))
