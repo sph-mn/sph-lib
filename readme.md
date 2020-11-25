@@ -11,6 +11,13 @@ see also [sph.mn](http://sph.mn/computer/software/sph-lib.html)
   * for (sph scrypt): [scrypt](https://github.com/jkalbhenn/scrypt)
 
 # installation
+## without the installer
+* copy or symlink everything that is under "modules" into a directory listed when executing "guile -c '(display %load-path)'". a final example path is /usr/share/guile/site/sph/lang/sc.scm. also ensure that the user who will use the modules has the permissions to read the files
+* copy or symlink exe/sc into a directory listed when executing "echo $PATH". ensure that the execute permission is set ("chmod +x", "ls -l" rwx)
+
+## with the installer
+the installer uses the cp utility at this point and works only on gnu/linux
+
 ```
 su root
 ./exe/install
@@ -20,15 +27,15 @@ see more options using
 ./exe/install --help
 ```
 
-or copy or symlink all files modules/* into a directory in guiles load path
-
 ## extended
-if you intend to use (sph process create) also call the following before install:
+if you intend to use (sph process create), also call the following before install:
 ```
 ./exe/compile-c
 ```
 
-this is necessary because guile does not come with a generic process creation procedure and it seems that can not be adequately implemented in scheme
+then ensure that temp/libguile-sph-lib.so is installed in the shared library directory, for example at /usr/lib/libguile-sph-lib.so
+
+the extension exists because guile does not come with a generic process creation procedure and it seems that it can not be adequately implemented in scheme
 
 ## install destinations
 * /usr/share/guile/site/sph/
