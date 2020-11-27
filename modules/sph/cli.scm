@@ -140,12 +140,12 @@
 (define (display-command-line-interface-proc config spec)
   (l arguments (write (options-remove-processors spec)) (exit 0)))
 
-(define (config->parameters-text a spec)
+(define (config->usage-text a spec)
   (let
     (arguments
       (map (l (e) (string-append options-parameter " " e))
         (options-spec->unnamed-arguments-strings spec)))
-    (string-append "parameters\n" indent
+    (string-append "usage\n" indent
       (if (null? arguments) options-parameter (string-join arguments (string-append "\n" indent))))))
 
 (define (format-help-description a indent)
@@ -159,8 +159,8 @@
   (l (opt name a r)
     (display
       (string-append
-        (let (a (alist-ref config (q help-parameters)))
-          (or a (config->parameters-text config options)))
+        (let (a (alist-ref config (q help-usage)))
+          (or a (config->usage-text config options)))
         (if (and text (not (string-null? text)))
           (string-append "\ndescription" (format-help-description text indent)) "")
         "\noptions"
@@ -231,7 +231,7 @@
         (and text
           (pair (qq (about #:names #\a #:processor (unquote (display-about-proc text a)))) options))))
     (l (options)
-      (let ((help-option (q (help #:names #\h))) (cli-option (q (interface))))
+      (let ((help-option (q (help #:names #\h #:description "show this help text"))) (cli-option (q (interface #:description "show a machine readable cli specification"))))
         (let*
           ( (options-temp (pairs cli-option help-option options))
             (options
@@ -339,8 +339,8 @@
    #:version string/(integer ...)
    #:about string/procedure:{-> string}
    #:description string
-   #:help string
-   #:help-parameters string/boolean
+   #:usage string
+   #:usage-arguments string
    #:arguments (string ...)
    #:null-arguments (string ....)
    #:missing-arguments-handler procedure:{symbol any ...}
