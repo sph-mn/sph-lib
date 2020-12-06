@@ -111,7 +111,7 @@
 (define (extract-hashbang port)
   (if (eq? #\# (lookahead-char port))
     (let (portion (get-string-n port 2))
-      (if (string-equal? "#!" portion) (string-append "#!" (read-hashbang port) "\n")
+      (if (string-equal? "#!" portion) (string-append "#!" (read-hashbang port) "\n\n")
         (begin (unget-string port portion) "")))
     ""))
 
