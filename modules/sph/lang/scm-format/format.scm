@@ -339,7 +339,10 @@
     #f))
 
 (define (format-semicolon-comment a recurse config current-indent)
-  (list (string-append ";" (first (tail a)) "\n") #f))
+  (apply
+    (l (content semicolon-count)
+      (list (string-append (string-multiply ";" semicolon-count) " " content "\n") #f))
+    (tail a)))
 
 (define (format-scsh-block-comment a recurse config current-indent)
   (list (string-append "#!" (first (tail a)) "!#\n") #f))

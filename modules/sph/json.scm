@@ -28,6 +28,9 @@
 
 (define-syntax-rule (string->json a port) (write a port))
 
+(define-syntax-rule (object-key->json a port) "string/symbol port ->"
+  (if (string? a) (string->json a port) (string->json (symbol->string a) port)))
+
 (define (hashtable->json a port) "rnrs-hashtable port ->"
   (display "{" port)
   (ht-each
@@ -35,9 +38,6 @@
       (display ":" port) (scm->json value port) (display "," port))
     a)
   (if (> (ht-size a) 1) (unread-char port)) (display "}" port))
-
-(define-syntax-rule (object-key->json a port) "string/symbol port ->"
-  (if (string? a) (string->json a port) (string->json (symbol->string a) port)))
 
 (define-syntax-rule (boolean->json a port) "boolean port ->" (display (if a "true" "false") port))
 

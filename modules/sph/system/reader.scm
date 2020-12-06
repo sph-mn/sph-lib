@@ -52,22 +52,22 @@
 
 (define semicolon-comment
   (make-token-reader #\;
-    (l (char port reader toplevel-reader) (list (q semicolon-comment) (read-line port)))))
+    (l (char port reader toplevel-reader) (list (q _parsed-semicolon-comment) (read-line port)))))
 
 (define range-comment
   (make-token-reader #\;
     (l (char port reader toplevel-reader)
-      (list (q range-comment) (read-range-expr->string port #\( #\))))))
+      (list (q _parsed-hash-comma-comment) (read-range-expr->string port #\( #\))))))
 
 (define hash-bang
   (make-token-reader #\!
     (l (char port reader toplevel-reader)
-      (list (q hash-bang) (let (r (read-line port)) (read-line port) r)))))
+      (list (q _parsed-hash-bang) (let (r (read-line port)) (read-line port) r)))))
 
 (define scsh-block-comment
   (make-token-reader #\!
     (l (char port reader toplevel-reader)
-      (list (q scsh-block-comment) (first (read-scsh-block-comment port))))))
+      (list (q _parsed-scsh-block-comment) (first (read-scsh-block-comment port))))))
 
 (define boolean
   (make-token-reader (list #\f #\t) (l (char port reader toplevel-reader) (eqv? #\t char))))

@@ -2,10 +2,11 @@
 
 (use-modules (ice-9 streams) (rnrs bytevectors)
   (sph) (sph hashtable)
-  (sph lang scm-format format) (sph lang scm-format transform)
-  (sph tree) ((srfi srfi-1) #:select (any))
-  ((sph list) #:select (map-integers))
-  ((sph string) #:select (any->string any->string-write* string-multiply)))
+  (sph io) (sph lang scm-format format)
+  (sph lang scm-format transform) (sph tree)
+  ((srfi srfi-1) #:select (any)) ((sph list) #:select (map-integers))
+  (ice-9 textual-ports)
+  ((sph string) #:select (any->string any->string-write* string-multiply string-equal?)))
 
 (define sph-lang-scm-format-description "format scheme code")
 (define default-format-ascend format-application)
@@ -44,9 +45,9 @@
     quasiquote format-quasiquote
     quasisyntax format-quasisyntax
     quote format-quote
-    range-comment format-range-comment
-    scsh-block-comment format-scsh-block-comment
-    semicolon-comment format-semicolon-comment
+    _parsed-hash-comma-comment format-range-comment
+    _parsed-scsh-block-comment format-scsh-block-comment
+    _parsed-semicolon-comment format-semicolon-comment
     syntax format-syntax unquote format-unquote unsyntax format-unsyntax))
 
 (define ascend-prefix->format-f (ht-create))
@@ -101,8 +102,39 @@
         (list (format-non-list expr current-indent config config-format) current-indent))
       nesting-depth)))
 
+(define (read-hashbang port)
+  (let loop ((char (get-char port)) (result null))
+    (if (and (eq? #\! char) (eq? #\# (lookahead-char port)))
+      (list->string (reverse (pairs (get-char port) char result)))
+      (loop (get-char port) (pair char result)))))
+
+(define (extract-hashbang port)
+  (if (eq? #\# (lookahead-char port))
+    (let (portion (get-string-n port 2))
+      (if (string-equal? "#!" portion) (string-append "#!" (read-hashbang port) "\n")
+        (begin (unget-string port portion) "")))
+    ""))
+
+(define (pre-process-line-comments port)
+  "replace comments with scheme expressions that the scheme reader will parse"
+  (open-input-string
+    (string-join
+      (port-lines-map
+        (l (line)
+          (let (space-index (string-skip line #\space))
+            (if (and space-index (eq? #\; (string-ref line space-index)))
+              (let (content-index (string-skip line #\; space-index))
+                (if content-index
+                  (any->string-write*
+                    (list (q _parsed-semicolon-comment)
+                      (string-trim (substring line content-index)) (- content-index space-index)))
+                  line))
+              line)))
+        port)
+      "\n")))
+
 (define (primitive-scm-format a current-indent config)
-  "list integer:current-indent r6rs-hashtable:config -> string"
+  "(any ...):expressions integer:current-indent r6rs-hashtable:config -> string"
   (apply
     (l (r is-library)
       (string-join-with-vertical-spacing r ""
@@ -118,8 +150,12 @@
     (if config (config-add-defaults config) scm-format-default-config)))
 
 (define* (scm-format-port a #:optional config) "port [r6rs-hashtable] -> string"
-  (let (config (if config (config-add-defaults config) scm-format-default-config))
-    (primitive-scm-format (stream->list (port->stream a read)) 0 config)))
+  (let*
+    ( (config (if config (config-add-defaults config) scm-format-default-config))
+      (scm-read (or (ht-ref config (q scm-read)) read)) (hashbang (extract-hashbang a))
+      (a (pre-process-line-comments a)))
+    (string-append hashbang
+      (primitive-scm-format (stream->list (port->stream a scm-read)) 0 config))))
 
 (export ascend-prefix->format-f default-format-ascend
   descend-prefix->format-f scm-format
