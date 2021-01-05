@@ -3,6 +3,8 @@ more than 80 gpl3+ licensed guile scheme modules.
 example implementations of various procedures. use the library as is or extract code as needed.
 see also [sph.mn](http://sph.mn/computer/software/sph-lib.html)
 
+modules under highlights receive most attention and all issues are tried to be fixed immediately. other modules are to be seen as pools of examples and less mature, less useful features are more likely to be removed
+
 # dependencies
 * [gnu guile](https://www.gnu.org/software/guile/) >= 2
 * optional
@@ -119,6 +121,3 @@ the extension exists because guile does not come with a generic process creation
 * most procedures and modules have docstrings. extracted documentation can be browsed on [sph.mn](http://sph.mn/computer/software/sph-lib.html)
 * modules export the description as a string variable named like the module and "description" joined with minus. for example (sph vector) exports sph-vector-description
 * "other/highlights" is a newline separated list of module names to include under "highlights" when creating a module listing with "exe/list-modules"
-
-# maintenance
-modules under highlights receive most attention and all issues are tried to be fixed. other modules are to be seen as pools of examples and less mature or less useful features are more likely to be removed
