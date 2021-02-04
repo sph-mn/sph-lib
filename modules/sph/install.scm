@@ -12,7 +12,7 @@
 (define sph-install-description
   "install files recursively with setting permissions and optionally an automatically created command line interface for users to set options.
    example
-     (install-cli ()
+     (install-cli
        (\"/tmp\" \"source/myfile\" \"source/mydir\")
        (system-executables 700 \"exe/sc\")
        (guile-site-modules (600 700) \"modules/sph\" \"modules/test\"))")
@@ -49,15 +49,15 @@
 
 (define (parse-placeholders-string a)
   (if a
-    (map (l (a) (let (a (string-split a #\=)) (pair (first a) (second a)))) (string-split a #\;))
+    (map (l (a) (let (a (string-split a #\=)) (pair (string->symbol (first a)) (second a))))
+      (string-split a #\;))
     null))
 
 (define (get-placeholders overrides) "-> ((key . value) ...)"
   (alist-q guile-site-modules
     (or (alist-ref overrides (q guile-site-modules)) (placeholder-guile-site-modules))
     system-executables (or (alist-ref overrides (q system-executables)) "/usr/bin")
-    system-libraries (or (alist-ref overrides (q system-libraries)) "/usr/lib")
-    ))
+    system-libraries (or (alist-ref overrides (q system-libraries)) "/usr/lib")))
 
 (define (normalise-install-configs a regular-mode directory-mode)
   (map
@@ -92,7 +92,6 @@
    * option to symlink instead of copying
    * placeholder for guile site directory
    * default permissions are 644 and 755 for files and directories respectively"
-  (debug-log install-configs)
   (let*
     ( (target-prefix (or target-prefix ""))
       (regular-mode (parse-octal-integer (or regular-mode 644)))
@@ -126,19 +125,27 @@
           install-config))
       install-configs)))
 
-(define*
-  (install-cli-p install-configs #:key target-prefix regular-mode directory-mode symlink dry-run
-    placeholders)
+(define (extract-config-options install-configs c)
+  "the first install-config can be a list with keyword arguments for install"
+  (match install-configs
+    ( ( ( (quote options) config-option ...) install-configs ...)
+      (apply c install-configs config-option))
+    (_ (c install-configs))))
+
+(define* (install-cli-p install-configs)
   "like install but automatically creates a command-line interface for users to set custom options.
    options can be set with command line arguments and as defaults with keyword arguments when calling install-cli"
   (let (options (install-cli-parser (tail (program-arguments))))
-    (install install-configs #:target-prefix
-      (or (alist-ref options (q target-prefix)) target-prefix) #:regular-mode
-      (or (alist-ref options (q regular-mode)) regular-mode) #:directory-mode
-      (or (alist-ref options (q directory-mode)) directory-mode) #:symlink
-      (or (alist-ref options (q symlink)) symlink) #:dry-run
-      (or (alist-ref options (q dry-run)) dry-run) #:placeholders
-      (parse-placeholders-string (or (alist-ref options (q placeholders)) placeholders)))))
+    (extract-config-options install-configs
+      (l*
+        (install-configs #:key target-prefix
+          regular-mode directory-mode symlink dry-run placeholders)
+        (install install-configs #:target-prefix
+          (or (alist-ref options (q target-prefix)) target-prefix) #:regular-mode
+          (or (alist-ref options (q regular-mode)) regular-mode) #:directory-mode
+          (or (alist-ref options (q directory-mode)) directory-mode) #:symlink
+          (or (alist-ref options (q symlink)) symlink) #:dry-run
+          (or (alist-ref options (q dry-run)) dry-run) #:placeholders
+          (parse-placeholders-string (or (alist-ref options (q placeholders)) placeholders)))))))
 
-(define-syntax-rule (install-cli (install-cli-p-arguments ...) install-config ...)
-  (install-cli-p (qq (install-config ...)) install-cli-p-arguments ...))
+(define-syntax-rule (install-cli install-config ...) (install-cli-p (qq (install-config ...))))
