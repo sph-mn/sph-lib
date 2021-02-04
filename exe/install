@@ -1,3 +1,3 @@
 #!/bin/sh
-# to use not-yet installed modules
+# guile call to use not-yet installed modules
 exec guile -L "$PWD/modules" exe/install.scm $*

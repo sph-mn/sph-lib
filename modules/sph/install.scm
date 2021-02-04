@@ -55,7 +55,9 @@
 (define (get-placeholders overrides) "-> ((key . value) ...)"
   (alist-q guile-site-modules
     (or (alist-ref overrides (q guile-site-modules)) (placeholder-guile-site-modules))
-    system-executables (or (alist-ref overrides (q system-executables)) "/usr/bin")))
+    system-executables (or (alist-ref overrides (q system-executables)) "/usr/bin")
+    system-libraries (or (alist-ref overrides (q system-libraries)) "/usr/lib")
+    ))
 
 (define (normalise-install-configs a regular-mode directory-mode)
   (map
@@ -90,6 +92,7 @@
    * option to symlink instead of copying
    * placeholder for guile site directory
    * default permissions are 644 and 755 for files and directories respectively"
+  (debug-log install-configs)
   (let*
     ( (target-prefix (or target-prefix ""))
       (regular-mode (parse-octal-integer (or regular-mode 644)))
@@ -138,4 +141,4 @@
       (parse-placeholders-string (or (alist-ref options (q placeholders)) placeholders)))))
 
 (define-syntax-rule (install-cli (install-cli-p-arguments ...) install-config ...)
-  (install-cli-p (q (install-config ...)) install-cli-p-arguments ...))
+  (install-cli-p (qq (install-config ...)) install-cli-p-arguments ...))
