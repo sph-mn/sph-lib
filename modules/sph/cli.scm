@@ -1,12 +1,13 @@
 (define-module (sph cli))
 
-(use-modules (rnrs sorting) (sph)
-  (sph alist) (srfi srfi-37)
+(use-modules (rnrs sorting)
+  ((srfi srfi-1) #:select (drop-right any fold drop drop-while remove append-map partition))
+  (srfi srfi-37) (sph)
+  (sph alist)
   ( (sph list) #:select
     (contains? any->list list-prefix?
       map-apply pattern-match-min-length first-or-null containsv? fold-multiple split-by-pattern))
-  ((sph string) #:select (string-multiply any->string-write))
-  ((srfi srfi-1) #:select (drop-right any fold drop drop-while remove append-map partition)))
+  ((sph string) #:select (string-multiply any->string-write)))
 
 (export cli-create cli-command-match cli-option-spec->list sph-cli-description)
 (define sph-cli-description "create command-line interfaces")
@@ -159,8 +160,7 @@
   (l (opt name a r)
     (display
       (string-append
-        (let (a (alist-ref config (q help-usage)))
-          (or a (config->usage-text config options)))
+        (let (a (alist-ref config (q help-usage))) (or a (config->usage-text config options)))
         (if (and text (not (string-null? text)))
           (string-append "\ndescription" (format-help-description text indent)) "")
         "\noptions"
@@ -231,7 +231,9 @@
         (and text
           (pair (qq (about #:names #\a #:processor (unquote (display-about-proc text a)))) options))))
     (l (options)
-      (let ((help-option (q (help #:names #\h #:description "show this help text"))) (cli-option (q (interface #:description "show a machine readable cli specification"))))
+      (let
+        ( (help-option (q (help #:names #\h #:description "show this help text")))
+          (cli-option (q (interface #:description "show a machine readable cli specification"))))
         (let*
           ( (options-temp (pairs cli-option help-option options))
             (options

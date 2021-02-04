@@ -129,29 +129,30 @@
                             result skip))))))))))))))
 
 (define*
-  (copy-file-recursive source destination #:key stop-on-error display-errors (copy-file copy-file)
+  (copy-file-recursive source target #:key stop-on-error display-errors (copy-file copy-file)
     (ensure-directory ensure-directory-structure))
   "string:path string:path keyword-options ... -> unspecified
-   copy source to destination. copies the whole directory structure if source is a directory.
+   copy source to target. copies the whole directory structure if source is a directory.
+   target must include the first new filename, for example source:/etc/dircolors target:/tmp/dircolors.
+   the copy-file procedure {source-path target-path -> boolean} can be replaced, to symlink instead, for example.
    #:stop-on-error boolean
    #:display-errors boolean
    #:copy-file procedure"
   (if (directory? source)
     (let*
-      ( (destination
-          (if (eqv? #\/ (string-ref source 0)) destination (ensure-trailing-slash destination)))
-        (prefix (let (a (dirname source)) (if (string-equal? "." a) "" a)))
-        (dest (l (name) (string-append destination (string-drop-prefix prefix name)))))
+      ( (source-prefix (dirname source)) (target-prefix (dirname target))
+        (get-target-path
+          (l (source) (string-append target-prefix (string-drop-prefix source-prefix source)))))
       (ftw source
-        (l (name stat-info flag)
+        (l (source stat-info flag)
           (case flag
-            ((directory) (ensure-directory (dest name)) #t)
-            ((regular) (copy-file name (dest name)) #t)
+            ((directory) (ensure-directory (get-target-path source)) #t)
+            ((regular) (copy-file source (get-target-path source)) #t)
             (else
               (and display-errors
-                (display (string-append "error copying file " name "\n") (current-error-port)))
+                (display (string-append "error copying file " source "\n") (current-error-port)))
               (not stop-on-error))))))
-    (copy-file source destination)))
+    (copy-file source target)))
 
 (define (directory? path) "test if path exists and is a directory"
   (eq? (q directory) (stat:type (stat path))))
