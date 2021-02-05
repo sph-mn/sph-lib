@@ -47,9 +47,9 @@
         (symlink #:description "create symlinks instead of file copies")
         (dry-run #:description "make no changes and only list the actions that would be executed")
         (directory-mode #:value-required? #t
-          #:type integer #:description "default permissions for regular files in octal notation")
-        (regular-mode #:value-required? #t
           #:type integer #:description "default permissions for directories in octal notation")
+        (regular-mode #:value-required? #t
+          #:type integer #:description "default permissions for regular files in octal notation")
         (placeholders #:value-required? #t
           #:type string
           #:description
