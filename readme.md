@@ -41,7 +41,7 @@ then ensure that temp/libguile-sph-lib.so is installed in the shared library dir
 
 the extension exists because guile does not come with a generic process creation procedure and it seems that it can not be adequately implemented in scheme
 
-## modules
+# modules
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
 * (sph install) - copy files and set permissions, with an optional, automatically created command line interface for users to set install options

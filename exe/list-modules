@@ -1,15 +1,15 @@
 #!/usr/bin/guile
 !#
 
-(use-modules (sph) (sph documentation) (sph filesystem)
-  (sph io) (sph lang scheme) (srfi srfi-1) (sph alist) (sph list))
+(use-modules (sph) (sph documentation)
+  (sph filesystem) (sph io) (sph lang scheme) (srfi srfi-1) (sph alist) (sph list))
 
 (define (library-modules-list highlights-file module-path load-path)
   (let
     ( (highlights (file->datums highlights-file))
       (module-info (module-find-one-information-sorted module-path #:load-path (list load-path))))
     (apply-values
-      (l (highlights other) (display-line "## modules")
+      (l (highlights other) (display-line "# modules")
         (display-module-information-short highlights #t) (display "\n")
         (display-module-information-short other #t))
       (partition (l (a) (list-index-value highlights (alist-ref a (q name)))) module-info))))
