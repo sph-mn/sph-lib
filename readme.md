@@ -42,6 +42,7 @@ then ensure that temp/libguile-sph-lib.so is installed in the shared library dir
 the extension exists because guile does not come with a generic process creation procedure and it seems that it can not be adequately implemented in scheme
 
 # modules
+## highlights
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
 * (sph install) - copy files and set permissions, with an optional, automatically created command line interface for users to set install options
@@ -51,7 +52,7 @@ the extension exists because guile does not come with a generic process creation
 * (sph libmagic) - binding to the libmagic library from the "file" utility that guesses file types
 * (sph process create) - create child processes and process chains
 * (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
-* (sph scrypt)
+* (sph scrypt) - bindings to the scrypt key derivation function
 * (sph server) - a generic socket data processing server that uses a thread-pool for parallel request processing
 * (sph string) - string processing. includes string-replace-string, a fast replacer
 * (sph test) - automated code testing with composable modules
@@ -62,6 +63,7 @@ the extension exists because guile does not come with a generic process creation
 * (sph time rfc3339) - parse and create strings in the rfc3339 time format
 * (sph web atom) - create atom syndication feeds with sxml
 
+## more
 * (sph alist) - association list processing
 * (sph base64) - encoder/decoder
 * (sph documentation) - extract and display documentation (bindings, arguments and docstrings) from modules
@@ -109,7 +111,7 @@ the extension exists because guile does not come with a generic process creation
 * (sph vector) - vector processing
 * (sph web html) - html related methods including a powerful html multipart form data parser
 * (sph web http)
-* (sph web shtml) - helpers to create html as sxml
+* (sph web shtml) - helpers to create html via sxml
 
 # documentation
 * most procedures and modules have docstrings. extracted documentation can be browsed on [sph.mn](http://sph.mn/computer/software/sph-lib.html)

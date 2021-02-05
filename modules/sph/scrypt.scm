@@ -6,7 +6,7 @@
 (export scrypt scrypt->string scrypt-check scrypt-defaults sph-scrypt-description)
 
 (define sph-scrypt-description
-  "use the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt")
+  "bindings to the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt")
 
 (define libscrypt (dynamic-link "libscrypt"))
 

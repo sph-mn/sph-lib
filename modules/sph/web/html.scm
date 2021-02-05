@@ -11,7 +11,7 @@
   html-parse-urlencoded-form-data html-read-multipart-form-data html-uri-decode html-uri-encode)
 
 (define sph-web-html-description
-  "html related methods including a powerful html multipart form data parser")
+  "html related methods including an advanced html multipart form data parser")
 
 (define (read-line-crlf-trim port)
   "try to read a line that is known to be cr-lf terminated and remove the cr-lf or return eof-object"
@@ -86,7 +86,8 @@
    see also html-read-multipart-form-data"
   "see the code of \"html-read-multipart-form-data\" for a usage example"
   (let* ((boundary (if boundary boundary (read-boundary port))) (header (http-read-header port)))
-    "todo: also match \"multipart/alternative\", \"multipart/digest\" and \"multipart/parallel\" here,\n       it is othewrise the same as \"multipart/mixed\""
+    "todo: also match \"multipart/alternative\", \"multipart/digest\" and \"multipart/parallel\" here,
+     it is othewrise the same as \"multipart/mixed\""
     (if (header-multipart-mixed? header) (proc-multipart header port result)
       (letrec
         ( (fold-lines
