@@ -9,8 +9,8 @@
     ( (highlights (file->datums highlights-file))
       (module-info (module-find-one-information-sorted module-path #:load-path (list load-path))))
     (apply-values
-      (l (highlights other) (display-line "## highlights")
-        (display-module-information-short highlights #t) (display-line "\n## other")
+      (l (highlights other) (display-line "## modules")
+        (display-module-information-short highlights #t) (display "\n")
         (display-module-information-short other #t))
       (partition (l (a) (list-index-value highlights (alist-ref a (q name)))) module-info))))
 

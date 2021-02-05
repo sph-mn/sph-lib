@@ -10,13 +10,20 @@
 (export install install-cli sph-install-description install-cli-p)
 
 (define sph-install-description
-  "install files and directories recursively and set permissions.
-   includes an optional, automatically created command line interface for users to set install options.
+  "copy files and set permissions, with an optional, automatically created command line interface for users to set install options.
    example
      (install-cli
        (\"/tmp\" \"source/myfile\" \"source/mydir\")
        (system-executables 700 \"exe/sc\")
-       (guile-site-modules (600 700) \"modules/sph\" \"modules/test\"))")
+       (guile-site-modules (600 700) \"modules/sph\" \"modules/test\"))
+   syntax
+     install-cli :: install-config ...
+       install-config will be wrapped in quasiquote, so that unquote and unquote-splicing can be used.
+       arguments will be passed to install-cli-p.
+       default options can be set, corresponding to the keyword arguments that \"install\" accepts.
+       (install-cli
+         (options #:directory-mode 700)
+         (system-executables 700 \"exe/sc\"))")
 
 (define (dry-run-log action . a)
   (display (string-append action " " (string-join (map any->string a) " "))) (newline) #t)
@@ -163,8 +170,9 @@
       used-placeholders)))
 
 (define* (install-cli-p install-configs)
-  "like install but automatically creates a command-line interface for users to set custom options.
-   options can be set with command line arguments and as defaults with an initial install-config (options arguments ...)"
+  "like \"install\" but automatically creates a command-line interface for users to set custom options.
+   the first install-config can be of the format (options install-arguments ...), where options is a symbol.
+   install-arguments are defaults for the keyword arguments that \"install\" accepts and will be overridden by given command-line options"
   (let (options (install-cli-parser (tail (program-arguments))))
     (extract-config-options install-configs
       (l*

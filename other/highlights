@@ -1,5 +1,6 @@
 (sph base91)
 (sph cli)
+(sph install)
 (sph lang parser type-signature)
 (sph lang plcss)
 (sph lang scm-format)

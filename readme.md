@@ -18,8 +18,6 @@ modules under highlights receive most attention and all issues are tried to be f
 * copy or symlink exe/sc into a directory listed when executing "echo $PATH". ensure that the execute permission is set ("chmod +x", "ls -l" rwx)
 
 ## with the installer
-the installer uses the cp utility at this point and works only on gnu/linux
-
 ```
 su root
 ./exe/install
@@ -28,6 +26,10 @@ see more options using
 ```
 ./exe/install --help
 ```
+
+default install destinations
+* /usr/share/guile/site/sph/
+* /usr/lib/libguile-sph-lib.so
 
 ## extended
 if you intend to use (sph process create), also call the following before install:
@@ -39,13 +41,10 @@ then ensure that temp/libguile-sph-lib.so is installed in the shared library dir
 
 the extension exists because guile does not come with a generic process creation procedure and it seems that it can not be adequately implemented in scheme
 
-## install destinations
-* /usr/share/guile/site/sph/
-* /usr/lib/libguile-sph-lib.so
-
-# modules
+## modules
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
+* (sph install) - copy files and set permissions, with an optional, automatically created command line interface for users to set install options
 * (sph lang parser type-signature) - a parser and writer for a type signature notation
 * (sph lang plcss) - s-expression language that compiles to css
 * (sph lang scm-format) - format scheme code
@@ -63,13 +62,9 @@ the extension exists because guile does not come with a generic process creation
 * (sph time rfc3339) - parse and create strings in the rfc3339 time format
 * (sph web atom) - create atom syndication feeds with sxml
 
-## other
 * (sph alist) - association list processing
 * (sph base64) - encoder/decoder
-* (sph documentation) - extract and display guile scheme code documentation
-* (sph documentation display-format-itpn)
-* (sph documentation display-format-plist)
-* (sph documentation display-format-signature) - only names and type signatures
+* (sph documentation) - extract and display documentation (bindings, arguments and docstrings) from modules
 * (sph documentation itpn)
 * (sph documentation shtml)
 * (sph exception) - rnrs exception helpers. experimental
@@ -77,7 +72,6 @@ the extension exists because guile does not come with a generic process creation
 * (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
 * (sph futures) - fine-grain parallelism based on (sph thread-pool)
 * (sph hashtable) - rnrs-hashtable processing
-* (sph install) - program and module installer
 * (sph io) - port and file input/output
 * (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
 * (sph json) - a rudimentary and incomplete but fast json writer
