@@ -10,7 +10,8 @@
 (export install install-cli sph-install-description install-cli-p)
 
 (define sph-install-description
-  "install files recursively with setting permissions and optionally an automatically created command line interface for users to set options.
+  "install files and directories recursively and set permissions.
+   includes an optional, automatically created command line interface for users to set install options.
    example
      (install-cli
        (\"/tmp\" \"source/myfile\" \"source/mydir\")
@@ -45,7 +46,8 @@
         (placeholders #:value-required? #t
           #:type string
           #:description
-          "override default placeholder values with semicolon separated name=value pairs")))))
+          "override default placeholder values. example: --placeholders=\"system-executables=/usr/bin;guile-site-modules=/usr/share/guile/site\"")
+        (placeholders-list #:description "display the current values for used placeholders")))))
 
 (define (parse-placeholders-string a)
   (if a
@@ -71,16 +73,47 @@
         ((target sources ...) (pairs target (pair regular-mode directory-mode) sources))))
     a))
 
+(define (handle-existing-target source target symlink)
+  "true if target should not be changed.
+   remove existing target if symlink to a different file"
+  (if (eq? (q symlink) (stat:type (lstat target)))
+    (if (and symlink (= (stat:ino (stat source)) (stat:ino (stat target)))) #t
+      (begin (delete-file target) #f))
+    (if symlink (begin (delete-file target) #f) #f)))
+
 (define (copy-file-proc mode symlink dry-run)
   (if dry-run
     (l (source target)
       (let ((source (string-quote source)) (target (string-quote target)))
-        (dry-run-log (if symlink "symlink" "copy-file") source "->" target))
+        (dry-run-log (if symlink "ln -s" "cp") source target))
       (dry-run-log "chmod" (number->string (if (directory? source) (tail mode) (first mode)) 8)
         target))
-    (if symlink symlink-file
-      (l (source target) (copy-file source target)
-        (chmod target (if (directory? source) (tail mode) (first mode)))))))
+    (l (source target)
+      (if (not (and (file-exists? target) (handle-existing-target source target symlink)))
+        (begin ((if symlink symlink-file copy-file) source target)
+          (chmod target (if (directory? source) (tail mode) (first mode))))))))
+
+(define (ensure-target-directory target directory-mode dry-run)
+  (if dry-run
+    (if (not (file-exists? target))
+      (begin (dry-run-log "mkdir -p" target)
+        (dry-run-log "chmod" (number->string directory-mode 8) target)))
+    (ensure-directory-structure-and-new-mode target directory-mode)))
+
+(define (every-install-config install-configs target-prefix placeholders directory-mode dry-run f)
+  "call f with (source target mode) of each install config and stop if f returns false"
+  (every
+    (l (install-config)
+      (apply
+        (l (target mode . sources)
+          (let
+            (target
+              (string-append target-prefix
+                (if (symbol? target) (alist-ref placeholders target) target)))
+            (ensure-target-directory target directory-mode dry-run)
+            (every (l (source) (f source target mode)) sources)))
+        install-config))
+    install-configs))
 
 (define*
   (install install-configs #:key target-prefix regular-mode directory-mode symlink dry-run
@@ -100,30 +133,19 @@
       (install-configs
         (normalise-install-configs (remove-keyword-associations install-configs) regular-mode
           directory-mode)))
-    (every
-      (l (install-config)
-        (apply
-          (l (target mode . sources)
-            (let
-              (target
-                (string-append target-prefix
-                  (if (symbol? target) (alist-ref placeholders target) target)))
-              (ensure-directory-structure-and-new-mode target directory-mode)
-              (every
-                (l (source)
-                  (copy-file-recursive (canonicalize-path source)
-                    (string-append target "/" (basename source)) #:copy-file
-                    (copy-file-proc mode symlink dry-run) #:stop-on-error
-                    #t #:ensure-directory
-                    (l (path)
-                      (if dry-run
-                        (let (path (string-quote path)) (dry-run-log "mkdir" path)
-                          (dry-run-log "chmod" (number->string directory-mode 8) path))
-                        (begin (if (not (file-exists? path)) (mkdir path))
-                          (chmod path directory-mode))))))
-                sources)))
-          install-config))
-      install-configs)))
+    (every-install-config install-configs target-prefix
+      placeholders directory-mode
+      dry-run
+      (l (source target mode)
+        (copy-file-recursive (canonicalize-path source)
+          (string-append target "/" (basename source)) #:copy-file
+          (copy-file-proc mode symlink dry-run) #:stop-on-error
+          #t #:ensure-directory
+          (l (path)
+            (if dry-run
+              (let (path (string-quote path)) (dry-run-log "mkdir" path)
+                (dry-run-log "chmod" (number->string directory-mode 8) path))
+              (begin (if (not (file-exists? path)) (mkdir path)) (chmod path directory-mode)))))))))
 
 (define (extract-config-options install-configs c)
   "the first install-config can be a list with keyword arguments for install"
@@ -132,20 +154,32 @@
       (apply c install-configs config-option))
     (_ (c install-configs))))
 
+(define (display-used-placeholders install-configs placeholders)
+  (let
+    ( (final-placeholders (get-placeholders placeholders))
+      (used-placeholders (delete (q options) (filter symbol? (map first install-configs)))))
+    (each
+      (l (a) (display (string-append (symbol->string a) " " (alist-ref final-placeholders a) "\n")))
+      used-placeholders)))
+
 (define* (install-cli-p install-configs)
   "like install but automatically creates a command-line interface for users to set custom options.
-   options can be set with command line arguments and as defaults with keyword arguments when calling install-cli"
+   options can be set with command line arguments and as defaults with an initial install-config (options arguments ...)"
   (let (options (install-cli-parser (tail (program-arguments))))
     (extract-config-options install-configs
       (l*
         (install-configs #:key target-prefix
           regular-mode directory-mode symlink dry-run placeholders)
-        (install install-configs #:target-prefix
-          (or (alist-ref options (q target-prefix)) target-prefix) #:regular-mode
-          (or (alist-ref options (q regular-mode)) regular-mode) #:directory-mode
-          (or (alist-ref options (q directory-mode)) directory-mode) #:symlink
-          (or (alist-ref options (q symlink)) symlink) #:dry-run
-          (or (alist-ref options (q dry-run)) dry-run) #:placeholders
-          (parse-placeholders-string (or (alist-ref options (q placeholders)) placeholders)))))))
+        (let
+          (placeholders
+            (parse-placeholders-string (or (alist-ref options (q placeholders)) placeholders)))
+          (if (alist-ref options (q placeholders-list))
+            (display-used-placeholders install-configs placeholders)
+            (install install-configs #:target-prefix
+              (or (alist-ref options (q target-prefix)) target-prefix) #:regular-mode
+              (or (alist-ref options (q regular-mode)) regular-mode) #:directory-mode
+              (or (alist-ref options (q directory-mode)) directory-mode) #:symlink
+              (or (alist-ref options (q symlink)) symlink) #:dry-run
+              (or (alist-ref options (q dry-run)) dry-run) #:placeholders placeholders)))))))
 
 (define-syntax-rule (install-cli install-config ...) (install-cli-p (qq (install-config ...))))
