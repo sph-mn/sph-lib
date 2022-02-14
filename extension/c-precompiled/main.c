@@ -1,6 +1,8 @@
+
 /* code for creating a guile extension as a shared library.
    for features that can apparently not adequately be written in guile scheme,
    for example child process creation */
+
 /* set gnu source to include functions that arent part of the c standard (dirfd)
  */
 #define _GNU_SOURCE 1
@@ -14,11 +16,14 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #ifndef OPEN_MAX
 #define OPEN_MAX 1024
 #endif
+
 /* include sph-sc-lib sph/set.c to use for tracking file descriptors to keep
  * after fork */
+
 /* a macro that defines set data types and functions for arbitrary value types.
  * compared to hashtable.c, this uses less than half the space and operations
  * are faster (about 20% in first tests) linear probing for collision resolve
@@ -259,6 +264,7 @@ sph_set_declare_type_nonull(fd_set, int, sph_set_hash_integer,
   if (scm == SCM_BOOL_F) {                                                     \
     close(a);                                                                  \
   }
+
 /** variable integer null/path ->
      if "a" is -1, set it to a newly opened filed descriptor for path or
    /dev/null */
@@ -266,6 +272,7 @@ sph_set_declare_type_nonull(fd_set, int, sph_set_hash_integer,
   if (-1 == a) {                                                               \
     a = open((path ? path : "/dev/null"), open_flags);                         \
   }
+
 /** SCM int-variable char*-variable ->
      set fd to a file descriptor from an SCM argument or -1.
      if "a" is a path string, set "path" */
@@ -282,6 +289,7 @@ sph_set_declare_type_nonull(fd_set, int, sph_set_hash_integer,
       };                                                                       \
     };                                                                         \
   }
+
 /** integer integer integer ->
      to be called in a new process */
 #define set_standard_streams(input, output, error)                             \
@@ -303,6 +311,7 @@ sph_set_declare_type_nonull(fd_set, int, sph_set_hash_integer,
   if (error > 2) {                                                             \
     dup2_fd(error, 2);                                                         \
   }
+
 /** integer fd-set ->
    try to close all used file descriptors greater than or equal to start-fd.
    tries to use one of /proc/{process-id}/fd, sysconf and getdtablesize.
@@ -348,6 +357,7 @@ void close_file_descriptors_from(int start_fd, fd_set_t keep) {
     };
   };
 }
+
 /** free a null pointer terminated char** */
 void free_env(char **a) {
   char **a_temp = a;
@@ -372,6 +382,7 @@ int scm_list_to_fd_set(SCM scm_a, fd_set_t *out) {
   *out = result;
   return (0);
 }
+
 /** returns a null pointer terminated char** */
 char **scm_string_list_to_string_pointer_array(SCM scm_a) {
   int a_length = scm_to_int((scm_length(scm_a)));
