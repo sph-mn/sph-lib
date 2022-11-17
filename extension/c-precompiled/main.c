@@ -261,7 +261,7 @@ sph_set_declare_type_nonull(fd_set, int, sph_set_hash_integer,
   } while ((errno == EINTR));                                                  \
   close(old)
 #define close_fd(scm, a)                                                       \
-  if (scm == SCM_BOOL_F) {                                                     \
+  if (scm_is_false(scm)) {                                                     \
     close(a);                                                                  \
   }
 
@@ -366,13 +366,17 @@ void free_env(char **a) {
   };
   free(a);
 }
+unsigned char scm_is_null_scm(SCM a) {
+  return ((scm_is_true(
+      (scm_call_1((scm_variable_ref((scm_c_lookup("null?")))), a)))));
+}
 int scm_list_to_fd_set(SCM scm_a, fd_set_t *out) {
   fd_set_t result;
   int a_length = scm_to_uint32((scm_length(scm_a)));
   if (fd_set_new((3 + a_length), (&result))) {
     return (1);
   };
-  while (!scm_is_null(scm_a)) {
+  while (!scm_is_null_scm(scm_a)) {
     if (!fd_set_add(result, (scm_to_int((SCM_CAR(scm_a)))))) {
       fd_set_free(result);
       return (2);
@@ -389,7 +393,7 @@ char **scm_string_list_to_string_pointer_array(SCM scm_a) {
   char **result = malloc((sizeof(char *) * (1 + a_length)));
   result[a_length] = 0;
   char **result_pointer = result;
-  while (!scm_is_null(scm_a)) {
+  while (!scm_is_null_scm(scm_a)) {
     char *b;
     size_t b_length;
     b = scm_to_locale_stringn((SCM_CAR(scm_a)), (&b_length));
@@ -409,7 +413,7 @@ SCM scm_primitive_process_create(SCM scm_executable, SCM scm_arguments,
   int path_open_flags =
       (scm_is_true(scm_path_open_flags) ? scm_to_int(scm_path_open_flags) : 0);
   char **arguments = scm_string_list_to_string_pointer_array(scm_arguments);
-  char **env = ((SCM_BOOL_F == scm_env)
+  char **env = (scm_is_false(scm_env)
                     ? environ
                     : scm_string_list_to_string_pointer_array(scm_env));
   char *executable = scm_to_locale_string(scm_executable);
@@ -431,7 +435,7 @@ SCM scm_primitive_process_create(SCM scm_executable, SCM scm_arguments,
     free(arguments);
     free(executable);
     fd_set_free(keep);
-    if (!(SCM_BOOL_F == scm_env)) {
+    if (scm_is_true(scm_env)) {
       free_env(env);
     };
     return ((scm_from_int(process_id)));

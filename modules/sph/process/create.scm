@@ -40,7 +40,7 @@
       (primitive-process-create executable (pair (basename executable) arguments)
         input-port output-port error-port env keep-descriptors path-open-flags))))
 
-"the following definitions are not directly dependent on the loaded extension"
+"the following definitions are only indirectly dependent on the loaded extension (process-create)"
 
 (define* (process-chain first-input last-output execute-arguments #:key search-path?)
   "port/any port/any (string/(string:executable string:argument ...) ...) -> (integer:pid ...)

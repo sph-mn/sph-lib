@@ -19,7 +19,7 @@
   (fprintf stderr (pre-string-concat "%s:%d " format "\n") __func__ __LINE__ __VA_ARGS__)
   (move-fd a) (do-while (= errno EINTR) (set a (dup a)))
   (dup2-fd old new) (begin (do-while (= errno EINTR) (dup2 old new)) (close old))
-  (close-fd scm a) (if (= scm SCM-BOOL-F) (close a))
+  (close-fd scm a) (if (scm-is-false scm) (close a))
   (ensure-fd a open-flags path)
   (begin
     "variable integer null/path ->
@@ -87,11 +87,14 @@
   (while a-temp (free a-temp))
   (free a))
 
+(define (scm-is-null-scm a) ((unsigned char) SCM)
+  (return (scm-is-true (scm-call-1 (scm-variable-ref (scm-c-lookup "null?")) a))))
+
 (define (scm-list->fd-set scm-a out) (int SCM fd-set-t*)
   (declare result fd-set-t)
   (define a-length int (scm->uint32 (scm-length scm-a)))
   (if (fd-set-new (+ 3 a-length) &result) (return 1))
-  (while (not (scm-is-null scm-a))
+  (while (not (scm-is-null-scm scm-a))
     (if (not (fd-set-add result (scm->int (SCM-CAR scm-a))))
       (begin (fd-set-free result) (return 2)))
     (set scm-a (SCM-CDR scm-a)))
@@ -104,16 +107,15 @@
   (define result char** (malloc (* (sizeof char*) (+ 1 a-length))))
   (set (array-get result a-length) 0)
   (define result-pointer char** result)
-  (while (not (scm-is-null scm-a))
+  (while (not (scm-is-null-scm scm-a))
     (declare b char* b-length size-t)
     (set
       b (scm->locale-stringn (SCM-CAR scm-a) &b-length)
       *result-pointer (malloc (* (+ 1 b-length) (sizeof char))))
     (memcpy *result-pointer b b-length)
-    (set
-      (array-get *result-pointer b-length) 0
-      result-pointer (+ 1 result-pointer)
-      scm-a (SCM-CDR scm-a)))
+    (set (array-get *result-pointer b-length) 0)
+    (set result-pointer (+ 1 result-pointer))
+    (set scm-a (SCM-CDR scm-a)))
   (return result))
 
 (define
@@ -123,7 +125,7 @@
     (if* (scm-is-true scm-path-open-flags) (scm->int scm-path-open-flags) 0))
   (define arguments char** (scm-string-list->string-pointer-array scm-arguments))
   (define env char**
-    (if* (= SCM-BOOL-F scm-env) environ (scm-string-list->string-pointer-array scm-env)))
+    (if* (scm-is-false scm-env) environ (scm-string-list->string-pointer-array scm-env)))
   (define executable char* (scm->locale-string scm-executable))
   (declare keep fd-set-t input int output int error int)
   (define input-path char* 0)
@@ -139,7 +141,7 @@
       (free arguments)
       (free executable)
       (fd-set-free keep)
-      (if (not (= SCM-BOOL-F scm-env)) (free-env env))
+      (if (scm-is-true scm-env) (free-env env))
       (return (scm-from-int process-id))))
   (sc-comment "after fork")
   (ensure-fd input O_RDONLY input-path)

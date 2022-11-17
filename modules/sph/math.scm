@@ -59,6 +59,7 @@
   "(number ...) -> number
    the distribution of mass is balanced around the center of mass and the average
    of the weighted position coordinates of the distributed mass defines its coordinates.
+   the result is an index, possibly fractional.
    c = sum(n * x(n)) / sum(x(n))"
   (/ (apply + (map-with-index (l (index a) (* index a)) a)) (apply + a)))
 
@@ -239,20 +240,22 @@
 
 (define (linearly-interpolate offset a b)
   "real:0..1 (number ...) ... -> point
-   return a point on a straight line between a and b at fractional offset"
+   return a point on a straight line between a and b at fractional offset.
+   also known as lerp"
   (map (l (a b) (+ (* b offset) (* a (- 1 offset)))) a b))
 
 (define (circle n radius)
-  "return a point on a circle with given radius at fractional offset n (on the circumference)"
-  (let (n (* n 2 pi)) (vector (* radius (cos n)) (* radius (sin n)))))
+  "number:0..1 number -> (x y)
+  return a point on a circle with given radius at fractional offset n (on the circumference)"
+  (let (n (* n 2 pi)) (list (* radius (cos n)) (* radius (sin n)))))
 
 (define (ellipse n radius-x radius-y rotation)
-  "number:0..1 number number number:0..2pi
+  "number:0..1 number number number:0..2pi -> (x y)
    return a point on an ellipse at fractional offset n (on the circumference)"
   "make n be a fraction of one period"
   (let (n (* n 2 pi))
     "multiplied by rotation matrix (((cos angle) (- (sin angle))) ((sin angle) (cos angle)))"
-    (vector (- (* radius-x (cos n) (cos rotation)) (* radius-y (sin n) (sin rotation)))
+    (list (- (* radius-x (cos n) (cos rotation)) (* radius-y (sin n) (sin rotation)))
       (+ (* radius-x (cos n) (sin rotation)) (* radius-y (sin n) (cos rotation))))))
 
 (define (angle-between p1 p2)
