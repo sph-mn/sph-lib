@@ -2,7 +2,7 @@
 
 optimisation=3
 warnings="-Wunused-label -Wunused-value -Wunused-variable"
-gcc_options="-Wfatal-errors $warnings -std=c11 -O$optimisation $(guile-config link)"
+gcc_options="-Wfatal-errors $warnings -std=c11 -O$optimisation $(guile-config compile) $(guile-config link)"
 dir=temp
 file="$dir/libguile-sph-lib.so"
 source=extension/c-precompiled/main.c
