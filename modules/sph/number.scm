@@ -6,7 +6,8 @@
 (export bit->byte-length bound
   bound-max bound-min
   call-with-product-then-divide container-length->number-max
-  decrement-one float-sum
+  decrement-one float-nearly-equal
+  float-sum float-modulo
   fraction in-between?
   in-range? increment-one
   integer-and-fraction log-base
@@ -21,6 +22,13 @@
       (let* ((a (first rest)) (b (+ a result)))
         "the summation with \"correction\" must be a separate call, did not work otherwise"
         (loop (tail rest) b (+ correction (if (>= result a) (+ (- result b) a) (+ (- a b) result))))))))
+
+(define (float-nearly-equal a b margin)
+  "approximate float comparison. margin specifies the greatest accepted difference"
+  (< (abs (- a b)) margin))
+
+(define (float-modulo a b) "modulo for float values. fmod"
+  (let* ((c (/ a b)) (d (if (> c 0.0) (floor c) (ceiling c)))) (- a (* b d))))
 
 (define (in-between? n start end)
   "number number number -> boolean

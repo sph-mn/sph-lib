@@ -5,29 +5,43 @@
   ((rnrs sorting) #:select (list-sort)) ((sph alist) #:select (alist-q))
   ( (sph list) #:select
     (consecutive count-value map-integers map-segments map-with-index list-sort-with-accessor))
-  (srfi srfi-1) ((rnrs base) #:select (mod)))
+  (srfi srfi-1))
 
 (export absolute-difference absolute-threshold
   angle-between arithmetic-mean
-  bezier-curve bezier-curve-cubic
-  catmull-rom-interpolate-f catmull-rom-path
-  circle complex-from-magnitude-and-imaginary
-  cusum differences
-  ellipse elliptical-arc
-  exponential-decay fmod
+  bessel bezier-curve
+  bezier-curve-cubic catmull-rom-interpolate-f
+  catmull-rom-path circle
+  complex-from-magnitude-and-imaginary cusum
+  differences ellipse
+  exponential-decay factorial
   golden-ratio hermite-interpolate
   integer-summands line-path
   linearly-interpolate list-average
   list-center-of-mass list-median
-  list-mode list-range log2 percent pi relative-change scale-to-mean vector-linearly-interpolate)
+  list-mode list-range
+  log2 percent pi relative-change scale-to-mean taylor-series-sin vector-linearly-interpolate)
 
-(define sph-math-description "a few  mathematics related methods")
+(define sph-math-description "mathematics related procedures")
 (define golden-ratio (/ (+ 1 (sqrt 5)) 2))
 (define pi (* 4 (atan 1)))
+(define list-average arithmetic-mean)
 (define (log2 b) "calculate the base two logarithm for b" (/ (log b) (log 2)))
+(define (factorial n) (if (> 1 n) 1 (* n (factorial (- n 1)))))
 
-(define (fmod a b) "modulo for float values"
-  (let* ((c (/ a b)) (d (if (> c 0.0) (floor c) (ceiling c)))) (- a (* b d))))
+(define (taylor-series-sin x term-count)
+  "calculates the taylor series sin(x) = x - x ** 3 / 3! + x ** 5 / 5! - x ** 7 / 7! + ...
+   minimum term-count to create a sine is 6"
+  (let loop ((n 0) (term x))
+    (let (term (/ (* -1 term x x) (+ (* 2 n) 2) (+ (* 2 n) 3)))
+      (if (< n term-count) (+ term (loop (+ 1 n) term)) x))))
+
+(define (bessel order x term-count)
+  "bessel function of the first kind. higher term-counts improve precision. example term-count: 6"
+  (* (expt (/ x 2) order)
+    (let loop ((n 1) (term (/ 1 (factorial order))))
+      (if (< n term-count) (+ term (loop (+ 1 n) (* term -1 (/ (/ (* x x) 4) (* n (+ order n))))))
+        term))))
 
 (define (absolute-threshold b limit) "return zero if the absolute value of b is below limit"
   (if (< (abs b) limit) 0 b))
@@ -43,15 +57,13 @@
    calculate the arithmetic mean of the given numbers"
   (/ (apply + a) (length a)))
 
-(define list-average arithmetic-mean)
-
 (define (absolute-difference n-1 n-2)
   "number number -> number
    give the non-negative difference of two numbers"
   (abs (- n-1 n-2)))
 
-(define (cusum a . b)
-  "calculate cumulative sums from the given numbers.
+(define (cumulative-sum a . b)
+  "calculate cumulative sums from the given numbers. cusum.
    (a b c ...) -> (a (+ a b) (+ a b c) ...)"
   (pair a (if (null? b) null (apply cusum (+ a (first b)) (tail b)))))
 
@@ -246,7 +258,7 @@
 
 (define (circle n radius)
   "number:0..1 number -> (x y)
-  return a point on a circle with given radius at fractional offset n (on the circumference)"
+   return a point on a circle with given radius at fractional offset n (on the circumference)"
   (let (n (* n 2 pi)) (list (* radius (cos n)) (* radius (sin n)))))
 
 (define (ellipse n radius-x radius-y rotation)
@@ -300,68 +312,3 @@
   "number number number -> number
    from / ((x + 1) ** change)"
   (/ from (expt (+ 1 x) change)))
-
-(define* (elliptical-arc n p1 p2 rx ry #:optional (rotation 0) large-arc sweep)
-  "number:0..1 vector vector number number number:radians boolean boolean -> (vector . extra-calculated-values)
-   extra-calculated-values: ((symbol:start-angle/end-angle/angle/center/radius-x/radius-y number) ...)
-   return a point on an elliptical arc at fractional offset n.
-   only for two dimensions.
-   modeled after the svg path arc command.
-   code translated from https://github.com/MadLittleMods/svg-curve-lib"
-  "there seems to be a bug in the scheme version with the sweep-angle"
-  (cond
-    ((equal? p1 p2) p1)
-    ((or (= 0 rx) (= 0 ry)) (vector-linearly-interpolate n p1 p2))
-    (else "following \"conversion from endpoint to center parameterization\" at"
-      "http://www.w3.org/TR/SVG/implnote.html#ArcConversionEndpointToCenter"
-      (let*
-        ( (rx (abs rx)) (ry (abs ry)) (dx (/ (- (vector-first p1) (vector-first p2)) 2))
-          (dy (/ (- (vector-second p1) (vector-second p2)) 2))
-          (transformed-point-x (+ (* dx (cos rotation)) (* dy (sin rotation))))
-          (transformed-point-y (- (* dy (cos rotation)) (* dx (sin rotation))))
-          (radii-check
-            (+ (/ (expt transformed-point-x 2) (expt rx 2))
-              (/ (expt transformed-point-y 2) (expt ry 2))))
-          (rx (if (> radii-check 1) (* rx (sqrt radii-check)) rx))
-          (ry (if (> radii-check 1) (* ry (sqrt radii-check)) ry))
-          (c-square-numerator
-            (- (* (expt rx 2) (expt ry 2)) (* (expt rx 2) (expt transformed-point-y 2))
-              (* (expt ry 2) (expt transformed-point-x 2))))
-          (c-square-root-denom
-            (+ (* (expt rx 2) (expt transformed-point-y 2))
-              (* (expt ry 2) (expt transformed-point-x 2))))
-          (c-radicand (/ c-square-numerator c-square-root-denom))
-          (c-radicand (if (< c-radicand 0) 0 c-radicand))
-          (c-coef (* (sqrt c-radicand) (if (equal? large-arc sweep) -1 1)))
-          (transformed-center-x (/ (* c-coef rx transformed-point-y) ry))
-          (transformed-center-y (/ (* c-coef (- (* ry transformed-point-x))) rx))
-          (center
-            (vector
-              (+
-                (- (* (cos rotation) transformed-center-x) (* (sin rotation) transformed-center-y))
-                (/ (+ (vector-first p1) (vector-first p2)) 2))
-              (+ (* (sin rotation) transformed-center-x) (* (cos rotation) transformed-center-y)
-                (/ (+ (vector-second p1) (vector-second p2)) 2))))
-          (start-vector
-            (vector (/ (- transformed-point-x transformed-center-x) rx)
-              (/ (- transformed-point-y transformed-center-y) ry)))
-          (start-angle (angle-between (vector 1 0) start-vector))
-          (end-vector
-            (vector (/ (- (- transformed-point-x) transformed-center-x) rx)
-              (/ (- (- transformed-point-y) transformed-center-y) ry)))
-          (sweep-angle (angle-between start-vector end-vector))
-          (sweep-angle
-            (if (and (not sweep) (> sweep-angle 0)) (- sweep-angle (* 2 pi))
-              (if (and sweep (< sweep-angle 0)) (+ sweep-angle (* 2 pi)) sweep-angle)))
-          (sweep-angle (mod sweep-angle (* 2 pi))) (angle (+ start-angle (* n sweep-angle)))
-          (ellipse-component-x (* rx (cos angle))) (ellipse-component-y (* ry (sin angle)))
-          (point
-            (vector
-              (+ (- (* ellipse-component-x (cos rotation)) (* ellipse-component-y (sin rotation)))
-                (vector-first center))
-              (+ (* ellipse-component-x (sin rotation)) (* ellipse-component-y (cos rotation))
-                (vector-second center)))))
-        "include some extra information in the result which might be useful"
-        (pair point
-          (alist-q start-angle start-angle
-            end-angle (+ start-angle sweep-angle) angle angle center center radius-x rx radius-y ry))))))

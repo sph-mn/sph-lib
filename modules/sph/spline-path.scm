@@ -3,7 +3,8 @@
 (use-modules (srfi srfi-1) (sph)
   (sph list other) (sph math)
   (sph number) (sph vector)
-  ((rnrs base) #:select (infinite?)) ((sph alist) #:select (alist-delete-multiple alist-merge))
+  ((rnrs base) #:select (infinite? mod))
+  ((sph alist) #:select (alist-delete-multiple alist-merge alist-q))
   ( (sph list) #:select
     (any->list compact fold-segments fold* map-apply map-segments pair-fold-multiple)))
 
@@ -241,6 +242,71 @@
       (else
         (let (dimensions (length (first (second (first result)))))
           (pair (list (q move) (list (make-list dimensions 0)) null) result))))))
+
+(define* (elliptical-arc n p1 p2 rx ry #:optional (rotation 0) large-arc sweep)
+  "number:0..1 vector vector number number number:radians boolean boolean -> (vector . extra-calculated-values)
+   extra-calculated-values: ((symbol:start-angle/end-angle/angle/center/radius-x/radius-y number) ...)
+   return a point on an elliptical arc at fractional offset n.
+   only for two dimensions.
+   modeled after the svg path arc command.
+   code translated from https://github.com/MadLittleMods/svg-curve-lib"
+  "there seems to be a bug in the scheme version with the sweep-angle"
+  (cond
+    ((equal? p1 p2) p1)
+    ((or (= 0 rx) (= 0 ry)) (vector-linearly-interpolate n p1 p2))
+    (else "following \"conversion from endpoint to center parameterization\" at"
+      "http://www.w3.org/TR/SVG/implnote.html#ArcConversionEndpointToCenter"
+      (let*
+        ( (rx (abs rx)) (ry (abs ry)) (dx (/ (- (vector-first p1) (vector-first p2)) 2))
+          (dy (/ (- (vector-second p1) (vector-second p2)) 2))
+          (transformed-point-x (+ (* dx (cos rotation)) (* dy (sin rotation))))
+          (transformed-point-y (- (* dy (cos rotation)) (* dx (sin rotation))))
+          (radii-check
+            (+ (/ (expt transformed-point-x 2) (expt rx 2))
+              (/ (expt transformed-point-y 2) (expt ry 2))))
+          (rx (if (> radii-check 1) (* rx (sqrt radii-check)) rx))
+          (ry (if (> radii-check 1) (* ry (sqrt radii-check)) ry))
+          (c-square-numerator
+            (- (* (expt rx 2) (expt ry 2)) (* (expt rx 2) (expt transformed-point-y 2))
+              (* (expt ry 2) (expt transformed-point-x 2))))
+          (c-square-root-denom
+            (+ (* (expt rx 2) (expt transformed-point-y 2))
+              (* (expt ry 2) (expt transformed-point-x 2))))
+          (c-radicand (/ c-square-numerator c-square-root-denom))
+          (c-radicand (if (< c-radicand 0) 0 c-radicand))
+          (c-coef (* (sqrt c-radicand) (if (equal? large-arc sweep) -1 1)))
+          (transformed-center-x (/ (* c-coef rx transformed-point-y) ry))
+          (transformed-center-y (/ (* c-coef (- (* ry transformed-point-x))) rx))
+          (center
+            (vector
+              (+
+                (- (* (cos rotation) transformed-center-x) (* (sin rotation) transformed-center-y))
+                (/ (+ (vector-first p1) (vector-first p2)) 2))
+              (+ (* (sin rotation) transformed-center-x) (* (cos rotation) transformed-center-y)
+                (/ (+ (vector-second p1) (vector-second p2)) 2))))
+          (start-vector
+            (vector (/ (- transformed-point-x transformed-center-x) rx)
+              (/ (- transformed-point-y transformed-center-y) ry)))
+          (start-angle (angle-between (vector 1 0) start-vector))
+          (end-vector
+            (vector (/ (- (- transformed-point-x) transformed-center-x) rx)
+              (/ (- (- transformed-point-y) transformed-center-y) ry)))
+          (sweep-angle (angle-between start-vector end-vector))
+          (sweep-angle
+            (if (and (not sweep) (> sweep-angle 0)) (- sweep-angle (* 2 pi))
+              (if (and sweep (< sweep-angle 0)) (+ sweep-angle (* 2 pi)) sweep-angle)))
+          (sweep-angle (mod sweep-angle (* 2 pi))) (angle (+ start-angle (* n sweep-angle)))
+          (ellipse-component-x (* rx (cos angle))) (ellipse-component-y (* ry (sin angle)))
+          (point
+            (vector
+              (+ (- (* ellipse-component-x (cos rotation)) (* ellipse-component-y (sin rotation)))
+                (vector-first center))
+              (+ (* ellipse-component-x (sin rotation)) (* ellipse-component-y (cos rotation))
+                (vector-second center)))))
+        "include some extra information in the result which might be useful"
+        (pair point
+          (alist-q start-angle start-angle
+            end-angle (+ start-angle sweep-angle) angle angle center center radius-x rx radius-y ry))))))
 
 (define spline-path-generic-config->segments
   (let
@@ -551,8 +617,9 @@
                   (list
                     (list (q repeat)
                       (let (end (first (first (second (last config)))))
-                        (if (number? repeat) (l (t) (if (> t (* repeat end)) t (fmod t end)))
-                          (l (t) (fmod t end))))
+                        (if (number? repeat)
+                          (l (t) (if (> t (* repeat end)) t (float-modulo t end)))
+                          (l (t) (float-modulo t end))))
                       #f repeat))
                   null)))))
         (c config mapper)))))
