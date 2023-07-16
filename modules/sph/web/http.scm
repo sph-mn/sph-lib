@@ -47,7 +47,8 @@
    assumes that uri is valid"
   (map
     (l (e)
-      (apply (l (key . value) (pair key (if (null? value) #t (first value)))) (string-split e #\=)))
+      (apply (l (key . value) (pair key (if (null? value) #t (html-uri-decode (first value)))))
+        (string-split e #\=)))
     (string-split a separator)))
 
 (define (http-uri-query-alist->string a)

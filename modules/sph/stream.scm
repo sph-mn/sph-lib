@@ -64,7 +64,7 @@
 
 (define (port->line-stream port)
   "port -> stream -> string ...
-   create a stream that produces lines as strings read from port"
+   create a stream that reads lines from port"
   (port->stream port get-line))
 
 (define* (port->delimited-stream delimiters-string port #:optional (handle-delim (q trim)))
