@@ -1,3 +1,23 @@
 #!/bin/sh
-# guile call to use not-yet installed modules
-exec guile -L "$PWD/modules" exe/install.scm $*
+
+# arguments: [prefix [--symlink]]
+
+if test -n "$1";then prefix="$1"; else prefix=""; fi
+if test -n "$2";then cp_or_ln="/usr/bin/cp -sf"; else cp_or_ln=cp; fi
+
+lib="$prefix/usr/lib"
+site="$prefix/usr/share/guile/site"
+ext="$PWD"/extension/libguile-sph-lib.so
+modules="$PWD"/modules
+
+mkdir -p "$site"
+chmod -R 755 "$modules"
+chmod 644 "$modules/sph.scm" "$modules"/sph/*.scm "$modules"/*/*.scm
+$cp_or_ln -R "$modules"/sph.scm "$modules"/sph "$site"
+
+if test -f $ext
+then
+  mkdir -p "$lib"
+  chmod 644 "$ext"
+  $cp_or_ln "$ext" "$lib"
+fi

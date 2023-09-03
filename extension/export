@@ -1,5 +1,0 @@
-{
-  global:
-    init_sph_lib;
-  local: *;
-};

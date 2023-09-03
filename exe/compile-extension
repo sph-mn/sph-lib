@@ -1,0 +1,4 @@
+#!/bin/sh
+
+compiler_options="-Wunused-label -Wunused-value -Wunused-variable -Wfatal-errors -std=c11 -O3 -shared -fpic -I extension"
+gcc $compiler_options $(guile-config compile) $(guile-config link) extension/main.c -o extension/libguile-sph-lib.so

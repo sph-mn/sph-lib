@@ -297,7 +297,7 @@
 
 (define (tree-splice predicate a)
   "prodecure:{element -> boolean/any} list -> list
-   merge nested lists with that match predicate with their parent list.
+   merge nested lists that match predicate with their parent list.
    example
      (tree-splice (l (a) (= 3 (length a))) (q (1 2 3 (4 5 (6 7) (8 9 10)))))
      ->
