@@ -79,7 +79,8 @@
   "(number ...) -> number
    return the median value of list. the median is the value separating the
    higher half from the lower half in a sorted list of samples.
-   it may be thought of as the \"middle\" value"
+   it may be thought of as the \"middle\" value.
+   list must be non null"
   (let ((sorted (list-sort < a)) (size (length a)))
     (if (odd? size) (list-ref sorted (/ (- size 1) 2))
       (let ((index-a (- (/ size 2) 1)) (index-b (/ size 2)))

@@ -40,6 +40,10 @@
 (define ht-make-eq rnrs-make-eq-hashtable)
 (define ht-make-eqv rnrs-make-eqv-hashtable)
 
+(define* (ht-make-string #:optional size)
+  (if size (rnrs-make-hashtable ht-hash-string string-equal? size)
+    (rnrs-make-hashtable ht-hash-string string-equal?)))
+
 (define-syntax-rules ht-ref ((h k d) (rnrs-hashtable-ref h k d))
   ((h k) (rnrs-hashtable-ref h k #f)))
 
@@ -93,7 +97,7 @@
 
 (define* (ht-from-alist a #:key (equal-f equal?) (hash-f ht-hash-equal) (depth 0))
   "list #:equal-f procedure #:hash-f procedure #:depth integer/infinite -> hashtable
-   convert alist "a" to an r6rs hashtable.
+   convert alist 'a' to an r6rs hashtable.
    if depth is positive then also convert nested alists to hashtables at most depth nestings deep.
    depth can be (inf)"
   (let (ht (ht-make hash-f equal-f))
@@ -172,7 +176,7 @@
 
 (define (ht-update-multiple! ht keys proc)
   "hashtable list procedure:{any:values ... -> (any:new-values ...)} -> hashtable
-   set values for "keys" in hashtable to new values by mapping using "proc""
+   set values for 'keys' in hashtable to new values by mapping using 'proc'"
   (each (l (k v) (ht-set! ht k v)) keys (apply proc (map (l (a) (ht-ref ht a)) keys))))
 
 (define* (ht-alist ht #:optional (depth 0))
@@ -234,13 +238,14 @@
   ht-hash-string ht-hash-symbol
   ht-invert! ht-keys
   ht-make ht-make-eq
-  ht-make-eqv ht-map!
-  ht-merge! ht-object
-  ht-ref ht-ref-q
-  ht-select ht-set!
-  ht-set-multiple! ht-set-multiple-q!
-  ht-set-q! ht-size
-  ht-tree-and-ref ht-tree-and-ref-q
-  ht-tree-contains? ht-tree-copy
-  ht-tree-copy* ht-tree-merge!
-  ht-tree-ref ht-tree-ref-q ht-tree-set! ht-update-multiple! ht-values ht? sph-hashtable-description)
+  ht-make-eqv ht-make-string
+  ht-map! ht-merge!
+  ht-object ht-ref
+  ht-ref-q ht-select
+  ht-set! ht-set-multiple!
+  ht-set-multiple-q! ht-set-q!
+  ht-size ht-tree-and-ref
+  ht-tree-and-ref-q ht-tree-contains?
+  ht-tree-copy ht-tree-copy*
+  ht-tree-merge! ht-tree-ref
+  ht-tree-ref-q ht-tree-set! ht-update-multiple! ht-values ht? sph-hashtable-description)

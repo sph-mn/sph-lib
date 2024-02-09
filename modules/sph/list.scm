@@ -60,8 +60,8 @@
   splice splice-last-list
   split-at-last split-at-value
   split-by-pattern tail-or-null
-  take* true->list
-  union list-set-difference list-set-add list-tail-ref list-set-union list-set-subset?)
+  take* take-right*
+  true->list union list-set-difference list-set-add list-tail-ref list-set-union list-set-subset?)
 
 (define list-set-difference lset-difference)
 (define list-set-add lset-adjoin)
@@ -107,6 +107,11 @@
   "like srfi-1 take but with reversed argument order (like stream-take from srfi-41) and
    returns null if list contains less elements than count instead of raising an exception"
   (if (<= (length a) count) a (take a count)))
+
+(define (take-right* count a)
+  "like srfi-1 take-right but with reversed argument order (like stream-take from srfi-41) and
+   returns null if list contains less elements than count instead of raising an exception"
+  (if (<= (length a) count) a (take-right a count)))
 
 (define (list-page a entry-count number lookahead c)
   "list integer integer integer procedure:{list boolean:last-page? -> any} -> any
