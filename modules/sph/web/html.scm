@@ -25,13 +25,17 @@
     (let ((line (first line+delim)) (delim (tail line+delim)))
       (if (and (string? line) (char? delim)) (string-append line (string delim)) line))))
 
-(define (html-uri-decode str) "string -> string"
-  (regexp-substitute/global #f "\\+|%([0-9A-Fa-f][0-9A-Fa-f])"
-    str (q pre)
-    (l (m)
-      (if (string=? "+" (match:substring m 0)) " "
-        (integer->char (string->number (match:substring m 1) 16))))
-    (q post)))
+(define (html-uri-decode a)
+  (define (decode-char b)
+    (if (char=? b #\+) #\space
+      (integer->char (string->number (substring a (+ 1 b) (+ 3 b)) 16))))
+  (define (decode a pos)
+    (if (>= pos (string-length a)) ""
+      (string-append
+        (if (char=? (string-ref a pos) #\%) (string (decode-char pos))
+          (string (string-ref a pos)))
+        (decode a (+ pos (if (char=? (string-ref a pos) #\%) 3 1))))))
+  (decode a 0))
 
 (define html-uri-encode
   (let ((safe-char? (l (char) (or (char-alphabetic? char) (char-numeric? char)))))
@@ -86,8 +90,7 @@
    see also html-read-multipart-form-data"
   "see the code of \"html-read-multipart-form-data\" for a usage example"
   (let* ((boundary (if boundary boundary (read-boundary port))) (header (http-read-header port)))
-    "todo: also match \"multipart/alternative\", \"multipart/digest\" and \"multipart/parallel\" here,
-     it is othewrise the same as \"multipart/mixed\""
+    "todo: also match \"multipart/alternative\", \"multipart/digest\" and \"multipart/parallel\" here,\n     it is othewrise the same as \"multipart/mixed\""
     (if (header-multipart-mixed? header) (proc-multipart header port result)
       (letrec
         ( (fold-lines
