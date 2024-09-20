@@ -8,7 +8,8 @@
 (export any->string any->string-display
   any->string-pretty-print any->string-write
   any->string-write* list->string-columns
-  list-string-append-each parenthesise
+  list-string-append-each parenthesize
+  parenthesized? parenthesise
   parenthesised? regexp-match-replace
   regexp-replace sph-string-description
   string-ascii->utf8 string-brackets-closed?
@@ -42,6 +43,10 @@
          ((\"b\" \"c\") 2)
          (mystringlist 3)
          (else 4))")
+
+; backward compatibility
+(define parenthesise parenthesize)
+(define parenthesised? parenthesized?)
 
 (define-syntax-case (string-case a (condition expr) ...) s
   (let*
@@ -102,12 +107,12 @@
       a)
     separator))
 
-(define (parenthesise a)
+(define (parenthesize a)
   "string -> string
    surround string with an open and a closing round bracket"
   (string-append "(" a ")"))
 
-(define (parenthesised? a)
+(define (parenthesized? a)
   "string -> boolean
    checks if the string is enclosed by round brackets.
    also checks if every opening bracket is paired with a closing one after it"

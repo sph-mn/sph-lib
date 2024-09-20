@@ -79,7 +79,7 @@
 
 (define (map-recurse recurse a indent) (map (l (a) (first (recurse a indent))) a))
 
-(define (parenthesise-indented-list indent a)
+(define (parenthesize-indented-list indent a)
   (string-append "(" a (if (string-suffix? "\n" a) (string-append indent ")") ")")))
 
 (define (consecutive-parentheses-indentation a indent-string)
@@ -149,7 +149,7 @@
   (let* ((indent (create-indent config current-indent)) (line-spacing (string-append "\n" indent)))
     (apply
       (l (result line . rest)
-        (parenthesise-indented-list indent
+        (parenthesize-indented-list indent
           (string-join
             (add-multiple-leading-parenthesis-spacing config
               (reverse (if (null? line) result (pair (string-join (reverse line) " ") result))))

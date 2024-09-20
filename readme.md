@@ -216,7 +216,7 @@ test module sph string
   string-lowercase? 1 2 3 4
   string-multiply 1 2 3
   string-numeric? 1 2 3 4
-  parenthesised? 1 2 3 4 5 6 7 8 9
+  parenthesized? 1 2 3 4 5 6 7 8 9
   string-quote 1 2 3 4 5
   string-replace-char 1 2 3
   string-replace-string 1 2 3 4 5 6 7 8 9

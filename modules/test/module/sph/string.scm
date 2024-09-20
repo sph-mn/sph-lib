@@ -28,7 +28,7 @@
     (string-lowercase? "aBc" #f "aa1a" #t "BBB" #f "" #t)
     (string-multiply ("a" 0) "" ("a" 3) "aaa" ("" 3) "")
     (string-numeric? "" #f "1f" #f "a1a" #f "123" #t)
-    (parenthesised? "(b?c:d),(function(e){return(f)})" #f
+    (parenthesized? "(b?c:d),(function(e){return(f)})" #f
       "" #f "(" #f "()" #t "(ab))" #f "(a(b)" #f "x(ab)" #f "(ab)x" #f "(a()b)" #t)
     (string-quote "'test'" "\"'test'\""
       "t'est" "\"t'est\"" "\"test\"" "'\"test\"'" "te\"st\"" "'te\"st\"'" "te\"'st\"" #f)

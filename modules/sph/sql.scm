@@ -3,7 +3,7 @@
 (use-modules (ice-9 match) (srfi srfi-1)
   (sph) (sph tree)
   ((sph alist) #:select (alist-bind)) ((sph list) #:select (flatten any->list contains? flat?))
-  ((sph number) #:select (in-between?)) ((sph string) #:select (parenthesise string-replace-chars)))
+  ((sph number) #:select (in-between?)) ((sph string) #:select (parenthesize string-replace-chars)))
 
 (export sph-sql-description sql-columns
   sql-columns-list sql-create-index
@@ -74,7 +74,7 @@
                             (string-append (column-name c) (if (eq? (q isnot) operator) " not" "")
                               " in(" (string-join (map sql-value values) ",") ")"))
                           (l (c)
-                            (parenthesise
+                            (parenthesize
                               (string-join
                                 (map
                                   (l (v)
@@ -93,7 +93,7 @@
                     (if (= 1 (length columns))
                       (if (list? (first columns)) (first (first columns))
                         (join-values (first columns) values operator sql-operator))
-                      (parenthesise
+                      (parenthesize
                         (string-join
                           (map
                             (l (c)
@@ -108,7 +108,7 @@
   (let*
     ( (row-expr-binary
         (l (prefix suffix level)
-          ( (if (or (eqv? 1 level) (= 1 (length suffix))) identity parenthesise)
+          ( (if (or (eqv? 1 level) (= 1 (length suffix))) identity parenthesize)
             (string-join suffix (if (eq? (q or) prefix) " or " " and ")))))
       (row-expr-unary (l (prefix suffix level) (string-append "not " (first suffix))))
       (state->combinator (l (state) (if (even? state) " and " " or ")))
