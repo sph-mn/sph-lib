@@ -2,11 +2,11 @@
 (use-modules (sph) (sph list) (sph number) (sph string) (sph time) (sph time utc))
 
 (export military-time->hm s->hms-string
-  s->ks-string seconds-from-hms
+  s->hectoseconds-string seconds-from-hms
   sph-time-string-description utc->ymd
-  utc->ymd-hms utc->ymd-ks
+  utc->ymd-hms utc->ymd-hectoseconds
   utc->ymd-s utc-current-ymd
-  utc-current-ymd-ks utc-current-ymd-s
+  utc-current-ymd-hectoseconds utc-current-ymd-s
   utc-elapsed-day-string utc-from-military-time utc-from-ymd ymd-daytime-delimiter)
 
 (define sph-time-string-description
@@ -43,8 +43,8 @@
 
 (define ymd-daytime-delimiter "_")
 
-(define (utc->ymd-ks a)
-  (string-append (utc->ymd a) ymd-daytime-delimiter (utc-elapsed-day-string a 3 0)))
+(define (utc->ymd-hectoseconds a)
+  (string-append (utc->ymd a) ymd-daytime-delimiter (utc-elapsed-day-string a 2 0)))
 
 (define (utc->ymd-hms a)
   (string-append (utc->ymd a) ymd-daytime-delimiter (s->hms-string (ns->s (utc-elapsed-day a)))))
@@ -53,9 +53,9 @@
   (string-append (utc->ymd a) ymd-daytime-delimiter (utc-elapsed-day-string a 0 0)))
 
 (define (utc-current-ymd) (utc->ymd (utc-current)))
-(define (utc-current-ymd-ks) (utc->ymd-ks (utc-current)))
+(define (utc-current-ymd-hectoseconds) (utc->ymd-hectoseconds (utc-current)))
 (define (utc-current-ymd-s) (utc->ymd-s (utc-current)))
-(define (s->ks-string a) (number-format-float (/ a 1000) #:decimal-min 0 #:decimal-max 2))
+(define (s->hectoseconds-string a) (number-format-float (/ a 100) #:decimal-min 0 #:decimal-max 0))
 
 (define* (s->hms-string a #:optional (drop null))
   (let* ((hms (utc-duration->hms (abs a))) (hms (if (null? drop) hms (list-deselect hms drop))))

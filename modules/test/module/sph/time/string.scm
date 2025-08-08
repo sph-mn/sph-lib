@@ -6,10 +6,10 @@
 
   (define-test (time->iso8601-datetime) (string? (time->ymd)))
   (define 2016-6-17 (utc-from-date (date-new* 2016 6 17)))
-  (define-test (utc-current-ymd-ks) (string? (utc-current-ymd-ks)))
+  (define-test (utc-current-ymd-hectoseconds) (string? (utc-current-ymd-hectoseconds)))
 
   (test-execute-procedures-lambda (utc->ymd (unquote 2016-6-17) "2016-06-17")
-    (utc-duration-from-hms (3 20 10) 12010 (0 20 10) 1210 (0 0 0) 0) utc-current-ymd-ks
+    (utc-duration-from-hms (3 20 10) 12010 (0 20 10) 1210 (0 0 0) 0) utc-current-ymd-hectoseconds
     (utc-duration->hms -60 (0 -1 0)
       60 (0 1 0)
       3600 (1 0 0)
