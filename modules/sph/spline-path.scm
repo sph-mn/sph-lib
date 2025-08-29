@@ -1,12 +1,12 @@
 (define-module (sph spline-path))
 
 (use-modules (srfi srfi-1) (sph)
-  (sph list other) (sph math)
+  (sph math)
   (sph number) (sph vector)
   ((rnrs base) #:select (infinite? mod))
   ((sph alist) #:select (alist-delete-multiple alist-merge alist-q))
   ( (sph list) #:select
-    (any->list compact fold-segments fold* map-apply map-segments pair-fold-multiple)))
+    (randomize any->list compact fold-segments fold* map-apply map-segments pair-fold-multiple)))
 
 (export sph-spline-path-description spline-path
   spline-path->procedure spline-path->procedure-fast
@@ -531,21 +531,21 @@
       (list type (map (l (a) (pair (first a) (map (l (a) (* factor a)) (tail a)))) points) other))
     config))
 
-(define (spline-path-config-randomise config deep random-state)
+(define (spline-path-config-randomize config deep random-state)
   "spline-path generic-config [random-state] -> generic-config
-   randomise the order of segments. the starting point stays the same"
+   randomize the order of segments. the starting point stays the same"
   (let
     (config
       (spline-path-config-distance->t
         (let (distance-config (spline-path-config-t->distance config))
           (pair (first distance-config)
-            (randomise (tail distance-config)
+            (randomize (tail distance-config)
               (if (boolean? random-state) *random-state* random-state))))))
     (if deep
       (spline-path-config-map-sub-paths config
         (l (path)
           (spline-path-map-config path
-            (l (config mapper c) (c (spline-path-config-randomise config deep random-state) mapper)))))
+            (l (config mapper c) (c (spline-path-config-randomize config deep random-state) mapper)))))
       config)))
 
 (define (spline-path-config-reverse config deep)
@@ -580,22 +580,22 @@
     config))
 
 (define*
-  (spline-path-modify a #:key deep randomise repeat reverse scale shift stretch mapper-add
+  (spline-path-modify a #:key deep randomize repeat reverse scale shift stretch mapper-add
     mapper-remove)
   "spline-path [keys ...] -> spline-path
    return a new path with specified modifications.
    # keys
-   randomise: boolean/random-state
+   randomize: boolean/random-state
    repeat: boolean/number (experimental)
    reverse: boolean
    scale: false/number:factor
    shift: false/number:amount
    stretch: false/number:to-end
-   deep: with reverse or randomise: apply to paths as segments as well
+   deep: with reverse or randomize: apply to paths as segments as well
    mapper-add: ((symbol:id false/procedure:input false/procedure:output custom-info ...) ...)
    mapper-remove: id/(id ...)
    # example
-   (spline-path-modify path #:reverse #t #:randomise (random-state-from-platform)
+   (spline-path-modify path #:reverse #t #:randomize (random-state-from-platform)
      #:scale 0.2 #:stretch (* 2 (spline-path-end path)))"
   (spline-path-map-config a
     (l (config mapper c)
@@ -603,7 +603,7 @@
         ( (config
             (fold (l (mod config) (if (first mod) ((tail mod) config (first mod)) config)) config
               (list
-                (pair randomise (l (config . a) (apply spline-path-config-randomise config deep a)))
+                (pair randomize (l (config . a) (apply spline-path-config-randomize config deep a)))
                 (pair reverse (l (config . a) (spline-path-config-reverse config deep)))
                 (pair (and scale (not (= 1 scale)) scale) spline-path-config-scale)
                 (pair stretch spline-path-config-stretch)

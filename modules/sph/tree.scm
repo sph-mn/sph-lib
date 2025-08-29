@@ -13,7 +13,7 @@
 
 (export denoted-tree->prefix-tree denoted-tree->tree
   denoted-tree->tree-inner denoted-tree-adjust-depth
-  denoted-tree-minimise-depth prefix-tree->denoted-tree
+  denoted-tree-minimize-depth prefix-tree->denoted-tree
   prefix-tree->infix-tree prefix-tree->paths
   prefix-tree->relations prefix-tree-context-match
   prefix-tree-map prefix-tree-map-c
@@ -49,6 +49,9 @@
 
 (define sph-tree-description
   "process tree-like list structures.
+   # highlights
+   prefix-tree->paths
+   # other
    denoted
      a representation using pairs where the first element denotes the nesting level and the second element is content
      (a b (c (d e)) f)-> ((0 . a) (1 . b) (2 . c) (3 . d) (3 . e) (0 . 4))
@@ -587,7 +590,7 @@
 
 ; -- "denoted" trees
 
-(define (denoted-tree-minimise-depth a)
+(define (denoted-tree-minimize-depth a)
   "procedure list integer -> list
    decrease nesting-depth for all element until at least one element has a nesting-depth of zero"
   (if (null? a) a

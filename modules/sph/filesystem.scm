@@ -3,26 +3,36 @@
 (use-modules (srfi srfi-1) (srfi srfi-2)
   (ice-9 ftw) (ice-9 regex)
   (ice-9 threads) (rnrs bytevectors)
-  (rnrs io ports) (sph) (sph hashtable) (sph list) (sph list other) (sph other) (sph string))
+  (rnrs io ports) (sph) (sph hashtable) (sph list) (sph other) (sph string))
 
-(export call-with-directory copy-file-recursive
-  directory-fold directory-list
-  directory-list-full directory-prefix-tree
-  directory-reference? directory-tree
-  directory-tree-each directory-tree-leaf-directories
-  directory? dotfile?
-  system-temp-dir ensure-directory-structure
-  ensure-directory-structure-and-new-mode ensure-trailing-slash
-  filename-extension filesystem-glob
-  fold-directory-tree list->path
-  get-unique-path mtime-difference
-  path->full-path path->list
-  path-append path-append*
-  path-directories poll-watch
-  readlink* realpath*
-  remove-filename-extension remove-trailing-slash
-  search-load-path stat-accessor->stat-field-name
-  stat-diff stat-diff->accessors stat-field-name->stat-accessor)
+(export sph-filesystem-description call-with-directory
+  copy-file-recursive directory-fold
+  directory-list directory-list-full
+  directory-prefix-tree directory-reference?
+  directory-tree directory-tree-each
+  directory-tree-leaf-directories directory?
+  dotfile? system-temp-dir
+  ensure-directory-structure ensure-directory-structure-and-new-mode
+  ensure-trailing-slash filename-extension
+  filesystem-glob fold-directory-tree
+  list->path get-unique-path
+  mtime-difference path->full-path
+  path->list path-append
+  path-append* path-directories
+  poll-watch readlink*
+  realpath* remove-filename-extension
+  remove-trailing-slash search-load-path
+  stat-accessor->stat-field-name stat-diff stat-diff->accessors stat-field-name->stat-accessor)
+
+(define sph-filesystem-description
+  "filesystem helpers.
+   # highlights
+   filesystem-glob: resolves ``*/**/?`` in paths
+   copy-file-recursive
+   ensure-directory-structure
+   ensure-trailing-slash
+   poll-watch: watch for filesystem stat changes
+   realpath*: realpath implementation not requiring posix realpath")
 
 (define (system-temp-dir)
   "returns the value of the %TEMP% environment variable on windows, /tmp otherwise.

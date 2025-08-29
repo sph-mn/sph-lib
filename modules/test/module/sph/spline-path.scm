@@ -32,7 +32,7 @@
   (define-test (spline-path-modify)
     (spline-path?
       (spline-path-modify path-all #:reverse
-        #t #:randomise
+        #t #:randomize
         (random-state-from-platform) #:deep
         #t #:shift 2 #:scale 0.2 #:stretch (* 1 (spline-path-end path-all)))))
 

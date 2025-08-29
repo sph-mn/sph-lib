@@ -9,7 +9,21 @@
   tail each debug-log null l* q qq apply-values quote-odd quote-even quote-duplicate nullary)
 
 (define sph-description
-  "few bindings that are shared with all sph modules.
+  "general helpers and aliases.
+   # highlights
+   debug-log: display trace and debug messages. (+ 3 (debug-log (+ 1 2)))
+   first: alias for car
+   l: alias for lambda
+   null: alias for (list)
+   nullary: alternative to null arity (lambda () body ...)
+   pair: alias for cons
+   pairs: alias for cons*
+   q: alias for quote
+   qq: alias for quasiquote
+   quote-duplicate: a b c -> ((quote a) a (quote b) b (quote c) c)
+   quote-even: a b c d -> (a (quote b) c (quote d))
+   quote-odd a b c d -> ((quote a) b (quote c) d)
+   tail: alias for cdr
    # syntax
    define-syntax-rules :: name ((pattern ...) expansion) ...
      similar to define-syntax-rule but for multiple patterns

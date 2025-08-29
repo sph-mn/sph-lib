@@ -44,70 +44,116 @@ the extension exists because guile does not come with a generic process creation
 ## highlights
 * (sph base91) - encoder/decoder
 * (sph cli) - create command-line interfaces
-* (sph install) - copy files and set permissions, with an optional, automatically created command line interface for users to set install options
-* (sph lang parser type-signature) - a parser and writer for a type signature notation
-* (sph lang plcss) - s-expression language that compiles to css
+* (sph install) - copy files and set permissions, with an optional, automatically created command line interface for users to set install options.
+* (sph lang parser type-signature) - a parser and writer for a type signature notation.
+* (sph lang plcss) - s-expression language that compiles to css.
 * (sph lang scm-format) - format scheme code
-* (sph process create) - create child processes and process chains
-* (sph scgi) - scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them
-* (sph server) - a simple, fast, and generic socket data processing server that uses a thread-pool for parallel request processing
-* (sph string) - string processing. includes string-replace-string, a fast replacer
-* (sph test) - automated code testing with composable modules
-* (sph test performance) - adaptive performance testing with formatted result display
-* (sph thread-pool) - thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type
-* (sph time) - time as tai or utc nanoseconds since the unix epoch or gregorian calendar dates
+* (sph process create) - create child processes and process chains.
+  * process-chain-path-pipe: execute multiple processes linked by port, named pipe, or file
+* (sph scgi) - scgi interface (alternative to fastcgi). a server that accepts scgi requests and calls a custom procedure to handle them.
+* (sph server) - a simple, fast, generic socket data processing server that uses a thread-pool for parallel request processing.
+* (sph string) - string processing helpers.
+  * string-replace-string: a fast replacer
+  * string-brackets-enclosed?: check that a string contains correctly nested and balanced count of round brackets or any other pair of start/end characters
+  * any->string
+* (sph test performance) - adaptive performance testing with formatted result display.
+* (sph test) - automated code testing with composable modules.
+* (sph thread-pool) - thread-pool that uses wait-conditions to pause unused threads and has a customizable queue type
 * (sph time gregorian) - gregorian calendar calculations
 * (sph time rfc3339) - parse and create strings in the rfc3339 time format
+* (sph time) - time as tai or utc nanoseconds since the unix epoch or gregorian calendar dates.
 * (sph web atom) - create atom syndication feeds with sxml
 
 ## other
-* (sph alist) - helpers for association list processing
+* (sph alist) - association list processing.
+  * alist: create association lists like lists (alist key value key/value ...)
+  * keyword-list->alist+keyless: parse lists with keywords such as lambda* argument lists
 * (sph base64) - encoder/decoder
+* (sph documentation itpn)
+* (sph documentation shtml)
 * (sph documentation) - extract and display documentation (bindings, arguments and docstrings) from modules
-* (sph exception) - experimental rnrs exception helpers
-* (sph filesystem)
-* (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version
-* (sph futures) - fine-grain parallelism based on (sph thread-pool)
-* (sph hashtable) - rnrs-hashtable processing
-* (sph io) - port and file input/output
-* (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them
+* (sph exception) - rnrs exception helpers. experimental
+* (sph filesystem versioning) - gives a path to the next version of a file and automatically archives the old version.
+* (sph filesystem) - filesystem helpers.
+  * filesystem-glob: resolves ``*/**/?`` in paths
+  * copy-file-recursive
+  * ensure-directory-structure
+  * ensure-trailing-slash
+  * poll-watch: watch for filesystem stat changes
+  * realpath*: realpath implementation not requiring posix realpath
+* (sph futures) - fine-grain parallelism based on (sph thread-pool).
+* (sph hashtable) - rnrs-hashtable processing.
+* (sph io path-pipe-chain) - call procedures with input/output arguments in a chained manner to allow data flow between them.
+* (sph io) - port and file input/output.
 * (sph json) - a rudimentary and incomplete but fast json writer
-* (sph lang config) - a scheme syntax configuration file format that parses to a alist or hashtable, possibly nested
-* (sph lang indent-syntax) - converting to and from strings with indented lines
-* (sph lang itpn) - helpers for working with a notation that lists space separated tags and then associated text indented in following lines
-* (sph lang parser outline) - parse a markup structure where headings are prefixed by one or multiple characters for nested sections
+* (sph lang config) - a scheme syntax configuration file format that parses to a alist or hashtable, possibly nested.
+* (sph lang indent-syntax)
+* (sph lang indent-tree)
+* (sph lang itpn) - helpers for working with a notation that lists space separated tags and then associated text indented in following lines.
+* (sph lang parser outline) - parse a markup structure where headings are prefixed by one or multiple characters for nested sections.
 * (sph lang scheme) - scheme parsing helpers including helpers for implicitly quasiquoted configuration files
 * (sph lang scm-format base)
 * (sph lang scm-format format) - formatters for individual expressions
 * (sph lang scm-format transform) - transformations on the abstract syntax tree
 * (sph libmagic) - binding to the libmagic library from the "file" utility that guesses file types
-* (sph list) - list helpers
-* (sph list other) - additional list processing bindings that depend on libraries that depend on (sph list). to avoid circular dependencies
+* (sph list) - list helpers.
+  * list-logical-match: match values by (and (or (and 1 2 3) 4)) conditions
+  * list-sort-with-accessor: sort any kind of element as long as the value to sort by can be accessed by a procedure
+  * split-by-pattern: rudimentary ellipsis pattern matching. a more powerful version can currently be found in sph-sc
+  * compact: remove false values from a list
+  * flatten: merge sublists
+  * map-slice: map over each overlapping segment of length
+  * map-segments: map over each non-overlapping segment of length
+  * fold*: fold with multiple state values
+  * group: build an association list from a list with a custom predicate
+  * group-recursively
 * (sph log) - diagnostic logging with routing by category to none or many configurable output-targets
 * (sph math) - mathematics related procedures
-* (sph module) - guile module system and rnrs library related procedures
 * (sph module binding-info) - get information about bindings in modules
+* (sph module) - guile module system and rnrs library related procedures
 * (sph number)
-* (sph other) - miscellaneous
+* (sph other) - miscellaneous.
 * (sph process) - execute programs and evaluate shell or scheme code
-* (sph record) - helpers for vectors with accessors to be used as records
+* (sph record) - helpers for vectors with accessors to be used as records.
 * (sph scrypt) - bindings to the scrypt key derivation function. depends on https://github.com/jkalbhenn/scrypt
 * (sph selection) - create and analyse set selections: permutations, combinations and similar
-* (sph spline-path) - composable interpolated paths through points
+* (sph server base)
+* (sph server fibers) - a generic socket data processing server that uses fibers for parallel request processing and non-blocking port input/output.
+* (sph spline-path) - composable interpolated paths through points.
 * (sph sql) - create sql-statements from scheme data
-* (sph stream) - srfi-41 stream helpers
-* (sph system reader) - a scheme reader that can include commets. depends on guile-reader
+* (sph stream) - srfi-41 stream helpers.
+  * stream-page: pagination for streams. get n elements at once, with lookahead and small last page merging
+  * port->stream
+  * port->delimited-stream
+* (sph system reader) - a scheme reader that can include comments. depends on guile-reader
 * (sph test base)
 * (sph test report) - test reporters for writing to standard output for example while tests are running are implemented as a special hook
 * (sph time stream) - create an srfi-41 stream of (sph time) date vectors between two dates
-* (sph time string) - time string conversions
-* (sph time utc) - utc related time calculations
-* (sph tree) - process tree-like list structures
+* (sph time string) - time string conversions.
+* (sph time utc) - utc related time calculations.
+* (sph tree) - process tree-like list structures.
+  * prefix-tree->paths
 * (sph uniform-vector) - helpers for srfi-4 and compatible vectors. for example f32vector
 * (sph vector) - vector helpers
 * (sph web html) - html related methods including an advanced html multipart form data parser
+  * html-read-multipart-form-data: supports nested multipart/mixed data
+  * html-fold-multipart-form-data: supports reading blockwise instead of parsing the whole data at once
 * (sph web http)
 * (sph web shtml) - helpers to create html via sxml
+* (sph) - general helpers and aliases.
+  * debug-log: display trace and debug messages. (+ 3 (debug-log (+ 1 2)))
+  * first: alias for car
+  * l: alias for lambda
+  * null: alias for (list)
+  * nullary: alternative to null arity (lambda () body ...)
+  * pair: alias for cons
+  * pairs: alias for cons*
+  * q: alias for quote
+  * qq: alias for quasiquote
+  * quote-duplicate: a b c -> ((quote a) a (quote b) b (quote c) c)
+  * quote-even: a b c d -> (a (quote b) c (quote d))
+  * quote-odd a b c d -> ((quote a) b (quote c) d)
+  * tail: alias for cdr
 
 # documentation
 * most procedures and modules have docstrings. extracted documentation can be browsed on [sph.mn](http://sph.mn/computer/software/sph-lib.html)
@@ -123,7 +169,7 @@ test module sph time rfc3339
 test module sph time string
   utc->ymd 1
   utc-duration-from-hms 1 2 3
-  utc-current-ymd-ks 1
+  utc-current-ymd-hectoseconds 1
   utc-duration->hms 1 2 3 4 5 6 7 8 9 10 11
 test module sph web atom
   atom-feed 1
@@ -136,6 +182,9 @@ test module sph lang indent-syntax
 test module sph io path-pipe-chain
   path-pipe-chain-ends 1
   path-pipe-chain-links 1
+test module sph process create
+  process-create 1
+  process-chain 1
 test module sph time
   greg-years->year 1 2 3 4 5
   greg-year->years 1 2 3 4 5 6 7
@@ -170,6 +219,11 @@ test module sph sql
   sql-insert 1
   sql-update 1
   sql-where-condition 1 2 3 4 5 6
+test module sph record
+  define-record 1
+  record 1
+  alist->record 1
+  record-field-names 1
 test module sph filesystem
   set-up-filesystem-glob 1
   filesystem-glob 1 2 3 4 5 6 7
@@ -228,7 +282,7 @@ test module sph test
   test-execute-procedures 1
   test-execute-module 1
 test module sph base91
-  base91 1 2
+  base91 1 2 3
 test module sph vector
   vector-append 1
   vector-range 1 2 3

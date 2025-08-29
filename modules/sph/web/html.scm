@@ -11,7 +11,10 @@
   html-parse-urlencoded-form-data html-read-multipart-form-data html-uri-decode html-uri-encode)
 
 (define sph-web-html-description
-  "html related methods including an advanced html multipart form data parser")
+  "html related methods including an advanced html multipart form data parser
+   # highlights
+   html-read-multipart-form-data: supports nested multipart/mixed data
+   html-fold-multipart-form-data: supports reading blockwise instead of parsing the whole data at once")
 
 (define (read-line-crlf-trim port)
   "try to read a line that is known to be cr-lf terminated and remove the cr-lf or return eof-object"
@@ -27,13 +30,11 @@
 
 (define (html-uri-decode a)
   (define (decode-char b)
-    (if (char=? b #\+) #\space
-      (integer->char (string->number (substring a (+ 1 b) (+ 3 b)) 16))))
+    (if (char=? b #\+) #\space (integer->char (string->number (substring a (+ 1 b) (+ 3 b)) 16))))
   (define (decode a pos)
     (if (>= pos (string-length a)) ""
       (string-append
-        (if (char=? (string-ref a pos) #\%) (string (decode-char pos))
-          (string (string-ref a pos)))
+        (if (char=? (string-ref a pos) #\%) (string (decode-char pos)) (string (string-ref a pos)))
         (decode a (+ pos (if (char=? (string-ref a pos) #\%) 3 1))))))
   (decode a 0))
 

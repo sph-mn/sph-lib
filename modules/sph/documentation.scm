@@ -6,14 +6,14 @@
   (sph lang parser type-signature) ((sph lang scm-format format) #:select (format-docstring))
   ((sph list) #:select (contains? any->list fold-multiple))
   ((sph module) #:select (module-find module-exports))
-  ((sph tree) #:select (denoted-tree-minimise-depth)) ((rnrs sorting) #:select (list-sort))
+  ((sph tree) #:select (denoted-tree-minimize-depth)) ((rnrs sorting) #:select (list-sort))
   ((sph string) #:select (string-equal? any->string-pretty-print)) (srfi srfi-1) (srfi srfi-2))
 
-(export default-format-arguments display-module-information-short
-  doc-bindings docstring->lines
-  docstring-split-signature format-module-documentation
-  output-format-indent output-format-signature
-  output-format-markdown output-format-list
+(export default-format-arguments doc-bindings
+  docstring->lines docstring-split-signature
+  format-module-documentation output-format-indent
+  output-format-signature output-format-markdown
+  output-format-markdown-overview output-format-list
   lines->docstring module-description
   module-find-one-information module-find-one-information-sorted
   sort-module-information sph-documentation-description)
@@ -102,6 +102,48 @@
                 (if (or (not text) (string-null? text)) null (list (list (q description) text))))))
           (list (list (q type) (bi-type bi))))))
     format-module-documentation (l (module-name md) (any->string-pretty-print md))))
+
+(define (module-name->string name) (string-append "(" (string-join (map symbol->string name) " ") ")"))
+
+(define (first-nonempty-line s)
+  (let ((ls (remove string-null? (map string-trim (string-split s #\newline)))))
+    (if (null? ls) "" (first ls))))
+
+(define (extract-highlights s)
+  (let (ls (map (l (x) (string-trim-right x)) (string-split s #\newline)))
+    (let loop ((xs ls) (in? #f) (acc (list)))
+      (if (null? xs) (reverse acc)
+        (let*
+          ((x (car xs)) (is-header (and (>= (string-length x) 1) (char=? #\# (string-ref x 0)))))
+          (cond
+            ((and (not in?) (string-ci=? x "# highlights")) (loop (cdr xs) #t acc))
+            ((and in? is-header) (reverse acc))
+            (in?
+              (let
+                ( (y
+                    (string-trim
+                      (cond
+                        ((string-prefix? "* " x) (string-drop x 2))
+                        ((string-prefix? "- " x) (string-drop x 2))
+                        (else x)))))
+                (loop (cdr xs) #t (if (string-null? y) acc (cons y acc)))))
+            (else (loop (cdr xs) #f acc))))))))
+
+(define output-format-markdown-overview
+  (alist-q format-arguments default-format-arguments
+    format-binding-info (l (bi formatted-arguments) "vector:record string -> string" "")
+    format-module-documentation
+    (l (module-name md) "any (string ...) -> string"
+      (let*
+        ( (desc (or (module-description module-name) "")) (first-line (first-nonempty-line desc))
+          (high (extract-highlights desc))
+          (head
+            (string-append "* " (module-name->string module-name)
+              (if (string-null? first-line) "" (string-append " - " first-line))))
+          (tail
+            (if (null? high) ""
+              (string-append "\n" (string-join (map (l (h) (string-append "  * " h)) high) "\n")))))
+        (string-append head tail)))))
 
 (define (docstring-format a) "string -> string"
   "drop doublequotes of formatted string literal"
@@ -202,7 +244,7 @@
     (let (a-tree (indent-tree->denoted-tree a))
       (denoted-tree->indent-tree
         (if (>= 1 (length a-tree)) a-tree
-          (pair (first a-tree) (denoted-tree-minimise-depth (tail a-tree))))))))
+          (pair (first a-tree) (denoted-tree-minimize-depth (tail a-tree))))))))
 
 (define (sort-module-information a)
   (let
@@ -223,20 +265,6 @@
 (define (module-find-one-information-sorted search-paths . module-find-arguments)
   (sort-module-information (apply module-find-one-information search-paths module-find-arguments)))
 
-(define* (display-module-information-short a #:optional markdown?)
-  (let
-    ( (get-first-line
-        (l (a)
-          (let (index (string-index a #\newline))
-            (if index (string-trim-right (string-take a index) #\.) a)))))
-    (each
-      (l (a)
-        (alist-bind a (name description)
-          (if markdown? (display "* ")) (display name)
-          (if description (begin (display " - ") (display (get-first-line description)))))
-        (newline))
-      a)))
-
 (define* (doc-bindings libraries #:optional (pair pair))
   "(list ...) -> ((symbol:name . list:library-name) ...)
    get a list of all bindings and the library name they belong to for all specified library names"
@@ -248,16 +276,19 @@
         null))
     libraries))
 
-(define* (format-module-documentation module-name #:optional (format-config output-format-indent))
-  "(symbol ...) [list] ->
-   return a string for the documentation found in a module (binding names, arguments and docstrings).
+(define* (format-module-documentation module-names #:optional (format-config output-format-indent))
+  "((symbol ...) ...) [list] ->
+   return a string for the documentation found in the modules (binding names, arguments and docstrings).
    for just retrieving module documentation as scheme data consider (sph module binding-info).
    example:
      (format-module-documentation (quote (rnrs sorting)))"
   (alist-bind format-config (format-arguments format-binding-info format-module-documentation)
-    (format-module-documentation module-name
-      (map
-        (l (binding-info)
-          (format-binding-info binding-info
-            (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
-        (sort-module-binding-info (module-binding-info module-name))))))
+    (map
+      (l (module-name)
+        (format-module-documentation module-name
+          (map
+            (l (binding-info)
+              (format-binding-info binding-info
+                (format-arguments (bi-arguments binding-info) (bi-type binding-info))))
+            (sort-module-binding-info (module-binding-info module-name)))))
+      module-names)))

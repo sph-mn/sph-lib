@@ -33,7 +33,11 @@
   string-skip-string string-slice-at-words string-split-regexp string-trim-string symbol?->string)
 
 (define sph-string-description
-  "string processing. includes string-replace-string, a fast replacer.
+  "string processing helpers.
+   # highlights
+   string-replace-string: a fast replacer
+   string-brackets-enclosed?: check that a string contains correctly nested and balanced count of round brackets or any other pair of start/end characters
+   any->string
    # syntax
    string-case :: string (condition any:consequent) ...
      like case but for strings instead of symbols.

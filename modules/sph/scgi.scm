@@ -6,7 +6,7 @@
 (export scgi-default-address scgi-handle-requests scgi-read-header sph-scgi-description)
 
 (define sph-scgi-description
-  "scgi interface. a server that accepts scgi requests and calls a custom procedure to handle them.
+  "scgi interface (alternative to fastcgi). a server that accepts scgi requests and calls a custom procedure to handle them.
    http://python.ca/scgi/protocol.txt")
 
 (define binary-char-null (char->integer #\nul))

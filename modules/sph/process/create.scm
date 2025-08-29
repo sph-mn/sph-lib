@@ -13,7 +13,9 @@
   process-chain->string process-chain-finish
   process-chain-finish-success? process-chain-path-pipe process-create sph-process-create-description)
 
-(define sph-process-create-description "create child processes and process chains")
+(define sph-process-create-description "create child processes and process chains.
+  # highlights
+  process-chain-path-pipe: execute multiple processes linked by port, named pipe, or file")
 (define-syntax-rule (boolean->integer a) (if a 1 0))
 
 (define*
