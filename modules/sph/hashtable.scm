@@ -4,6 +4,34 @@
   (srfi srfi-1) ((sph list) #:select (map-slice))
   ((sph vector) #:select (vector-each vector-each-with-index)) ((rnrs hashtables) #:prefix rnrs-))
 
+(export ht-list-replace ht-alist ht-bind
+  ht-clear! ht-contains?
+  ht-copy ht-copy*
+  ht-copy-empty ht-create
+  ht-create-binding ht-create-eq
+  ht-create-eqv ht-create-string
+  ht-create-symbol ht-create-symbol-q
+  ht-delete! ht-each
+  ht-each-key ht-entries
+  ht-equivalence-function ht-fold
+  ht-fold-right ht-from-alist
+  ht-from-list ht-from-tree
+  ht-hash-equal ht-hash-function
+  ht-hash-string ht-hash-symbol
+  ht-invert! ht-keys
+  ht-make ht-make-eq
+  ht-make-eqv ht-make-string
+  ht-map! ht-merge!
+  ht-object ht-ref
+  ht-ref-q ht-select
+  ht-set! ht-set-multiple!
+  ht-set-multiple-q! ht-set-q!
+  ht-size ht-tree-and-ref
+  ht-tree-and-ref-q ht-tree-contains?
+  ht-tree-copy ht-tree-copy*
+  ht-tree-merge! ht-tree-ref
+  ht-tree-ref-q ht-tree-set! ht-update-multiple! ht-values ht? sph-hashtable-description)
+
 (define sph-hashtable-description
   "rnrs-hashtable processing.
    syntax
@@ -222,30 +250,11 @@
   "hashtable [any:default] -> procedure:{any:key -> any:value/default}"
   (l (key) (ht-ref a key default)))
 
-(export ht-alist ht-bind
-  ht-clear! ht-contains?
-  ht-copy ht-copy*
-  ht-copy-empty ht-create
-  ht-create-binding ht-create-eq
-  ht-create-eqv ht-create-string
-  ht-create-symbol ht-create-symbol-q
-  ht-delete! ht-each
-  ht-each-key ht-entries
-  ht-equivalence-function ht-fold
-  ht-fold-right ht-from-alist
-  ht-from-list ht-from-tree
-  ht-hash-equal ht-hash-function
-  ht-hash-string ht-hash-symbol
-  ht-invert! ht-keys
-  ht-make ht-make-eq
-  ht-make-eqv ht-make-string
-  ht-map! ht-merge!
-  ht-object ht-ref
-  ht-ref-q ht-select
-  ht-set! ht-set-multiple!
-  ht-set-multiple-q! ht-set-q!
-  ht-size ht-tree-and-ref
-  ht-tree-and-ref-q ht-tree-contains?
-  ht-tree-copy ht-tree-copy*
-  ht-tree-merge! ht-tree-ref
-  ht-tree-ref-q ht-tree-set! ht-update-multiple! ht-values ht? sph-hashtable-description)
+(define (ht-list-replace a ht)
+  "list rnrs-hashtable -> list
+   replaces elements in list that exist as key in a hashtable with the associated value.
+   if the value is a list, the element is either removed (empty list) or replaced with multiple elements"
+  (fold
+    (l (e r)
+      (let (value (ht-ref ht e)) (if value ((if (list? value) append pair) value r) (pair e r))))
+    (list) a))

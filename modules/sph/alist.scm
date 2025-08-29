@@ -1,18 +1,21 @@
 (define-module (sph alist))
-(use-modules (sph) ((sph list) #:select (contains? fold-multiple)) (srfi srfi-1))
-(re-export alist-delete)
 
-(export alist alist->list
-  alist-bind alist-bind-and*
-  alist-cond alist-contains
-  alist-containsq alist-containsv
-  alist-delete-multiple alist-keys
-  alist-keys-map alist-map
-  alist-merge alist-prepend
-  alist-q alist-ref
-  alist-ref-q alist-select
-  alist-select-apply alist-select-q
-  alist-select-q-apply alist-set
+(use-modules (sph)
+  ( (sph list) #:select
+    (alist list->alist alist-prepend alist-ref alist-set contains? fold-multiple))
+  (srfi srfi-1))
+
+(re-export alist-delete alist-ref alist-set list->alist alist alist-prepend)
+
+(export alist->list alist-bind
+  alist-bind-and* alist-cond
+  alist-contains alist-containsq
+  alist-containsv alist-delete-multiple
+  alist-keys alist-keys-map
+  alist-map alist-merge
+  alist-q alist-ref-q
+  alist-select alist-select-apply
+  alist-select-q alist-select-q-apply
   alist-set! alist-set-multiple
   alist-set-multiple-q alist-update
   alist-update-multiple alist-update-multiple-q
@@ -22,13 +25,17 @@
   alists-ref-q alists-set!
   alistv-ref alistv-select
   bindings->alist keyword-list->alist+keyless
-  list->alist list->group-alist list-alist? set-alist-bindings! sph-alist-description)
+  list->group-alist list-alist? set-alist-bindings! sph-alist-description)
 
-(define alist-prepend acons)
 (define alistq-ref assq-ref)
 (define alistv-ref assv-ref)
 (define alist-set! assoc-set!)
-(define sph-alist-description "association list processing")
+
+(define sph-alist-description
+  "association list processing.
+   # highlights
+   alist: create association lists like lists (alist key value key/value ...)
+   keyword-list->alist+keyless: parse lists with keywords such as lambda* argument lists")
 
 (define (keyword-list->alist+keyless a)
   "list -> (list:alist any ...)
@@ -43,21 +50,6 @@
             (if (null? rest) (pair (pair (pair e #t) r) keyless)
               (loop (tail rest) (pair (pair e (first rest)) r) keyless)))
           (loop (tail rest) r (pair e keyless)))))))
-
-(define list->alist
-  (let (proc (l (a alt prev r) (if alt (list #f #f (alist-prepend prev a r)) (list #t a r))))
-    (lambda (lis)
-      "-> alist
-       create an association list from the given arguments,
-       mapping each list element alternating to a key and value."
-      (if (null? lis) lis
-        (let (r (fold-multiple proc (tail lis) #t (first lis) (list)))
-          (reverse!
-            (if (first r) (pair (list (list-ref r 1)) (first (tail (tail r))))
-              (first (tail (tail r))))))))))
-
-(define-syntax-rules alist-ref ((a k d) ((l (r) (if r (tail r) d)) (assoc k a)))
-  ((a k) (assoc-ref a k)))
 
 (define-syntax-rules alist-ref-q ((a k d) (alist-ref a (quote k) d))
   ((a k) (alist-ref a (quote k))))
@@ -85,13 +77,6 @@
 
 (define-syntax-rules alists-set! ((a k v) (alist-set! a k v))
   ((a k ... k-last v) (alist-set! (alists-ref a k ...) k-last v)))
-
-(define (alist . key/value)
-  "key/value ... -> alist
-   create an association list from the given arguments,
-   mapping each argument alternatingly to key and value.
-   (alist (quote a) 1 \"b\" 2 (quote c) 3)"
-  (list->alist key/value))
 
 (define-syntax-rule (alist-q key/value ...) "only the keys are quoted"
   (list->alist (quote-odd key/value ...)))
@@ -182,14 +167,6 @@
 
 (define-syntax-rule (alist-select-q a key ...) (alist-select a (quote (key ...))))
 (define (alist-keys-map proc a) (map (l (a) (pair (proc (first a)) (tail a))) a))
-
-(define (alist-set a key value)
-  "list any any -> list
-   add or update an entry in an association list"
-  (let loop ((rest a))
-    (if (null? rest) (pair (pair key value) rest)
-      (let (e (first rest))
-        (if (equal? key (first e)) (pair (pair key value) (tail rest)) (pair e (loop (tail rest))))))))
 
 (define (alists-ref-p a keys) "like alists-ref but as a procedure that accepts a list for keys"
   (let loop ((a a) (keys keys))

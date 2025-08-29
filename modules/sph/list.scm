@@ -1,6 +1,8 @@
 (define-module (sph list))
 (use-modules (ice-9 match) (sph) (srfi srfi-31) (srfi srfi-1) ((rnrs sorting) #:select (list-sort)))
 
+(re-export list-sort)
+
 (export any->list compact
   complement complement-both
   consecutive contains-all?
@@ -61,7 +63,11 @@
   split-at-last split-at-value
   split-by-pattern tail-or-null
   take* take-right*
-  true->list union list-set-difference list-set-add list-tail-ref list-set-union list-set-subset?)
+  true->list union list-set-difference list-set-add list-tail-ref list-set-union list-set-subset?
+  group group-recursively
+  list-ref-random list-ref-randomize-cycle
+  randomize sph-list-other-description
+  alist alist-ref alist-set list->alist alist-prepend)
 
 (define list-set-difference lset-difference)
 (define list-set-add lset-adjoin)
@@ -72,6 +78,17 @@
 (define sph-list-description
   "list helpers.
    currently also contains bindings for non-list pairs.
+   # highlights
+   list-logical-match: match values by (and (or (and 1 2 3) 4)) conditions
+   list-sort-with-accessor: sort any kind of element as long as the value to sort by can be accessed by a procedure
+   split-by-pattern: rudimentary ellipsis pattern matching. a more powerful version can currently be found in sph-sc
+   compact: remove false values from a list
+   flatten: merge sublists
+   map-slice: map over each overlapping segment of length
+   map-segments: map over each non-overlapping segment of length
+   fold*: fold with multiple state values
+   group: build an association list from a list with a custom predicate
+   group-recursively
    # syntax
    ## let*-list
    like let*, but variable names enclosed in round brackets bind list elements.
@@ -953,3 +970,88 @@
    return the tail of list or null if there is no tail which is
    the case when list is null"
   (if (null? a) a (tail a)))
+
+(define alist-prepend acons)
+
+(define list->alist
+  (let (proc (l (a alt prev r) (if alt (list #f #f (alist-prepend prev a r)) (list #t a r))))
+    (lambda (lis)
+      "-> alist
+       create an association list from the given arguments,
+       mapping each list element alternating to a key and value."
+      (if (null? lis) lis
+        (let (r (fold-multiple proc (tail lis) #t (first lis) (list)))
+          (reverse!
+            (if (first r) (pair (list (list-ref r 1)) (first (tail (tail r))))
+              (first (tail (tail r))))))))))
+
+(define (alist . key/value)
+  "key/value ... -> alist
+   create an association list from the given arguments,
+   mapping each argument alternatingly to key and value.
+   (alist (quote a) 1 \"b\" 2 (quote c) 3)"
+  (list->alist key/value))
+
+(define (alist-set a key value)
+  "list any any -> list
+   add or update an entry in an association list"
+  (let loop ((rest a))
+    (if (null? rest) (pair (pair key value) rest)
+      (let (e (first rest))
+        (if (equal? key (first e)) (pair (pair key value) (tail rest)) (pair e (loop (tail rest))))))))
+
+(define-syntax-rules alist-ref ((a k d) ((l (r) (if r (tail r) d)) (assoc k a)))
+  ((a k) (assoc-ref a k)))
+
+(define* (group a #:optional (accessor identity))
+  "list [procedure:{any -> any}] -> ((any:group-key any:group-value ...):group ...)
+   groups entries by unique result values of accessor.
+   by default accessor is identity and groups equal elements.
+   returns an association list with one entry for each group with the value as key and related values as value"
+  (let loop ((rest a) (groups (alist)))
+    (if (null? rest) (map (l (a) (pair (first a) (reverse (tail a)))) groups)
+      (let* ((a (first rest)) (key (accessor a)) (group (alist-ref groups key)))
+        (loop (tail rest) (alist-set groups key (if group (pair a group) (list a))))))))
+
+(define* (group-recursively a #:optional (accessor first))
+  "((any ...) ...) [procedure] -> list
+   group lists and the elements of groups until no further sub-groups are possible.
+   the default accessor is \"first\".
+   # example
+       (group-recursively (list (list 1 2 3) (list 1 2 6) (list 1 4 7) (list 8 9)) first)
+       -> ((1 (2 3 6) (4 7)) (8 9))
+   note in the example input how the entries after 1 2 have been grouped into (2 3 6)
+   # example use case
+   converting a list of filesystem paths split at slashes to a nested list where prefixes are directories"
+  (map
+    (l (a) "(group-name element ...)"
+      (let (rest (map tail (remove (compose null? tail) (tail a))))
+        (if (null? rest) (first a) (pair (first a) (group-recursively rest)))))
+    (group a accessor)))
+
+(define* (list-ref-random a #:optional (random-state *random-state*))
+  "list -> any
+   retrieve a random element of a list"
+  (list-ref a (random (length a) random-state)))
+
+(define* (list-ref-randomize-cycle a #:optional (random-state *random-state*))
+  "list -> procedure:{-> any}
+   gives a procedure that when called gives the next element from a randomized version of \"a\"
+   when the end of the list has been reached, the list is reset to a newly randomized version of \"a\""
+  (let ((a-length (length a)) (new (randomize a random-state)) (old (list)))
+    (letrec
+      ( (loop
+          (l ()
+            (if (null? new)
+              (begin (set! new (randomize old random-state)) (set! old (list)) (loop))
+              (let (r (first new)) (set! new (tail new)) (set! old (pair r old)) r)))))
+      loop)))
+
+(define* (randomize a #:optional (random-state *random-state*))
+  "list -> list
+   return a new list with the elements of list in random order.
+   algorithm: connect a random number to each element, re-sort list corresponding to the random numbers."
+  (let (length-a (length a))
+    (map tail
+      (list-sort (l (a b) (< (first a) (first b)))
+        (map (l (c) (pair (random length-a random-state) c)) a)))))

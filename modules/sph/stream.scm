@@ -1,7 +1,8 @@
 (define-module (sph stream))
 
-(use-modules (ice-9 rdelim) (rnrs io ports) (srfi srfi-2)
-  (sph) (sph hashtable) (sph module) (srfi srfi-41) ((sph other) #:select (identity-if)))
+(use-modules (ice-9 rdelim) (rnrs io ports)
+  (srfi srfi-2) (sph)
+  (sph hashtable) (sph module) (srfi srfi-41) ((sph other) #:select (identity-if)))
 
 (export! port->stream)
 
@@ -12,7 +13,13 @@
   stream-deduplicate port->buffered-octet-stream
   port->line-stream port->delimited-stream file->stream)
 
-(define sph-stream-description "srfi-41 stream helpers")
+(define sph-stream-description
+  "srfi-41 stream helpers.
+   # highlights
+   stream-page: pagination for streams. get n elements at once, with lookahead and small last page merging
+   port->stream
+   port->delimited-stream")
+
 (define stream-each stream-for-each)
 (define stream-first stream-car)
 (define stream-tail stream-cdr)

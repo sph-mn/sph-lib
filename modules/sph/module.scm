@@ -135,7 +135,8 @@
   (if (module-file->name path) #t #f))
 
 (define*
-  (module-find-one path #:key (load-path %load-path) ignore-content ignore-load-path (guile-modules #t)
+  (module-find-one path #:key (load-path %load-path) ignore-content ignore-load-path
+    (guile-modules #t)
     file-content-match)
   "string [#:load-path (string ...) #:guile-modules boolean #:ignore-content boolean] -> false/(symbol ...):module-name
    setting the right load-path is important because the module name is derived from it.
@@ -163,7 +164,8 @@
                           (or (module-match-guile-definition a) (loop (read file))))))))))))))))
 
 (define*
-  (module-find path #:key (max-depth (inf)) (load-path %load-path) (guile-modules #t) ignore-content
+  (module-find path #:key (max-depth (inf)) (load-path %load-path) (guile-modules #t)
+    ignore-content
     file-content-match
     ignore-load-path
     enter?)

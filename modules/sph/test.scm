@@ -3,7 +3,7 @@
 (use-modules (ice-9 threads) (rnrs eval)
   (sph) (sph alist)
   (sph filesystem) (sph list)
-  (sph list other) (sph module)
+  (sph module)
   (sph other) (sph string) (sph test base) (sph test report) (srfi srfi-1))
 
 (export assert-and assert-equal

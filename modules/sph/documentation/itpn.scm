@@ -2,7 +2,7 @@
 
 (use-modules (ice-9 threads) (rnrs sorting)
   (sph) (sph alist)
-  (sph documentation) (sph documentation display-format-plist)
+  (sph documentation)
   (sph list) (sph module) (sph module binding-info) (sph other) (sph string) (srfi srfi-1))
 
 (export documentation-itpn-libraries documentation-itpn-library)
@@ -16,7 +16,7 @@
 
 (define (get-binding-documentation module-name) "list -> ((symbol:name . list:alist) ...)"
   (list-sort-with-accessor string<? first
-    (alist-bind display-format-plist (format-binding-info format-arguments)
+    (alist-bind output-format-list (format-binding-info format-arguments)
       (map
         (l (binding-info)
           (format-binding-info binding-info

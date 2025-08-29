@@ -1,9 +1,7 @@
 (define-module (sph string))
 
 (use-modules (ice-9 pretty-print) (ice-9 regex)
-  (sph) (srfi srfi-1)
-  ((rnrs bytevectors) #:select (u8-list->bytevector utf8->string))
-  ((sph list) #:select (fold-multiple)))
+  (sph) (srfi srfi-1) ((rnrs bytevectors) #:select (u8-list->bytevector utf8->string)))
 
 (export any->string any->string-display
   any->string-pretty-print any->string-write
@@ -33,7 +31,11 @@
   string-skip-string string-slice-at-words string-split-regexp string-trim-string symbol?->string)
 
 (define sph-string-description
-  "string processing. includes string-replace-string, a fast replacer.
+  "string processing helpers.
+   # highlights
+   string-replace-string: a fast replacer
+   string-brackets-enclosed?: check that a string contains correctly nested and balanced count of round brackets or any other pair of start/end characters
+   any->string
    # syntax
    string-case :: string (condition any:consequent) ...
      like case but for strings instead of symbols.
@@ -43,6 +45,10 @@
          ((\"b\" \"c\") 2)
          (mystringlist 3)
          (else 4))")
+
+(define (fold-multiple f a . custom-state-values)
+  (if (null? a) custom-state-values
+    (apply fold-multiple f (tail a) (apply f (first a) custom-state-values))))
 
 ; backward compatibility
 (define parenthesise parenthesize)
