@@ -6,7 +6,7 @@
 (export sph-thread-pool-description thread-pool-create thread-pool-destroy thread-pool-finish)
 
 (define sph-thread-pool-description
-  "thread-pool that uses wait-conditions to pause unused threads and has a customisable queue type")
+  "thread-pool that uses wait-conditions to pause unused threads and has a customizable queue type")
 
 (define thread-pool-queue-lifo
   (list list null?

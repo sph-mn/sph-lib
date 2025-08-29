@@ -17,10 +17,9 @@
   record-take record-update record-update-b record-update-q vector->record)
 
 (define sph-record-description
-  "*deprecated* vectors as records.
-   see vector-accessor from (sph vector) instead and create records like #(symbol:type-name value ...).
+  "helpers for vectors with accessors to be used as records.
    access vector elements with field names.
-   this library is supposed to be simpler in definition and usage than previously existing record libraries (rnrs, srfi) and
+   this library is supposed to be simpler in definition and usage than other existing record libraries (rnrs, srfi) and
    more powerful by being based on vectors (records) and hashtables (layouts) and their less restricted interoperability.
    any vector can be accessed as a record and records can be accessed as vectors.
    if type information is desired then for example a symbol type name can be used as the first element of the vector.

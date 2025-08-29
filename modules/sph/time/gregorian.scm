@@ -14,7 +14,7 @@
 
 (define sph-time-gregorian-description
   "gregorian calendar calculations
-   uses a year 0 like iso8601. a year 0 appears to keep leap-day calculations simpler")
+   uses a year 0 like iso8601. year 0 is a leap year; this simplifies leap-day formulas by making them symmetric for negative and positive years")
 
 (define greg-month-days (vector 31 28 31 30 31 30 31 31 30 31 30 31))
 (define greg-month-days-leap-year (vector 31 29 31 30 31 30 31 31 30 31 30 31))
@@ -33,18 +33,18 @@
 (define greg-year-1970-days 719162)
 
 (define (greg-years->year a)
-  "does not work reliably when year is negative and part of a date with advanced months or days,
-   because advancing days in a negative year reduce the number of elapsed years but not the year number"
+  "integer:elapsed-years -> integer:calendar-year
+   maps an elapsed-year count to the corresponding calendar year label.
+   note: when combined with month/day offsets in negative years, the elapsed-year count may not advance monotonically with the year label"
   (+ a 1))
 
 (define (greg-year->years a) (- a 1))
 
 (define (greg-years->leap-days a)
   "integer -> integer
-   the number of leap days that occured when given years have elapsed from the first day of the calendar.
-   negative values for negative years
-   year 0 is a leap year and begins after -1 years. the fifth negative year completes a leap year. the fourth (positive) year completes a new year"
-  "without year 0, a leap year, the formula for positive numbers works the same. at the end we add the leap day from year 0"
+   number of leap days contained in the given count of elapsed years from year 0.
+   result is nonnegative. for negative elapsed years, the caller subtracts this value.
+   leap year rule: years divisible by 4 are leap years, including year 0, except centuries not divisible by 400"
   (if (negative? a)
     (let (a (- (abs a) 1))
       (+ 1 (- (truncate-quotient a 4) (- (truncate-quotient a 100) (truncate-quotient a 400)))))
@@ -77,12 +77,10 @@
 
 (define (greg-days->leap-days a)
   "integer -> integer
-   gives the number of leap days in a given time span of full days.
-   works with positive and negative day values and considers partial years where the leap day always falls on february 29.
-   the calculation for negative values is similar to greg-years->leap-days, based on the fact that the formula for
-   positive values can be used as long as year 0 is ignored.
-   for day totals shorter than a year we check if the leap day in year 0 has passed.
-   for longer day totals the contained cycles are counted, like for positive values."
+   number of leap days contained in a span of full days.
+   works with positive and negative spans.
+   for days < 1 year, checks whether 0-2-29 is included.
+   for larger spans, uses cycle decomposition symmetrical to the positive case, with century exceptions except multiples of 400"
   (if (negative? a)
     (let (a-abs (abs a))
       (if (<= a-abs greg-year-days-leap-year) (if (> a-abs after-month-2-29-days) 1 0)

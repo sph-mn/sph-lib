@@ -18,7 +18,7 @@
   vector-second vector-select vector-setter vector-third vector-update)
 
 (define vector-map rnrs-vector-map)
-(define sph-vector-description "vector processing")
+(define sph-vector-description "vector helpers")
 (define vector-each rnrs-vector-for-each)
 (define vector-each-with-index srfi-43-vector-for-each)
 (define (any->vector a) (if (vector? a) a (vector a)))

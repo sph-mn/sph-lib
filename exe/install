@@ -1,6 +1,10 @@
 #!/bin/sh
 
-# arguments: [prefix [--symlink]]
+if test $# -eq 0
+then
+  echo "arguments: [prefix [--symlink]]"
+  exit 0
+fi
 
 if test -n "$1";then prefix="$1"; else prefix=""; fi
 if test -n "$2";then cp_or_ln="/usr/bin/cp -sf"; else cp_or_ln=cp; fi

@@ -7,7 +7,7 @@
 (export server-listen sph-server-description)
 
 (define sph-server-description
-  "a generic socket data processing server that uses a thread-pool for parallel request processing.
+  "a simple, fast, generic socket data processing server that uses a thread-pool for parallel request processing.
    starting the server with server-listen makes it listen on an existing or newly created socket.
    if there is a new connection on the socket, a user supplied procedure is called with a client port to receive and send data")
 
